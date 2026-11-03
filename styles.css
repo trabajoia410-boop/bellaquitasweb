@@ -135,3 +135,96 @@ body.theme-festival .benefit-item{background:#21112e}
 .editor-categories{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));overflow:visible}
 .editor-category{white-space:normal;line-height:1.35}
 @media(max-width:650px){.editor-categories{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* MULTIDISPOSITIVO 2026 — táctil, iPhone con notch, Android, tablets y ordenadores */
+html{overscroll-behavior-y:none}
+body{overflow-x:hidden}
+button,a,[role="button"]{touch-action:manipulation}
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid #e6bd80;outline-offset:3px}
+main,.app-main,.auth-main,.pane,.editor-panel,.editor-preview-wrap,.admin-list-item,.mini-item{min-width:0}
+h1,h2,h3,p,.mini-item strong,.admin-list-item strong,.card-code{overflow-wrap:anywhere}
+input,textarea,select{max-width:100%}
+.mobile-menu-actions,.menu-install{display:none}
+.footer-install{border:1px solid #704759;background:#2c1a26;color:#f8dcad;padding:11px 14px;border-radius:11px;font-size:.85rem;font-weight:800;min-height:44px;cursor:pointer}
+.footer-install:hover,.menu-install:hover{background:#4c293b}
+.install-dialog{max-width:min(530px,calc(100vw - 24px));max-height:min(88dvh,770px);width:100%;border:1px solid #926b5a;background:#1d111a;color:#fdf0e9;border-radius:20px;padding:0;box-shadow:0 25px 90px #000c}
+.install-dialog::backdrop{background:#000b;backdrop-filter:blur(3px)}
+.install-dialog-content{padding:25px;overflow:auto;max-height:85dvh}
+.install-dialog-head{display:flex;align-items:center;gap:15px}.install-dialog-head h2{font:850 clamp(1.3rem,4vw,1.8rem)/1.13 Outfit,sans-serif;margin:5px 0}
+.install-symbol{width:52px;height:52px;flex:0 0 52px;display:grid;place-items:center;border-radius:14px;background:#3f202f;color:var(--gold);font-size:2rem}
+.install-dialog-content>p{color:var(--muted)}.install-options{display:grid;gap:10px;margin:19px 0}
+.install-options>div{background:#2c1c26;border:1px solid #624554;border-radius:12px;padding:14px 16px}.install-options p{color:#ccb7c0;font-size:.89rem;margin:7px 0 0}
+.install-dialog form{display:flex;justify-content:flex-end}
+@media(max-width:800px){
+ .site-header{height:calc(68px + env(safe-area-inset-top,0px));padding-top:env(safe-area-inset-top,0px)}
+ .main-nav{top:calc(68px + env(safe-area-inset-top,0px));padding:15px 20px calc(20px + env(safe-area-inset-bottom,0px));max-height:calc(100dvh - 68px - env(safe-area-inset-top,0px));overflow-y:auto;box-shadow:0 22px 45px #0009}
+ .main-nav .nav-link{padding:12px 15px;border-radius:10px;min-height:44px;display:flex;align-items:center;color:#f4e1dc}
+ .main-nav .nav-link:hover,.main-nav .nav-link:focus-visible{background:#392230}
+ .mobile-menu-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding-top:13px;border-top:1px solid #66414c}
+ .mobile-menu-actions .btn{min-height:44px;padding:11px;font-size:.85rem;white-space:normal;text-align:center}
+ .menu-install{display:block;text-align:center;width:100%;min-height:44px;border:1px solid #704759;background:#2c1a26;color:#f7d8ab;padding:11px 14px;border-radius:12px;font-weight:800;cursor:pointer}
+ .menu-toggle{min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+ .nav-actions{flex-shrink:0}
+ .nav-actions .btn{min-height:44px}
+ .auth-main{min-height:calc(100dvh - 68px - env(safe-area-inset-top,0px))}
+ .app-shell{padding-bottom:calc(75px + env(safe-area-inset-bottom,0px))}
+ .mobile-appbar{padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px);overflow-x:auto;scrollbar-width:none}
+ .mobile-appbar a{min-height:59px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+ .mobile-appbar .ico{line-height:1.1}
+ body.keyboard-active .mobile-appbar{display:none}
+ input:not([type=checkbox]):not([type=radio]),textarea,select,.search-field{font-size:16px!important;min-height:46px}
+ .app-top{flex-wrap:wrap;align-items:flex-start;gap:10px}
+ .app-top-right{width:100%;justify-content:space-between;flex-wrap:wrap}
+ .app-top-right .btn{min-height:44px}
+ .switch-row a{min-height:44px}
+ .toast{right:12px;left:12px;max-width:none;bottom:calc(75px + env(safe-area-inset-bottom,0px))}
+ .editor-preview{height:530px}
+ .editor-controls,.editor-preview-wrap,.pane{max-width:100%}
+}
+@media(max-width:560px){
+ .container{max-width:100%}
+ .hero-inner{min-width:0}
+ .hero-copy{min-width:0}
+ .hero h1{font-size:clamp(2.45rem,11.5vw,3.5rem);letter-spacing:-.055em;line-height:1.02}
+ .hero-stats{gap:9px;flex-wrap:wrap}
+ .hero-stat{flex:1 1 85px;min-width:0;padding-left:10px}
+ .hero-stat span{font-size:.7rem}
+ .hero-cta .btn{min-height:46px}
+ .floating-tag{max-width:70%}
+ .floating-tag b{font-size:.74rem}
+ .app-header h1{font-size:clamp(1.65rem,8vw,2.05rem)}
+ .metric-row{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .admin-form-buttons{display:flex;flex-wrap:wrap}
+ .admin-form-buttons .btn{min-height:44px}
+ .editor-toolbar-buttons{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .editor-section-item{align-items:flex-start;flex-wrap:wrap}
+ .editor-order{margin-left:auto}
+ .editor-order .btn{min-width:44px;min-height:44px}
+ .editor-category{min-height:44px}
+ .footer-install{width:100%}
+}
+@media(max-width:420px){
+ .nav-actions>.btn-primary:not(.admin-edit-top){display:none}
+ .site-header .nav-actions>.btn-secondary{font-size:.78rem;padding-inline:10px}
+ .mobile-menu-actions{grid-template-columns:1fr}
+ .hero h1{font-size:clamp(2.28rem,11.2vw,2.9rem)}
+ .hero-stats{gap:6px}
+ .hero-stat{flex:1 1 75px}
+ .hero-stat strong{font-size:1.05rem}
+ .auth-main{padding:22px 15px 35px}
+ .editor-toolbar-buttons{grid-template-columns:1fr}
+ .editor-section-item .editor-switch{max-width:100%;min-width:0}
+ .app-main{padding-inline:12px}
+ .mobile-appbar a{font-size:.64rem;min-width:54px;padding:9px 3px}
+ .install-dialog-content{padding:17px}
+}
+@media(max-width:340px){
+ .site-header .brand-symbol{width:33px;height:33px}
+ .hero h1{font-size:2.25rem}
+ .hero-stats{justify-content:flex-start}
+ .hero-stat{flex-basis:78px}
+ .nav-actions{gap:4px}
+ .nav-actions>.btn-secondary{padding-inline:8px!important}
+ .mobile-appbar a{font-size:.6rem}
+}
+@media(hover:none){.btn:hover{transform:none}}

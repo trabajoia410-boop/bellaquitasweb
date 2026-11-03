@@ -20,6 +20,21 @@ function emptyData(){ return {profiles:[],events:[],rewards:[],promos:[],redempt
 const tier = pts => pts>=2000?'Black':pts>=900?'VIP':pts>=500?'Gold':'Member';
 const tierNext = pts => pts>=2000?null:[500,900,2000].find(v=>pts<v);
 let sb = null, session = null, data = emptyData(), current = null;
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();deferredInstallPrompt=event;});
+window.addEventListener('appinstalled',()=>{deferredInstallPrompt=null;toast('Bellaquitas Fest se ha instalado correctamente.');});
+window.addEventListener('offline',()=>toast('Sin conexión. Para guardar cambios o iniciar sesión necesitas Internet.'));
+window.addEventListener('online',()=>toast('Conexión recuperada. Puedes continuar.'));
+async function installApp(){
+  if(window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone){toast('Ya estás utilizando Bellaquitas Fest como aplicación.');return;}
+  if(deferredInstallPrompt){const prompt=deferredInstallPrompt;deferredInstallPrompt=null;await prompt.prompt();await prompt.userChoice;return;}
+  const dialog=document.getElementById('install-guide');
+  if(dialog&&typeof dialog.showModal==='function')dialog.showModal();
+  else window.alert('iPhone: abre Safari, pulsa Compartir y Añadir a pantalla de inicio. Android: abre Chrome y pulsa Instalar aplicación en el menú.');
+}
+if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js',{scope:'./'}).catch(err=>console.warn('Instalación PWA no disponible:',err)));
+}
 let authTab = 'login', authNotice = '', adminTab='summary', adminEditId=null, adminFormOpen=false, search='', scanner=null, scanLoop=null, noticeTimer=null, menuOpen=false;
 const AUTH_ROUTES = {'/acceso':'login','/iniciar-sesion':'login','/registro':'signup','/recuperar':'recover','/restablecer':'reset'};
 function authRedirectUrl(recovery=false){const url=new URL(window.location.href);url.hash='';url.search='';if(recovery)url.searchParams.set('recuperar','1');return url.toString();}
@@ -94,9 +109,10 @@ function header(){
  const preview=!!editorPreviewOverride;
  const authActions=current&&!preview?`<a href="#${current.role==='admin'?'/panel':'/mi-espacio'}" class="btn btn-secondary btn-mini">${current.role==='admin'?'Panel':'Mi espacio'}</a>${current.role==='admin'?'<a href="#/editor" class="btn btn-primary btn-mini admin-edit-top">✎ Editar web</a>':''}`:`<a href="#/acceso" class="btn btn-secondary btn-mini">Iniciar sesión</a><a href="#/registro" class="btn btn-primary btn-mini">Crear cuenta ↗</a>`;
  const nav=[['experience','experiencia','nav_experience'],['events','eventos','nav_events'],['benefits','ventajas','nav_benefits'],['faq','preguntas','nav_faq']].filter(([key])=>showSection(key)).map(([,path,label])=>`<a class="nav-link" href="#/${path}">${H(siteText(label))}</a>`).join('');
- return `<header class="site-header"><div class="container nav-wrap"><a class="brand" href="#/" aria-label="Bellaquitas Fest, inicio"><span class="brand-symbol">♛</span><span>BELLAQUITAS <em>FEST</em></span></a><nav class="main-nav ${menuOpen?'open':''}" aria-label="Navegación principal"><a class="nav-link" href="#/">Inicio</a>${nav}</nav><div class="nav-actions">${authActions}<button class="btn btn-secondary btn-mini menu-toggle" type="button" data-action="menu" aria-label="Abrir menú">☰</button></div></div></header>`;
+ const menuAccount=current&&!preview?`<a class="btn btn-secondary" href="#${destinationForUser()}">Mi cuenta</a>${current.role==='admin'?'<a class="btn btn-primary" href="#/editor">✎ Editar web</a>':''}`:'<a class="btn btn-secondary" href="#/acceso">Iniciar sesión</a><a class="btn btn-primary" href="#/registro">Crear cuenta</a>';
+ return `<header class="site-header"><div class="container nav-wrap"><a class="brand" href="#/" aria-label="Bellaquitas Fest, inicio"><span class="brand-symbol">♛</span><span>BELLAQUITAS <em>FEST</em></span></a><nav id="site-menu" class="main-nav ${menuOpen?'open':''}" aria-label="Navegación principal"><a class="nav-link" href="#/">Inicio</a>${nav}<div class="mobile-menu-actions">${menuAccount}</div><button type="button" class="menu-install" data-action="install-app">📲 Instalar la app</button></nav><div class="nav-actions">${authActions}<button class="btn btn-secondary btn-mini menu-toggle" type="button" data-action="menu" aria-controls="site-menu" aria-expanded="${menuOpen}" aria-label="${menuOpen?'Cerrar menú':'Abrir menú'}">${menuOpen?'✕':'☰'}</button></div></div></header>`;
 }
-function footer(){return `<footer class="footer"><div class="container footer-flex"><div class="brand"><span class="brand-symbol">♛</span>BELLAQUITAS <em>FEST</em></div><p>© ${new Date().getFullYear()} Bellaquitas Fest. ${H(siteText('footer_desc'))}</p><p>${showSection('faq')?'<a href="#/preguntas">Preguntas frecuentes</a> · ':''}<a href="#/acceso">Iniciar sesión</a> · <a href="#/registro">Crear cuenta</a></p></div></footer>`;}
+function footer(){return `<footer class="footer"><div class="container footer-flex"><div class="brand"><span class="brand-symbol">♛</span>BELLAQUITAS <em>FEST</em></div><p>© ${new Date().getFullYear()} Bellaquitas Fest. ${H(siteText('footer_desc'))}</p><p>${showSection('faq')?'<a href="#/preguntas">Preguntas frecuentes</a> · ':''}<a href="#/acceso">Iniciar sesión</a> · <a href="#/registro">Crear cuenta</a></p><button type="button" class="footer-install" data-action="install-app">📲 Instalar la app</button></div></footer>`;}
 function publicEvents(limit=3){return data.events.filter(x=>x.active).sort((a,b)=>(a.date_label||'9999').localeCompare(b.date_label||'9999')).slice(0,limit).map((e,i)=>`<article class="event-card">${safeImage(e.image_url)?`<img class="event-photo" src="${H(safeImage(e.image_url))}" alt="Imagen de ${H(e.name)}" loading="lazy"/>`:``}<div class="event-top"><span class="pill"><span class="dot"></span> ${H(eventDate(e.date_label,e.start_time))}</span><span class="event-num">0${i+1}</span></div><h3>${H(e.name)}</h3><p>${H(e.description)}</p><div class="event-meta"><span>📍 ${H(e.location)}</span></div></article>`).join('')||'<p class="empty">No hay eventos publicados por ahora.</p>';}
 function landing(){
  const txt=k=>H(siteText(k));
@@ -484,7 +500,53 @@ function updateAdminPreview(form){
  info.textContent=form.dataset.table==='events'?eventDate(fd.get('date_label'),fd.get('start_time'))+' · '+(fd.get('location')||'Lugar por indicar'):form.dataset.table==='rewards'?`${fd.get('cost')||'0'} puntos · ${fd.get('category')||'Premios'}`:`+${fd.get('bonus')||'0'} puntos`;
 }
 function stopScan(){if(scanLoop){clearInterval(scanLoop);scanLoop=null;}if(scanner){scanner.getTracks().forEach(x=>x.stop());scanner=null;}const c=$('#camera-wrap');if(c)c.classList.remove('active');}
-async function startScan(){if(!navigator.mediaDevices?.getUserMedia||!('BarcodeDetector' in window)){toast('El lector QR no está disponible en este navegador. Usa el código manual.');return;}try{scanner=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});const v=$('#camera');if(!v)return;v.srcObject=scanner;await v.play();$('#camera-wrap')?.classList.add('active');const detector=new BarcodeDetector({formats:['qr_code']});let busy=false;scanLoop=setInterval(async()=>{if(busy)return;busy=true;try{const found=await detector.detect(v);if(found.length){const code=found[0].rawValue;stopScan();await visit(code);}}catch(err){if(!/No QR/i.test(err.message))console.warn(err);}finally{busy=false;}},600);}catch(err){stopScan();toast('No se pudo activar la cámara: '+(err.message||'revisa permisos'));}}
+let qrScannerLibraryPromise=null;
+async function getQRScanner(){
+  if(typeof window.jsQR==='function')return window.jsQR;
+  if(!qrScannerLibraryPromise){qrScannerLibraryPromise=new Promise((resolve,reject)=>{
+    const script=document.createElement('script');
+    script.src='https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
+    script.async=true;script.onload=()=>typeof window.jsQR==='function'?resolve(window.jsQR):reject(new Error('El lector QR no está disponible. Usa el código manual.'));script.onerror=()=>reject(new Error('No se pudo cargar el lector QR. Usa el código manual.'));
+    document.head.appendChild(script);
+  }).catch(err=>{qrScannerLibraryPromise=null;throw err;});}
+  return qrScannerLibraryPromise;
+}
+async function startScan(){
+  if(!navigator.mediaDevices?.getUserMedia){toast('La cámara no está disponible. Introduce el código del socio manualmente.');return;}
+  try{
+    scanner=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+    const v=$('#camera');
+    if(!v){stopScan();return;}
+    v.srcObject=scanner;v.setAttribute('playsinline','');await v.play();
+    $('#camera-wrap')?.classList.add('active');
+    let detector=null;
+    if('BarcodeDetector' in window){try{detector=new BarcodeDetector({formats:['qr_code']});}catch(err){console.warn('Se utilizará un lector QR alternativo',err);}}
+    const jsqr=detector?null:await getQRScanner();
+    if(!scanner||!v.isConnected)return;
+    const canvas=detector?null:document.createElement('canvas');
+    const ctx=canvas?.getContext('2d',{willReadFrequently:true});
+    if(!detector&&!ctx)throw new Error('Este navegador no puede analizar la cámara. Usa el código manual.');
+    let busy=false;
+    scanLoop=setInterval(async()=>{
+      if(busy||!scanner||v.readyState<2)return;
+      busy=true;
+      try{
+        let code='';
+        if(detector){const detected=await detector.detect(v);code=detected[0]?.rawValue||'';}
+        else{
+          const width=Math.min(640,v.videoWidth||640);
+          const height=Math.round(width*(v.videoHeight||480)/Math.max(1,v.videoWidth||640));
+          canvas.width=width;canvas.height=height;
+          ctx.drawImage(v,0,0,width,height);
+          const image=ctx.getImageData(0,0,width,height);
+          code=jsqr(image.data,width,height,{inversionAttempts:'dontInvert'})?.data||'';
+        }
+        if(code){stopScan();await visit(code);}
+      }catch(err){console.warn('Lectura QR:',err.message||err);}
+      finally{busy=false;}
+    },650);
+  }catch(err){stopScan();toast('No se pudo usar el lector QR. Introduce el código manualmente. '+(err.message||''));}
+}
 async function execute(fn){try{await fn();}catch(err){console.error(err);toast(err.message||'Se ha producido un error.');}}
 async function signInWithGoogle(button){
   if(!sb){formFeedback('El acceso con Google estará disponible cuando se configure Supabase.');return;}
@@ -503,7 +565,7 @@ async function signInWithGoogle(button){
   }
 }
 document.addEventListener('click',ev=>{const link=ev.target.closest('a[href^="#/"]');if(route==='/editor'&&editorDirty&&link&&link.getAttribute('href')!=='#/editor'&&link.target!=='_blank'&&!window.confirm('Tienes cambios sin guardar. ¿Quieres salir sin guardarlos?')){ev.preventDefault();ev.stopImmediatePropagation();}},true);
-document.addEventListener('click',ev=>{const el=ev.target.closest('[data-action]');if(!el)return;const act=el.dataset.action;execute(async()=>{if(act.startsWith('editor-')){await editorAction(el,act);return;}if(act==='menu'){menuOpen=!menuOpen;$('.main-nav')?.classList.toggle('open',menuOpen);return;}if(act==='auth-tab'){authNotice='';authTab=el.dataset.tab;render();return;}if(act==='google-login'){await signInWithGoogle(el);return;}if(act==='logout'){editorDraft=null;editorDirty=false;stopScan();if(!sb)throw new Error('Servicio no disponible.');await sb.auth.signOut();session=null;current=null;await loadPublic();to('/acceso');return;}if(act==='copy-code'){await navigator.clipboard.writeText(current.member_code);toast('Código copiado.');return;}if(act==='redeem'){await redeem(el.dataset.id);return;}if(act==='checkin'){await visit(el.dataset.code);return;}if(act==='validate'){await validate(el.dataset.code);return;}if(act==='scan'){await startScan();return;}if(act==='stop-scan'){stopScan();return;}if(act==='admin-tab'||act==='admin-go'){adminTab=el.dataset.tab;adminEditId=null;adminFormOpen=act==='admin-go'&&!el.dataset.list&&adminTab!=='site';render();if(adminFormOpen)focusAdminForm();return;}if(act==='admin-new'){adminTab=el.dataset.table;adminEditId=null;adminFormOpen=true;render();focusAdminForm();return;}if(act==='admin-edit'){adminTab=el.dataset.table;adminEditId=el.dataset.id;adminFormOpen=true;render();focusAdminForm();return;}if(act==='admin-cancel'){adminEditId=null;adminFormOpen=false;render();return;}if(act==='admin-delete'){await removeItem(el.dataset.table,el.dataset.id);return;}if(act==='toggle'){await toggle(el.dataset.table,el.dataset.id);return;}});});
+document.addEventListener('click',ev=>{const el=ev.target.closest('[data-action]');if(!el)return;const act=el.dataset.action;execute(async()=>{if(act.startsWith('editor-')){await editorAction(el,act);return;}if(act==='menu'){menuOpen=!menuOpen;$('#site-menu')?.classList.toggle('open',menuOpen);el.setAttribute('aria-expanded',String(menuOpen));el.setAttribute('aria-label',menuOpen?'Cerrar menú':'Abrir menú');el.textContent=menuOpen?'✕':'☰';return;}if(act==='install-app'){await installApp();return;}if(act==='auth-tab'){authNotice='';authTab=el.dataset.tab;render();return;}if(act==='google-login'){await signInWithGoogle(el);return;}if(act==='logout'){editorDraft=null;editorDirty=false;stopScan();if(!sb)throw new Error('Servicio no disponible.');await sb.auth.signOut();session=null;current=null;await loadPublic();to('/acceso');return;}if(act==='copy-code'){await navigator.clipboard.writeText(current.member_code);toast('Código copiado.');return;}if(act==='redeem'){await redeem(el.dataset.id);return;}if(act==='checkin'){await visit(el.dataset.code);return;}if(act==='validate'){await validate(el.dataset.code);return;}if(act==='scan'){await startScan();return;}if(act==='stop-scan'){stopScan();return;}if(act==='admin-tab'||act==='admin-go'){adminTab=el.dataset.tab;adminEditId=null;adminFormOpen=act==='admin-go'&&!el.dataset.list&&adminTab!=='site';render();if(adminFormOpen)focusAdminForm();return;}if(act==='admin-new'){adminTab=el.dataset.table;adminEditId=null;adminFormOpen=true;render();focusAdminForm();return;}if(act==='admin-edit'){adminTab=el.dataset.table;adminEditId=el.dataset.id;adminFormOpen=true;render();focusAdminForm();return;}if(act==='admin-cancel'){adminEditId=null;adminFormOpen=false;render();return;}if(act==='admin-delete'){await removeItem(el.dataset.table,el.dataset.id);return;}if(act==='toggle'){await toggle(el.dataset.table,el.dataset.id);return;}});});
 async function handleAuthSubmit(fd){
   if(!sb)throw new Error('No se puede registrar ni iniciar sesión hasta que el propietario conecte Supabase.');
   const email=String(fd.get('email')||'').trim().toLowerCase();
@@ -574,6 +636,11 @@ document.addEventListener('submit',ev=>{
 });
 document.addEventListener('change',ev=>{if(ev.target.matches('[data-editor-visibility]')){updateEditorValue(ev.target);return;}if(ev.target.id==='editor-logo-file'){editorUploadLogo(ev.target).catch(err=>toast(err.message));return;}if(ev.target.id==='admin-image'){const label=$('#admin-file-status');if(label)label.textContent=ev.target.files[0]?.name||'Ninguna foto seleccionada';}});
 document.addEventListener('input',ev=>{if(ev.target.matches('[data-editor-field]')){updateEditorValue(ev.target);return;}if(ev.target.closest('#admin-item-form'))updateAdminPreview(ev.target.closest('#admin-item-form'));if(ev.target.id==='admin-list-search'){const value=ev.target.value.toLocaleLowerCase('es-ES').trim();const cards=Array.from(document.querySelectorAll('.admin-list-item'));let count=0;for(const card of cards){card.hidden=!card.dataset.search.includes(value);if(!card.hidden)count++;}const empty=$('#admin-search-empty');if(empty)empty.hidden=count>0;return;}if(ev.target.id==='member-search'){const value=ev.target.value;search=value;const cursor=ev.target.selectionStart;const row=ev.target.closest('.pane');const tbody=row?.querySelector('tbody');if(!tbody)return;const list=data.profiles.filter(x=>x.role==='socio'&&(x.name+' '+x.member_code).toLowerCase().includes(value.toLowerCase()));tbody.innerHTML=list.map(p=>`<tr><td><b>${H(p.name)}</b></td><td>${H(p.member_code)}</td><td><span class="role-chip">${H(tier(p.lifetime_points))}</span></td><td>${fmt(p.visits)}</td><td><button class="btn btn-secondary btn-mini" data-action="checkin" data-code="${H(p.member_code)}">Registrar visita</button></td></tr>`).join('')||'<tr><td colspan="5">No se encontraron socios.</td></tr>';}});
+document.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&menuOpen){menuOpen=false;const menu=$('#site-menu');menu?.classList.remove('open');const btn=$('.menu-toggle');btn?.setAttribute('aria-expanded','false');btn?.setAttribute('aria-label','Abrir menú');if(btn)btn.textContent='☰';btn?.focus();}});
+document.addEventListener('click',ev=>{if(ev.target.closest('#site-menu a')){menuOpen=false;$('#site-menu')?.classList.remove('open');$('.menu-toggle')?.setAttribute('aria-expanded','false');}});
+function updateKeyboardState(){const active=document.activeElement;document.body.classList.toggle('keyboard-active',!!active&&active.matches('input:not([type=checkbox]):not([type=radio]):not([type=file]),textarea,select'));}
+document.addEventListener('focusin',updateKeyboardState);
+document.addEventListener('focusout',()=>setTimeout(updateKeyboardState,0));
 window.addEventListener('beforeunload',ev=>{if(editorDirty){ev.preventDefault();ev.returnValue='';}});
 window.addEventListener('hashchange',()=>{execute(async()=>{await render();});});
 init();
