@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+# Las áreas privadas están en rutas hash de la aplicación y no se indexan.

@@ -1,0 +1,24 @@
+ACTIVAR INICIO DE SESIÓN, REGISTRO Y GOOGLE — BELLAQUITAS FEST
+
+Los botones están añadidos a la web. Para guardar cuentas auténticas
+necesitas conectar un proyecto de Supabase; no es posible crear cuentas
+que funcionen en todos los dispositivos usando solo archivos HTML.
+
+1) Crea o abre tu proyecto en https://supabase.com
+2) Ejecuta supabase.sql en SQL Editor, preferiblemente en un proyecto nuevo.
+3) Copia la Project URL y la clave pública publishable/anon.
+4) Pega esos 2 datos en config.js.
+5) Configura las URL de redirección y emails de Auth.
+6) En Google Cloud crea un cliente OAuth Web y autoriza el callback de Supabase.
+7) En Supabase > Authentication > Providers > Google habilita el proveedor
+   e introduce el Client ID y Client Secret (nunca en config.js).
+8) En Supabase > Authentication > URL Configuration añade a Redirect URLs
+   tu URL con ?acceso=google (ej.: https://tuweb.es/?acceso=google).
+9) Publica la web en HTTPS y comprueba registro, acceso, Google y recuperación.
+
+Si ya instalaste supabase.sql de una entrega anterior, ejecuta también
+ACTUALIZAR_PERFIL_GOOGLE.sql para usar el nombre real de la cuenta Google.
+
+MUY IMPORTANTE: NO publiques nunca una clave secreta o service_role.
+
+Consulta README.md para instrucciones detalladas.

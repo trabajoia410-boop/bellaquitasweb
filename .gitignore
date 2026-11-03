@@ -1,0 +1,11 @@
+# Archivos locales que no debes subir
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+.env
+.env.*
+node_modules/
+__pycache__/
+playwright-report/
+test-results/

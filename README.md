@@ -117,3 +117,7 @@ Además de completar la configuración básica de Supabase descrita arriba, debe
 - `GUIA_EDITOR_VISUAL.md`: uso del botón superior para editar y publicar.
 - `PUBLICAR_EN_GITHUB.md`: subida al repositorio y publicación con GitHub Pages.
 - `assets/`: logo e iconos.
+
+## Estado de integración actual
+
+Proyecto Supabase: `vlsipvngvxcgnwrhpjgg` (París). El frontend utiliza **únicamente una clave pública**, nunca una clave secreta. Para habilitar Google OAuth, configurar el proveedor y las URL autorizadas en Supabase y Google Cloud. GitHub Pages requiere activación desde Settings → Pages.
