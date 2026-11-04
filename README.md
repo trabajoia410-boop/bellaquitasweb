@@ -127,3 +127,12 @@ El usuario `admin` puede abrir «Editar web» y pulsar directamente un texto o l
 ## Gestionar socios, permisos y puntos
 
 En **Panel administrador → Socios** elige una persona y pulsa **Editar socio**. Puedes corregir nombre, rol, puntos disponibles, puntos históricos y visitas. Confirma los cambios e indica el motivo: queda un registro del cambio y del administrador que lo hizo. La operación se comprueba en el servidor mediante `admin_update_member`. Para ampliar un proyecto ya instalado ejecuta `AMPLIAR_GESTION_SOCIOS.sql` una sola vez en Supabase. En instalaciones nuevas, esta ampliación está incluida al final de `supabase.sql`. No uses un formulario de registro para crear administradores sin control.
+
+## Tarjeta de fidelidad Bellaquitas Fest y nuevo diseño
+
+- Portada estilo festival neón y dorado, con tarjeta real de la conejita en Ventajas.
+- Perfil y Mi tarjeta muestran el anverso y reverso original que aportó la organización.
+- El QR del reverso no es el del ejemplo: se genera en el navegador para el miembro autenticado usando su `member_code`. También se puede ampliar o copiar el código.
+- Selector de idioma Español / Français en la web; los textos personalizables de la organización se conservan tal y como los edita el administrador.
+- La sección del editor de web, gestión de socios y RLS siguen funcionando, sin cuentas o puntos ficticios.
+- Los recursos estáticos están disponibles en la PWA; el QR puede requerir conexión la primera vez para cargar la librería de generación y los datos de cuenta siempre requieren Supabase.
