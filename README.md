@@ -51,7 +51,7 @@ La web incluye **dos botones visibles, «Iniciar sesión» y «Crear cuenta»**,
    - `https://tuweb.es/?recuperar=1`
 
    Si publicas en una subcarpeta o como `index.html`, adapta ambas URL a la ubicación real. Los enlaces de confirmación del registro y los de recuperación vuelven a esa misma página.
-6. Publica los archivos en un sitio **HTTPS** (Netlify, GitHub Pages, Cloudflare Pages u otro alojamiento estático). Un archivo abierto con `file://` no es una URL válida para los enlaces de confirmación de correo de producción.
+6. Publica los archivos en **GitHub Pages con HTTPS**, en `https://trabajoia410-boop.github.io/bellaquitasweb/`. Un archivo abierto con `file://` no es una URL válida para los enlaces de confirmación de correo de producción.
 7. Abre la web y prueba **Crear cuenta → confirmación por correo → Iniciar sesión → Mi espacio → Cerrar sesión → Recuperar contraseña**. Las tablas de socios deben estar vacías antes del primer alta real.
 8. Para asignar permisos de administración, crea primero tu cuenta real y después ejecuta, desde **SQL Editor** (nunca desde JavaScript público):
 

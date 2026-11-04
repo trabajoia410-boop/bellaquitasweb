@@ -45,16 +45,16 @@ Consultas iniciales: 3 perfiles, 2 filas de actividad, 0 visitas y 0 canjes. Las
 ## Despliegue
 - GitHub contiene el código fuente y ejecuta flujos de compilación y despliegue.
 - Los checks de GitHub del commit anterior terminaron satisfactoriamente.
-- **La URL pública de Netlify no ha podido verificarse mediante una petición HTTP desde este entorno**, por lo que el estado de GitHub no equivale a una prueba independiente del sitio Netlify.
-- La caché PWA se incrementó a v12 para forzar la actualización de app.js y evitar una mezcla de versiones.
+- **La URL pública oficial es GitHub Pages:** `https://trabajoia410-boop.github.io/bellaquitasweb/`. Las comprobaciones de despliegue en GitHub no sustituyen la verificación directa del sitio público.
+- La caché PWA era v12 al finalizar esas pruebas; tras unificar el alojamiento en GitHub Pages se incrementó a v13 para actualizar `index.html` y la política CSP.
 
 ## Pruebas manuales todavía pendientes, sin tocar puntos reales
-1. Abrir Netlify en iPhone y Android y confirmar que carga todas las páginas sin errores de CSP.
+1. Abrir GitHub Pages en iPhone y Android y confirmar que carga todas las páginas sin errores de CSP.
 2. Iniciar sesión con una cuenta de prueba autorizada y recargar, cerrar y reabrir el navegador, e instalar la PWA.
 3. Confirmar login por Google y recuperación de contraseña con URLs de retorno permitidas en Supabase.
 4. Probar lectura de un QR en iPhone Safari y Android Chrome, sin confirmar visitas reales; en su lugar validar visualmente que el lector detecta el código.
 5. Probar registro real de una visita **solo** con un socio de pruebas creado explícitamente para ello y previa autorización del propietario.
-6. Comprobar los encabezados Netlify mediante DevTools o `curl -I https://bellaquitasfest.netlify.app/` y que la caché instalada sea v12.
+6. Comprobar la CSP de la etiqueta `<meta>` en GitHub Pages mediante DevTools (Consola y Seguridad), y verificar que la caché instalada sea v13. GitHub Pages no admite el archivo de cabeceras personalizadas de otro alojamiento.
 
 ## Observaciones
 - Cuando el navegador está en modo privado o limpia los datos, Supabase no puede conservar la sesión.

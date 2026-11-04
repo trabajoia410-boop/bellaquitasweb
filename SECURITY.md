@@ -8,7 +8,7 @@ Esta guía documenta las medidas aplicadas y las pendientes. **No existe una gar
 - El usuario anónimo ya **no puede ejecutar `public.is_admin()`**. La lectura de catálogo se separó de la lectura administrativa mediante políticas distintas. Ver `SEGURIDAD_SUPABASE_RLS.sql`.
 - Funciones de puntos, roles y canjes: validan autorización del lado del servidor; los cambios de socios dejan registro de auditoría. El lector QR impide validarse a sí mismo.
 - Sin claves secretas en el frontend: `config.js` únicamente contiene URL de Supabase y clave pública publicable.
-- Netlify: archivo `_headers` con CSP de scripts autorizados, bloqueo de iframes ajenos, X-Content-Type-Options, Referrer-Policy, HSTS y Permissions-Policy. **Solo se aplican en Netlify si `_headers` se incluye en el directorio publicado**. GitHub Pages no los aplica.
+- **GitHub Pages:** el archivo `index.html` incluye una política CSP mediante `<meta http-equiv="Content-Security-Policy">`, para restringir scripts externos, conexiones y recursos, y una política de referencias `no-referrer`. GitHub Pages **no permite establecer cabeceras HTTP personalizadas** desde el repositorio, por lo que esta CSP no reemplaza protecciones de cabecera como `frame-ancestors`, `X-Frame-Options`, `Strict-Transport-Security` o `Permissions-Policy`. Esas protecciones requerirían infraestructura adicional o un proxy compatible.
 - Librería Supabase del navegador fijada a una versión concreta (`@supabase/supabase-js@2.118.0`) para evitar saltos inesperados del CDN.
 - Sin `eval`, `document.write` ni manejadores HTML `onclick` detectados en el código principal. Los valores dinámicos se escapan antes de mostrarse como HTML. Esto no sustituye pruebas de penetración.
 - La PWA conserva el historial de caché estática, pero **no guarda respuestas con cuentas ni datos privados**.
@@ -18,8 +18,8 @@ Esta guía documenta las medidas aplicadas y las pendientes. **No existe una gar
 1. **Supabase → Authentication → Bot and Abuse Protection**: configurar Cloudflare Turnstile o hCaptcha tanto en Supabase como en los formularios de la web. No basta con encender el interruptor sin enviar tokens CAPTCHA desde el navegador.
 2. **Supabase → Authentication → Rate Limits**: revisar los límites de registro, inicio de sesión, recuperación y verificación. Supabase ya aplica límites predeterminados. Nunca insertar una clave de servicio en el navegador.
 3. **Supabase → Authentication → Security and Protection**: aumentar la longitud mínima de contraseñas (al menos 12 caracteres para nuevos registros) y valorar MFA para administradores. La detección de contraseñas filtradas aparece como desactivada; según la documentación de Supabase, está disponible en Pro y superiores, no en el plan gratuito.
-4. **GitHub → Settings → Rules → Rulesets**: proteger la rama main, impedir borrados y cambios sin revisión. Activar 2FA o passkey para la cuenta propietaria de GitHub, Supabase y Netlify. No se ha podido habilitar estas reglas automáticamente por permisos de la integración.
-5. **Netlify → Security**: verificar que la protección DDoS administrada y la configuración de limitación de tráfico están disponibles/activas en el proyecto, y revisar registros de despliegue y uso. En planes básicos algunas reglas personalizadas tienen límites. El control de Netlify **no sustituye** los límites de la API externa de Supabase.
+4. **GitHub → Settings → Rules → Rulesets**: proteger la rama main, impedir borrados y cambios sin revisión. Activar 2FA o passkey para la cuenta propietaria de GitHub y Supabase. No se ha podido habilitar estas reglas automáticamente por permisos de la integración.
+5. **GitHub Pages y Supabase**: revisar los despliegues en GitHub Actions, configurar alertas y límites de consumo en Supabase y conservar una copia de seguridad. GitHub Pages es alojamiento estático, no un firewall administrable para las API de Supabase. El despliegue debe verificarse en la URL oficial de GitHub Pages.
 6. **Copias y recuperación**: conservar exportaciones cifradas y fuera de GitHub de los datos de Supabase, habilitar alertas de consumo y documentar cómo restaurar un despliegue anterior. No subir copias con datos de socios al repositorio público.
 
 ## Verificación y riesgos residuales
@@ -28,7 +28,7 @@ Esta guía documenta las medidas aplicadas y las pendientes. **No existe una gar
 - Auditor Supabase: queda el aviso de contraseñas filtradas desactivado.
 - No hay auditoría externa independiente, escaneo dinámico con sesión real, prueba DDoS ni prueba de penetración destructiva.
 - `esm.sh` sigue siendo un proveedor externo para la biblioteca de Supabase; tener la versión fijada reduce cambios inesperados pero no elimina el riesgo de cadena de suministro.
-- Esta auditoría no confirma que las cabeceras Netlify estén activas hasta comprobar la respuesta HTTP real del sitio y revisar la consola de desarrollo por posibles bloqueos CSP.
+- Verificar desde GitHub Pages que la CSP de la etiqueta `<meta>` no bloquea el inicio de sesión, Google, el lector QR ni el editor visual. Las cabeceras de seguridad HTTP no pueden configurarse desde el repositorio de GitHub Pages; no atribuirle protecciones de otro proveedor.
 
 ## Si ocurre un incidente
 
