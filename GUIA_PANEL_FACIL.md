@@ -5,7 +5,7 @@ Esta versión está pensada para personas que no tienen experiencia administrand
 ## Primero: activar la web (una sola vez)
 
 1. Conecta tu proyecto Supabase poniendo su **URL** y **clave pública** en `config.js`. No pongas contraseñas ni claves secretas. Sigue los pasos de `README.md` para activar correo y Google.
-2. Si el proyecto es nuevo, en **SQL Editor** ejecuta primero `supabase.sql` y después `INSTALAR_EDITOR_WEB.sql`. Si ya tenías instalada una versión anterior, ejecuta `AMPLIAR_PANEL_ADMIN.sql` (si aún no lo habías hecho) y luego `INSTALAR_EDITOR_WEB.sql`. No se crean cuentas ni eventos de prueba.
+2. Si el proyecto es nuevo, en **SQL Editor** ejecuta primero `supabase.sql` y después `INSTALAR_EDITOR_WEB.sql`. Si ya tenías instalada una versión anterior, ejecuta `AMPLIAR_PANEL_ADMIN.sql` (si aún no lo habías hecho) y luego `INSTALAR_EDITOR_WEB.sql` y `AMPLIAR_GESTION_SOCIOS.sql`. No se crean cuentas ni eventos de prueba.
 3. Registra tu propia cuenta en Bellaquitas Fest con correo o Google. Después, para convertir esa cuenta en administradora, localiza su UUID en **Authentication → Users** de Supabase y ejecuta, desde SQL Editor:
 
    ```sql
@@ -42,7 +42,7 @@ Entra como administrador y pulsa arriba **✎ Editar web** (también en **Panel 
 
 ## Ver socios, visitas y canjes
 
-En la pestaña **Socios** se muestra la lista real de cuentas. En **Movimientos** puedes ver el historial de puntos. En **Puerta**, el personal autorizado puede registrar visitas y validar premios; esa pantalla no concede nuevos permisos por sí misma.
+En la pestaña **Socios** se muestra la lista real de cuentas. Pulsa **✎ Editar socio** junto a una persona para cambiar su nombre, rol (socio, puerta o administrador), puntos disponibles, puntos históricos y contador de visitas. Escribe siempre el motivo y confirma los cambios; se guardan en Supabase y en **Últimos cambios de cuentas**. Puedes sumar o restar puntos con botones rápidos sin guardarlos hasta pulsar **Guardar cambios**. Por seguridad, no podrás quitarte tu propio permiso de administrador y no se pueden dejar puntos negativos. Si el saldo excede los puntos históricos, estos se ajustan hasta igualarlo. Los cambios no eliminan las operaciones anteriores. En **Movimientos** puedes ver el historial de puntos. En **Puerta**, el personal autorizado puede registrar visitas y validar premios; esa pantalla no concede nuevos permisos por sí misma.
 
 ## Qué hace cada botón
 

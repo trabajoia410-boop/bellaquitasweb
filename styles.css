@@ -250,3 +250,44 @@ input,textarea,select{max-width:100%}
 
 /* Mostrar el logotipo elegido también en la cabecera y el pie, sin romper sus dimensiones. */
 .brand-logo-image{display:block;width:100%;height:100%;max-height:34px;object-fit:contain;border-radius:5px}
+
+/* Gestión de socios: fácil en ordenador, tablet y móvil. */
+.member-editor{margin-bottom:18px;border-color:#98755e;scroll-margin-top:16px}
+.member-edit-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:19px}
+.member-edit-form>.field,.member-edit-form>.member-points-panel{min-width:0}
+.member-edit-form input,.member-edit-form select,.member-edit-form textarea{font:inherit;min-height:47px;width:100%;color:var(--text);background:#271923;border:1px solid #76505e;border-radius:11px;padding:11px 12px}
+.member-edit-form textarea{resize:vertical;min-height:90px}
+.member-edit-form input:focus,.member-edit-form select:focus,.member-edit-form textarea:focus{border-color:var(--gold)}
+.member-edit-form .field{display:flex;flex-direction:column;gap:7px}
+.member-edit-form .field>label,.member-tools .field>label{font-size:.84rem;font-weight:800;color:#f1dfe2}
+.member-edit-form .field-help{display:block;color:#c8acb9;font-size:.76rem;line-height:1.5}
+.member-role select:disabled{opacity:.7;cursor:not-allowed}
+.member-points-panel{grid-column:1/-1;background:#251721;border:1px solid #6f4559;border-radius:16px;padding:20px}
+.member-points-panel>h3{margin:0 0 7px;font-size:1.18rem;color:var(--gold)}
+.member-points-panel>p{margin:0 0 18px}
+.member-points-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}
+.member-quick{display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin-top:17px}
+.member-quick>span{font-weight:700;color:#e7cdd3;font-size:.83rem}
+.member-quick .btn{min-width:65px;min-height:43px}
+.member-reason,.member-edit-form>.admin-form-feedback,.member-edit-form>.admin-form-buttons{grid-column:1/-1}
+.member-edit-form>.admin-form-buttons{align-items:center}
+.member-tools{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:20px}
+.member-tools>.field{min-width:0;display:grid;gap:7px}
+.member-tools input,.member-tools select{width:100%;min-height:45px;background:#271923;color:var(--text);border:1px solid #76505e;border-radius:10px;padding:10px 12px}
+.member-list{display:grid;gap:10px}
+.member-record{min-width:0;display:flex;align-items:center;gap:15px;background:#291b25;border:1px solid #664350;border-radius:14px;padding:14px}
+.member-record[hidden],#member-empty[hidden]{display:none!important}
+.member-record-icon{width:47px;height:47px;flex:0 0 47px;display:grid;place-items:center;background:#593244;border-radius:50%;color:#f6d5a4;font-weight:850;font-size:1.3rem}
+.member-record-details{flex:1;min-width:0;display:grid;gap:4px;overflow-wrap:anywhere}
+.member-record-details strong{font-size:.95rem}
+.member-record-details small{font-size:.75rem;color:#c7adbb}
+.member-record-details .role-chip{justify-self:start;margin-top:3px}
+.member-record-stats{min-width:110px;text-align:right;display:grid;gap:3px;color:#ead7dd;font-size:.81rem}
+.member-record-stats b{font-size:1.02rem;color:var(--gold)}
+.member-record>.btn{min-height:44px;white-space:normal;flex-shrink:0}
+.member-change-entry{align-items:flex-start}
+.member-change-entry>div{min-width:0;overflow-wrap:anywhere}
+.member-change-entry small{display:block;color:#c5acb7;font-size:.77rem;margin-top:4px}
+.member-history{margin-top:17px}
+@media(max-width:750px){.member-edit-form{grid-template-columns:1fr}.member-points-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.member-tools{grid-template-columns:1fr 1fr}.member-record{flex-wrap:wrap}.member-record>.btn{margin-left:auto}}
+@media(max-width:500px){.member-points-grid{grid-template-columns:1fr}.member-tools{grid-template-columns:1fr}.member-record{gap:11px;padding:13px}.member-record-icon{width:40px;height:40px;flex-basis:40px}.member-record-details{flex:1 1 calc(100% - 58px)}.member-record-stats{text-align:left;display:flex;gap:13px;flex:1 1 100%;font-size:.77rem}.member-record>.btn{width:100%;margin:0}.member-points-panel{padding:15px}.member-quick .btn{flex:1}.member-edit-form>.admin-form-buttons .btn{width:100%}}

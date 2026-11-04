@@ -107,7 +107,7 @@ Además de completar la configuración básica de Supabase descrita arriba, debe
 - `index.html`: página y navegación.
 - `styles.css`: aspecto adaptable a ordenador y móvil.
 - `app.js`: registro, inicio de sesión, recuperación, sesiones y resto de la aplicación.
-- `config.js`: punto de conexión (vacío por seguridad).
+- `config.js`: contiene únicamente la URL y clave **pública** del proyecto Supabase conectado; nunca claves secretas.
 - `supabase.sql`: tablas, roles y reglas de seguridad, sin datos ficticios.
 - `ACTUALIZAR_PERFIL_GOOGLE.sql`: ajuste opcional de nombres para proyectos Supabase ya instalados.
 - `assets/google-g.svg`: icono local del botón de Google.
@@ -122,3 +122,8 @@ Además de completar la configuración básica de Supabase descrita arriba, debe
 ## Edición directa pulsando la página
 
 El usuario `admin` puede abrir «Editar web» y pulsar directamente un texto o la imagen principal en la vista previa para modificarlos. Los cambios se guardan como borrador privado en Supabase y se publican solo tras confirmación. Los eventos llevan a su ficha en el panel. Véase `GUIA_EDITOR_VISUAL.md`.
+
+
+## Gestionar socios, permisos y puntos
+
+En **Panel administrador → Socios** elige una persona y pulsa **Editar socio**. Puedes corregir nombre, rol, puntos disponibles, puntos históricos y visitas. Confirma los cambios e indica el motivo: queda un registro del cambio y del administrador que lo hizo. La operación se comprueba en el servidor mediante `admin_update_member`. Para ampliar un proyecto ya instalado ejecuta `AMPLIAR_GESTION_SOCIOS.sql` una sola vez en Supabase. En instalaciones nuevas, esta ampliación está incluida al final de `supabase.sql`. No uses un formulario de registro para crear administradores sin control.
