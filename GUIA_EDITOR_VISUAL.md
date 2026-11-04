@@ -16,7 +16,7 @@ La página necesita un proyecto Supabase real. El editor no guarda cambios si Su
 
 1. Inicia sesión con una cuenta **administradora** y pulsa arriba **✎ Editar web**.
 2. En la **Vista previa · toca para editar**, desplázate hasta el elemento y **púlsalo con el dedo o el ratón**. Los elementos editables aparecen señalados con un contorno dorado.
-3. **Si pulsas el logo o la imagen principal:** aparecerá la tarjeta **Imagen principal · logo** con el botón **📷 Cambiar esta imagen**. Elige una foto del móvil u ordenador (PNG, JPG o WebP, hasta 5 MB). También puedes recuperar el logo original.
+3. **Si pulsas el logo de arriba, del pie o la imagen principal:** aparecerá la tarjeta **Imagen principal · logo** con el botón **📷 Cambiar esta imagen**. Elige una foto del móvil u ordenador (PNG, JPG o WebP, hasta 5 MB). Se actualizará el logotipo usado en la cabecera, la portada y la pantalla de acceso. También puedes recuperar el logo original.
 4. **Si pulsas un texto:** aparecerá un campo con el texto actual. Escribe el nuevo y lo verás cambiar en la misma vista previa.
 5. **Si pulsas un evento publicado:** aparecerá el botón **Cambiar foto y datos del evento** para abrir su ficha en el Panel administrador.
 6. **Guardar borrador** permite seguir otro día sin afectar la web pública. **Publicar cambios** actualiza los textos y la imagen principal para todas las personas que visitan la web.

@@ -247,3 +247,6 @@ input,textarea,select{max-width:100%}
 #editor-inspector-event .btn{width:max-content;max-width:100%;white-space:normal}
 .editor-preview-head strong{color:#f6d5a2}
 @media(max-width:520px){.editor-inspector{padding:12px}.editor-inspector-head{align-items:center}.editor-inspector-head h3{font-size:1.05rem}.editor-inspector-photo{width:100px}.editor-pick-photo{width:100%}#editor-inspector-image{align-items:flex-start}}
+
+/* Mostrar el logotipo elegido también en la cabecera y el pie, sin romper sus dimensiones. */
+.brand-logo-image{display:block;width:100%;height:100%;max-height:34px;object-fit:contain;border-radius:5px}
