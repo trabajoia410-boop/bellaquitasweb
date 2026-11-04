@@ -1140,58 +1140,112 @@ function updateAdminPreview(form){
  const fd=new FormData(form);title.textContent=String(fd.get('name')||'Tu '+adminLabel(form.dataset.table));
  info.textContent=form.dataset.table==='events'?eventDate(fd.get('date_label'),fd.get('start_time'))+' · '+(fd.get('location')||'Lugar por indicar'):form.dataset.table==='rewards'?`${fd.get('cost')||'0'} puntos · ${fd.get('category')||'Premios'}`:`+${fd.get('bonus')||'0'} puntos`;
 }
-function stopScan(){if(scanLoop){clearInterval(scanLoop);scanLoop=null;}if(scanner){scanner.getTracks().forEach(x=>x.stop());scanner=null;}const c=$('#camera-wrap');if(c)c.classList.remove('active');}
+// La cámara puede tardar en conceder permisos. El contador cancela inicios
+// pendientes cuando cambia la página o se cierra el lector.
+let scanGeneration=0;
+let scanStarting=false;
+function stopScan(){
+ scanGeneration++;
+ if(scanLoop){clearInterval(scanLoop);scanLoop=null;}
+ if(scanner){scanner.getTracks().forEach(track=>track.stop());scanner=null;}
+ $('#camera-wrap')?.classList.remove('active');
+}
 let qrScannerLibraryPromise=null;
 async function getQRScanner(){
-  if(typeof window.jsQR==='function')return window.jsQR;
-  if(!qrScannerLibraryPromise){qrScannerLibraryPromise=new Promise((resolve,reject)=>{
-    const script=document.createElement('script');
-    script.src=new URL('assets/jsqr-local.js',location.href).href;
-    script.async=true;script.onload=()=>typeof window.jsQR==='function'?resolve(window.jsQR):reject(new Error('El lector QR no está disponible. Usa el código manual.'));script.onerror=()=>reject(new Error('No se pudo cargar el lector QR. Usa el código manual.'));
-    document.head.appendChild(script);
-  }).catch(err=>{qrScannerLibraryPromise=null;throw err;});}
-  return qrScannerLibraryPromise;
+ if(typeof window.jsQR==='function')return window.jsQR;
+ if(!qrScannerLibraryPromise){
+  qrScannerLibraryPromise=new Promise((resolve,reject)=>{
+   const script=document.createElement('script');
+   script.src=new URL('assets/jsqr-local.js',location.href).href;
+   script.async=true;
+   script.onload=()=>typeof window.jsQR==='function'
+     ?resolve(window.jsQR):reject(new Error('El lector QR auxiliar no está disponible.'));
+   script.onerror=()=>reject(new Error('No se pudo cargar el lector QR auxiliar.'));
+   document.head.appendChild(script);
+  }).catch(err=>{qrScannerLibraryPromise=null;throw err;});
+ }
+ return qrScannerLibraryPromise;
 }
 async function startScan(){
-  if(!navigator.mediaDevices?.getUserMedia){toast('La cámara no está disponible. Introduce el código del socio manualmente.');return;}
-  try{
-    scanner=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
-    const v=$('#camera');
-    if(!v){stopScan();return;}
-    v.srcObject=scanner;v.setAttribute('playsinline','');await v.play();
-    $('#camera-wrap')?.classList.add('active');
-    let detector=null;
-    if('BarcodeDetector' in window){try{detector=new BarcodeDetector({formats:['qr_code']});}catch(err){console.warn('Se utilizará un lector QR alternativo',err);}}
-    // jsQR se carga desde nuestro dominio: funciona aunque el teléfono bloquee las CDN externas.
-    const jsqr=await getQRScanner();
-    if(!scanner||!v.isConnected)return;
-    const canvas=document.createElement('canvas');
-    const ctx=canvas.getContext('2d',{willReadFrequently:true});
-    if(!ctx)throw new Error('Este navegador no puede analizar la cámara. Usa el código manual.');
-    let busy=false;
-    scanLoop=setInterval(async()=>{
-      if(busy||!scanner||v.readyState<2)return;
-      busy=true;
-      try{
-        let code='';
-        if(detector){try{const detected=await detector.detect(v);code=detected[0]?.rawValue||'';}catch(err){detector=null;console.warn('Cambiando al lector QR alternativo:',err.message);}}
-        if(!code){
-          const width=Math.min(900,v.videoWidth||900);
-          const height=Math.round(width*(v.videoHeight||480)/Math.max(1,v.videoWidth||900));
-          canvas.width=width;canvas.height=height;
-          ctx.drawImage(v,0,0,width,height);
-          const image=ctx.getImageData(0,0,width,height);
-          code=jsqr(image.data,width,height,{inversionAttempts:'attemptBoth'})?.data||'';
-        }
-        if(code){
-          code=String(code).trim().toUpperCase();
-          if(!/^MBR-[A-Z0-9-]{5,80}$/.test(code)){toast('Este QR no es de una tarjeta Bellaquitas Fest.');return;}
-          stopScan();await visit(code);
-        }
-      }catch(err){console.error('Lectura QR:',err);toast(err.message||'No se pudo validar el QR. Usa el código manual.');}
-      finally{busy=false;}
-    },650);
-  }catch(err){stopScan();toast('No se pudo abrir la cámara. Usa Safari o Chrome y permite la cámara; si falla, introduce el código manualmente. '+(err.message||''));}
+ if(scanStarting||scanner)return;
+ if(!navigator.mediaDevices?.getUserMedia){
+  toast('La cámara no está disponible. Introduce el código del socio manualmente.');
+  return;
+ }
+ const generation=scanGeneration;
+ scanStarting=true;
+ let openedStream=null;
+ try{
+  openedStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+  // Si el usuario abandonó la pantalla durante el diálogo de permisos,
+  // cerrar inmediatamente la cámara recién concedida.
+  if(generation!==scanGeneration||route!=='/puerta'){
+   openedStream.getTracks().forEach(track=>track.stop());
+   return;
+  }
+  scanner=openedStream;
+  const v=$('#camera');
+  if(!v){stopScan();return;}
+  v.srcObject=scanner;
+  v.setAttribute('playsinline','');
+  await v.play();
+  if(generation!==scanGeneration||!v.isConnected){stopScan();return;}
+  $('#camera-wrap')?.classList.add('active');
+  let detector=null;
+  if('BarcodeDetector' in window){
+   try{detector=new BarcodeDetector({formats:['qr_code']});}
+   catch(err){console.warn('Se utilizará el lector QR alternativo:',err);}
+  }
+  // El lector nativo continúa funcionando aunque no se cargue la biblioteca auxiliar.
+  let jsqr=null;
+  try{jsqr=await getQRScanner();}
+  catch(err){if(!detector)throw err;console.warn('Continuando con el lector QR nativo:',err.message);}
+  if(generation!==scanGeneration||!scanner||!v.isConnected){stopScan();return;}
+  const canvas=jsqr?document.createElement('canvas'):null;
+  const ctx=canvas?.getContext('2d',{willReadFrequently:true})||null;
+  if(!detector&&!ctx)throw new Error('Este navegador no puede analizar la cámara. Usa el código manual.');
+  let busy=false;
+  scanLoop=setInterval(async()=>{
+   if(busy||!scanner||generation!==scanGeneration||v.readyState<2)return;
+   busy=true;
+   try{
+    let code='';
+    if(detector){
+     try{const detected=await detector.detect(v);code=detected[0]?.rawValue||'';}
+     catch(err){detector=null;console.warn('Cambiando al lector QR alternativo:',err.message);}
+    }
+    if(!code&&ctx){
+     const width=Math.min(900,v.videoWidth||900);
+     const height=Math.round(width*(v.videoHeight||480)/Math.max(1,v.videoWidth||900));
+     canvas.width=width;canvas.height=height;
+     ctx.drawImage(v,0,0,width,height);
+     const image=ctx.getImageData(0,0,width,height);
+     code=jsqr(image.data,width,height,{inversionAttempts:'attemptBoth'})?.data||'';
+    }
+    if(generation!==scanGeneration)return;
+    if(!detector&&!ctx)throw new Error('No hay un lector QR compatible. Introduce el código manualmente.');
+    if(code){
+     code=String(code).trim().toUpperCase();
+     if(!/^MBR-[A-Z0-9-]{5,80}$/.test(code)){
+      toast('Este QR no es de una tarjeta Bellaquitas Fest.');
+      return;
+     }
+     stopScan();
+     await visit(code);
+    }
+   }catch(err){
+    console.error('Lectura QR:',err);
+    if(generation===scanGeneration)toast(err.message||'No se pudo validar el QR. Usa el código manual.');
+   }finally{busy=false;}
+  },650);
+ }catch(err){
+  if(generation===scanGeneration){
+   stopScan();
+   toast('No se pudo abrir el lector QR. Permite usar la cámara o introduce el código manualmente. '+(err.message||''));
+  }
+ }finally{
+  scanStarting=false;
+ }
 }
 async function execute(fn){try{await fn();}catch(err){console.error(err);toast(err.message||'Se ha producido un error.');}}
 async function signInWithGoogle(button){
