@@ -977,7 +977,7 @@ async function init(){
  authStartupComplete=false;
  if(live){
   try{
-   const m=await import('https://esm.sh/@supabase/supabase-js@2');
+   const m=await import('https://esm.sh/@supabase/supabase-js@2.118.0');
    sb=m.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey,{
     auth:{
      autoRefreshToken:true,

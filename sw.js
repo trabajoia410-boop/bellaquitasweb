@@ -1,7 +1,7 @@
 /* Bellaquitas Fest: PWA de contenido estático. Nunca almacenar respuestas de Supabase ni datos privados. */
-const CACHE = 'bellaquitas-static-2026-11-04-v9';
+const CACHE = 'bellaquitas-static-2026-11-04-v10';
 const STATIC = ['./','./index.html','./styles.css','./app.js','./locale-fr.js','./config.js','./manifest.webmanifest',
-  './assets/favicon.svg','./assets/google-g.svg','./assets/logo-bellaquitas.webp',
+  './assets/auth-startup.js','./assets/favicon.svg','./assets/google-g.svg','./assets/logo-bellaquitas.webp',
   './assets/icon-180.png','./assets/icon-192.png','./assets/icon-512.png','./assets/icon-maskable-512.png',
   './assets/tarjeta-conejita-frente.webp','./assets/tarjeta-qr-dorso.webp','./assets/qr-local.js','./assets/jsqr-local.js'];
 self.addEventListener('install', event => {
@@ -22,7 +22,7 @@ self.addEventListener('fetch', event => {
   if(request.mode==='navigate' && url.search) return;
   const staticPath=url.pathname.replace(new URL(self.registration.scope).pathname, '');
   const approved=['','index.html','styles.css','app.js','locale-fr.js','config.js','manifest.webmanifest','assets/favicon.svg',
-    'assets/google-g.svg','assets/logo-bellaquitas.webp','assets/icon-180.png','assets/icon-192.png',
+    'assets/google-g.svg','assets/auth-startup.js','assets/logo-bellaquitas.webp','assets/icon-180.png','assets/icon-192.png',
     'assets/icon-512.png','assets/icon-maskable-512.png',
     'assets/tarjeta-conejita-frente.webp','assets/tarjeta-qr-dorso.webp','assets/qr-local.js','assets/jsqr-local.js'];
   if(!approved.includes(staticPath)) return;
