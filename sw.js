@@ -1,9 +1,9 @@
 /* Bellaquitas Fest: PWA de contenido estático. Nunca almacenar respuestas de Supabase ni datos privados. */
-const CACHE = 'bellaquitas-static-2026-11-04-v7';
+const CACHE = 'bellaquitas-static-2026-11-04-v8';
 const STATIC = ['./','./index.html','./styles.css','./app.js','./locale-fr.js','./config.js','./manifest.webmanifest',
   './assets/favicon.svg','./assets/google-g.svg','./assets/logo-bellaquitas.webp',
   './assets/icon-180.png','./assets/icon-192.png','./assets/icon-512.png','./assets/icon-maskable-512.png',
-  './assets/tarjeta-conejita-frente.webp','./assets/tarjeta-qr-dorso.webp'];
+  './assets/tarjeta-conejita-frente.webp','./assets/tarjeta-qr-dorso.webp','./assets/qr-local.js','./assets/jsqr-local.js'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(async cache => {
     const outcomes = await Promise.allSettled(STATIC.map(url => cache.add(new Request(url, {cache:'reload'}))));
@@ -24,7 +24,7 @@ self.addEventListener('fetch', event => {
   const approved=['','index.html','styles.css','app.js','locale-fr.js','config.js','manifest.webmanifest','assets/favicon.svg',
     'assets/google-g.svg','assets/logo-bellaquitas.webp','assets/icon-180.png','assets/icon-192.png',
     'assets/icon-512.png','assets/icon-maskable-512.png',
-    'assets/tarjeta-conejita-frente.webp','assets/tarjeta-qr-dorso.webp'];
+    'assets/tarjeta-conejita-frente.webp','assets/tarjeta-qr-dorso.webp','assets/qr-local.js','assets/jsqr-local.js'];
   if(!approved.includes(staticPath)) return;
   event.respondWith((async()=>{
     const cached=await caches.open(CACHE);

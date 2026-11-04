@@ -153,3 +153,12 @@ Si un usuario continúa viendo la versión anterior desde la pantalla de inicio,
 La navegación pública y los textos de interfaz de socios y administradores utilizan el diccionario `locale-fr.js`. Hay un **selector 🌐 Español / Français** y traducción de etiquetas, mensajes, confirmaciones y pantallas de acceso. El editor visual ofrece páginas independientes, textos por idioma, cabecera con nombre e imagen modificables, logo grande independiente y la categoría **Textos de toda la aplicación** para ajustar frases específicas. Los eventos, premios y promociones cuentan con campos opcionales de traducción francesa guardados en Supabase (`localized_content`).
 
 La ampliación SQL (`INSTALAR_IDIOMAS_ES_FR.sql`) ya se aplicó al proyecto de Bellaquitas Fest. **No introduces claves privadas de Supabase en el navegador.** Consulta [GUIA_EDITOR_COMPLETO_ES_FR.md](GUIA_EDITOR_COMPLETO_ES_FR.md).
+
+
+## QR de socios (corrección del 4 de noviembre de 2026)
+
+El QR de cada perfil se genera **dentro de la web** a partir de su código real `MBR-...` (sin servicios externos).
+La opción **Ampliar QR** muestra una ventana de alto contraste por encima de la barra del móvil.
+El lector de puerta integra jsQR en la propia web para iPhone y navegadores sin BarcodeDetector.
+Las visitas siguen limitadas a una por día; otra persona de puerta/admin debe validar la tarjeta, nunca uno mismo.
+Consulta [GUIA_QR_FUNCIONAL.md](GUIA_QR_FUNCIONAL.md) y ejecuta [ACTIVAR_QR_DE_SOCIOS.sql](ACTIVAR_QR_DE_SOCIOS.sql) si actualizas otro proyecto Supabase.

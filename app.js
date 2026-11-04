@@ -395,7 +395,7 @@ function loyaltyCardView(){
    </div>
  </div>
  <div class="loyalty-code-tools"><div><span class="eyebrow">${t('TU CÓDIGO PERSONAL')}</span><strong>${H(current.member_code)}</strong><small>${t('Escanea este QR al entrar.')}</small></div><button class="btn btn-secondary btn-mini" type="button" data-action="copy-code">${t('Copiar código')}</button><button type="button" class="btn btn-primary btn-mini" data-action="qr-expand">${t('Ampliar QR')}</button></div>
- <div id="loyalty-qr-large" class="loyalty-qr-large" hidden><div id="qr-code-big"><span>${t('TU CÓDIGO PERSONAL')}</span></div><p>${H(current.member_code)}</p><button class="btn btn-secondary btn-mini" type="button" data-action="qr-close">✕ ${t('Ver frente')}</button></div>
+ <div id="loyalty-qr-large" class="loyalty-qr-large" hidden><div id="qr-code-big"><span>${t('TU CÓDIGO PERSONAL')}</span></div><p>${H(current.member_code)}</p><button class="btn btn-primary btn-mini" type="button" data-action="qr-expand">▣ ${t('Ampliar QR')}</button></div><dialog id="member-qr-dialog" class="member-qr-dialog" aria-label="${t('TU CÓDIGO PERSONAL')}"><div class="member-qr-dialog-inner"><div class="eyebrow">BELLAQUITAS FEST</div><h2>${t('TU CÓDIGO PERSONAL')}</h2><div id="qr-code-modal"></div><p>${H(current.member_code)}</p><button type="button" class="btn btn-primary" data-action="qr-close">✕ ${t('Ver frente')}</button></div></dialog>
  <div class="loyalty-summary"><div><span>${t('Puntos disponibles')}</span><strong>${fmt(current.points)}</strong></div><div><span>${t('Visitas registradas')}</span><strong>${fmt(current.visits)}</strong></div><div><span>${t('Tu nivel')}</span><strong>${H(tier(current.lifetime_points))}</strong></div></div>
  <p class="loyalty-note">${t('Si no se puede leer el QR, el personal puede introducir el código manualmente.')}</p>
  </section>`;
@@ -895,16 +895,22 @@ async function init(){
   } else { data=emptyData();session=null;current=null; }
   await render();
 }
-async function createQR(code){
+function createQR(code){
+ // El generador QR está integrado en la web. No depende de CDN, conexiones externas ni servicios de terceros.
  if(!$('#qr-code'))return;
  try{
-  if(!window.QRCode){await new Promise((resolve,reject)=>{const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';sc.onload=resolve;sc.onerror=reject;document.head.appendChild(sc);});}
-  for(const [selector,size] of [['#qr-code',246],['#qr-code-big',292]]){
-   const box=$(selector);if(!box)return;box.innerHTML='';
-   new window.QRCode(box,{text:code,width:size,height:size,colorDark:'#110923',colorLight:'#ffffff',correctLevel:window.QRCode.CorrectLevel.M});
-   const img=box.querySelector('img');if(img)img.alt='QR personal del socio';
+  if(!window.BellaQR?.render)throw new Error('El generador QR no se ha cargado. Recarga la aplicación.');
+  const value=String(code||'').trim().toUpperCase();
+  for(const selector of ['#qr-code','#qr-code-big','#qr-code-modal']){
+   const box=$(selector);if(!box)continue;
+   window.BellaQR.render(box,value,{label:activeLang==='fr'?'Code QR personnel du membre':'Código QR personal del socio'});
   }
- }catch(err){for(const selector of ['#qr-code','#qr-code-big']){const box=$(selector);if(box){box.innerHTML='';const span=document.createElement('span');span.textContent='QR temporalmente no disponible. Código: '+code;box.appendChild(span);}}}
+ }catch(err){
+  console.error('Error al dibujar el QR:',err);
+  for(const selector of ['#qr-code','#qr-code-big','#qr-code-modal']){
+   const box=$(selector);if(box){box.replaceChildren();const span=document.createElement('span');span.textContent=(activeLang==='fr'?'QR indisponible. Code : ':'QR no disponible. Código: ')+String(code||'');box.append(span);}
+  }
+ }
 }
 
 async function visit(code){
@@ -1021,7 +1027,7 @@ async function getQRScanner(){
   if(typeof window.jsQR==='function')return window.jsQR;
   if(!qrScannerLibraryPromise){qrScannerLibraryPromise=new Promise((resolve,reject)=>{
     const script=document.createElement('script');
-    script.src='https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
+    script.src=new URL('assets/jsqr-local.js',location.href).href;
     script.async=true;script.onload=()=>typeof window.jsQR==='function'?resolve(window.jsQR):reject(new Error('El lector QR no está disponible. Usa el código manual.'));script.onerror=()=>reject(new Error('No se pudo cargar el lector QR. Usa el código manual.'));
     document.head.appendChild(script);
   }).catch(err=>{qrScannerLibraryPromise=null;throw err;});}
@@ -1037,31 +1043,36 @@ async function startScan(){
     $('#camera-wrap')?.classList.add('active');
     let detector=null;
     if('BarcodeDetector' in window){try{detector=new BarcodeDetector({formats:['qr_code']});}catch(err){console.warn('Se utilizará un lector QR alternativo',err);}}
-    const jsqr=detector?null:await getQRScanner();
+    // jsQR se carga desde nuestro dominio: funciona aunque el teléfono bloquee las CDN externas.
+    const jsqr=await getQRScanner();
     if(!scanner||!v.isConnected)return;
-    const canvas=detector?null:document.createElement('canvas');
-    const ctx=canvas?.getContext('2d',{willReadFrequently:true});
-    if(!detector&&!ctx)throw new Error('Este navegador no puede analizar la cámara. Usa el código manual.');
+    const canvas=document.createElement('canvas');
+    const ctx=canvas.getContext('2d',{willReadFrequently:true});
+    if(!ctx)throw new Error('Este navegador no puede analizar la cámara. Usa el código manual.');
     let busy=false;
     scanLoop=setInterval(async()=>{
       if(busy||!scanner||v.readyState<2)return;
       busy=true;
       try{
         let code='';
-        if(detector){const detected=await detector.detect(v);code=detected[0]?.rawValue||'';}
-        else{
-          const width=Math.min(640,v.videoWidth||640);
-          const height=Math.round(width*(v.videoHeight||480)/Math.max(1,v.videoWidth||640));
+        if(detector){try{const detected=await detector.detect(v);code=detected[0]?.rawValue||'';}catch(err){detector=null;console.warn('Cambiando al lector QR alternativo:',err.message);}}
+        if(!code){
+          const width=Math.min(900,v.videoWidth||900);
+          const height=Math.round(width*(v.videoHeight||480)/Math.max(1,v.videoWidth||900));
           canvas.width=width;canvas.height=height;
           ctx.drawImage(v,0,0,width,height);
           const image=ctx.getImageData(0,0,width,height);
-          code=jsqr(image.data,width,height,{inversionAttempts:'dontInvert'})?.data||'';
+          code=jsqr(image.data,width,height,{inversionAttempts:'attemptBoth'})?.data||'';
         }
-        if(code){stopScan();await visit(code);}
-      }catch(err){console.warn('Lectura QR:',err.message||err);}
+        if(code){
+          code=String(code).trim().toUpperCase();
+          if(!/^MBR-[A-Z0-9-]{5,80}$/.test(code)){toast('Este QR no es de una tarjeta Bellaquitas Fest.');return;}
+          stopScan();await visit(code);
+        }
+      }catch(err){console.error('Lectura QR:',err);toast(err.message||'No se pudo validar el QR. Usa el código manual.');}
       finally{busy=false;}
     },650);
-  }catch(err){stopScan();toast('No se pudo usar el lector QR. Introduce el código manualmente. '+(err.message||''));}
+  }catch(err){stopScan();toast('No se pudo abrir la cámara. Usa Safari o Chrome y permite la cámara; si falla, introduce el código manualmente. '+(err.message||''));}
 }
 async function execute(fn){try{await fn();}catch(err){console.error(err);toast(err.message||'Se ha producido un error.');}}
 async function signInWithGoogle(button){
@@ -1085,10 +1096,11 @@ document.addEventListener('click',ev=>{const el=ev.target.closest('[data-action]
  const chosen=el.dataset.face==='back'?'back':'front';
  document.querySelectorAll('[data-loyalty-face]').forEach(face=>{face.hidden=face.dataset.loyaltyFace!==chosen;});
  document.querySelectorAll('.loyalty-face-button').forEach(btn=>{const on=btn.dataset.face===chosen;btn.classList.toggle('active',on);btn.setAttribute('aria-pressed',String(on));});
+ const qrLarge=$('#loyalty-qr-large');if(qrLarge)qrLarge.hidden=chosen!=='back';
  return;
  }
- if(act==='qr-expand'){const box=$('#loyalty-qr-large');if(box){box.hidden=false;box.scrollIntoView({block:'center',behavior:'smooth'});}return;}
- if(act==='qr-close'){const box=$('#loyalty-qr-large');if(box)box.hidden=true;return;}
+ if(act==='qr-expand'){const dlg=$('#member-qr-dialog');if(dlg?.showModal){dlg.showModal();}else{const box=$('#loyalty-qr-large');if(box){box.hidden=false;box.scrollIntoView({block:'center',behavior:'smooth'});}}return;}
+ if(act==='qr-close'){const dlg=$('#member-qr-dialog');if(dlg?.open)dlg.close();return;}
  if(act==='copy-code'){await navigator.clipboard.writeText(current.member_code);toast('Código copiado.');return;}if(act==='redeem'){await redeem(el.dataset.id);return;}if(act==='checkin'){await visit(el.dataset.code);return;}if(act==='validate'){await validate(el.dataset.code);return;}if(act==='scan'){await startScan();return;}if(act==='stop-scan'){stopScan();return;}if(act==='admin-tab'||act==='admin-go'){adminTab=el.dataset.tab;adminEditId=null;memberEditId=null;adminFormOpen=act==='admin-go'&&!el.dataset.list&&adminTab!=='site';render();if(adminFormOpen)focusAdminForm();return;}if(act==='member-edit'){memberEditId=el.dataset.id;render();document.getElementById('member-editor')?.scrollIntoView({behavior:'smooth',block:'start'});document.getElementById('member-name')?.focus({preventScroll:true});return;}if(act==='member-close'){memberEditId=null;render();return;}if(act==='member-points-quick'){const points=$('#member-points');const lifetime=$('#member-lifetime_points');if(!points||!lifetime)return;const next=Math.max(0,Number(points.value||0)+Number(el.dataset.delta||0));if(next>100000000)throw new Error('Se supera el límite de puntos.');points.value=String(next);if(Number(lifetime.value)<next)lifetime.value=String(next);points.dispatchEvent(new Event('input',{bubbles:true}));return;}if(act==='admin-new'){adminTab=el.dataset.table;adminEditId=null;adminFormOpen=true;render();focusAdminForm();return;}if(act==='admin-edit'){adminTab=el.dataset.table;adminEditId=el.dataset.id;adminFormOpen=true;render();focusAdminForm();return;}if(act==='admin-cancel'){adminEditId=null;adminFormOpen=false;render();return;}if(act==='admin-delete'){await removeItem(el.dataset.table,el.dataset.id);return;}if(act==='toggle'){await toggle(el.dataset.table,el.dataset.id);return;}});});
 async function handleAuthSubmit(fd){
   if(!sb)throw new Error('No se puede registrar ni iniciar sesión hasta que el propietario conecte Supabase.');
