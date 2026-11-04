@@ -228,3 +228,22 @@ input,textarea,select{max-width:100%}
  .mobile-appbar a{font-size:.6rem}
 }
 @media(hover:none){.btn:hover{transform:none}}
+
+/* EDITOR VISUAL DIRECTO — toca un texto, imagen o evento en la vista previa */
+.editor-inspector[hidden],.editor-inspector [hidden]{display:none!important}
+.editor-inspector{border:2px solid #dbb074;background:linear-gradient(130deg,#392338,#241720);padding:17px;border-radius:16px;margin:0 0 16px;display:grid;gap:11px;min-width:0;box-shadow:0 12px 38px #0004}
+.editor-inspector-head{display:flex;align-items:start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.editor-inspector-head h3{font:800 1.24rem Outfit,sans-serif;margin:5px 0 0;color:#f6e4d3}
+.editor-inspector-head button{min-height:42px}
+.editor-inspector-help{margin:0;color:#e5cedb;font-size:.85rem;line-height:1.55}
+.editor-inspector-label{display:block;margin-bottom:7px;font-size:.83rem;font-weight:800;color:#efd2df}
+#editor-inspector-input{display:block;width:100%;min-height:100px;padding:12px 13px;resize:vertical;border:1px solid #ac7e7b;border-radius:11px;background:#1d1420;color:#fff;line-height:1.55;outline:0;font:inherit}
+#editor-inspector-input:focus{border-color:#f5ca86;box-shadow:0 0 0 2px #e1b47433}
+#editor-inspector-image{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.editor-inspector-photo{display:block;width:min(150px,42%);aspect-ratio:1/1;object-fit:contain;background:#0e0a12;border:1px solid #795568;border-radius:12px;padding:5px}
+.editor-pick-photo{cursor:pointer;min-height:46px;white-space:normal;text-align:center}
+#editor-inspector-image .field-help,#editor-inspector-event .field-help{flex-basis:100%;margin:0;color:#d2b8c6}
+#editor-inspector-event{display:grid;gap:10px}
+#editor-inspector-event .btn{width:max-content;max-width:100%;white-space:normal}
+.editor-preview-head strong{color:#f6d5a2}
+@media(max-width:520px){.editor-inspector{padding:12px}.editor-inspector-head{align-items:center}.editor-inspector-head h3{font-size:1.05rem}.editor-inspector-photo{width:100px}.editor-pick-photo{width:100%}#editor-inspector-image{align-items:flex-start}}

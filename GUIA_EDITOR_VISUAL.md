@@ -12,6 +12,19 @@ La página necesita un proyecto Supabase real. El editor no guarda cambios si Su
 4. Registra tu cuenta real y asígnale el rol `admin` desde el SQL Editor de Supabase, como se explica en `README.md`. El registro público no crea administradores.
 5. Cierra sesión y vuelve a entrar.
 
+## Nuevo: pulsa directamente sobre lo que quieres cambiar
+
+1. Inicia sesión con una cuenta **administradora** y pulsa arriba **✎ Editar web**.
+2. En la **Vista previa · toca para editar**, desplázate hasta el elemento y **púlsalo con el dedo o el ratón**. Los elementos editables aparecen señalados con un contorno dorado.
+3. **Si pulsas el logo o la imagen principal:** aparecerá la tarjeta **Imagen principal · logo** con el botón **📷 Cambiar esta imagen**. Elige una foto del móvil u ordenador (PNG, JPG o WebP, hasta 5 MB). También puedes recuperar el logo original.
+4. **Si pulsas un texto:** aparecerá un campo con el texto actual. Escribe el nuevo y lo verás cambiar en la misma vista previa.
+5. **Si pulsas un evento publicado:** aparecerá el botón **Cambiar foto y datos del evento** para abrir su ficha en el Panel administrador.
+6. **Guardar borrador** permite seguir otro día sin afectar la web pública. **Publicar cambios** actualiza los textos y la imagen principal para todas las personas que visitan la web.
+
+**Importante:** si el logo contiene dibujos, letras o una fresa *dentro de la misma foto*, se sustituye la **imagen completa**. Para cambiar solo la fresa que forma parte de una imagen plana primero hay que editar esa imagen por separado y volver a subirla.
+
+Para abrir los campos agrupados de forma clásica, siguen estando las pestañas de **Portada, Experiencia, Eventos, etc.** La edición directa no sustituye esas opciones.
+
 ## Cómo cambiar la página, paso a paso
 
 1. Entra en Bellaquitas Fest con tu cuenta de **administrador**.
