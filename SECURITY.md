@@ -33,3 +33,11 @@ Esta guía documenta las medidas aplicadas y las pendientes. **No existe una gar
 ## Si ocurre un incidente
 
 Suspender accesos afectados, revocar sesiones en Supabase, rotar credenciales **secretas** comprometidas (nunca publicar las nuevas), revisar los registros de cambios de socios, restaurar un despliegue conocido y contactar con el soporte de los proveedores. Mantener el repositorio público sin secretos.
+
+## Auditoría adicional de puerta y canjes
+
+- Se han añadido las columnas `activity.staff_id` y `redemptions.validated_by` para conocer qué cuenta de personal validó cada visita o premio futuro.
+- El personal no puede aprobar su propio canje, de la misma forma que no puede validar una visita en su propia tarjeta.
+- Ambas operaciones siguen protegidas mediante funciones de Supabase que comprueban `auth.uid()` y `is_staff()`; el rol anónimo no tiene permiso para ejecutarlas.
+- El cambio no altera actividades ni canjes anteriores; los registros anteriores no tienen necesariamente el identificador del empleado responsable.
+- Script SQL reproducible: `SEGURIDAD_AUDITORIA_PUERTA.sql`.
