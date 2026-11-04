@@ -136,3 +136,14 @@ En **Panel administrador → Socios** elige una persona y pulsa **Editar socio**
 - Selector de idioma Español / Français en la web; los textos personalizables de la organización se conservan tal y como los edita el administrador.
 - La sección del editor de web, gestión de socios y RLS siguen funcionando, sin cuentas o puntos ficticios.
 - Los recursos estáticos están disponibles en la PWA; el QR puede requerir conexión la primera vez para cargar la librería de generación y los datos de cuenta siempre requieren Supabase.
+
+## Diseño rojo, negro y dorado y búsqueda móvil (noviembre de 2026)
+
+- Paleta principal de la web: **negro, rojo y dorado**. Las ilustraciones originales de la tarjeta de fidelidad se conservan.
+- Búsqueda desde la cabecera (icono de lupa), con resultados de secciones, eventos publicados y premios.
+- Búsquedas en **Eventos**, **Premios**, **Socios** y catálogos de administración, también con pocos resultados y sin depender de las tildes.
+- Se han corregido los botones que se superponían al menú en pantallas móviles pequeñas. El menú ofrece los accesos de administrador y editor sin ocultar la búsqueda ni los idiomas.
+- Se ha revisado la interfaz en seis anchuras (320, 360, 390, 430, 768 y 1366 píxeles), comprobando menú, navegación, buscadores, perfiles/QR y desbordamientos. Las pruebas son automatizadas con datos simulados, no sustituyen pruebas reales de dispositivos ni autenticación.
+- Se ha renovado la caché del service worker para evitar seguir viendo los estilos antiguos tras la actualización.
+
+Si un usuario continúa viendo la versión anterior desde la pantalla de inicio, cerrar la app y volver a abrirla o recargar la web; en caso necesario eliminar los datos almacenados del sitio desde el navegador.
