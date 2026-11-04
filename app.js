@@ -1231,7 +1231,14 @@ async function startScan(){
       return;
      }
      stopScan();
-     await visit(code);
+     try{
+      await visit(code);
+     }catch(err){
+      // Tras detener la cámara cambia scanGeneration: el error de la RPC
+      // debe seguir mostrándose aunque el lector ya esté cerrado.
+      console.error('Validación de visita:',err);
+      toast(err.message||'No se ha podido registrar esta visita. Introduce el código manualmente.');
+     }
     }
    }catch(err){
     console.error('Lectura QR:',err);

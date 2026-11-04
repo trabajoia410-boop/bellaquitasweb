@@ -46,7 +46,7 @@ Consultas iniciales: 3 perfiles, 2 filas de actividad, 0 visitas y 0 canjes. Las
 - GitHub contiene el código fuente y ejecuta flujos de compilación y despliegue.
 - Los checks de GitHub del commit anterior terminaron satisfactoriamente.
 - **La URL pública de Netlify no ha podido verificarse mediante una petición HTTP desde este entorno**, por lo que el estado de GitHub no equivale a una prueba independiente del sitio Netlify.
-- La caché PWA se incrementó a v11 para forzar la actualización de app.js y evitar una mezcla de versiones.
+- La caché PWA se incrementó a v12 para forzar la actualización de app.js y evitar una mezcla de versiones.
 
 ## Pruebas manuales todavía pendientes, sin tocar puntos reales
 1. Abrir Netlify en iPhone y Android y confirmar que carga todas las páginas sin errores de CSP.
@@ -54,9 +54,14 @@ Consultas iniciales: 3 perfiles, 2 filas de actividad, 0 visitas y 0 canjes. Las
 3. Confirmar login por Google y recuperación de contraseña con URLs de retorno permitidas en Supabase.
 4. Probar lectura de un QR en iPhone Safari y Android Chrome, sin confirmar visitas reales; en su lugar validar visualmente que el lector detecta el código.
 5. Probar registro real de una visita **solo** con un socio de pruebas creado explícitamente para ello y previa autorización del propietario.
-6. Comprobar los encabezados Netlify mediante DevTools o `curl -I https://bellaquitasfest.netlify.app/` y que la caché instalada sea v11.
+6. Comprobar los encabezados Netlify mediante DevTools o `curl -I https://bellaquitasfest.netlify.app/` y que la caché instalada sea v12.
 
 ## Observaciones
 - Cuando el navegador está en modo privado o limpia los datos, Supabase no puede conservar la sesión.
 - Las restricciones RLS y la validación de funciones en la base de datos son la autoridad; ocultar botones no es suficiente.
 - No se puede asegurar que las funciones de puerta completen una actualización real sin hacer una prueba autorizada de escritura, que deliberadamente se omitió.
+
+### Corrección adicional: mostrar rechazos del servidor
+- Si la cámara lee un QR válido pero la función `register_visit` rechaza registrar la visita, el mensaje de error se muestra claramente al personal incluso después de cerrar la cámara.
+- Prueba simulada adicional: una respuesta de error de Supabase se muestra sin duplicar la validación (1/1).
+- Se comprobaron los contadores finales: 0 visitas, 0 canjes y 2 filas de actividad (sin cambios); apareció un nuevo perfil de socio durante el período de pruebas, **no generado por este procedimiento**, que no hizo llamadas de registro ni cambios en cuentas reales.
