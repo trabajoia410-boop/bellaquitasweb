@@ -852,6 +852,7 @@ async function render(){
   else if(current&&allowed(route))html=appShell(route==='/mi-espacio'?summary():route==='/tarjeta'?card():route==='/premios'?rewards():route==='/agenda'?agenda():route==='/perfil'?profile():route==='/puerta'?gate():route==='/editor'?editor():admin());
   else html=landing(({experiencia:'experience',eventos:'events',ventajas:'benefits',preguntas:'faq'}[route.slice(1)])||'');
   $('#app').innerHTML=html;
+ document.documentElement.classList.remove('auth-booting');
  translateDOM(document);
   document.title=(route==='/'?'Bellaquitas Fest':(current&&allowed(route)?translateLabel('Mi cuenta')+' · Bellaquitas Fest':translateLabel('Acceso y registro')+' · Bellaquitas Fest'));
   document.querySelector('meta[name="robots"]')?.setAttribute('content',current&&allowed(route)?'noindex,nofollow':'index,follow');
@@ -860,40 +861,151 @@ async function render(){
   if(route==='/editor')renderEditorPreview();
 }
 function to(path){if(location.hash==='#'+path){render();return;}location.hash=path;}
-async function loadLive(){const {data:authData}=await sb.auth.getSession();session=authData.session?.user||null;if(!session){current=null;editorDraft=null;data=emptyData();return;}const uid=session.id;const [p,e,r,pr,re,a,sc]=await Promise.all([sb.from('profiles').select('*'),sb.from('events').select('*').order('created_at',{ascending:false}),sb.from('rewards').select('*').order('created_at',{ascending:false}),sb.from('promos').select('*'),sb.from('redemptions').select('*').order('created_at',{ascending:false}),sb.from('activity').select('*').order('created_at',{ascending:false}).limit(200),sb.from('site_content').select('*')]);for(const x of [p,e,r,pr,re,a])if(x.error)console.warn('Consulta de datos:',x.error.message);data={profiles:p.data||[],events:e.data||[],rewards:r.data||[],promos:pr.data||[],redemptions:re.data||[],activity:a.data||[],site_content:sc.data||[],site_drafts:[]};current=data.profiles.find(x=>x.id===uid)||null;if(current?.role==='admin'){const [dr,changes]=await Promise.all([sb.from('site_drafts').select('*').eq('key','homepage'),sb.from('admin_member_changes').select('*').order('created_at',{ascending:false}).limit(40)]);if(dr.error)console.warn('Editor: comprueba INSTALAR_EDITOR_WEB.sql',dr.error.message);if(changes.error)console.warn('Socios: comprueba AMPLIAR_GESTION_SOCIOS.sql',changes.error.message);data.site_drafts=dr.data||[];data.member_changes=changes.data||[];}}
+// La sesión de Supabase se guarda en el almacenamiento persistente del navegador.
+// No duplicar ni guardar tokens en otras claves: Supabase se encarga de renovarlos.
+let authStartupComplete=false;
+let authResumeBusy=false;
+function browserCanRememberSession(){
+ try{
+  const key='bellaquitas-storage-check';
+  localStorage.setItem(key,'ok');
+  const available=localStorage.getItem(key)==='ok';
+  localStorage.removeItem(key);
+  return available;
+ }catch{return false;}
+}
+function showAuthLoadingError(error){
+ document.documentElement.classList.remove('auth-booting');
+ console.warn('No se pudo recuperar la cuenta sin cerrar la sesión:',error);
+ const box=$('#app');
+ if(!box)return;
+ box.innerHTML='<main class="container" style="padding:90px 20px;max-width:700px;text-align:center"><h1>Conectando con tu cuenta…</h1><p>No hemos podido recuperar tus datos en este momento. Tu sesión no se ha cerrado. Comprueba la conexión y vuelve a intentarlo.</p><button type="button" class="btn btn-primary" data-action="auth-retry">↻ Reintentar</button></main>';
+}
+async function loadLive(){
+ const {data:authData,error:authError}=await sb.auth.getSession();
+ if(authError)throw new Error('No se pudo comprobar la sesión guardada: '+authError.message);
+ const user=authData?.session?.user||null;
+ if(!user){session=null;current=null;editorDraft=null;data=emptyData();return;}
+ const uid=user.id;
+ // Primero confirmar la ficha del usuario. Nunca tratar un fallo de red como cierre de sesión.
+ const own=await sb.from('profiles').select('*').eq('id',uid).maybeSingle();
+ if(own.error)throw new Error('No se pudo cargar tu ficha de socio: '+own.error.message);
+ if(!own.data)throw new Error('La sesión está activa pero tu ficha no está disponible. Contacta con administración.');
+ const [p,e,r,pr,re,a,sc]=await Promise.all([
+  sb.from('profiles').select('*'),
+  sb.from('events').select('*').order('created_at',{ascending:false}),
+  sb.from('rewards').select('*').order('created_at',{ascending:false}),
+  sb.from('promos').select('*'),
+  sb.from('redemptions').select('*').order('created_at',{ascending:false}),
+  sb.from('activity').select('*').order('created_at',{ascending:false}).limit(200),
+  sb.from('site_content').select('*')
+ ]);
+ for(const x of [p,e,r,pr,re,a,sc])if(x.error)console.warn('Consulta de datos:',x.error.message);
+ session=user;
+ data={profiles:p.data||[own.data],events:e.data||[],rewards:r.data||[],promos:pr.data||[],redemptions:re.data||[],activity:a.data||[],site_content:sc.data||[],site_drafts:[]};
+ if(!data.profiles.some(x=>x.id===uid))data.profiles.push(own.data);
+ current=own.data;
+ if(current.role==='admin'){
+  const [dr,changes]=await Promise.all([
+   sb.from('site_drafts').select('*').eq('key','homepage'),
+   sb.from('admin_member_changes').select('*').order('created_at',{ascending:false}).limit(40)
+  ]);
+  if(dr.error)console.warn('Editor:',dr.error.message);
+  if(changes.error)console.warn('Socios:',changes.error.message);
+  data.site_drafts=dr.data||[];
+  data.member_changes=changes.data||[];
+ }
+}
+async function resumeSavedSession(){
+ if(!sb||!authStartupComplete||authResumeBusy||document.visibilityState==='hidden')return;
+ authResumeBusy=true;
+ try{
+  const {data:authData,error}=await sb.auth.getSession();
+  if(error)throw error;
+  const uid=authData?.session?.user?.id||null;
+  if(!uid){
+   if(session){session=null;current=null;editorDraft=null;await loadPublic();await render();}
+   return;
+  }
+  if(!current||current.id!==uid){
+   await loadLive();
+   await render();
+  }else{
+   session=authData.session.user;
+  }
+ }catch(err){
+  // Los fallos temporales de conexión no deben provocar un nuevo inicio de sesión.
+  console.warn('Restauración de sesión aplazada:',err);
+  if(!current)showAuthLoadingError(err);
+ }finally{authResumeBusy=false;}
+}
+window.addEventListener('pageshow',ev=>{if(ev.persisted)void resumeSavedSession();});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')void resumeSavedSession();});
+window.addEventListener('online',()=>{void resumeSavedSession();});
+
 async function loadPublic(){const [e,r,pr,sc]=await Promise.all([sb.from('events').select('*').eq('active',true),sb.from('rewards').select('*').eq('active',true),sb.from('promos').select('*').eq('active',true),sb.from('site_content').select('*')]);data={...emptyData(),events:e.data||[],rewards:r.data||[],promos:pr.data||[],site_content:sc.data||[]};}
 async function refresh(){if(!sb)throw new Error('Servicio de cuentas no configurado.');if(session)await loadLive();else await loadPublic();await render();}
 async function init(){
-  clearOldLocalData();
-  document.documentElement.lang=activeLang;
-  if(live){
-    try{
-      const m=await import('https://esm.sh/@supabase/supabase-js@2');
-      sb=m.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey,{auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:true,flowType:'pkce'}});
-      await loadLive();
-      if(!session)await loadPublic();
-      const callbackParams=new URLSearchParams(location.search);
-      if(callbackParams.get('acceso')==='google'){
-        const providerError=callbackParams.get('error_description') || callbackParams.get('error');
-        cleanGoogleReturnUrl();
-        if(session&&current){location.hash=destinationForUser();authNotice='';}
-        else {
-          authNotice=providerError?'No se pudo completar el acceso con Google. Revisa los permisos e inténtalo de nuevo.':session?'Google ha confirmado tu cuenta, pero no se ha creado la ficha de socio. Comprueba la instalación de supabase.sql.':'No se ha completado el acceso con Google. Inténtalo otra vez o utiliza tu correo.';
-          location.hash='/acceso';
-        }
-      }
-      if(callbackParams.get('recuperar')==='1'&&session){authTab='reset';location.hash='/restablecer';}
-      sb.auth.onAuthStateChange(event=>{
-        if(event==='PASSWORD_RECOVERY'){authTab='reset';location.hash='/restablecer';render();}
-        if(event==='SIGNED_OUT'&&session){session=null;current=null;loadPublic().then(render).catch(console.error);}
-      });
-    }catch(err){
-      console.error(err);
-      $('#app').innerHTML=`${header()}<main class="container" style="padding:80px 20px"><h1>No se ha podido conectar con el servicio de cuentas</h1><p class="muted">La conexión no está disponible. Inténtalo más tarde.</p><a class="btn btn-secondary" href="#/">Volver al inicio</a></main>${footer()}`;
-      return;
+ clearOldLocalData();
+ document.documentElement.lang=activeLang;
+ authStartupComplete=false;
+ if(live){
+  try{
+   const m=await import('https://esm.sh/@supabase/supabase-js@2');
+   sb=m.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey,{
+    auth:{
+     autoRefreshToken:true,
+     persistSession:true,
+     detectSessionInUrl:true,
+     flowType:'pkce'
     }
-  } else { data=emptyData();session=null;current=null; }
-  await render();
+   });
+   await loadLive();
+   if(!session)await loadPublic();
+   const callbackParams=new URLSearchParams(location.search);
+   if(callbackParams.get('acceso')==='google'){
+    const providerError=callbackParams.get('error_description')||callbackParams.get('error');
+    cleanGoogleReturnUrl();
+    if(session&&current){location.hash=destinationForUser();authNotice='';}
+    else{
+     authNotice=providerError
+       ?'No se pudo completar el acceso con Google. Revisa los permisos e inténtalo de nuevo.'
+       :session?'Google ha confirmado tu cuenta, pero no se ha creado la ficha de socio. Comprueba la instalación de supabase.sql.'
+       :'No se ha completado el acceso con Google. Inténtalo otra vez o utiliza tu correo.';
+     location.hash='/acceso';
+    }
+   }
+   if(callbackParams.get('recuperar')==='1'&&session){authTab='reset';location.hash='/restablecer';}
+   sb.auth.onAuthStateChange((event,newSession)=>{
+    if(event==='PASSWORD_RECOVERY'){
+     authTab='reset';location.hash='/restablecer';
+     void render();
+     return;
+    }
+    if(event==='SIGNED_OUT'){
+     if(session||current){
+      session=null;current=null;editorDraft=null;
+      setTimeout(()=>{void loadPublic().then(render).catch(showAuthLoadingError);},0);
+     }
+     return;
+    }
+    // En otra pestaña o al regresar de Google, recuperar la sesión sin pedir contraseña.
+    // Nunca esperar consultas SQL dentro del callback de Supabase Auth.
+    if((event==='SIGNED_IN'||event==='TOKEN_REFRESHED')&&newSession?.user &&
+       authStartupComplete && (!current||current.id!==newSession.user.id)){
+      setTimeout(()=>{void resumeSavedSession();},0);
+    }
+   });
+   authStartupComplete=true;
+   if(session&&!browserCanRememberSession())toast('Tu navegador no permite guardar la sesión. Abre la web en Safari o Chrome fuera de WhatsApp.');
+  }catch(err){
+   authStartupComplete=false;
+   console.error('Error de inicio de sesión:',err);
+   showAuthLoadingError(err);
+   return;
+  }
+ }else{data=emptyData();session=null;current=null;}
+ await render();
 }
 function createQR(code){
  // El generador QR está integrado en la web. No depende de CDN, conexiones externas ni servicios de terceros.
@@ -1092,7 +1204,7 @@ async function signInWithGoogle(button){
   }
 }
 document.addEventListener('click',ev=>{const link=ev.target.closest('a[href^="#/"]');if(route==='/editor'&&editorDirty&&link&&link.getAttribute('href')!=='#/editor'&&link.target!=='_blank'&&!ask('Tienes cambios sin guardar. ¿Quieres salir sin guardarlos?')){ev.preventDefault();ev.stopImmediatePropagation();}},true);
-document.addEventListener('click',ev=>{const el=ev.target.closest('[data-action]');if(!el)return;const act=el.dataset.action;execute(async()=>{if(act.startsWith('editor-')){await editorAction(el,act);return;}if(act==='open-search'){setSiteSearchOpen($('#site-search-panel')?.hidden);return;}if(act==='close-search'){setSiteSearchOpen(false);return;}if(act==='menu'){setSiteSearchOpen(false);menuOpen=!menuOpen;$('#site-menu')?.classList.toggle('open',menuOpen);el.setAttribute('aria-expanded',String(menuOpen));el.setAttribute('aria-label',menuOpen?'Cerrar menú':'Abrir menú');el.textContent=menuOpen?'✕':'☰';return;}if(act==='set-lang'){if(!['es','fr'].includes(el.dataset.lang))return;activeLang=el.dataset.lang;try{localStorage.setItem('bellaquitas-lang',activeLang);}catch{}document.documentElement.lang=activeLang;await render();return;}if(act==='install-app'){await installApp();return;}if(act==='auth-tab'){authNotice='';authTab=el.dataset.tab;render();return;}if(act==='google-login'){await signInWithGoogle(el);return;}if(act==='logout'){editorDraft=null;editorDirty=false;stopScan();if(!sb)throw new Error('Servicio no disponible.');await sb.auth.signOut();session=null;current=null;await loadPublic();to('/acceso');return;}if(act==='loyalty-face'){
+document.addEventListener('click',ev=>{const el=ev.target.closest('[data-action]');if(!el)return;const act=el.dataset.action;execute(async()=>{if(act.startsWith('editor-')){await editorAction(el,act);return;}if(act==='open-search'){setSiteSearchOpen($('#site-search-panel')?.hidden);return;}if(act==='close-search'){setSiteSearchOpen(false);return;}if(act==='menu'){setSiteSearchOpen(false);menuOpen=!menuOpen;$('#site-menu')?.classList.toggle('open',menuOpen);el.setAttribute('aria-expanded',String(menuOpen));el.setAttribute('aria-label',menuOpen?'Cerrar menú':'Abrir menú');el.textContent=menuOpen?'✕':'☰';return;}if(act==='set-lang'){if(!['es','fr'].includes(el.dataset.lang))return;activeLang=el.dataset.lang;try{localStorage.setItem('bellaquitas-lang',activeLang);}catch{}document.documentElement.lang=activeLang;await render();return;}if(act==='auth-retry'){try{if(!sb)await init();else{await loadLive();if(!session)await loadPublic();authStartupComplete=true;await render();}}catch(err){showAuthLoadingError(err);}return;}if(act==='install-app'){await installApp();return;}if(act==='auth-tab'){authNotice='';authTab=el.dataset.tab;render();return;}if(act==='google-login'){await signInWithGoogle(el);return;}if(act==='logout'){editorDraft=null;editorDirty=false;stopScan();if(!sb)throw new Error('Servicio no disponible.');await sb.auth.signOut({scope:'local'});session=null;current=null;await loadPublic();to('/acceso');return;}if(act==='loyalty-face'){
  const chosen=el.dataset.face==='back'?'back':'front';
  document.querySelectorAll('[data-loyalty-face]').forEach(face=>{face.hidden=face.dataset.loyaltyFace!==chosen;});
  document.querySelectorAll('.loyalty-face-button').forEach(btn=>{const on=btn.dataset.face===chosen;btn.classList.toggle('active',on);btn.setAttribute('aria-pressed',String(on));});
@@ -1145,6 +1257,7 @@ async function handleAuthSubmit(fd){
   }
   await loadLive();
   if(!current)throw new Error('Has iniciado sesión, pero no se encuentra tu ficha de socio. Contacta con la administración.');
+  if(!browserCanRememberSession())toast('Para mantener la sesión abierta, utiliza Safari o Chrome y evita el navegador interno de WhatsApp.');
   authNotice='';to(current.role==='admin'?'/panel':current.role==='puerta'?'/puerta':'/mi-espacio');
 }
 document.addEventListener('submit',ev=>{

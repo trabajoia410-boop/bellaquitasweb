@@ -27,8 +27,21 @@
   <script src="locale-fr.js" defer></script>
   <script src="assets/qr-local.js" defer></script>
   <script src="app.js" defer></script>
+  <style>
+    #auth-startup { display:none; }
+    html.auth-booting #app { visibility:hidden; }
+    html.auth-booting #auth-startup {
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      gap:12px;position:fixed;inset:0;padding:24px;text-align:center;z-index:999;
+      background:#080608;color:#f0c97b;font-family:system-ui,-apple-system,sans-serif;
+    }
+    #auth-startup strong {font-size:1.4rem;letter-spacing:.12em;}
+    #auth-startup span {color:#ecd2d2;font-size:1rem;}
+  </style>
+  <script>document.documentElement.classList.add('auth-booting');</script>
 </head>
 <body class="bf-neon">
+  <div id="auth-startup" role="status" aria-live="polite"><strong>BELLAQUITAS FEST</strong><span>Recuperando tu sesión · Connexion en cours…</span></div>
   <div id="app"><header class="site-header"><div class="container nav-wrap"><a class="brand" href="#/" aria-label="Bellaquitas Fest, inicio"><span class="brand-symbol">♛</span><span>BELLAQUITAS <em>FEST</em></span></a><nav id="site-menu" class="main-nav " aria-label="Navegación principal"><a class="nav-link" href="#/">Inicio</a><a class="nav-link" href="#/experiencia">Experiencia</a><a class="nav-link" href="#/eventos">Eventos</a><a class="nav-link" href="#/ventajas">Ventajas</a><a class="nav-link" href="#/preguntas">Preguntas</a><div class="mobile-menu-actions"><a class="btn btn-secondary" href="#/acceso">Iniciar sesión</a><a class="btn btn-primary" href="#/registro">Crear cuenta</a></div><button class="menu-install" type="button" data-action="install-app">📲 Instalar la app</button></nav><div class="nav-actions"><a href="#/acceso" class="btn btn-secondary btn-mini">Iniciar sesión</a><a href="#/registro" class="btn btn-primary btn-mini">Crear cuenta ↗</a><button class="btn btn-secondary btn-mini menu-toggle" type="button" data-action="menu" aria-label="Abrir menú" aria-expanded="false" aria-controls="site-menu">☰</button></div></div></header><main>
 <section class="hero" id="inicio"><div class="container hero-inner"><div class="hero-copy"><div class="eyebrow">✦ UNA COMUNIDAD. UNA EXPERIENCIA.</div><h1>VIVE EL<br/><span>MOMENTO.</span></h1><p>Tu tarjeta, tus puntos, tus experiencias.</p><div class="hero-cta"><a class="btn btn-primary" href="#/registro">Únete al club <span>↗</span></a><a class="btn btn-ghost" href="#/ventajas">Conoce los beneficios <span>→</span></a></div><div class="hero-stats"><div class="hero-stat"><strong>01</strong><span>Una comunidad</span></div><div class="hero-stat"><strong>∞</strong><span>Momentos por vivir</span></div><div class="hero-stat"><strong>✦</strong><span>Ventajas para socios</span></div></div></div><div class="hero-art"><img class="hero-emblem" src="assets/logo-bellaquitas.webp" alt="Logotipo Bellaquitas Fest: labios rojos, corona dorada y letras en oro" /></div></div></section>
 <div class="announce"><span>✦ BELLAQUITAS FEST</span> &nbsp; · &nbsp; Tu tarjeta, tus puntos, tus experiencias.</div>
