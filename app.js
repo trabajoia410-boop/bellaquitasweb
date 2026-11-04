@@ -865,6 +865,7 @@ function to(path){if(location.hash==='#'+path){render();return;}location.hash=pa
 // No duplicar ni guardar tokens en otras claves: Supabase se encarga de renovarlos.
 let authStartupComplete=false;
 let authResumeBusy=false;
+let authListenerAttached=false;
 function browserCanRememberSession(){
  try{
   const key='bellaquitas-storage-check';
@@ -945,41 +946,13 @@ window.addEventListener('online',()=>{void resumeSavedSession();});
 
 async function loadPublic(){const [e,r,pr,sc]=await Promise.all([sb.from('events').select('*').eq('active',true),sb.from('rewards').select('*').eq('active',true),sb.from('promos').select('*').eq('active',true),sb.from('site_content').select('*')]);data={...emptyData(),events:e.data||[],rewards:r.data||[],promos:pr.data||[],site_content:sc.data||[]};}
 async function refresh(){if(!sb)throw new Error('Servicio de cuentas no configurado.');if(session)await loadLive();else await loadPublic();await render();}
-async function init(){
- clearOldLocalData();
- document.documentElement.lang=activeLang;
- authStartupComplete=false;
- if(live){
-  try{
-   const m=await import('https://esm.sh/@supabase/supabase-js@2');
-   sb=m.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey,{
-    auth:{
-     autoRefreshToken:true,
-     persistSession:true,
-     detectSessionInUrl:true,
-     flowType:'pkce'
-    }
-   });
-   await loadLive();
-   if(!session)await loadPublic();
-   const callbackParams=new URLSearchParams(location.search);
-   if(callbackParams.get('acceso')==='google'){
-    const providerError=callbackParams.get('error_description')||callbackParams.get('error');
-    cleanGoogleReturnUrl();
-    if(session&&current){location.hash=destinationForUser();authNotice='';}
-    else{
-     authNotice=providerError
-       ?'No se pudo completar el acceso con Google. Revisa los permisos e inténtalo de nuevo.'
-       :session?'Google ha confirmado tu cuenta, pero no se ha creado la ficha de socio. Comprueba la instalación de supabase.sql.'
-       :'No se ha completado el acceso con Google. Inténtalo otra vez o utiliza tu correo.';
-     location.hash='/acceso';
-    }
-   }
-   if(callbackParams.get('recuperar')==='1'&&session){authTab='reset';location.hash='/restablecer';}
-   sb.auth.onAuthStateChange((event,newSession)=>{
+function subscribeToSessionChanges(){
+ if(authListenerAttached||!sb)return;
+ authListenerAttached=true;
+sb.auth.onAuthStateChange((event,newSession)=>{
     if(event==='PASSWORD_RECOVERY'){
      authTab='reset';location.hash='/restablecer';
-     void render();
+     if(authStartupComplete)void render();
      return;
     }
     if(event==='SIGNED_OUT'){
@@ -996,6 +969,40 @@ async function init(){
       setTimeout(()=>{void resumeSavedSession();},0);
     }
    });
+}
+
+async function init(){
+ clearOldLocalData();
+ document.documentElement.lang=activeLang;
+ authStartupComplete=false;
+ if(live){
+  try{
+   const m=await import('https://esm.sh/@supabase/supabase-js@2');
+   sb=m.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey,{
+    auth:{
+     autoRefreshToken:true,
+     persistSession:true,
+     detectSessionInUrl:true,
+     flowType:'pkce'
+    }
+   });
+   subscribeToSessionChanges();
+   await loadLive();
+   if(!session)await loadPublic();
+   const callbackParams=new URLSearchParams(location.search);
+   if(callbackParams.get('acceso')==='google'){
+    const providerError=callbackParams.get('error_description')||callbackParams.get('error');
+    cleanGoogleReturnUrl();
+    if(session&&current){location.hash=destinationForUser();authNotice='';}
+    else{
+     authNotice=providerError
+       ?'No se pudo completar el acceso con Google. Revisa los permisos e inténtalo de nuevo.'
+       :session?'Google ha confirmado tu cuenta, pero no se ha creado la ficha de socio. Comprueba la instalación de supabase.sql.'
+       :'No se ha completado el acceso con Google. Inténtalo otra vez o utiliza tu correo.';
+     location.hash='/acceso';
+    }
+   }
+   if(callbackParams.get('recuperar')==='1'&&session){authTab='reset';location.hash='/restablecer';}
    authStartupComplete=true;
    if(session&&!browserCanRememberSession())toast('Tu navegador no permite guardar la sesión. Abre la web en Safari o Chrome fuera de WhatsApp.');
   }catch(err){
