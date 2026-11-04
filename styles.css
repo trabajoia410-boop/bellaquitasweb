@@ -486,3 +486,56 @@ section[id]{scroll-margin-top:92px}
 .catalog-search-bar .search-field{min-height:48px;font-size:16px;background:#14090c;border-color:#803940}
 .reward-card[hidden],.event-card[hidden],.member-record[hidden]{display:none!important}
 #rewards-search-empty[hidden],#agenda-search-empty[hidden]{display:none!important}
+
+/* 2026: páginas independientes, editor de toda la identidad visual y selector bilingüe. */
+.brand-wordmark{display:inline-flex;align-items:baseline;gap:.25em;min-width:0;max-width:100%;overflow-wrap:anywhere}
+.brand-wordmark em{flex-shrink:0}
+.site-header .brand{min-width:0;max-width:52vw}
+.site-header .brand .brand-wordmark{font-size:clamp(.64rem,1.05vw,.91rem);white-space:normal;line-height:1.06}
+.site-header .brand-symbol{flex-shrink:0}
+@media(max-width:650px){.site-header .brand .brand-wordmark{display:inline-flex!important;font-size:.67rem;max-width:82px;line-height:1.08}.bf-neon .site-header .brand{gap:4px}}
+@media(max-width:370px){.site-header .brand .brand-wordmark{font-size:.59rem;max-width:65px}}
+.app-shell .sidebar .brand-wordmark{font-size:.88rem}
+.standalone-page{min-height:68vh;padding:26px 0 75px}
+.standalone-page .standalone-navigation{display:flex;align-items:center;gap:17px;flex-wrap:wrap;padding:8px 0 24px}
+.standalone-navigation strong{color:#f6d89c;font-size:1.08rem;overflow-wrap:anywhere}
+.standalone-page .section{padding-top:23px}
+.standalone-page .section .container{max-width:1150px}
+.editor-page-switch{padding:14px 17px;border:1px solid #7b353b;border-radius:16px;margin:16px 0;background:#211014}
+.editor-page-switch strong{display:block;margin-bottom:12px;color:#f7d7a3}
+.editor-page-options{display:flex;gap:8px;flex-wrap:wrap}
+.editor-page-options .active,.editor-language-switch button.active{background:#a5222a!important;color:#fff!important;border-color:#e5b56b!important;box-shadow:0 0 0 1px #e5b56b}
+.editor-page-options button{min-height:40px}
+.editor-language-switch{background:#2c1115;border:1px solid #9d454b;border-radius:12px;padding:13px;margin:0 0 17px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.editor-language-switch strong{width:100%;color:#efd5a0}
+.editor-language-switch small{width:100%;color:#d4b1a8;font-size:.77rem;line-height:1.5}
+.editor-field-list .editor-switch{min-height:41px;color:#fff1e7}
+.admin-language-intro{background:linear-gradient(90deg,#3f161d,#27101a);border:1px solid #a04a54;border-radius:10px;padding:15px;margin-top:15px}
+.admin-language-intro strong{font-size:1rem;color:#f6d89e}
+.admin-language-intro p{font-size:.82rem;color:#e2bfbe;line-height:1.55;margin:6px 0 0}
+@media(max-width:430px){.editor-page-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.editor-page-options .btn{font-size:.73rem;white-space:normal;min-width:0}}
+/* Editor: copy de todas las pantallas, con búsqueda de cadenas en ambos idiomas. */
+.editor-ui-copy-list{max-height:490px;overflow:auto;display:grid;gap:9px;margin-top:12px;overscroll-behavior:contain}
+.editor-ui-copy-item{padding:11px;background:#281013;border:1px solid #80383d;border-radius:10px;display:grid;gap:6px;min-width:0}
+.editor-ui-copy-item[hidden]{display:none!important}
+.editor-ui-copy-item label{font-size:.77rem;color:#edc78d;line-height:1.45;overflow-wrap:anywhere}
+.editor-ui-copy-item textarea{font:500 .85rem DM Sans,sans-serif;line-height:1.42;resize:vertical;width:100%;background:#18090d;color:#fff;min-height:53px}
+/* Cabecera y CTA diseñados para los anchos reales de teléfonos pequeños. */
+.lang-short{display:none}
+@media(max-width:650px){
+ .lang-full{display:none}
+ .lang-short{display:inline}
+ .bf-neon .lang-switch{max-width:114px;gap:1px}
+ .bf-neon .lang-choice{padding:7px 8px;min-width:0;line-height:1.1}
+ .bf-neon .lang-sep{display:none}
+ .site-header .brand .brand-wordmark{display:flex!important;flex-direction:column;gap:0;max-width:72px;white-space:nowrap;font-size:.61rem!important;line-height:1.02}
+ .site-header .brand .brand-wordmark em{font-size:.75em;letter-spacing:.16em}
+ .bf-neon .hero-cta{flex-direction:column;align-items:stretch;gap:11px;margin:22px auto 0;width:100%}
+ .bf-neon .hero-cta .btn{display:flex;flex:0 0 auto;width:100%;justify-content:center;min-height:50px;white-space:normal;text-align:center}
+ .bf-neon .hero-cta .btn span{flex-shrink:0}
+}
+@media(max-width:360px){
+ .site-header .brand .brand-wordmark{font-size:.51rem!important;max-width:60px}
+ .bf-neon .lang-switch{max-width:90px}
+ .bf-neon .lang-choice{padding:6px 6px}
+}

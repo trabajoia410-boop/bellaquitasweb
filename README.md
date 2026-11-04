@@ -147,3 +147,9 @@ En **Panel administrador → Socios** elige una persona y pulsa **Editar socio**
 - Se ha renovado la caché del service worker para evitar seguir viendo los estilos antiguos tras la actualización.
 
 Si un usuario continúa viendo la versión anterior desde la pantalla de inicio, cerrar la app y volver a abrirla o recargar la web; en caso necesario eliminar los datos almacenados del sitio desde el navegador.
+
+## Traducción ES / FR y editor de páginas completo (noviembre 2026)
+
+La navegación pública y los textos de interfaz de socios y administradores utilizan el diccionario `locale-fr.js`. Hay un **selector 🌐 Español / Français** y traducción de etiquetas, mensajes, confirmaciones y pantallas de acceso. El editor visual ofrece páginas independientes, textos por idioma, cabecera con nombre e imagen modificables, logo grande independiente y la categoría **Textos de toda la aplicación** para ajustar frases específicas. Los eventos, premios y promociones cuentan con campos opcionales de traducción francesa guardados en Supabase (`localized_content`).
+
+La ampliación SQL (`INSTALAR_IDIOMAS_ES_FR.sql`) ya se aplicó al proyecto de Bellaquitas Fest. **No introduces claves privadas de Supabase en el navegador.** Consulta [GUIA_EDITOR_COMPLETO_ES_FR.md](GUIA_EDITOR_COMPLETO_ES_FR.md).

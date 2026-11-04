@@ -80,7 +80,57 @@ const UI_FR={
  'No hay premios que coincidan con la búsqueda.':'Aucune récompense ne correspond à votre recherche.',
  'No hay eventos que coincidan con la búsqueda.':'Aucun événement ne correspond à votre recherche.',
 };
-function t(v){return activeLang==='fr'?(UI_FR[String(v)]||String(v)):String(v);}
+const UI_ALL_FR={...UI_FR,...(window.BELLAQUITAS_I18N_FR||{})};
+function translateLabel(value,lang=activeLang,sourceSettings=null){
+ const original=String(value??'');
+ const copy=(sourceSettings||settings?.())?.ui_copy?.[lang];
+ const override=copy?.[original.trim()];if(typeof override==='string')return override;
+ if(lang!=='fr')return original;
+ const translated=UI_ALL_FR[original.trim()];if(translated!==undefined)return translated;
+ // Dynamic counter and point labels: do not translate names, emails, identifiers or codes.
+ let m=original.trim().match(/^(\d+) resultados?$/);if(m)return `${m[1]} résultat${m[1]==='1'?'':'s'}`;
+ m=original.trim().match(/^(\d+) visitas?$/);if(m)return `${m[1]} visite${m[1]==='1'?'':'s'}`;
+ m=original.trim().match(/^(\d+) puntos?$/);if(m)return `${m[1]} points`;
+ m=original.trim().match(/^En espera \((\d+)\)$/);if(m)return `En attente (${m[1]})`;
+ m=original.trim().match(/^(.+) puntos históricos para el próximo nivel\.$/);if(m)return `${m[1]} points cumulés pour le prochain niveau.`;
+ m=original.trim().match(/^\d+ en total · \d+ visibles para la gente$/);if(m)return original.replace('en total','au total').replace('visibles para la gente','visibles par le public');
+ m=original.trim().match(/^Imagen de (.+)$/);if(m)return 'Image de '+m[1];
+ m=original.trim().match(/^Vas a modificar la cuenta de ([^\n]+)\./);if(m)return original.replace('Vas a modificar la cuenta de','Vous allez modifier le compte de').replace('¿Confirmas los cambios?','Confirmez-vous ces modifications ?').replace('Se cambiará','Sera modifié');
+ m=original.trim().match(/^Solicitar "(.+)" por (\d+) puntos\?$/);if(m)return `Demander « ${m[1]} » pour ${m[2]} points ?`;
+ if(original.trim().startsWith('¿Quieres eliminar definitivamente'))return original.replace('¿Quieres eliminar definitivamente','Voulez-vous supprimer définitivement').replace('Esta acción no se puede deshacer.','Cette action est irréversible.').replace('Si solo quieres quitarlo de la web, pulsa Cancelar y usa Ocultar.','Pour le retirer du site sans le supprimer, cliquez sur Annuler puis sur Masquer.');
+  m=original.trim().match(/^(NUEVO|EDITAR) (EVENTO|PREMIO|PROMOCIÓN)$/);if(m)return (m[1]==='NUEVO'?'CRÉER UNE ':'MODIFIER UNE ')+({EVENTO:'ÉVÉNEMENT',PREMIO:'RÉCOMPENSE',PROMOCIÓN:'PROMOTION'}[m[2]]);
+ return original;
+}
+function t(v){return H(translateLabel(v));}
+// Traducir también los textos y etiquetas estáticos de formularios, mensajes y paneles.
+// El texto introducido en inputs no se modifica. El contenido de eventos se traduce mediante campos localizados.
+function translateDOM(root=document,lang=activeLang,sourceSettings=null){
+ if(!root)return;
+ const candidates=[];
+ for(const base of [root.querySelector?.('#app')||root,root.querySelector?.('#install-guide'),root.querySelector?.('#toast')]){
+  if(!base||candidates.includes(base))continue;candidates.push(base);
+  const walker=(base.ownerDocument||root).createTreeWalker(base,NodeFilter.SHOW_TEXT);
+  let node;
+  while((node=walker.nextNode())){
+   const parent=node.parentElement;if(!parent||parent.closest('script,style,textarea,option[data-raw],.user-data,[data-no-translate]'))continue;
+   const original=node.nodeValue||'',trimmed=original.trim();if(!trimmed)continue;
+   const translated=translateLabel(trimmed,lang,sourceSettings);
+   if(translated!==trimmed)node.nodeValue=original.replace(trimmed,translated);
+  }
+  base.querySelectorAll?.('[placeholder],[aria-label],[title]').forEach(el=>{
+   for(const attr of ['placeholder','aria-label','title','alt']){
+    const before=el.getAttribute(attr);if(!before)continue;
+    const after=translateLabel(before,lang,sourceSettings);if(after!==before)el.setAttribute(attr,after);
+   }
+  });
+ }
+}
+function localizedValue(entity,key){
+ const raw=String(entity?.[key]??'');
+ const translated=activeLang==='fr'?entity?.localized_content?.fr?.[key]:entity?.localized_content?.es?.[key];
+ // No inventar traducciones de contenido personalizado que el autor aún no haya traducido.
+ return typeof translated==='string'&&translated.trim()?translated:translateLabel(raw);
+}
 // Búsqueda pública: no consulta ni muestra datos privados de socios.
 const searchFold=value=>String(value??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('es-ES').trim();
 function filterCatalogCards(input){
@@ -98,8 +148,8 @@ function siteSearchItems(){
   {title:siteText('faq_title'),detail:t('Preguntas frecuentes'),route:'/preguntas',terms:'ayuda dudas preguntas questions frecuentes'},
   {title:t('Crear cuenta'),detail:t('Registro e inicio de sesión'),route:'/registro',terms:'crear cuenta registro registrarse inscription cuenta'},
   {title:t('Iniciar sesión'),detail:t('Acceso a tu perfil'),route:'/acceso',terms:'login acceder cuenta perfil entrer connexion'},
-  ...data.events.filter(e=>e.active).map(e=>({title:String(e.name),detail:t('Evento')+' · '+eventDate(e.date_label,e.start_time),route:'/eventos',terms:String(e.description||'')+' '+String(e.location||'')+' '+String(e.date_label||'')+' eventos'})),
-  ...data.rewards.filter(r=>r.active).map(r=>({title:String(r.name),detail:t('Premio')+' · '+fmt(r.cost)+' '+t('puntos'),route:'/acceso',terms:String(r.description||'')+' '+String(r.category||'')+' recompensa premio'}))
+  ...data.events.filter(e=>e.active).map(e=>({title:localizedValue(e,'name'),detail:t('Evento')+' · '+eventDate(e.date_label,e.start_time),route:'/eventos',terms:String(e.description||'')+' '+String(e.location||'')+' '+String(e.date_label||'')+' eventos'})),
+  ...data.rewards.filter(r=>r.active).map(r=>({title:localizedValue(r,'name'),detail:t('Premio')+' · '+fmt(r.cost)+' '+t('puntos'),route:'/acceso',terms:String(r.description||'')+' '+String(r.category||'')+' recompensa premio'}))
  ];
  return items.filter(i=>i.title);
 }
@@ -114,7 +164,7 @@ function setSiteSearchOpen(open){
  panel.hidden=!open;const button=$('[data-action="open-search"]');if(button)button.setAttribute('aria-expanded',String(open));
  if(open){menuOpen=false;$('#site-menu')?.classList.remove('open');const toggle=$('.menu-toggle');if(toggle){toggle.setAttribute('aria-expanded','false');toggle.textContent='☰';}renderSiteSearch();setTimeout(()=>$('#site-search-input')?.focus({preventScroll:true}),0);}
 }
-function langSwitcher(){return `<div class="lang-switch" role="group" aria-label="Idioma / Langue"><span class="lang-globe" aria-hidden="true">🌐</span><button type="button" data-action="set-lang" data-lang="es" class="lang-choice ${activeLang==='es'?'active':''}" aria-pressed="${activeLang==='es'}">Español</button><span class="lang-sep" aria-hidden="true">·</span><button type="button" data-action="set-lang" data-lang="fr" class="lang-choice ${activeLang==='fr'?'active':''}" aria-pressed="${activeLang==='fr'}">Français</button></div>`;}
+function langSwitcher(){return `<div class="lang-switch" role="group" aria-label="Idioma / Langue"><span class="lang-globe" aria-hidden="true">🌐</span><button type="button" data-action="set-lang" data-lang="es" class="lang-choice ${activeLang==='es'?'active':''}" aria-pressed="${activeLang==='es'}"><span class="lang-full">Español</span><span class="lang-short">ES</span></button><span class="lang-sep" aria-hidden="true">·</span><button type="button" data-action="set-lang" data-lang="fr" class="lang-choice ${activeLang==='fr'?'active':''}" aria-pressed="${activeLang==='fr'}"><span class="lang-full">Français</span><span class="lang-short">FR</span></button></div>`;}
 
 let deferredInstallPrompt = null;
 window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();deferredInstallPrompt=event;});
@@ -126,7 +176,7 @@ async function installApp(){
   if(deferredInstallPrompt){const prompt=deferredInstallPrompt;deferredInstallPrompt=null;await prompt.prompt();await prompt.userChoice;return;}
   const dialog=document.getElementById('install-guide');
   if(dialog&&typeof dialog.showModal==='function')dialog.showModal();
-  else window.alert('iPhone: abre Safari, pulsa Compartir y Añadir a pantalla de inicio. Android: abre Chrome y pulsa Instalar aplicación en el menú.');
+  else window.alert(translateLabel('iPhone: abre Safari, pulsa Compartir y Añadir a pantalla de inicio. Android: abre Chrome y pulsa Instalar aplicación en el menú.'));
 }
 if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
   window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js',{scope:'./'}).catch(err=>console.warn('Instalación PWA no disponible:',err)));
@@ -138,7 +188,7 @@ function authRedirectUrl(recovery=false){const url=new URL(window.location.href)
 function googleRedirectUrl(){const url=new URL(authRedirectUrl());url.searchParams.set('acceso','google');return url.toString();}
 function cleanGoogleReturnUrl(){const url=new URL(window.location.href);for(const key of ['acceso','code','error','error_code','error_description'])url.searchParams.delete(key);history.replaceState(null,'',url.pathname+url.search+url.hash);}
 function destinationForUser(){return current?.role==='admin'?'/panel':current?.role==='puerta'?'/puerta':'/mi-espacio';}
-function formFeedback(message){const box=$('#auth-feedback');if(!box)return;box.textContent=message;box.hidden=!message;}
+function formFeedback(message){const box=$('#auth-feedback');if(!box)return;box.textContent=translateLabel(message);box.hidden=!message;}
 function clearRecoveryUrl(){const url=new URL(window.location.href);url.searchParams.delete('recuperar');url.searchParams.delete('code');history.replaceState(null,'',url.pathname+url.search+url.hash);}
 
 let route = location.hash.slice(1) || '/';
@@ -148,8 +198,8 @@ function getProfile(id) { return data.profiles.find(p=>p.id===id); }
 function getReward(id) { return data.rewards.find(r=>r.id===id); }
 // Los cambios publicados se leen de site_content; los borradores tienen su propia tabla privada.
 const SITE_DEFAULTS = {
-  theme:'classic', logo_url:'',
-  nav_experience:'Experiencia', nav_events:'Eventos', nav_benefits:'Ventajas', nav_faq:'Preguntas',
+  theme:'classic', logo_url:'', header_logo_url:'', header_show_logo:true, header_show_text:true, hero_show_logo:true, ui_copy:{es:{},fr:{}}, brand_title:'BELLAQUITAS', brand_suffix:'FEST',
+  nav_home:'Inicio', icon_home:'⌂', icon_card:'◈', icon_rewards:'✦', icon_events:'▦', icon_profile:'♙', icon_gate:'◎', icon_admin:'▥', icon_logout:'↪', nav_experience:'Experiencia', nav_events:'Eventos', nav_benefits:'Ventajas', nav_faq:'Preguntas',
   hero_eyebrow:'UNA COMUNIDAD. UNA EXPERIENCIA.', hero_title_a:'VIVE EL', hero_title_b:'MOMENTO.',
   hero_text:'Tu tarjeta, tus puntos, tus experiencias.',
   hero_tag_a_icon:'✦', hero_tag_a_title:'BELLAQUITAS CLUB', hero_tag_a_desc:'', hero_tag_b_icon:'♛', hero_tag_b_title:'MEMBER EXPERIENCE', hero_tag_b_desc:'',
@@ -180,15 +230,15 @@ const SITE_DEFAULTS = {
 };
 const EDITOR_SECTIONS = {experience:'Experiencia',events:'Eventos',benefits:'Ventajas',faq:'Preguntas',cta:'Invitación final'};
 const SITE_FIELDS = {
-  main:[['hero_eyebrow','Frase pequeña de arriba'],['hero_title_a','Primera línea del título'],['hero_title_b','Segunda línea del título'],['hero_text','Texto de presentación','textarea'],['hero_tag_a_icon','Cartel junto al logo · icono 1'],['hero_tag_a_title','Cartel junto al logo · título 1'],['hero_tag_a_desc','Cartel junto al logo · texto 1'],['hero_tag_b_icon','Cartel junto al logo · icono 2'],['hero_tag_b_title','Cartel junto al logo · título 2'],['hero_tag_b_desc','Cartel junto al logo · texto 2'],['hero_primary','Botón principal'],['hero_secondary','Segundo botón'],['hero_stat_1','Etiqueta 1'],['hero_stat_2','Etiqueta 2'],['hero_stat_3','Etiqueta 3'],['announcement_brand','Nombre de la banda'],['announcement','Frase de la banda'],['logo_url','Imagen principal / logotipo (URL segura)','image']],
+  main:[['brand_title','Nombre de la cabecera'],['brand_suffix','Segunda línea del nombre'],['header_logo_url','Imagen de la cabecera (independiente)','image'],['header_show_logo','Mostrar imagen de cabecera','checkbox'],['header_show_text','Mostrar nombre junto al logo','checkbox'],['hero_show_logo','Mostrar logo grande de portada','checkbox'],['hero_eyebrow','Frase pequeña de arriba'],['hero_title_a','Primera línea del título'],['hero_title_b','Segunda línea del título'],['hero_text','Texto de presentación','textarea'],['hero_tag_a_icon','Cartel junto al logo · icono 1'],['hero_tag_a_title','Cartel junto al logo · título 1'],['hero_tag_a_desc','Cartel junto al logo · texto 1'],['hero_tag_b_icon','Cartel junto al logo · icono 2'],['hero_tag_b_title','Cartel junto al logo · título 2'],['hero_tag_b_desc','Cartel junto al logo · texto 2'],['hero_primary','Botón principal'],['hero_secondary','Segundo botón'],['hero_stat_1','Etiqueta 1'],['hero_stat_2','Etiqueta 2'],['hero_stat_3','Etiqueta 3'],['announcement_brand','Nombre de la banda'],['announcement','Frase de la banda'],['logo_url','Imagen principal / logotipo (URL segura)','image']],
   experience:[['experience_eyebrow','Texto pequeño'],['experience_title','Título'],['experience_desc','Descripción','textarea'],['feature_1_icon','Tarjeta 1 · icono'],['feature_1_title','Tarjeta 1 · título'],['feature_1_desc','Tarjeta 1 · texto','textarea'],['feature_2_icon','Tarjeta 2 · icono'],['feature_2_title','Tarjeta 2 · título'],['feature_2_desc','Tarjeta 2 · texto','textarea'],['feature_3_icon','Tarjeta 3 · icono'],['feature_3_title','Tarjeta 3 · título'],['feature_3_desc','Tarjeta 3 · texto','textarea']],
   events:[['events_eyebrow','Etiqueta cuando hay eventos'],['events_title','Título cuando hay eventos'],['events_desc','Descripción con eventos','textarea'],['events_empty_title','Título si no hay eventos'],['events_empty_desc','Descripción si no hay eventos','textarea']],
   benefits:[['benefits_eyebrow','Texto pequeño'],['benefits_title','Título'],['benefits_desc','Descripción','textarea'],['benefits_card_eyebrow','Tarjeta principal · etiqueta'],['benefits_card_title','Tarjeta principal · título'],['benefits_card_desc','Tarjeta principal · texto','textarea'],['benefits_card_button','Botón de la tarjeta'],['benefit_1_icon','Ventaja 1 · icono'],['benefit_1_title','Ventaja 1 · título'],['benefit_1_desc','Ventaja 1 · texto','textarea'],['benefit_2_icon','Ventaja 2 · icono'],['benefit_2_title','Ventaja 2 · título'],['benefit_2_desc','Ventaja 2 · texto','textarea'],['benefit_3_icon','Ventaja 3 · icono'],['benefit_3_title','Ventaja 3 · título'],['benefit_3_desc','Ventaja 3 · texto','textarea'],['benefit_4_icon','Ventaja 4 · icono'],['benefit_4_title','Ventaja 4 · título'],['benefit_4_desc','Ventaja 4 · texto','textarea']],
   faq:[['faq_eyebrow','Texto pequeño'],['faq_title','Título'],...Array.from({length:4},(_,i)=>[[`faq_${i+1}_q`,`Pregunta ${i+1}`],[`faq_${i+1}_a`,`Respuesta ${i+1}`,'textarea']]).flat()],
   cta:[['cta_eyebrow','Texto pequeño'],['cta_title','Título final'],['cta_desc','Texto de invitación','textarea'],['cta_button','Texto del botón']],
-  other:[['nav_experience','Menú: Experiencia'],['nav_events','Menú: Eventos'],['nav_benefits','Menú: Ventajas'],['nav_faq','Menú: Preguntas'],['footer_desc','Pie de página · lema']]
+  other:[['nav_home','Menú: Inicio'],['icon_home','Icono del inicio'],['icon_card','Icono de mi tarjeta'],['icon_rewards','Icono de premios'],['icon_events','Icono de eventos'],['icon_profile','Icono del perfil'],['icon_gate','Icono del personal de puerta'],['icon_admin','Icono del administrador'],['icon_logout','Icono de salir'],['brand_title','Nombre de la cabecera'],['brand_suffix','Segunda línea del nombre'],['header_logo_url','Imagen de cabecera (independiente)','image'],['header_show_logo','Mostrar imagen de cabecera','checkbox'],['header_show_text','Mostrar nombre junto al logo','checkbox'],['nav_experience','Menú: Experiencia'],['nav_events','Menú: Eventos'],['nav_benefits','Menú: Ventajas'],['nav_faq','Menú: Preguntas'],['footer_desc','Pie de página · lema']]
 };
-let editorDraft=null,editorDirty=false,editorCategory='main',editorDevice='desktop',editorPreviewOverride=null,editorBusy=false,editorSelection=null;
+let editorDraft=null,editorDirty=false,editorCategory='main',editorDevice='desktop',editorPreviewOverride=null,editorBusy=false,editorSelection=null,editorPage='home',editorLanguage=activeLang;
 function publishedSettings(){const row=data.site_content.find(x=>x.key==='homepage')||{};return {...SITE_DEFAULTS,hero_text:row.hero_text||SITE_DEFAULTS.hero_text,announcement:row.announcement||SITE_DEFAULTS.announcement,...(row.page_settings||{}),visible:{...SITE_DEFAULTS.visible,...(row.page_settings?.visible||{})},order:validOrder(row.page_settings?.order)};}
 function validOrder(order){const keys=Object.keys(EDITOR_SECTIONS);return Array.isArray(order)?[...new Set(order.filter(x=>keys.includes(x))),...keys.filter(x=>!order.includes(x))]:keys;}
 function settings(){return editorPreviewOverride||publishedSettings();}
@@ -218,16 +268,27 @@ const FR_SITE={
   faq_4_q:'Tout le monde peut-il accéder à l’administration ?',faq_4_a:'Non, seuls les comptes autorisés disposent de cet accès.',
  footer_desc:'Des expériences qui nous rapprochent.'
 };
-function siteText(field, fallback=''){
- const value=settings()[field];
- const raw=typeof value==='string'?value:(fallback||SITE_DEFAULTS[field]||'');
- // Traduire solo los textos de fábrica, sin alterar los textos personalizados del editor.
- if(activeLang==='fr' && FR_SITE[field] && raw===SITE_DEFAULTS[field])return FR_SITE[field];
- return raw;
+function siteText(field,fallback=''){
+ const content=settings();const raw=typeof content[field]==='string'?content[field]:(fallback||SITE_DEFAULTS[field]||'');
+ const lang=editorPreviewOverride?editorLanguage:activeLang;
+ if(lang==='fr'){
+  const localized=content.translations?.fr?.[field];
+  if(typeof localized==='string')return localized;
+  if(FR_SITE[field] && raw===SITE_DEFAULTS[field])return FR_SITE[field];
+  return translateLabel(raw,'fr');
+ }
+ const localized=content.translations?.es?.[field];
+ return typeof localized==='string'?localized:raw;
+}
+function headerImage(){return safeImage(settings().header_logo_url)||siteImage();}
+function headerBrand(preview=false){
+ const brandText=settings().header_show_text!==false?`<span class="brand-wordmark">${preview?`<span data-edit-field="brand_title">${H(siteText('brand_title'))}</span>`:H(siteText('brand_title'))} <em>${preview?`<span data-edit-field="brand_suffix">${H(siteText('brand_suffix'))}</span>`:H(siteText('brand_suffix'))}</em></span>`:'';
+ const brandImage=settings().header_show_logo!==false?`<span class="brand-symbol" ${preview?'data-edit-image="header_logo_url" role="button" tabindex="0" aria-label="Editar imagen de cabecera"':''}><img class="brand-logo-image" src="${H(headerImage())}" alt=""/></span>`:'';
+ return brandImage+brandText;
 }
 function showSection(key){return settings().visible?.[key]!==false;}
 function siteImage(){return safeImage(siteText('logo_url'))||'assets/logo-bellaquitas.webp';}
-function eventDate(value,time){if(!value)return 'Fecha por confirmar';const iso=/^\d{4}-\d{2}-\d{2}$/.test(value);const friendly=iso?new Date(value+'T12:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'}):value;return friendly+(time?' · '+String(time).slice(0,5):'');}
+function eventDate(value,time){if(!value)return 'Fecha por confirmar';const iso=/^\d{4}-\d{2}-\d{2}$/.test(value);const friendly=iso?new Date(value+'T12:00:00').toLocaleDateString(activeLang==='fr'?'fr-FR':'es-ES',{day:'numeric',month:'long',year:'numeric'}):value;return friendly+(time?' · '+String(time).slice(0,5):'');}
 function safeImage(url){const v=String(url||'');return /^https:\/\//i.test(v)?v:'';}
 const MEDIA_BUCKET='bellaquitas-media';
 function storageKeyFromPublicUrl(url){
@@ -250,28 +311,33 @@ function adminMeta(table,x){return table==='events'?eventDate(x.date_label,x.sta
 function adminLabel(table){return {events:'evento',rewards:'premio',promos:'promoción'}[table]||'contenido';}
 function focusAdminForm(){requestAnimationFrame(()=>document.getElementById('admin-item-form')?.querySelector('input[name="name"]')?.focus());}
 function recentDate(d) { try {return new Date(d).toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'});}catch {return '—';} }
-function toast(message) {const el=$('#toast'); if(!el)return;clearTimeout(noticeTimer);el.textContent=message;el.classList.add('show');noticeTimer=setTimeout(()=>el.classList.remove('show'),4000);}
+function ask(message){return window.confirm(translateLabel(message));}
+function toast(message) {const el=$('#toast'); if(!el)return;clearTimeout(noticeTimer);el.textContent=translateLabel(message);el.classList.add('show');noticeTimer=setTimeout(()=>el.classList.remove('show'),4000);}
 function header(){
  const preview=!!editorPreviewOverride;
  const authActions=current&&!preview?`<a href="#${current.role==='admin'?'/panel':'/mi-espacio'}" class="btn btn-secondary btn-mini">${current.role==='admin'?'Panel':t('Mi espacio')}</a>${current.role==='admin'?'<a href="#/editor" class="btn btn-primary btn-mini admin-edit-top">✎ Editar web</a>':''}`:`<a href="#/acceso" class="btn btn-secondary btn-mini">${t('Iniciar sesión')}</a><a href="#/registro" class="btn btn-primary btn-mini">${t('Crear cuenta')} ↗</a>`;
  const nav=[['experience','experiencia','nav_experience'],['events','eventos','nav_events'],['benefits','ventajas','nav_benefits'],['faq','preguntas','nav_faq']].filter(([key])=>showSection(key)).map(([,path,label])=>`<a class="nav-link" href="#/${path}">${preview?`<span data-edit-field="${label}">${H(siteText(label))}</span>`:H(siteText(label))}</a>`).join('');
  const menuAccount=current&&!preview?`<a class="btn btn-secondary" href="#${destinationForUser()}">Mi cuenta</a>${current.role==='admin'?'<a class="btn btn-primary" href="#/editor">✎ Editar web</a>':''}`:`<a class="btn btn-secondary" href="#/acceso">${t('Iniciar sesión')}</a><a class="btn btn-primary" href="#/registro">${t('Crear cuenta')}</a>`;
- return `<header class="site-header"><div class="container nav-wrap"><a class="brand" href="#/" aria-label="Bellaquitas Fest, inicio"><span class="brand-symbol" ${preview?'data-edit-image="logo_url" role="button" tabindex="0" aria-label="Editar logotipo de la web"':''}><img class="brand-logo-image" src="${H(siteImage())}" alt=""/></span><span>BELLAQUITAS <em>FEST</em></span></a><nav id="site-menu" class="main-nav ${menuOpen?'open':''}" aria-label="Navegación principal"><a class="nav-link" href="#/">${t('Inicio')}</a>${nav}<div class="mobile-menu-actions">${menuAccount}</div><button type="button" class="menu-install" data-action="install-app">📲 Instalar la app</button></nav><div class="nav-actions">${langSwitcher()}<button class="header-search-button" type="button" data-action="open-search" aria-label="${t('Buscar')}" aria-expanded="false" aria-controls="site-search-panel" title="${t('Buscar')}">⌕</button>${authActions}<button class="btn btn-secondary btn-mini menu-toggle" type="button" data-action="menu" aria-controls="site-menu" aria-expanded="${menuOpen}" aria-label="${menuOpen?'Cerrar menú':'Abrir menú'}">${menuOpen?'✕':'☰'}</button></div></div>${searchPanel()}</header>`;
+ return `<header class="site-header"><div class="container nav-wrap"><a class="brand" href="#/" aria-label="Bellaquitas Fest, inicio">${headerBrand(preview)}</a><nav id="site-menu" class="main-nav ${menuOpen?'open':''}" aria-label="Navegación principal"><a class="nav-link" href="#/">${preview?`<span data-edit-field="nav_home">${H(siteText('nav_home'))}</span>`:H(siteText('nav_home'))}</a>${nav}<div class="mobile-menu-actions">${menuAccount}</div><button type="button" class="menu-install" data-action="install-app">📲 Instalar la app</button></nav><div class="nav-actions">${langSwitcher()}<button class="header-search-button" type="button" data-action="open-search" aria-label="${t('Buscar')}" aria-expanded="false" aria-controls="site-search-panel" title="${t('Buscar')}">⌕</button>${authActions}<button class="btn btn-secondary btn-mini menu-toggle" type="button" data-action="menu" aria-controls="site-menu" aria-expanded="${menuOpen}" aria-label="${menuOpen?'Cerrar menú':'Abrir menú'}">${menuOpen?'✕':'☰'}</button></div></div>${searchPanel()}</header>`;
 }
-function footer(){return `<footer class="footer"><div class="container footer-flex"><div class="brand"><span class="brand-symbol" ${editorPreviewOverride?'data-edit-image="logo_url" role="button" tabindex="0" aria-label="Editar logotipo de la web"':''}><img class="brand-logo-image" src="${H(siteImage())}" alt=""/></span>BELLAQUITAS <em>FEST</em></div><p>© ${new Date().getFullYear()} Bellaquitas Fest. ${editorPreviewOverride?`<span data-edit-field="footer_desc">${H(siteText('footer_desc'))}</span>`:H(siteText('footer_desc'))}</p><p>${showSection('faq')?'<a href="#/preguntas">Preguntas frecuentes</a> · ':''}<a href="#/acceso">${t('Iniciar sesión')}</a> · <a href="#/registro">${t('Crear cuenta')}</a></p><button type="button" class="footer-install" data-action="install-app">📲 Instalar la app</button></div></footer>`;}
-function publicEvents(limit=3){return data.events.filter(x=>x.active).sort((a,b)=>(a.date_label||'9999').localeCompare(b.date_label||'9999')).slice(0,limit).map((e,i)=>`<article class="event-card" data-catalog-search="${H(searchFold(e.name+' '+(e.description||'')+' '+e.location+' '+e.date_label))}" ${editorPreviewOverride?`data-edit-event-id="${H(e.id)}"`:``}>${safeImage(e.image_url)?`<img class="event-photo" src="${H(safeImage(e.image_url))}" alt="Imagen de ${H(e.name)}" loading="lazy"/>`:``}<div class="event-top"><span class="pill"><span class="dot"></span> ${H(eventDate(e.date_label,e.start_time))}</span><span class="event-num">0${i+1}</span></div><h3>${H(e.name)}</h3><p>${H(e.description)}</p><div class="event-meta"><span>📍 ${H(e.location)}</span></div></article>`).join('')||'<p class="empty">No hay eventos publicados por ahora.</p>';}
-function landing(){
+function footer(){return `<footer class="footer"><div class="container footer-flex"><div class="brand">${headerBrand(!!editorPreviewOverride)}</div><p>© ${new Date().getFullYear()} Bellaquitas Fest. ${editorPreviewOverride?`<span data-edit-field="footer_desc">${H(siteText('footer_desc'))}</span>`:H(siteText('footer_desc'))}</p><p>${showSection('faq')?'<a href="#/preguntas">Preguntas frecuentes</a> · ':''}<a href="#/acceso">${t('Iniciar sesión')}</a> · <a href="#/registro">${t('Crear cuenta')}</a></p><button type="button" class="footer-install" data-action="install-app">📲 Instalar la app</button></div></footer>`;}
+function publicEvents(limit=3){return data.events.filter(x=>x.active).sort((a,b)=>(a.date_label||'9999').localeCompare(b.date_label||'9999')).slice(0,limit).map((e,i)=>`<article class="event-card" data-catalog-search="${H(searchFold(e.name+' '+(e.description||'')+' '+e.location+' '+e.date_label))}" ${editorPreviewOverride?`data-edit-event-id="${H(e.id)}"`:``}>${safeImage(e.image_url)?`<img class="event-photo" src="${H(safeImage(e.image_url))}" alt="Imagen de ${H(e.name)}" loading="lazy"/>`:``}<div class="event-top"><span class="pill"><span class="dot"></span> ${H(eventDate(e.date_label,e.start_time))}</span><span class="event-num">0${i+1}</span></div><h3>${H(localizedValue(e,'name'))}</h3><p>${H(localizedValue(e,'description'))}</p><div class="event-meta"><span>📍 ${H(e.location)}</span></div></article>`).join('')||'<p class="empty">No hay eventos publicados por ahora.</p>';}
+function landing(sectionOnly=""){
  const txt=k=>editorPreviewOverride?`<span data-edit-field="${H(k)}">${H(siteText(k))}</span>`:H(siteText(k));
  const hasEvents=data.events.some(x=>x.active);
  const blocks={
-  experience:`<section class="section" id="experiencia"><div class="container"><div class="section-head"><div><span class="eyebrow">${txt('experience_eyebrow')}</span><h2>${txt('experience_title')}</h2><p>${txt('experience_desc')}</p></div></div><div class="three-grid">${[1,2,3].map((n)=>`<article class="feature"><div class="feature-icon">${txt('feature_'+n+'_icon')}</div><h3>${txt('feature_'+n+'_title')}</h3><p>${txt('feature_'+n+'_desc')}</p></article>`).join('')}</div></div></section>`,
-  events:`<section class="section" id="eventos"><div class="container"><div class="section-head"><div><span class="eyebrow">${hasEvents?txt('events_eyebrow'):'PRÓXIMAMENTE'}</span><h2>${hasEvents?txt('events_title'):txt('events_empty_title')}</h2><p>${hasEvents?txt('events_desc'):txt('events_empty_desc')}</p></div><a class="btn btn-secondary btn-mini" href="#/acceso">Ver en mi cuenta ↗</a></div><div class="three-grid">${publicEvents()}</div></div></section>`,
-  benefits:`<section class="section" id="ventajas"><div class="container"><div class="section-head"><div><span class="eyebrow">${txt('benefits_eyebrow')}</span><h2>${txt('benefits_title')}</h2><p>${txt('benefits_desc')}</p></div></div><div class="benefit-grid"><div class="big-benefit"><div class="eyebrow">${txt('benefits_card_eyebrow')}</div><div class="loyalty-showcase"><a href="#/tarjeta" aria-label="Ver tarjeta de fidelidad"><img src="assets/tarjeta-conejita-frente.webp" alt="Bellaquitas Fest: tarjeta de fidelidad con la conejita" loading="lazy"/></a></div><h3>${txt('benefits_card_title')}</h3><p>${txt('benefits_card_desc')}</p><a href="${current?'#/tarjeta':'#/registro'}" class="btn btn-primary">${txt('benefits_card_button')} ↗</a></div><div class="list-benefits">${[1,2,3,4].map(n=>`<div class="benefit-item"><div class="round-icon">${txt('benefit_'+n+'_icon')}</div><div><strong>${txt('benefit_'+n+'_title')}</strong><p>${txt('benefit_'+n+'_desc')}</p></div></div>`).join('')}</div></div></div></section>`,
-  faq:`<section class="section" id="preguntas"><div class="container"><div class="section-head"><div><span class="eyebrow">${txt('faq_eyebrow')}</span><h2>${txt('faq_title')}</h2></div></div><div class="faq-list">${[1,2,3,4].map(n=>`<div class="faq-card"><h3>${txt('faq_'+n+'_q')}</h3><p>${txt('faq_'+n+'_a')}</p></div>`).join('')}</div></div></section>`,
-  cta:`<section class="section" id="unete" style="padding-top:15px"><div class="container"><div class="cta-banner"><div><div class="eyebrow">${txt('cta_eyebrow')}</div><h2>${txt('cta_title')}</h2><p>${txt('cta_desc')}</p></div><a href="#/acceso" class="btn btn-primary">${txt('cta_button')} ↗</a></div></div></section>`
+  experience:`<section class="section" id="experiencia" ${editorPreviewOverride?'data-edit-section="experience"':''}><div class="container"><div class="section-head"><div><span class="eyebrow">${txt('experience_eyebrow')}</span><h2>${txt('experience_title')}</h2><p>${txt('experience_desc')}</p></div></div><div class="three-grid">${[1,2,3].map((n)=>`<article class="feature"><div class="feature-icon">${txt('feature_'+n+'_icon')}</div><h3>${txt('feature_'+n+'_title')}</h3><p>${txt('feature_'+n+'_desc')}</p></article>`).join('')}</div></div></section>`,
+  events:`<section class="section" id="eventos" ${editorPreviewOverride?'data-edit-section="events"':''}><div class="container"><div class="section-head"><div><span class="eyebrow">${hasEvents?txt('events_eyebrow'):'PRÓXIMAMENTE'}</span><h2>${hasEvents?txt('events_title'):txt('events_empty_title')}</h2><p>${hasEvents?txt('events_desc'):txt('events_empty_desc')}</p></div><a class="btn btn-secondary btn-mini" href="#/acceso">Ver en mi cuenta ↗</a></div><div class="three-grid">${publicEvents()}</div></div></section>`,
+  benefits:`<section class="section" id="ventajas" ${editorPreviewOverride?'data-edit-section="benefits"':''}><div class="container"><div class="section-head"><div><span class="eyebrow">${txt('benefits_eyebrow')}</span><h2>${txt('benefits_title')}</h2><p>${txt('benefits_desc')}</p></div></div><div class="benefit-grid"><div class="big-benefit"><div class="eyebrow">${txt('benefits_card_eyebrow')}</div><div class="loyalty-showcase"><a href="#/tarjeta" aria-label="Ver tarjeta de fidelidad"><img src="assets/tarjeta-conejita-frente.webp" alt="Bellaquitas Fest: tarjeta de fidelidad con la conejita" loading="lazy"/></a></div><h3>${txt('benefits_card_title')}</h3><p>${txt('benefits_card_desc')}</p><a href="${current?'#/tarjeta':'#/registro'}" class="btn btn-primary">${txt('benefits_card_button')} ↗</a></div><div class="list-benefits">${[1,2,3,4].map(n=>`<div class="benefit-item"><div class="round-icon">${txt('benefit_'+n+'_icon')}</div><div><strong>${txt('benefit_'+n+'_title')}</strong><p>${txt('benefit_'+n+'_desc')}</p></div></div>`).join('')}</div></div></div></section>`,
+  faq:`<section class="section" id="preguntas" ${editorPreviewOverride?'data-edit-section="faq"':''}><div class="container"><div class="section-head"><div><span class="eyebrow">${txt('faq_eyebrow')}</span><h2>${txt('faq_title')}</h2></div></div><div class="faq-list">${[1,2,3,4].map(n=>`<div class="faq-card"><h3>${txt('faq_'+n+'_q')}</h3><p>${txt('faq_'+n+'_a')}</p></div>`).join('')}</div></div></section>`,
+  cta:`<section class="section" id="unete" ${editorPreviewOverride?'data-edit-section="cta"':''} style="padding-top:15px"><div class="container"><div class="cta-banner"><div><div class="eyebrow">${txt('cta_eyebrow')}</div><h2>${txt('cta_title')}</h2><p>${txt('cta_desc')}</p></div><a href="#/acceso" class="btn btn-primary">${txt('cta_button')} ↗</a></div></div></section>`
  };
  const blockHTML=validOrder(settings().order).filter(k=>showSection(k)).map(k=>`<div class="line"></div>${blocks[k]}`).join('');
- return `${header()}<main><section class="hero" id="inicio"><div class="container hero-inner"><div class="hero-copy"><div class="eyebrow">✦ ${txt('hero_eyebrow')}</div><h1>${txt('hero_title_a')}<br/><span>${txt('hero_title_b')}</span></h1><p>${txt('hero_text')}</p><div class="hero-cta"><a class="btn btn-primary" href="${current?'#/mi-espacio':'#/registro'}">${txt('hero_primary')} <span>↗</span></a><a class="btn btn-ghost" href="#/ventajas">${txt('hero_secondary')} <span>→</span></a></div><div class="hero-stats"><div class="hero-stat"><strong>01</strong><span>${txt('hero_stat_1')}</span></div><div class="hero-stat"><strong>∞</strong><span>${txt('hero_stat_2')}</span></div><div class="hero-stat"><strong>✦</strong><span>${txt('hero_stat_3')}</span></div></div></div><div class="hero-art"><img class="hero-emblem" src="${H(siteImage())}" alt="Imagen de Bellaquitas Fest" ${editorPreviewOverride?'data-edit-image="logo_url" tabindex="0" role="button" aria-label="Cambiar imagen principal"':''}/></div></div></section><div class="announce"><span>✦ ${txt('announcement_brand')}</span> &nbsp; · &nbsp; ${txt('announcement')}</div>${blockHTML}</main>${footer()}`;
+ if(sectionOnly&&Object.prototype.hasOwnProperty.call(blocks,sectionOnly)){
+  const title=siteText({experience:'experience_title',events:'events_title',benefits:'benefits_title',faq:'faq_title',cta:'cta_title'}[sectionOnly]);
+  return `${header()}<main class="standalone-page"><div class="container standalone-navigation"><a href="#/" class="btn btn-secondary btn-mini">← ${t('Inicio')}</a><strong>${H(title)}</strong></div>${blocks[sectionOnly]}</main>${footer()}`;
+ }
+ return `${header()}<main><section class="hero" id="inicio"><div class="container hero-inner"><div class="hero-copy"><div class="eyebrow">✦ ${txt('hero_eyebrow')}</div><h1>${txt('hero_title_a')}<br/><span>${txt('hero_title_b')}</span></h1><p>${txt('hero_text')}</p><div class="hero-cta"><a class="btn btn-primary" href="${current?'#/mi-espacio':'#/registro'}">${txt('hero_primary')} <span>↗</span></a><a class="btn btn-ghost" href="#/ventajas">${txt('hero_secondary')} <span>→</span></a></div><div class="hero-stats"><div class="hero-stat"><strong>01</strong><span>${txt('hero_stat_1')}</span></div><div class="hero-stat"><strong>∞</strong><span>${txt('hero_stat_2')}</span></div><div class="hero-stat"><strong>✦</strong><span>${txt('hero_stat_3')}</span></div></div></div><div class="hero-art">${settings().hero_show_logo!==false?`<img class="hero-emblem" src="${H(siteImage())}" alt="Imagen de Bellaquitas Fest" ${editorPreviewOverride?'data-edit-image="logo_url" tabindex="0" role="button" aria-label="Cambiar imagen principal"':''}/>`:''}</div></div></section><div class="announce"><span>✦ ${txt('announcement_brand')}</span> &nbsp; · &nbsp; ${txt('announcement')}</div>${blockHTML}</main>${footer()}`;
 }
 function auth(){
   const titles={login:'Inicia sesión.',signup:'Crea tu cuenta.',recover:'Recupera tu acceso.',reset:'Elige una contraseña nueva.'};
@@ -303,12 +369,12 @@ function appShell(content){
   const memberLinks=[['/mi-espacio','home','Mi espacio'],['/tarjeta','card','Mi tarjeta'],['/premios','rewards','Premios'],['/agenda','events','Eventos'],['/perfil','profile','Perfil']];
   const links=current.role==='admin'?[['/panel','admin','Panel administrador'],['/editor','editor','Editar web'],['/puerta','gate','Puerta'],...memberLinks]:current.role==='puerta'?[...memberLinks,['/puerta','gate','Puerta']]:memberLinks;
   const mobileLinks=current.role==='admin'?[links[0],links[1],memberLinks[0],memberLinks[3],memberLinks[4]]:current.role==='puerta'?[memberLinks[0],memberLinks[1],memberLinks[2],memberLinks[3],links[5]]:memberLinks;
-  const side=links.map(([url,ic,label])=>`<a href="#${url}" class="side-link ${route===url?'active':''}"><span class="ico">${ico[ic]}</span>${t(label)}</a>`).join('');
-  const mobile=mobileLinks.map(([url,ic,label])=>`<a href="#${url}" class="${route===url?'active':''}"><span class="ico">${ico[ic]}</span>${t(label==='Panel administrador'?'Panel':label==='Mi espacio'?'Inicio':label==='Mi tarjeta'?'Tarjeta':label)}</a>`).join('');
-  return `<div class="app-shell"><aside class="sidebar"><div class="side-head"><a class="brand" href="#${current.role==='admin'?'/panel':'/mi-espacio'}"><span class="brand-symbol"><img class="brand-logo-image" src="${H(siteImage())}" alt=""/></span><span>BELLAQUITAS <em>FEST</em></span></a></div><div class="side-group"><div class="side-caption">${current.role==='admin'?'Administración':'Mi comunidad'}</div>${side}</div><div class="side-bottom"><div class="side-profile"><span class="avatar">${H(current.name.split(' ').map(x=>x[0]).slice(0,2).join(''))}</span><span><b>${H(current.name)}</b><small>${roleLabel(current.role)}</small></span></div><button class="btn btn-secondary btn-mini" style="width:100%" type="button" data-action="logout">${ico.logout} Cerrar sesión</button></div></aside><main class="app-main"><div class="app-top"><div class="app-page"><a href="#${current.role==='admin'?'/panel':'/mi-espacio'}" class="gold">${current.role==='admin'?t('Panel administrador'):'Bellaquitas Club'}</a> &nbsp; / &nbsp; <b>${H(route.replace('/','')||'inicio')}</b></div><div class="app-top-right">${langSwitcher()}${current.role==='admin'?'<a class="btn btn-primary btn-mini" href="#/editor">✎ Editar web</a>':''}<span class="pill"><span class="dot"></span>Cuenta activa</span><button type="button" class="btn btn-secondary btn-mini" data-action="logout">Salir ↪</button></div></div>${content}</main><nav class="mobile-appbar" aria-label="Menú de cuenta">${mobile}</nav></div>`;
+  const side=links.map(([url,ic,label])=>`<a href="#${url}" class="side-link ${route===url?'active':''}"><span class="ico">${H(siteText('icon_'+ic))}</span>${t(label)}</a>`).join('');
+  const mobile=mobileLinks.map(([url,ic,label])=>`<a href="#${url}" class="${route===url?'active':''}"><span class="ico">${H(siteText('icon_'+ic))}</span>${t(label==='Panel administrador'?'Panel':label==='Mi espacio'?'Inicio':label==='Mi tarjeta'?'Tarjeta':label)}</a>`).join('');
+  return `<div class="app-shell"><aside class="sidebar"><div class="side-head"><a class="brand" href="#${current.role==='admin'?'/panel':'/mi-espacio'}">${headerBrand(!!editorPreviewOverride)}</a></div><div class="side-group"><div class="side-caption">${current.role==='admin'?'Administración':'Mi comunidad'}</div>${side}</div><div class="side-bottom"><div class="side-profile"><span class="avatar">${H(current.name.split(' ').map(x=>x[0]).slice(0,2).join(''))}</span><span><b>${H(current.name)}</b><small>${roleLabel(current.role)}</small></span></div><button class="btn btn-secondary btn-mini" style="width:100%" type="button" data-action="logout">${H(siteText('icon_logout'))} Cerrar sesión</button></div></aside><main class="app-main"><div class="app-top"><div class="app-page"><a href="#${current.role==='admin'?'/panel':'/mi-espacio'}" class="gold">${current.role==='admin'?t('Panel administrador'):'Bellaquitas Club'}</a> &nbsp; / &nbsp; <b>${H(route.replace('/','')||'inicio')}</b></div><div class="app-top-right">${langSwitcher()}${current.role==='admin'?'<a class="btn btn-primary btn-mini" href="#/editor">✎ Editar web</a>':''}<span class="pill"><span class="dot"></span>Cuenta activa</span><button type="button" class="btn btn-secondary btn-mini" data-action="logout">Salir ↪</button></div></div>${content}</main><nav class="mobile-appbar" aria-label="Menú de cuenta">${mobile}</nav></div>`;
 }
 const pageHead=(title,sub,eyebrow='TU ESPACIO')=>`<div class="app-header"><div class="eyebrow">${H(eyebrow)}</div><h1>${H(title)}</h1><p>${H(sub)}</p></div>`;
-function summary(){const next=tierNext(current.lifetime_points);const progress=next?Math.min(100,Math.round(current.lifetime_points/next*100)):100;const events=data.events.filter(e=>e.active).sort((a,b)=>(a.date_label||'9999').localeCompare(b.date_label||'9999')).slice(0,3);const rewardList=data.rewards.filter(r=>r.active).slice(0,3);return `${pageHead(`Hola, ${current.name.split(' ')[0]} ✦`,'Aquí tienes todo lo que ocurre en tu comunidad.','BELLAQUITAS MEMBER')}<div class="dash-grid"><div><div class="points-banner"><div><div class="eyebrow">TUS PUNTOS DISPONIBLES</div><div class="points-number">${fmt(current.points)}</div><p>Puntos para canjear en tus próximos premios.</p><a href="#/premios" class="btn btn-primary btn-mini">Explorar premios ↗</a></div><div class="points-symbol">✦</div></div><div class="metric-row"><div class="metric"><strong>${fmt(current.visits)}</strong><span>Visitas</span></div><div class="metric"><strong>${H(tier(current.lifetime_points))}</strong><span>Tu nivel</span></div><div class="metric"><strong>${fmt(current.lifetime_points)}</strong><span>Puntos históricos</span></div></div><div class="pane section-gap"><div class="section-title"><h2>Próximas experiencias</h2><a class="link-tiny" href="#/agenda">Ver todas ↗</a></div><div class="mini-list">${events.length?events.map(e=>`<div class="mini-item"><div class="mini-left"><span class="mini-glyph">▦</span><div><strong>${H(e.name)}</strong><small>${H(eventDate(e.date_label,e.start_time))} · ${H(e.location)}</small></div></div><span class="gold">↗</span></div>`).join(''):'<div class="empty">Próximamente</div>'}</div></div></div><div><div class="pane"><div class="section-title"><h2>Tu categoría</h2><span class="pill">♛ ${H(tier(current.lifetime_points))}</span></div><div style="font:900 2rem Outfit;color:var(--gold)">${next?'Hacia '+tier(next):'Nivel máximo'}</div><p class="muted small">${next?`${fmt(next-current.lifetime_points)} puntos históricos para el próximo nivel.`:'Has alcanzado la categoría más alta.'}</p><div class="progress-track"><div class="progress-fill" style="width:${progress}%"></div></div><div class="progress-label"><span>${fmt(current.lifetime_points)} puntos</span><span>${next?fmt(next):'★'}</span></div><a class="btn btn-secondary btn-mini" style="margin-top:20px" href="#/tarjeta">Ver mi tarjeta ↗</a></div><div class="pane section-gap"><div class="section-title"><h2>Recompensas destacadas</h2><a class="link-tiny" href="#/premios">Catálogo ↗</a></div><div class="mini-list">${rewardList.map(r=>`<div class="mini-item"><div class="mini-left"><span class="mini-glyph">${H(r.symbol||'✦')}</span><div><strong>${H(r.name)}</strong><small>${fmt(r.cost)} puntos</small></div></div><span class="gold">↗</span></div>`).join('')||'<div class="empty">No hay recompensas disponibles.</div>'}</div></div></div></div><div class="pane section-gap"><div class="section-title"><h2>Promociones activas</h2><span class="muted small">Información para socios</span></div><div class="mini-list">${data.promos.filter(p=>p.active).map(p=>`<div class="mini-item"><div class="mini-left"><span class="mini-glyph">✦</span><div><strong>${H(p.name)}</strong><small>${H(p.description)}</small></div></div><span class="pill">+${fmt(p.bonus)} pts</span></div>`).join('')||'<div class="empty">No hay promociones activas.</div>'}</div><p class="muted small">Las bonificaciones requieren validación según sus condiciones; no se conceden automáticamente desde esta pantalla.</p></div>`;}
+function summary(){const next=tierNext(current.lifetime_points);const progress=next?Math.min(100,Math.round(current.lifetime_points/next*100)):100;const events=data.events.filter(e=>e.active).sort((a,b)=>(a.date_label||'9999').localeCompare(b.date_label||'9999')).slice(0,3);const rewardList=data.rewards.filter(r=>r.active).slice(0,3);return `${pageHead(`Hola, ${current.name.split(' ')[0]} ✦`,'Aquí tienes todo lo que ocurre en tu comunidad.','BELLAQUITAS MEMBER')}<div class="dash-grid"><div><div class="points-banner"><div><div class="eyebrow">TUS PUNTOS DISPONIBLES</div><div class="points-number">${fmt(current.points)}</div><p>Puntos para canjear en tus próximos premios.</p><a href="#/premios" class="btn btn-primary btn-mini">Explorar premios ↗</a></div><div class="points-symbol">✦</div></div><div class="metric-row"><div class="metric"><strong>${fmt(current.visits)}</strong><span>Visitas</span></div><div class="metric"><strong>${H(tier(current.lifetime_points))}</strong><span>Tu nivel</span></div><div class="metric"><strong>${fmt(current.lifetime_points)}</strong><span>Puntos históricos</span></div></div><div class="pane section-gap"><div class="section-title"><h2>Próximas experiencias</h2><a class="link-tiny" href="#/agenda">Ver todas ↗</a></div><div class="mini-list">${events.length?events.map(e=>`<div class="mini-item"><div class="mini-left"><span class="mini-glyph">▦</span><div><strong>${H(localizedValue(e,'name'))}</strong><small>${H(eventDate(e.date_label,e.start_time))} · ${H(e.location)}</small></div></div><span class="gold">↗</span></div>`).join(''):'<div class="empty">Próximamente</div>'}</div></div></div><div><div class="pane"><div class="section-title"><h2>Tu categoría</h2><span class="pill">♛ ${H(tier(current.lifetime_points))}</span></div><div style="font:900 2rem Outfit;color:var(--gold)">${next?'Hacia '+tier(next):'Nivel máximo'}</div><p class="muted small">${next?`${fmt(next-current.lifetime_points)} puntos históricos para el próximo nivel.`:'Has alcanzado la categoría más alta.'}</p><div class="progress-track"><div class="progress-fill" style="width:${progress}%"></div></div><div class="progress-label"><span>${fmt(current.lifetime_points)} puntos</span><span>${next?fmt(next):'★'}</span></div><a class="btn btn-secondary btn-mini" style="margin-top:20px" href="#/tarjeta">Ver mi tarjeta ↗</a></div><div class="pane section-gap"><div class="section-title"><h2>Recompensas destacadas</h2><a class="link-tiny" href="#/premios">Catálogo ↗</a></div><div class="mini-list">${rewardList.map(r=>`<div class="mini-item"><div class="mini-left"><span class="mini-glyph">${H(r.symbol||'✦')}</span><div><strong>${H(localizedValue(r,'name'))}</strong><small>${fmt(r.cost)} puntos</small></div></div><span class="gold">↗</span></div>`).join('')||'<div class="empty">No hay recompensas disponibles.</div>'}</div></div></div></div><div class="pane section-gap"><div class="section-title"><h2>Promociones activas</h2><span class="muted small">Información para socios</span></div><div class="mini-list">${data.promos.filter(p=>p.active).map(p=>`<div class="mini-item"><div class="mini-left"><span class="mini-glyph">✦</span><div><strong>${H(localizedValue(p,'name'))}</strong><small>${H(localizedValue(p,'description'))}</small></div></div><span class="pill">+${fmt(p.bonus)} pts</span></div>`).join('')||'<div class="empty">No hay promociones activas.</div>'}</div><p class="muted small">Las bonificaciones requieren validación según sus condiciones; no se conceden automáticamente desde esta pantalla.</p></div>`;}
 function loyaltyCardView(){
  const displayed=t('La tarjeta de fidelidad');
  return `<section class="loyalty-profile" aria-label="${H(displayed)}">
@@ -336,7 +402,7 @@ function loyaltyCardView(){
 }
 function card(){return `${pageHead(t('Tu tarjeta de socio'),t('Tu identificación digital para las actividades de la comunidad.'),t('MI IDENTIDAD'))}${loyaltyCardView()}<div class="pane section-gap"><h2>${t('Cómo funciona')}</h2><p class="muted small">${t('Muestra tu código a personal autorizado para validar una visita. No compartas capturas de tu tarjeta pública y libremente.')}</p></div>`;}
 
-function rewards(){const items=data.rewards.filter(r=>r.active);const myRed=data.redemptions.filter(r=>r.user_id===current.id).sort(byDate);return `${pageHead('Premios y experiencias','Descubre qué puedes conseguir con tus puntos.','CATÁLOGO DE PREMIOS')}<div class="points-banner" style="min-height:140px;margin-bottom:22px"><div><div class="eyebrow">SALDO ACTUAL</div><div class="points-number" style="font-size:3.3rem">${fmt(current.points)} <span style="font-size:1.1rem;letter-spacing:0">pts</span></div></div><div class="points-symbol" style="font-size:5rem">✦</div></div><div class="catalog-search-bar"><label for="rewards-search">${t('Buscar premios y recompensas')}</label><input id="rewards-search" class="search-field" type="search" autocomplete="off" placeholder="${t('Busca por nombre o categoría…')}"/></div><div id="rewards-search-empty" class="empty" hidden>${t('No hay premios que coincidan con la búsqueda.')}</div><div class="reward-grid">${items.map(r=>`<article class="reward-card" data-catalog-search="${H(searchFold(r.name+' '+r.description+' '+r.category))}"><div class="reward-illus">${safeImage(r.image_url)?`<img class="reward-photo" src="${H(safeImage(r.image_url))}" alt="${H(r.name)}" loading="lazy"/>`:H(r.symbol||'✦')}</div><span class="eyebrow" style="margin-top:12px;font-size:.63rem">${H(r.category)}</span><h3>${H(r.name)}</h3><p>${H(r.description||'Recompensa de la comunidad.')}</p><div class="reward-foot"><strong>${fmt(r.cost)} pts</strong><button class="btn btn-primary btn-mini" data-action="redeem" data-id="${H(r.id)}" ${current.points<r.cost?'disabled title="Puntos insuficientes"':''}>${current.points<r.cost?'Faltan puntos':'Solicitar ↗'}</button></div></article>`).join('')||'<div class="empty">No hay recompensas publicadas por ahora.</div>'}</div><div class="pane section-gap"><div class="section-title"><h2>Mis solicitudes de canje</h2></div><div class="mini-list">${myRed.length?myRed.map(r=>`<div class="mini-item"><div><strong>${H(getReward(r.reward_id)?.name||'Premio')}</strong><small>${H(r.code)} · ${recentDate(r.created_at)}</small></div><span class="status ${r.status==='validado'?'ok':'pending'}">${H(r.status)}</span></div>`).join(''):'<div class="empty">Aún no has solicitado premios.</div>'}</div></div>`;}
+function rewards(){const items=data.rewards.filter(r=>r.active);const myRed=data.redemptions.filter(r=>r.user_id===current.id).sort(byDate);return `${pageHead('Premios y experiencias','Descubre qué puedes conseguir con tus puntos.','CATÁLOGO DE PREMIOS')}<div class="points-banner" style="min-height:140px;margin-bottom:22px"><div><div class="eyebrow">SALDO ACTUAL</div><div class="points-number" style="font-size:3.3rem">${fmt(current.points)} <span style="font-size:1.1rem;letter-spacing:0">pts</span></div></div><div class="points-symbol" style="font-size:5rem">✦</div></div><div class="catalog-search-bar"><label for="rewards-search">${t('Buscar premios y recompensas')}</label><input id="rewards-search" class="search-field" type="search" autocomplete="off" placeholder="${t('Busca por nombre o categoría…')}"/></div><div id="rewards-search-empty" class="empty" hidden>${t('No hay premios que coincidan con la búsqueda.')}</div><div class="reward-grid">${items.map(r=>`<article class="reward-card" data-catalog-search="${H(searchFold(r.name+' '+r.description+' '+r.category))}"><div class="reward-illus">${safeImage(r.image_url)?`<img class="reward-photo" src="${H(safeImage(r.image_url))}" alt="${H(r.name)}" loading="lazy"/>`:H(r.symbol||'✦')}</div><span class="eyebrow" style="margin-top:12px;font-size:.63rem">${H(localizedValue(r,'category'))}</span><h3>${H(localizedValue(r,'name'))}</h3><p>${H(localizedValue(r,'description')||t('Recompensa de la comunidad.'))}</p><div class="reward-foot"><strong>${fmt(r.cost)} pts</strong><button class="btn btn-primary btn-mini" data-action="redeem" data-id="${H(r.id)}" ${current.points<r.cost?'disabled title="Puntos insuficientes"':''}>${current.points<r.cost?'Faltan puntos':'Solicitar ↗'}</button></div></article>`).join('')||'<div class="empty">No hay recompensas publicadas por ahora.</div>'}</div><div class="pane section-gap"><div class="section-title"><h2>Mis solicitudes de canje</h2></div><div class="mini-list">${myRed.length?myRed.map(r=>`<div class="mini-item"><div><strong>${H(getReward(r.reward_id)?.name||'Premio')}</strong><small>${H(r.code)} · ${recentDate(r.created_at)}</small></div><span class="status ${r.status==='validado'?'ok':'pending'}">${H(r.status)}</span></div>`).join(''):'<div class="empty">Aún no has solicitado premios.</div>'}</div></div>`;}
 function agenda(){return `${pageHead('Eventos y novedades','Descubre todo lo que está por venir.','AGENDA BELLAQUITAS')}<div class="catalog-search-bar"><label for="agenda-search">${t('Buscar eventos')}</label><input id="agenda-search" type="search" autocomplete="off" class="search-field" placeholder="${t('Busca por nombre, fecha o lugar…')}"/></div><div id="agenda-search-empty" class="empty" hidden>${t('No hay eventos que coincidan con la búsqueda.')}</div><div class="three-grid">${publicEvents(Infinity)}</div>`;}
 function profile(){return `${pageHead(t('Mi perfil'),t('Gestiona los datos visibles de tu cuenta.'),t('CUENTA PERSONAL'))}${loyaltyCardView()}<div class="pane profile-form section-gap"><h2>${t('Mi perfil')}</h2><form id="profile-form"><div class="field"><label>${t('Nombre visible')}</label><input type="text" maxlength="80" minlength="2" name="name" value="${H(current.name)}" required /></div><div class="field"><label>${t('Código de socio')}</label><input type="text" value="${H(current.member_code)}" disabled /></div><div class="field"><label>${t('Tipo de cuenta')}</label><input type="text" value="${H(t(roleLabel(current.role)))}" disabled /></div><button class="btn btn-primary" type="submit">${t('Guardar cambios')}</button></form><p class="form-note" style="margin-top:18px">${activeLang==='fr'?'Les points et le niveau sont gérés par les personnes autorisées.':'La categoría y el saldo no se pueden editar desde el perfil. Los gestiona el sistema autorizado.'}</p></div>`;}
 
@@ -372,6 +438,13 @@ function adminItemForm(table){
   fields+=adminField('bonus','Puntos de la promoción *',`<input id="admin-bonus" name="bonus" type="number" min="1" max="999999" step="1" value="${val('bonus')}" placeholder="Puntos" required/>`,'Esta promoción es informativa: no añade puntos automáticamente.',true);
  }
  fields+=adminField('description','Cuéntale a la gente de qué trata',`<textarea id="admin-description" name="description" rows="4" maxlength="1200" placeholder="Escribe una explicación sencilla...">${val('description')}</textarea>`,'Opcional, pero ayuda a entender lo que ofreces.',true);
+ // Un mismo registro, dos traducciones reales: no se reescriben nombres ni descripciones en el idioma contrario.
+ const fr=item.localized_content?.fr||{};
+ fields+=`<div class="admin-language-intro full"><strong>🇫🇷 Version française</strong><p>Rellena estos campos para que los visitantes vean el contenido en francés. Si están vacíos, se muestra el original hasta que lo traduzcas.</p></div>`;
+ fields+=adminField('name_fr','Nom en français',`<input id="admin-name_fr" name="name_fr" type="text" maxlength="120" value="${H(fr.name||'')}" placeholder="Nom en français"/>`,'Traducción del título, independiente del español.',true);
+ fields+=adminField('description_fr','Description en français',`<textarea id="admin-description_fr" name="description_fr" rows="3" maxlength="1200" placeholder="Description en français">${H(fr.description||'')}</textarea>`,'Traducción de la descripción.',true);
+ if(table==='events')fields+=adminField('location_fr','Lieu en français',`<input id="admin-location_fr" name="location_fr" type="text" maxlength="160" value="${H(fr.location||'')}" placeholder="Lieu en français"/>`,'Si el lugar tiene otro nombre en francés.',true);
+ if(table==='rewards')fields+=adminField('category_fr','Catégorie en français',`<input id="admin-category_fr" name="category_fr" type="text" maxlength="80" value="${H(fr.category||'')}" placeholder="Catégorie en français"/>`,'Tipo de premio para visitantes franceses.',true);
  if(['events','rewards'].includes(table))fields+=adminField('image','Añadir una foto (opcional)',`<div class="admin-file-row"><label class="admin-file-button" for="admin-image">📷 Elegir foto</label><span id="admin-file-status">Ninguna foto seleccionada</span></div><input class="admin-file-input" id="admin-image" name="image" type="file" accept="image/jpeg,image/png,image/webp"/>`,'Elige una foto del móvil o del ordenador (JPG, PNG o WebP, máximo 5 MB).',true)+(item.image_url?`<div class="admin-existing-photo"><img src="${H(safeImage(item.image_url))}" alt="Foto guardada"/><label class="admin-check"><input type="checkbox" name="remove_image"/> Quitar la foto actual</label></div>`:'');
  fields+=`<label class="admin-publish full"><input type="checkbox" name="active" ${item.active===false?'':'checked'}/><span><strong>Mostrar a la gente ahora</strong><small>Desmarca esta opción para guardarlo oculto y publicarlo más adelante.</small></span></label>`;
  return `<div class="pane admin-edit-pane"><div class="admin-form-heading"><div><span class="eyebrow">${editing?'MODIFICAR':'NUEVO'} ${type.toUpperCase()}</span><h2>${editing?'Editar':'Crear'} ${type}</h2><p>Rellena los campos que tengan * y guarda al terminar.</p></div><button class="btn btn-secondary btn-mini" type="button" data-action="admin-cancel">✕ Cerrar</button></div><form id="admin-item-form" data-table="${table}" data-id="${editing?H(editing.id):''}" class="admin-form">${fields}<div class="admin-preview full" aria-live="polite"><div class="eyebrow">ASÍ SE VERÁ</div><strong id="admin-preview-name">${H(item.name||'Tu '+type)}</strong><p id="admin-preview-info">${H(editing?adminMeta(table,item):'Completa el formulario para ver una vista previa.')}</p></div><div id="admin-form-feedback" class="admin-form-feedback full" role="alert" hidden></div><div class="admin-form-buttons full"><button class="btn btn-primary" type="submit">${editing?'Guardar cambios':'Guardar '+type}</button><button class="btn btn-secondary" type="button" data-action="admin-cancel">Cancelar</button></div></form></div>`;
@@ -379,7 +452,7 @@ function adminItemForm(table){
 function adminCatalog(table){
  const singular=adminLabel(table);const plural={events:'eventos',rewards:'premios',promos:'promociones'}[table];const activeCount=data[table].filter(x=>x.active).length;
  const list=data[table].map(x=>`<article class="admin-list-item" data-search="${H(searchFold(x.name+' '+(x.description||'')+' '+(x.location||'')+' '+(x.category||'')+' '+(x.date_label||'')))}"><div class="admin-list-top"><div class="admin-item-intro">${safeImage(x.image_url)?`<img class="admin-item-photo" src="${H(safeImage(x.image_url))}" alt=""/>`:`<span class="admin-item-icon">${table==='events'?'▦':table==='rewards'?H(x.symbol||'🎁'):'✦'}</span>`}<div><strong>${H(x.name)}</strong><small>${H(adminMeta(table,x))}</small></div></div><span class="admin-state ${x.active?'published':'draft'}">${x.active?'Publicado':'Oculto'}</span></div><div class="admin-item-buttons"><button class="btn btn-secondary btn-mini" type="button" data-action="admin-edit" data-table="${table}" data-id="${H(x.id)}">✎ Editar</button><button class="btn btn-secondary btn-mini" type="button" data-action="toggle" data-table="${table}" data-id="${H(x.id)}">${x.active?'Ocultar':'Publicar'}</button><button class="btn btn-danger btn-mini" type="button" data-action="admin-delete" data-table="${table}" data-id="${H(x.id)}">Eliminar</button></div></article>`).join('');
- return `<div class="admin-catalog-heading"><div><h2>Mis ${plural}</h2><p>${data[table].length} en total · ${activeCount} visibles para la gente</p></div><button class="btn btn-primary" type="button" data-action="admin-new" data-table="${table}">+ Crear ${singular}</button></div><div class="admin-guide"><span class="admin-guide-icon">💡</span><p><strong>Es muy fácil:</strong> crea un ${singular}, publícalo cuando esté listo y usa <b>Editar</b> para cambiarlo en cualquier momento. <b>Ocultar</b> lo retira de la web sin borrarlo.</p></div>${adminFormOpen?adminItemForm(table):''}<div class="pane admin-list-pane"><div class="section-title"><h2>Lo que has creado</h2>${`<input type="search" id="admin-list-search" class="search-field" aria-label="Buscar ${plural}" placeholder="Buscar ${plural} por nombre, descripción o lugar..."/>`}''}</div><div class="admin-list">${list||`<div class="empty">Todavía no hay ${plural}. Pulsa «Crear ${singular}» para empezar.</div>`}</div><div class="empty" id="admin-search-empty" hidden>No se ha encontrado ningún resultado.</div></div></div>`;
+ return `<div class="admin-catalog-heading"><div><h2>Mis ${plural}</h2><p>${data[table].length} en total · ${activeCount} visibles para la gente</p></div><button class="btn btn-primary" type="button" data-action="admin-new" data-table="${table}">+ Crear ${singular}</button></div><div class="admin-guide"><span class="admin-guide-icon">💡</span><p><strong>Es muy fácil:</strong> crea un ${singular}, publícalo cuando esté listo y usa <b>Editar</b> para cambiarlo en cualquier momento. <b>Ocultar</b> lo retira de la web sin borrarlo.</p></div>${adminFormOpen?adminItemForm(table):''}<div class="pane admin-list-pane"><div class="section-title"><h2>Lo que has creado</h2><input type="search" id="admin-list-search" class="search-field" aria-label="Buscar ${plural}" placeholder="Buscar ${plural} por nombre, descripción o lugar..."/></div><div class="admin-list">${list||`<div class="empty">Todavía no hay ${plural}. Pulsa «Crear ${singular}» para empezar.</div>`}</div><div class="empty" id="admin-search-empty" hidden>No se ha encontrado ningún resultado.</div></div></div>`;
 }
 function adminSite(){return `<div class="pane admin-edit-pane"><h2>Editar y actualizar toda la página</h2><p class="muted">Abre el editor visual: cambia todos los textos públicos, elige un modelo, reorganiza las secciones y comprueba el resultado antes de publicarlo. No hace falta saber programación.</p><p class="admin-guide"><strong>1.</strong> Abre el editor &nbsp; <strong>2.</strong> Cambia lo que quieras &nbsp; <strong>3.</strong> Guarda borrador &nbsp; <strong>4.</strong> Publica cuando esté listo.</p><a class="btn btn-primary" href="#/editor">✎ Abrir editor de la web ↗</a></div>`;}
 function adminMemberForm(member){
@@ -456,7 +529,7 @@ async function saveMemberForm(form){
  if(values.p_points!==original.points)warnings.push(`Puntos: ${fmt(original.points)} → ${fmt(values.p_points)}`);
  if(values.p_lifetime_points!==original.lifetime_points)warnings.push(`Puntos históricos: ${fmt(original.lifetime_points)} → ${fmt(Math.max(values.p_lifetime_points,values.p_points))}`);
  if(values.p_visits!==original.visits)warnings.push(`Visitas: ${fmt(original.visits)} → ${fmt(values.p_visits)}`);
- if(warnings.length&&!window.confirm(`Vas a modificar la cuenta de ${member.name}.\n\n${warnings.join('\n')}\n\n¿Confirmas los cambios?`))return;
+ if(warnings.length&&!ask(`Vas a modificar la cuenta de ${member.name}.\n\n${warnings.join('\n')}\n\n¿Confirmas los cambios?`))return;
  const btn=form.querySelector('[type="submit"]');if(btn){btn.disabled=true;btn.textContent='Guardando…';}
  try{
   const result=await sb.rpc('admin_update_member',values);
@@ -473,7 +546,7 @@ function ensureEditor(){
  if(editorDraft)return;
  const stored=data.site_drafts.find(x=>x.key==='homepage')?.settings;
  editorDraft=normalizeEditor(stored||publishedSettings());
- editorDirty=false;
+ editorDirty=false;editorLanguage=activeLang;
 }
 function normalizeEditor(value){
  const output={...SITE_DEFAULTS,...(value&&typeof value==='object'&&!Array.isArray(value)?value:{})};
@@ -481,18 +554,45 @@ function normalizeEditor(value){
   if(typeof SITE_DEFAULTS[key]==='string')output[key]=String(output[key]??SITE_DEFAULTS[key]).slice(0,key==='hero_text'?1000:1200);
  }
  output.theme=['classic','minimal','festival'].includes(output.theme)?output.theme:'classic';
- output.logo_url=safeImage(output.logo_url);
+ output.logo_url=safeImage(output.logo_url);output.header_logo_url=safeImage(output.header_logo_url);
+ output.header_show_logo=output.header_show_logo!==false;output.header_show_text=output.header_show_text!==false;output.hero_show_logo=output.hero_show_logo!==false;
+ output.translations={es:{...(output.translations?.es||{})},fr:{...(output.translations?.fr||{})}};
+ output.ui_copy={es:{...(output.ui_copy?.es||{})},fr:{...(output.ui_copy?.fr||{})}};
  output.visible=Object.fromEntries(Object.keys(EDITOR_SECTIONS).map(k=>[k,output.visible?.[k]!==false]));
  output.order=validOrder(output.order);
  return output;
 }
-const EDITOR_GROUPS=[['main','🏠 Portada'],['experience','✦ Experiencia'],['events','▦ Eventos'],['benefits','🎁 Ventajas'],['faq','❔ Preguntas'],['cta','↗ Invitación final'],['other','☷ Menú y pie'],['sections','☰ Orden y visibilidad'],['design','✧ Modelos']];
+const EDITOR_GROUPS=[['main','🏠 Portada'],['experience','✦ Experiencia'],['events','▦ Eventos'],['benefits','🎁 Ventajas'],['faq','❔ Preguntas'],['cta','↗ Invitación final'],['other','☷ Menú y pie'],['sections','☰ Orden y visibilidad'],['design','✧ Modelos'],['ui','☷ Textos de toda la aplicación']];
+const EDITOR_IMAGE_KEYS=new Set(['logo_url','header_logo_url']);
+function editorFieldValue(key){
+ if(editorLanguage==='fr' && !EDITOR_IMAGE_KEYS.has(key) && typeof SITE_DEFAULTS[key]==='string'){
+  const specific=editorDraft.translations?.fr?.[key];
+  if(typeof specific==='string')return specific;
+  if(FR_SITE[key] && editorDraft[key]===SITE_DEFAULTS[key])return FR_SITE[key];
+  return translateLabel(editorDraft[key]||'','fr');
+ }
+ return editorDraft[key]??'';
+}
+function setEditorLocalizedValue(key,value){
+ if(editorLanguage==='fr' && !EDITOR_IMAGE_KEYS.has(key)){
+  if(!editorDraft.translations)editorDraft.translations={es:{},fr:{}};
+  if(!editorDraft.translations.fr)editorDraft.translations.fr={};
+  editorDraft.translations.fr[key]=value;
+ }else editorDraft[key]=value;
+}
+function editorUIStrings(){
+ const keys=Object.keys(UI_ALL_FR).filter(k=>k.length>3&&k.length<220&&!/^\d/.test(k));
+ return `<p class="muted small">${t('Selecciona cualquier pantalla en la vista previa y pulsa un texto para editarlo. También puedes buscar aquí cualquier etiqueta de la aplicación. Los cambios se guardan por idioma.')}</p><label for="editor-ui-search">${t('Buscar texto de la web')}</label><input id="editor-ui-search" class="search-field" type="search" placeholder="${t('Buscar texto de la web')}…"/><p id="editor-ui-count" class="muted small">${keys.length} ${t('textos editables')}</p><div class="editor-ui-copy-list" id="editor-ui-copy-list">${keys.map(key=>`<div class="editor-ui-copy-item" data-ui-search="${H(searchFold(key+' '+(UI_ALL_FR[key]||'')))}"><label>${H(key)}</label><textarea data-ui-copy-key="${H(key)}" maxlength="240" rows="2">${H(editorDraft.ui_copy?.[editorLanguage]?.[key]??translateLabel(key,editorLanguage,editorDraft))}</textarea></div>`).join('')}</div>`;
+}
 function editorFields(group){
  const rows=SITE_FIELDS[group]||[];
  return `<div class="editor-field-list">${rows.map(([key,label,kind])=>{
-  const id='editor-'+key, val=H(editorDraft[key]||'');
+  const id='editor-'+key;
+  if(kind==='checkbox')return `<div class="editor-field"><label class="editor-switch"><input type="checkbox" data-editor-bool="${key}" ${editorDraft[key]!==false?'checked':''}/><span>${H(t(label))}</span></label></div>`;
+  const val=H(editorFieldValue(key));
   const text=kind==='textarea'?`<textarea id="${id}" data-editor-field="${key}" maxlength="1200" rows="3">${val}</textarea>`:`<input id="${id}" data-editor-field="${key}" value="${val}" maxlength="${kind==='image'?800:300}" type="${kind==='image'?'url':'text'}" placeholder="${kind==='image'?'https://...':''}"/>`;
-  return `<div class="editor-field"><label for="${id}">${H(label)}</label>${text}${kind==='image'?`<p class="field-help">Puedes pegar una URL HTTPS o subir una foto. Para mantener el logo original, deja este campo vacío.</p><label class="editor-upload" for="editor-logo-file">📷 Subir imagen</label><input type="file" id="editor-logo-file" accept="image/jpeg,image/png,image/webp" class="admin-file-input"/><p class="field-help">PNG, JPG o WebP de hasta 5 MB.</p>`:''}</div>`;
+  const upload=kind==='image'?`<p class="field-help">${t('Puedes pegar una URL HTTPS o subir una foto. Para mantener el logo original, deja este campo vacío.')}</p><label class="editor-upload" for="editor-file-${key}">${t('📷 Subir imagen')}</label><input type="file" id="editor-file-${key}" data-editor-image-key="${key}" accept="image/jpeg,image/png,image/webp" class="admin-file-input"/><p class="field-help">${t('PNG, JPG o WebP de hasta 5 MB.')}</p>`:'';
+  return `<div class="editor-field"><label for="${id}">${H(t(label))}</label>${text}${upload}</div>`;
  }).join('')}</div>`;
 }
 function editorSections(){return `<p class="muted small">Cambia el orden de las secciones con las flechas. Puedes ocultar una sección sin borrar su contenido.</p><div class="editor-section-list">${editorDraft.order.map((key,i)=>`<div class="editor-section-item"><label class="editor-switch"><input type="checkbox" data-editor-visibility="${key}" ${editorDraft.visible[key]?'checked':''}/> <span>${H(EDITOR_SECTIONS[key])}</span></label><div class="editor-order"><button class="btn btn-secondary btn-mini" type="button" aria-label="Subir ${H(EDITOR_SECTIONS[key])}" data-action="editor-move" data-section="${key}" data-direction="up" ${i===0?'disabled':''}>↑</button><button class="btn btn-secondary btn-mini" type="button" aria-label="Bajar ${H(EDITOR_SECTIONS[key])}" data-action="editor-move" data-section="${key}" data-direction="down" ${i===editorDraft.order.length-1?'disabled':''}>↓</button></div></div>`).join('')}</div>`;}
@@ -500,21 +600,35 @@ function editorDesign(){return `<p class="muted small">Selecciona el aspecto de 
 function editor(){
  ensureEditor();
  const selected=EDITOR_GROUPS.find(x=>x[0]===editorCategory)?.[1]||'Portada';
- const editorUI=editorCategory==='sections'?editorSections():editorCategory==='design'?editorDesign():editorFields(editorCategory);
+ const editorUI=editorCategory==='sections'?editorSections():editorCategory==='design'?editorDesign():editorCategory==='ui'?editorUIStrings():editorFields(editorCategory);
+ const pageTabs=[['home','Inicio'],['experience','Experiencia'],['events','Eventos'],['benefits','Ventajas'],['faq','Preguntas'],['cta','Invitación final'],['login','Acceso'],['signup','Registro'],['member','Mi espacio'],['card','Mi tarjeta'],['profile','Perfil'],['rewards','Premios'],['agenda','Agenda'],['gate','Puerta'],['panel','Panel administrador']];
+ const pagePicker=`<div class="editor-page-switch"><strong>${t('Página a editar')}</strong><div class="editor-page-options">${pageTabs.map(([p,label])=>`<button type="button" class="btn btn-secondary btn-mini ${editorPage===p?'active':''}" data-action="editor-page" data-page="${p}">${H(t(label))}</button>`).join('')}</div></div>`;
+ const langPicker=`<div class="editor-language-switch"><strong>${t('Idioma de edición')}</strong><button class="btn btn-secondary btn-mini ${editorLanguage==='es'?'active':''}" type="button" data-action="editor-lang" data-lang="es">🇪🇸 Español</button><button class="btn btn-secondary btn-mini ${editorLanguage==='fr'?'active':''}" type="button" data-action="editor-lang" data-lang="fr">🇫🇷 Français</button><small>${t('Cada idioma se edita sin borrar el otro. La información de socios y la seguridad no se modifican aquí.')}</small></div>`;
  return `${pageHead('Editar mi página web','Cambia textos, secciones y modelos sin tocar código. Comprueba la vista previa y publica solo cuando esté todo listo.','EDITOR VISUAL')}
  <div class="editor-intro"><div><strong>1. Toca la web</strong><span>Pulsa sobre el logo, una imagen, un icono o un texto en la vista previa.</span></div><div><strong>2. Cambia lo seleccionado</strong><span>Elige otra foto o escribe el texto nuevo.</span></div><div><strong>3. Publica cuando quieras</strong><span>Primero puedes guardar el borrador sin mostrarlo a nadie.</span></div></div>
  <div class="editor-toolbar"><span class="editor-status" id="editor-status" role="status">${editorDirty?'● Cambios sin guardar':'✓ Vista previa lista'}</span><div class="editor-toolbar-buttons"><button type="button" class="btn btn-secondary" data-action="editor-reset">↶ Recuperar lo publicado</button><button type="button" class="btn btn-secondary" data-action="editor-save">Guardar borrador</button><button type="button" class="btn btn-primary" data-action="editor-publish">✓ Publicar cambios</button></div></div>
  <div id="editor-notice" class="admin-form-feedback" role="alert" hidden></div>
- <div class="editor-layout"><div class="editor-panel"><nav class="editor-categories" aria-label="Elementos que puedes editar">${EDITOR_GROUPS.map(([key,title])=>`<button type="button" data-action="editor-category" data-category="${key}" class="editor-category ${editorCategory===key?'active':''}" aria-current="${editorCategory===key?'true':'false'}">${title}</button>`).join('')}</nav><section class="editor-controls"><div class="editor-controls-head"><span class="eyebrow">PERSONALIZAR</span><h2>${H(selected.replace(/^[^ ]+ /,''))}</h2><p>Modifica los campos a tu gusto. No cambiarán para el público hasta que pulses «Publicar cambios».</p></div>${editorUI}</section></div>
+ ${pagePicker}<div class="editor-layout"><div class="editor-panel">${langPicker}<nav class="editor-categories" aria-label="Elementos que puedes editar">${EDITOR_GROUPS.map(([key,title])=>`<button type="button" data-action="editor-category" data-category="${key}" class="editor-category ${editorCategory===key?'active':''}" aria-current="${editorCategory===key?'true':'false'}">${title}</button>`).join('')}</nav><section class="editor-controls"><div class="editor-controls-head"><span class="eyebrow">PERSONALIZAR</span><h2>${H(selected.replace(/^[^ ]+ /,''))}</h2><p>Modifica los campos a tu gusto. No cambiarán para el público hasta que pulses «Publicar cambios».</p></div>${editorUI}</section></div>
  <div class="editor-preview-wrap"><div class="editor-preview-head"><div><strong>Vista previa · toca para editar ✎</strong><small>Haz clic sobre cualquier texto, icono o sobre el logo para modificarlo aquí</small></div><div class="editor-devices"><button class="btn btn-secondary btn-mini ${editorDevice==='desktop'?'active':''}" type="button" data-action="editor-device" data-device="desktop" aria-pressed="${editorDevice==='desktop'}">▭ Ordenador</button><button class="btn btn-secondary btn-mini ${editorDevice==='mobile'?'active':''}" type="button" data-action="editor-device" data-device="mobile" aria-pressed="${editorDevice==='mobile'}">▯ Móvil</button></div></div><div class="editor-inspector" id="editor-inspector" hidden aria-live="polite"><div class="editor-inspector-head"><div><span class="eyebrow">EDICIÓN DIRECTA</span><h3 id="editor-inspector-title">Elemento seleccionado</h3></div><button type="button" class="btn btn-secondary btn-mini" data-action="editor-inspector-close" aria-label="Cerrar edición">✕ Cerrar</button></div><p class="editor-inspector-help" id="editor-inspector-help"></p><div id="editor-inspector-image" hidden><img class="editor-inspector-photo" id="editor-inspector-photo" src="assets/logo-bellaquitas.webp" alt="Imagen seleccionada"/><label class="btn btn-primary editor-pick-photo" for="editor-click-image-file">📷 Cambiar esta imagen</label><input class="admin-file-input" id="editor-click-image-file" type="file" accept="image/jpeg,image/png,image/webp"/><button type="button" class="btn btn-secondary btn-mini" data-action="editor-logo-reset">↶ Recuperar logo original</button><p class="field-help">JPG, PNG o WebP, máximo 5 MB. Al elegir una imagen, primero se guardará como cambio sin publicar.</p></div><div id="editor-inspector-text" hidden><label class="editor-inspector-label" for="editor-inspector-input">Escribe el texto nuevo</label><textarea id="editor-inspector-input" rows="3" maxlength="1200"></textarea><p class="field-help">Mira cómo cambia la vista previa. Para que los visitantes lo vean, pulsa «Publicar cambios».</p></div><div id="editor-inspector-event" hidden><button type="button" class="btn btn-primary" data-action="editor-event-open">✎ Cambiar foto y datos del evento</button><p class="field-help">Los eventos se gestionan por separado en el panel, para mantener su fecha y publicación.</p></div></div><div class="editor-preview-surface"><iframe id="editor-preview" class="editor-preview ${editorDevice==='mobile'?'mobile':''}" sandbox="allow-same-origin" referrerpolicy="no-referrer" title="Vista previa interactiva: pulsa un elemento para editarlo"></iframe></div><p class="editor-preview-foot">Puedes tocar el logo, los iconos y los textos de la vista previa para modificarlos. Si pulsas un elemento de «Experiencia» o «Ventajas», el editor te lleva directamente a esa parte. Para crear eventos, premios y promociones utiliza <a href="#/panel">Panel administrador</a>. Esos contenidos se guardan por separado.</p><a class="btn btn-secondary btn-mini" href="#/" target="_blank" rel="noopener noreferrer">↗ Ver página publicada</a></div></div>`;
 }
 function editorPreviewHTML(){
  const previous=editorPreviewOverride;editorPreviewOverride=editorDraft;
  let html;
- try{html=landing();}finally{editorPreviewOverride=previous;}
+ try{
+  if(['home','experience','events','benefits','faq','cta'].includes(editorPage))html=landing(editorPage==='home'?'':editorPage);
+  else if(['login','signup'].includes(editorPage)){
+   const tab=authTab;authTab=editorPage==='signup'?'signup':'login';
+   try{html=auth();}finally{authTab=tab;}
+  }else{
+   const pageRoutes={member:'/mi-espacio',card:'/tarjeta',profile:'/perfil',rewards:'/premios',agenda:'/agenda',gate:'/puerta',panel:'/panel'};
+   const screens={member:summary,card,profile,rewards,agenda,gate,panel:admin};
+   const previousRoute=route;route=pageRoutes[editorPage]||'/';
+   try{html=appShell((screens[editorPage]||summary)());}finally{route=previousRoute;}
+  }
+ }finally{editorPreviewOverride=previous;}
  const theme=editorDraft.theme==='classic'?'':'theme-'+editorDraft.theme;
  const css=H(new URL('styles.css',location.href).href);
- return `<!doctype html><html lang="${activeLang}"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><link rel="stylesheet" href="${css}"/><style>[data-edit-field],[data-edit-image],[data-edit-event-id]{cursor:pointer!important;outline:1px dashed #f3ca83;outline-offset:4px;border-radius:3px;transition:outline-color .12s,background .12s}[data-edit-field]:hover,[data-edit-field]:focus-visible,[data-edit-image]:hover,[data-edit-image]:focus-visible,[data-edit-event-id]:hover{outline:3px solid #ffe6a5!important;background:#e6a33d25}span[data-edit-field]{-webkit-box-decoration-break:clone;box-decoration-break:clone}.hero h1>[data-edit-field="hero_title_a"]{display:inline!important;background:none!important;color:inherit!important}.hero h1>span>[data-edit-field="hero_title_b"]{display:inline!important}img[data-edit-image]{outline-offset:-3px}a,button{cursor:default!important}</style></head><body class="${theme} bf-neon">${html}</body></html>`;
+ return `<!doctype html><html lang="${editorLanguage}"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><link rel="stylesheet" href="${css}"/><style>[data-edit-field],[data-edit-image],[data-edit-event-id]{cursor:pointer!important;outline:1px dashed #f3ca83;outline-offset:4px;border-radius:3px;transition:outline-color .12s,background .12s}[data-edit-field]:hover,[data-edit-field]:focus-visible,[data-edit-image]:hover,[data-edit-image]:focus-visible,[data-edit-event-id]:hover{outline:3px solid #ffe6a5!important;background:#e6a33d25}span[data-edit-field]{-webkit-box-decoration-break:clone;box-decoration-break:clone}.hero h1>[data-edit-field="hero_title_a"]{display:inline!important;background:none!important;color:inherit!important}.hero h1>span>[data-edit-field="hero_title_b"]{display:inline!important}img[data-edit-image]{outline-offset:-3px}a,button{cursor:default!important}</style></head><body class="${theme} bf-neon">${html}</body></html>`;
 }
 function editorFieldInfo(key){
  for(const [group,fields] of Object.entries(SITE_FIELDS)){
@@ -533,16 +647,18 @@ function showEditorSelection(info){
  editorSelection=info;
  const title=$('#editor-inspector-title'),help=$('#editor-inspector-help');
  const image=$('#editor-inspector-image'),text=$('#editor-inspector-text'),event=$('#editor-inspector-event');
- image.hidden=info.type!=='image';text.hidden=info.type!=='text';event.hidden=info.type!=='event';
+ image.hidden=info.type!=='image';text.hidden=!['text','ui'].includes(info.type);event.hidden=info.type!=='event';
  if(info.type==='image'){
-  title.textContent='Imagen principal · logo';
-  help.textContent='Has seleccionado la imagen de la portada. Puedes sustituirla por otra foto de tu móvil u ordenador.';
-  $('#editor-inspector-photo').src=siteImageFromEditor();
+  title.textContent=info.key==='header_logo_url'?'Imagen de la cabecera':'Imagen principal · logo';
+  help.textContent=info.key==='header_logo_url'?'Puedes cambiar el logo pequeño sin tocar el de la portada.':'Puedes sustituir la imagen principal.';
+  $('#editor-inspector-photo').src=info.key==='header_logo_url'?headerImage():siteImageFromEditor();
+ }else if(info.type==='ui'){
+  editorCategory='ui';title.textContent='Texto de la aplicación';help.textContent='Edita este texto del idioma seleccionado. Los datos reales de socios no se modifican aquí.';$('#editor-inspector-input').value=editorDraft.ui_copy?.[editorLanguage]?.[info.key]??translateLabel(info.key,editorLanguage,editorDraft);
  }else if(info.type==='text'){
   const field=editorFieldInfo(info.key);
   title.textContent=field.label;
   help.textContent='Estás editando justo el texto que has pulsado en la página.';
-  const input=$('#editor-inspector-input');input.value=editorDraft[info.key]||'';
+  const input=$('#editor-inspector-input');input.value=editorFieldValue(info.key);
   input.maxLength=1200;
   // Mantener los campos laterales sincronizados sin reiniciar la posición de la vista previa.
   editorCategory=field.group;
@@ -567,18 +683,32 @@ function siteImageFromEditor(){return safeImage(editorDraft?.logo_url)||'assets/
 function bindEditorPreview(frame,restoreY=0){
  if(route!=='/editor'||current?.role!=='admin'||!frame.isConnected)return;
  let doc;try{doc=frame.contentDocument;}catch{return;}
- if(!doc||doc.__bellaquitasBound||!doc.querySelector('[data-edit-image],[data-edit-field]'))return;
- doc.__bellaquitasBound=true;
+ if(!doc||doc.__bellaquitasBound||!doc.body)return;
+ doc.__bellaquitasBound=true;translateDOM(doc,editorLanguage,editorDraft);
  doc.addEventListener('click',ev=>{
   ev.preventDefault();ev.stopPropagation();
-  const target=ev.target?.closest?.('[data-edit-image],[data-edit-field],[data-edit-event-id]');
-  if(!target)return;
-  if(target.dataset.editImage==='logo_url'){showEditorSelection({type:'image',key:'logo_url'});return;}
+  const navlink=ev.target?.closest?.('a[href^="#/"]');
+  if(navlink){
+   const routeName=(navlink.getAttribute('href')||'').slice(2);
+   const page={experiencia:'experience',eventos:'events',ventajas:'benefits',preguntas:'faq', acceso:'login',registro:'signup','mi-espacio':'member',tarjeta:'card',perfil:'profile',premios:'rewards',agenda:'agenda',puerta:'gate',panel:'panel', '':'home'}[routeName];
+   if(page){editorPage=page;editorCategory=page==='home'?'main':['experience','events','benefits','faq','cta'].includes(page)?page:'ui';clearEditorSelection();render();return;}
+  }
+  const target=ev.target?.closest?.('[data-edit-image],[data-edit-field],[data-edit-event-id],[data-edit-section]');
+  if(!target){
+   const leaf=ev.target?.closest?.('h1,h2,h3,p,label,small,strong,button,a,span,th,td');
+   if(!leaf||leaf.closest('img,svg,.side-profile,.loyalty-code-tools,.member-record,.member-editor,[data-no-translate]'))return;
+   const text=leaf.textContent.trim();
+   if(!text||text.length>230||/^[\d.,\s+−-]+$/.test(text)||text.includes('@')||/^(BF|MBR|CNJ)-[\w-]+/.test(text))return;
+   const reverse=Object.entries(UI_ALL_FR).find(([key,val])=>val===text)?.[0];
+   showEditorSelection({type:'ui',key:reverse||text,node:leaf});return;
+  }
+  if(target.dataset.editImage){showEditorSelection({type:'image',key:target.dataset.editImage});return;}
   if(target.dataset.editField&&Object.hasOwn(SITE_DEFAULTS,target.dataset.editField)){
    showEditorSelection({type:'text',key:target.dataset.editField});return;
   }
   const event=target.closest('[data-edit-event-id]');
-  if(event?.dataset.editEventId)showEditorSelection({type:'event',id:event.dataset.editEventId});
+  if(event?.dataset.editEventId){showEditorSelection({type:'event',id:event.dataset.editEventId});return;}
+  const section=target.closest('[data-edit-section]');if(section?.dataset.editSection){editorCategory=section.dataset.editSection;editorPage=editorCategory;clearEditorSelection();render();return;}
  },true);
  doc.addEventListener('keydown',ev=>{
   if(!['Enter',' '].includes(ev.key))return;
@@ -599,10 +729,16 @@ function renderEditorPreview(){
  setTimeout(()=>bindEditorPreview(frame,restoreY),550);
 }
 function setInlineEditorText(value){
- if(!editorSelection||editorSelection.type!=='text'||current?.role!=='admin'||route!=='/editor')return;
+ if(!editorSelection||!['text','ui'].includes(editorSelection.type)||current?.role!=='admin'||route!=='/editor')return;
+ if(editorSelection.type==='ui'){
+  const lang=editorLanguage;editorDraft.ui_copy[lang][editorSelection.key]=value;
+  if(editorSelection.node?.isConnected)editorSelection.node.textContent=value||' ';
+  const other=$('[data-ui-copy-key="'+CSS.escape(editorSelection.key)+'"]');if(other)other.value=value;
+  markEditorDirty();return;
+ }
  const key=editorSelection.key;
  if(!Object.hasOwn(SITE_DEFAULTS,key)||typeof SITE_DEFAULTS[key]!=='string')return;
- editorDraft[key]=value;
+ setEditorLocalizedValue(key,value);
  const side=$('#editor-'+key);if(side&&side.value!==value)side.value=value;
  const frame=$('#editor-preview');
  try{frame.contentDocument?.querySelectorAll('[data-edit-field="'+key+'"]').forEach(node=>{node.textContent=value||' ';});}catch{}
@@ -615,11 +751,13 @@ function updateEditorValue(el){
  if(el.hasAttribute('data-editor-field')){
   const key=el.dataset.editorField;
   if(!Object.hasOwn(SITE_DEFAULTS,key)||typeof SITE_DEFAULTS[key]!=='string')return;
-  editorDraft[key]=el.value;
+  setEditorLocalizedValue(key,el.value);
  }else if(el.hasAttribute('data-editor-visibility')){
   const key=el.dataset.editorVisibility;
   if(!Object.hasOwn(EDITOR_SECTIONS,key))return;
   editorDraft.visible[key]=el.checked;
+ }else if(el.hasAttribute('data-editor-bool')){
+  const key=el.dataset.editorBool;if(!['header_show_logo','header_show_text','hero_show_logo'].includes(key))return;editorDraft[key]=el.checked;
  }
  markEditorDirty();renderEditorPreview();
 }
@@ -629,8 +767,10 @@ async function editorUploadLogo(input){
  input.disabled=true;
  try{
   const image=await uploadAdminImage('logos',file);
-  editorDraft.logo_url=image.url;
-  const field=$('#editor-logo_url');if(field)field.value=image.url;
+  const key=(input.dataset.editorImageKey||editorSelection?.key||'logo_url');
+  if(!['logo_url','header_logo_url'].includes(key))throw new Error('Imagen no autorizada.');
+  editorDraft[key]=image.url;
+  const field=$('#editor-'+key);if(field)field.value=image.url;
   const photo=$('#editor-inspector-photo');if(photo)photo.src=image.url;
   const inspectorHelp=$('#editor-inspector-help');if(inspectorHelp&&!$('#editor-inspector')?.hidden)inspectorHelp.textContent='✓ Nueva foto subida y visible en la vista previa. Pulsa «Guardar borrador» o «Publicar cambios».';
   markEditorDirty();renderEditorPreview();toast('Imagen subida. Publica los cambios para mostrarla a los visitantes.');
@@ -648,12 +788,12 @@ async function saveEditorDraft(){
 }
 async function publishEditor(){
  if(!sb||current?.role!=='admin')throw new Error('No tienes permisos de administrador.');
- if(!window.confirm('¿Publicar esta versión de la web para todos los visitantes?'))return;
- const previousPublished=publishedSettings().logo_url;
+ if(!ask('¿Publicar esta versión de la web para todos los visitantes?'))return;
+ const previousPublished=publishedSettings();
  const settings=normalizeEditor(editorDraft);
  const result=await sb.from('site_content').upsert({key:'homepage',hero_text:settings.hero_text||' ',announcement:settings.announcement||' ',page_settings:settings,updated_at:new Date().toISOString()},{onConflict:'key'});
  if(result.error)throw new Error('No se pudo publicar. Ejecuta INSTALAR_EDITOR_WEB.sql y comprueba los permisos. '+result.error.message);
- if(previousPublished && previousPublished!==settings.logo_url)await removeStoredPublicUrl(previousPublished);
+ for(const oldUrl of new Set([previousPublished.logo_url,previousPublished.header_logo_url])){if(oldUrl&&oldUrl!==settings.logo_url&&oldUrl!==settings.header_logo_url)await removeStoredPublicUrl(oldUrl);}
  data.site_content=[{key:'homepage',hero_text:settings.hero_text,announcement:settings.announcement,page_settings:settings}];
  editorDraft=settings;editorDirty=false;
  const state=$('#editor-status');if(state)state.textContent='✓ Publicado para todos';
@@ -665,9 +805,11 @@ async function publishEditor(){
 async function editorAction(el,act){
  if(route!=='/editor'||current?.role!=='admin')return;
  ensureEditor();
- if(act==='editor-category'){editorCategory=el.dataset.category;clearEditorSelection();await render();return;}
+ if(act==='editor-category'){editorCategory=el.dataset.category;if(['main','experience','events','benefits','faq','cta'].includes(editorCategory))editorPage=editorCategory==='main'?'home':editorCategory;clearEditorSelection();await render();return;}
+ if(act==='editor-page'){editorPage=el.dataset.page;editorCategory=editorPage==='home'?'main':['experience','events','benefits','faq','cta'].includes(editorPage)?editorPage:'ui';clearEditorSelection();await render();return;}
+ if(act==='editor-lang'){editorLanguage=el.dataset.lang==='fr'?'fr':'es';clearEditorSelection();await render();return;}
  if(act==='editor-inspector-close'){clearEditorSelection();return;}
- if(act==='editor-logo-reset'){editorDraft.logo_url='';const side=$('#editor-logo_url');if(side)side.value='';const photo=$('#editor-inspector-photo');if(photo)photo.src='assets/logo-bellaquitas.webp';markEditorDirty();renderEditorPreview();toast('Logo original seleccionado. Publica los cambios para aplicarlo.');return;}
+ if(act==='editor-logo-reset'){const key=editorSelection?.type==='image'&&editorSelection.key==='header_logo_url'?'header_logo_url':'logo_url';editorDraft[key]='';const side=$('#editor-'+key);if(side)side.value='';const photo=$('#editor-inspector-photo');if(photo)photo.src='assets/logo-bellaquitas.webp';markEditorDirty();renderEditorPreview();toast('Logo original seleccionado. Publica los cambios para aplicarlo.');return;}
  if(act==='editor-event-open'){if(editorSelection?.type!=='event')return;adminTab='events';adminEditId=editorSelection.id;adminFormOpen=true;clearEditorSelection();to('/panel');return;}
  if(act==='editor-device'){editorDevice=el.dataset.device;clearEditorSelection();await render();return;}
  if(act==='editor-theme'){
@@ -681,7 +823,7 @@ async function editorAction(el,act){
   markEditorDirty();await render();return;
  }
  if(act==='editor-reset'){
-  if(!window.confirm('¿Volver a la última versión publicada? Los cambios del editor que no hayas publicado se perderán.'))return;
+  if(!ask('¿Volver a la última versión publicada? Los cambios del editor que no hayas publicado se perderán.'))return;
   editorDraft=normalizeEditor(publishedSettings());markEditorDirty();clearEditorSelection();await render();toast('Vista previa restaurada. Para hacerla definitiva, pulsa Guardar borrador.');return;
  }
  if(!['editor-save','editor-publish'].includes(act)||editorBusy)return;
@@ -708,12 +850,12 @@ async function render(){
   let html='';
   if(route in AUTH_ROUTES)html=auth();
   else if(current&&allowed(route))html=appShell(route==='/mi-espacio'?summary():route==='/tarjeta'?card():route==='/premios'?rewards():route==='/agenda'?agenda():route==='/perfil'?profile():route==='/puerta'?gate():route==='/editor'?editor():admin());
-  else html=landing();
+  else html=landing(({experiencia:'experience',eventos:'events',ventajas:'benefits',preguntas:'faq'}[route.slice(1)])||'');
   $('#app').innerHTML=html;
-  document.title=(route==='/'?'Bellaquitas Fest':(current&&allowed(route)?'Mi cuenta · Bellaquitas Fest':'Acceso y registro · Bellaquitas Fest'));
+ translateDOM(document);
+  document.title=(route==='/'?'Bellaquitas Fest':(current&&allowed(route)?translateLabel('Mi cuenta')+' · Bellaquitas Fest':translateLabel('Acceso y registro')+' · Bellaquitas Fest'));
   document.querySelector('meta[name="robots"]')?.setAttribute('content',current&&allowed(route)?'noindex,nofollow':'index,follow');
-  if(['/experiencia','/eventos','/ventajas','/preguntas'].includes(route))document.getElementById(route.slice(1))?.scrollIntoView({behavior:'instant'});
-  else window.scrollTo({top:0,behavior:'instant'});
+  window.scrollTo({top:0,behavior:'instant'});
   if(route==='/tarjeta'||route==='/perfil')createQR(current.member_code);
   if(route==='/editor')renderEditorPreview();
 }
@@ -775,7 +917,7 @@ async function redeem(reward_id){
   const r=getReward(reward_id);
   if(!r||!r.active)throw new Error('Premio no disponible.');
   if(current.points<r.cost)throw new Error('Puntos insuficientes.');
-  if(!confirm(`Solicitar "${r.name}" por ${r.cost} puntos?`))return;
+  if(!ask(`Solicitar "${r.name}" por ${r.cost} puntos?`))return;
   const res=await sb.rpc('request_redemption',{p_reward_id:reward_id});
   if(res.error)throw new Error(res.error.message);
   await refresh();toast('Canje solicitado. Consulta el código en tus solicitudes.');
@@ -796,7 +938,7 @@ async function toggle(table,id){
 async function removeItem(table,id){
  if(!['events','rewards','promos'].includes(table))throw new Error('Operación no permitida.');
  const item=data[table].find(x=>x.id===id);if(!item)return;
- if(!confirm(`¿Quieres eliminar definitivamente «${item.name}»? Esta acción no se puede deshacer.\n\nSi solo quieres quitarlo de la web, pulsa Cancelar y usa Ocultar.`))return;
+ if(!ask(`¿Quieres eliminar definitivamente «${item.name}»? Esta acción no se puede deshacer.\n\nSi solo quieres quitarlo de la web, pulsa Cancelar y usa Ocultar.`))return;
  const res=await sb.from(table).delete().eq('id',id);
  if(res.error){if(table==='rewards'&&res.error.code==='23503')throw new Error('Este premio tiene solicitudes de canje y no se puede borrar. Usa «Ocultar» para conservar el historial.');throw new Error(res.error.message);}
  if(adminEditId===id){adminEditId=null;adminFormOpen=false;}
@@ -807,6 +949,14 @@ function itemPayload(table,fd){
  if(name.length<2||name.length>120)throw new Error('Escribe un nombre de entre 2 y 120 caracteres.');
  if(description.length>1200)throw new Error('La descripción es demasiado larga.');
  const item={name,description,active:fd.has('active')};
+ const fr={};for(const field of ['name','description','location','category']){
+  if(fd.has(field+'_fr')){
+   const val=String(fd.get(field+'_fr')||'').trim();
+   if(val.length>(field==='description'?1200:field==='location'?160:120))throw new Error('La traducción francesa es demasiado larga.');
+   if(val)fr[field]=val;
+  }
+ }
+ item.localized_content={fr};
  if(table==='events'){
   const date=String(fd.get('date_label')||'');const location=String(fd.get('location')||'').trim();
   if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||Number.isNaN(Date.parse(date+'T12:00:00')))throw new Error('Selecciona una fecha válida.');
@@ -930,7 +1080,7 @@ async function signInWithGoogle(button){
     if(button.isConnected){button.disabled=!live;if(label)label.textContent='Continuar con Google';}
   }
 }
-document.addEventListener('click',ev=>{const link=ev.target.closest('a[href^="#/"]');if(route==='/editor'&&editorDirty&&link&&link.getAttribute('href')!=='#/editor'&&link.target!=='_blank'&&!window.confirm('Tienes cambios sin guardar. ¿Quieres salir sin guardarlos?')){ev.preventDefault();ev.stopImmediatePropagation();}},true);
+document.addEventListener('click',ev=>{const link=ev.target.closest('a[href^="#/"]');if(route==='/editor'&&editorDirty&&link&&link.getAttribute('href')!=='#/editor'&&link.target!=='_blank'&&!ask('Tienes cambios sin guardar. ¿Quieres salir sin guardarlos?')){ev.preventDefault();ev.stopImmediatePropagation();}},true);
 document.addEventListener('click',ev=>{const el=ev.target.closest('[data-action]');if(!el)return;const act=el.dataset.action;execute(async()=>{if(act.startsWith('editor-')){await editorAction(el,act);return;}if(act==='open-search'){setSiteSearchOpen($('#site-search-panel')?.hidden);return;}if(act==='close-search'){setSiteSearchOpen(false);return;}if(act==='menu'){setSiteSearchOpen(false);menuOpen=!menuOpen;$('#site-menu')?.classList.toggle('open',menuOpen);el.setAttribute('aria-expanded',String(menuOpen));el.setAttribute('aria-label',menuOpen?'Cerrar menú':'Abrir menú');el.textContent=menuOpen?'✕':'☰';return;}if(act==='set-lang'){if(!['es','fr'].includes(el.dataset.lang))return;activeLang=el.dataset.lang;try{localStorage.setItem('bellaquitas-lang',activeLang);}catch{}document.documentElement.lang=activeLang;await render();return;}if(act==='install-app'){await installApp();return;}if(act==='auth-tab'){authNotice='';authTab=el.dataset.tab;render();return;}if(act==='google-login'){await signInWithGoogle(el);return;}if(act==='logout'){editorDraft=null;editorDirty=false;stopScan();if(!sb)throw new Error('Servicio no disponible.');await sb.auth.signOut();session=null;current=null;await loadPublic();to('/acceso');return;}if(act==='loyalty-face'){
  const chosen=el.dataset.face==='back'?'back':'front';
  document.querySelectorAll('[data-loyalty-face]').forEach(face=>{face.hidden=face.dataset.loyaltyFace!==chosen;});
@@ -1008,8 +1158,8 @@ document.addEventListener('submit',ev=>{
     if(el.id==='validate-form'){await validate(String(fd.get('code')||''));return;}
   });
 });
-document.addEventListener('change',ev=>{if(ev.target.id==='admin-member-role'){memberRoleFilter=ev.target.value;filterAdminMembers();return;}if(ev.target.matches('[data-editor-visibility]')){updateEditorValue(ev.target);return;}if(['editor-logo-file','editor-click-image-file'].includes(ev.target.id)){editorUploadLogo(ev.target).catch(err=>{const help=$('#editor-inspector-help');if(help&&!$('#editor-inspector')?.hidden)help.textContent=err.message;toast(err.message);});return;}if(ev.target.id==='admin-image'){const label=$('#admin-file-status');if(label)label.textContent=ev.target.files[0]?.name||'Ninguna foto seleccionada';}});
-document.addEventListener('input',ev=>{if(ev.target.id==='rewards-search'||ev.target.id==='agenda-search'){filterCatalogCards(ev.target);return;}if(ev.target.id==='site-search-input'){renderSiteSearch();return;}if(ev.target.id==='editor-inspector-input'){setInlineEditorText(ev.target.value);return;}if(ev.target.matches('[data-editor-field]')){updateEditorValue(ev.target);return;}if(ev.target.closest('#admin-item-form'))updateAdminPreview(ev.target.closest('#admin-item-form'));if(ev.target.id==='admin-member-search'){memberSearch=ev.target.value;filterAdminMembers();return;}if(ev.target.id==='admin-list-search'){const value=searchFold(ev.target.value);const cards=Array.from(document.querySelectorAll('.admin-list-item'));let count=0;for(const card of cards){card.hidden=!card.dataset.search.includes(value);if(!card.hidden)count++;}const empty=$('#admin-search-empty');if(empty)empty.hidden=count>0;return;}if(ev.target.id==='member-search'){const value=ev.target.value;search=value;const row=ev.target.closest('.pane');const tbody=row?.querySelector('tbody');if(!tbody)return;const list=data.profiles.filter(x=>x.role==='socio'&&searchFold(x.name+' '+x.member_code).includes(searchFold(value)));tbody.innerHTML=list.map(p=>`<tr><td><b>${H(p.name)}</b></td><td>${H(p.member_code)}</td><td><span class="role-chip">${H(tier(p.lifetime_points))}</span></td><td>${fmt(p.visits)}</td><td><button class="btn btn-secondary btn-mini" data-action="checkin" data-code="${H(p.member_code)}">Registrar visita</button></td></tr>`).join('')||'<tr><td colspan="5">No se encontraron socios.</td></tr>';}});
+document.addEventListener('change',ev=>{if(ev.target.id==='admin-member-role'){memberRoleFilter=ev.target.value;filterAdminMembers();return;}if(ev.target.matches('[data-editor-visibility],[data-editor-bool]')){updateEditorValue(ev.target);return;}if(ev.target.id==='editor-click-image-file'||ev.target.id.startsWith('editor-file-')){editorUploadLogo(ev.target).catch(err=>{const help=$('#editor-inspector-help');if(help&&!$('#editor-inspector')?.hidden)help.textContent=err.message;toast(err.message);});return;}if(ev.target.id==='admin-image'){const label=$('#admin-file-status');if(label)label.textContent=ev.target.files[0]?.name||'Ninguna foto seleccionada';}});
+document.addEventListener('input',ev=>{if(ev.target.id==='editor-ui-search'){const filter=searchFold(ev.target.value);let visible=0;document.querySelectorAll('.editor-ui-copy-item').forEach(box=>{box.hidden=!box.dataset.uiSearch.includes(filter);if(!box.hidden)visible++;});const count=$('#editor-ui-count');if(count)count.textContent=visible+' '+t('textos editables');return;}if(ev.target.matches('[data-ui-copy-key]')){editorDraft.ui_copy[editorLanguage][ev.target.dataset.uiCopyKey]=ev.target.value;markEditorDirty();return;}if(ev.target.id==='rewards-search'||ev.target.id==='agenda-search'){filterCatalogCards(ev.target);return;}if(ev.target.id==='site-search-input'){renderSiteSearch();return;}if(ev.target.id==='editor-inspector-input'){setInlineEditorText(ev.target.value);return;}if(ev.target.matches('[data-editor-field]')){updateEditorValue(ev.target);return;}if(ev.target.closest('#admin-item-form'))updateAdminPreview(ev.target.closest('#admin-item-form'));if(ev.target.id==='admin-member-search'){memberSearch=ev.target.value;filterAdminMembers();return;}if(ev.target.id==='admin-list-search'){const value=searchFold(ev.target.value);const cards=Array.from(document.querySelectorAll('.admin-list-item'));let count=0;for(const card of cards){card.hidden=!card.dataset.search.includes(value);if(!card.hidden)count++;}const empty=$('#admin-search-empty');if(empty)empty.hidden=count>0;return;}if(ev.target.id==='member-search'){const value=ev.target.value;search=value;const row=ev.target.closest('.pane');const tbody=row?.querySelector('tbody');if(!tbody)return;const list=data.profiles.filter(x=>x.role==='socio'&&searchFold(x.name+' '+x.member_code).includes(searchFold(value)));tbody.innerHTML=list.map(p=>`<tr><td><b>${H(p.name)}</b></td><td>${H(p.member_code)}</td><td><span class="role-chip">${H(tier(p.lifetime_points))}</span></td><td>${fmt(p.visits)}</td><td><button class="btn btn-secondary btn-mini" data-action="checkin" data-code="${H(p.member_code)}">Registrar visita</button></td></tr>`).join('')||'<tr><td colspan="5">No se encontraron socios.</td></tr>';}});
 document.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&!$('#site-search-panel')?.hidden){setSiteSearchOpen(false);return;}if(ev.key==='Escape'&&menuOpen){menuOpen=false;const menu=$('#site-menu');menu?.classList.remove('open');const btn=$('.menu-toggle');btn?.setAttribute('aria-expanded','false');btn?.setAttribute('aria-label','Abrir menú');if(btn)btn.textContent='☰';btn?.focus();}});
 document.addEventListener('click',ev=>{if(ev.target.closest('.site-search-result'))setSiteSearchOpen(false);if(ev.target.closest('#site-menu a')){menuOpen=false;$('#site-menu')?.classList.remove('open');$('.menu-toggle')?.setAttribute('aria-expanded','false');}});
 function updateKeyboardState(){const active=document.activeElement;document.body.classList.toggle('keyboard-active',!!active&&active.matches('input:not([type=checkbox]):not([type=radio]):not([type=file]),textarea,select'));}
