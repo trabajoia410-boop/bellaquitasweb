@@ -1,22 +1,28 @@
 # Bellaquitas Fest · Diseño por fases
 **Fecha:** 5 de noviembre de 2026. **Web:** GitHub Pages. **Base de datos:** Supabase.
 
-## Fase 1 — La Casa del Perreo (realizada)
-- Bloque de tipografía muy grande que se desplaza horizontalmente bajo la portada.
-- Contenido original Bellaquitas Fest. Toma los títulos actuales del editor para que puedan cambiarse sin editar código.
+## Fase 1 — La Casa del Perreo ✅
+- Bloque de tipografía muy grande desplazándose horizontalmente bajo la portada.
+- Contenido original Bellaquitas Fest, reutilizando los títulos actuales del editor.
 
-## Fase 2 — Julieta (realizada)
-- Banda superior de texto que se desplaza, reutilizando el anuncio y el nombre del editor.
-- Menú de tres barritas en móvil y ordenador, con animación al abrir y cerrar; navegación accesible con Escape.
-- Logo de Bellaquitas Fest animado al entrar, sin sustituirlo por logos externos.
-- Efectos desactivados en dispositivos con «reducir movimiento».
+## Fase 2 — Julieta ✅
+- Banda superior de texto en movimiento, utilizando el anuncio y la marca del editor.
+- Menú de tres barritas en móvil y ordenador, que se transforma en una X; puede cerrarse con Escape.
+- Animación de entrada del logotipo, con opción del sistema de «reducir movimiento».
 
-## Fase 3 — Vídeo de portada (pendiente de material autorizado)
-- Preparar fondo de vídeo en bucle, silenciado y con capa oscura, inspirado en las referencias audiovisuales.
-- Incorporar archivo MP4/WebM propio o con licencia de uso para Bellaquitas Fest; NO incrustar vídeos de Julieta sin permiso.
+## Fase 3 — Primer fondo cinematográfico (estructura preparada)
+- Integrado vídeo de fondo opcional en la portada, en bucle, sin sonido, con capa oscura y entrada cinematográfica.
+- Para activarlo: **Panel → Editor → Portada → «Vídeo cinematográfico de portada»**.
+- Introducir URL HTTPS de un archivo MP4/WebM propio o con permiso, o ruta `assets/mi-video.mp4` existente en el repositorio.
 
-## Fase 4 — Apertura cinematográfica de Experiencia (pendiente de material autorizado)
-- Vídeo de fondo/entrada para «Experiencia», con entrada escalonada de elementos inspirada en Miranda.
-- Probar peso y tiempo de carga en iPhone/Android; conservar imagen de respaldo para conexiones lentas.
+## Fase 4 — Segundo vídeo de fondo «Experiencia» (estructura preparada)
+- Integrado segundo vídeo opcional detrás de la sección Experiencia, con una capa de contraste y animación del texto.
+- Para activarlo: **Panel → Editor → Portada → «Segundo vídeo de fondo · Experiencia»**.
+- Los campos son compartidos por español/francés y se publican con el sistema normal de borradores.
+- Sin un archivo autorizado se conserva un fondo degradado rojo/negro y no se carga ningún vídeo ficticio.
 
-No tocar en estas fases usuarios, datos, QR, visitas, canjes, puntos, permisos ni las funciones SQL.
+## Verificaciones pendientes y límites
+- **Faltan los dos clips propios o autorizados**. No se han copiado vídeos, logos ni contenido de Julieta, Miranda o La Casa del Perreo.
+- Probar en iPhone Safari y Android Chrome, especialmente la reproducción automática, menú y legibilidad.
+- No se ha modificado Supabase ni los datos de cuentas, puntos, permisos, QR, visitas o canjes.
+- Alojamiento conservado en GitHub Pages, sin Netlify.
