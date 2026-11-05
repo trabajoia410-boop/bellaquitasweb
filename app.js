@@ -473,7 +473,7 @@ function landing(sectionOnly=""){
   const title=siteText({experience:'experience_title',events:'events_title',benefits:'benefits_title',faq:'faq_title',cta:'cta_title'}[sectionOnly]);
   return `${header()}<main class="standalone-page"><div class="container standalone-navigation"><a href="#/" class="btn btn-secondary btn-mini">← ${t('Inicio')}</a><strong>${H(title)}</strong></div>${blocks[sectionOnly]}</main>${footer()}`;
  }
- return `${header()}<main><section class="hero bf-video-hero" id="inicio"><video class="bf-hero-video" autoplay muted loop playsinline preload="auto" aria-hidden="true" tabindex="-1"><source src="assets/bellaquitas%20fiesta%20portada%20movil.mp4?v=4d3c9ad99357" media="(max-width: 700px)" type="video/mp4"><source src="assets/bellaquitas%20fiesta%20portada.mp4?v=5ae7a4cd7858" type="video/mp4"></video></section>${animatedMarquee()}${afterMarquee}</main>${footer()}`;
+ return `${header()}<main><section class="hero bf-video-hero" id="inicio"><video class="bf-hero-video" autoplay muted loop playsinline webkit-playsinline preload="auto" aria-hidden="true" tabindex="-1" data-mobile-src="assets/bellaquitas%20fiesta%20portada%20movil.mp4?v=4d3c9ad99357" data-desktop-src="assets/bellaquitas%20fiesta%20portada.mp4?v=5ae7a4cd7858" src="${window.matchMedia('(max-width: 700px)').matches?'assets/bellaquitas%20fiesta%20portada%20movil.mp4?v=4d3c9ad99357':'assets/bellaquitas%20fiesta%20portada.mp4?v=5ae7a4cd7858'}"></video></section>${animatedMarquee()}${afterMarquee}</main>${footer()}`;
 }
 function auth(){
   const titles={login:'Inicia sesión.',signup:'Crea tu cuenta.',recover:'Recupera tu acceso.',reset:'Elige una contraseña nueva.'};
@@ -1504,6 +1504,14 @@ window.addEventListener('hashchange',()=>{execute(async()=>{await render();});})
 const bfVideoMobileMedia=window.matchMedia('(max-width: 700px)');
 function bfRefreshBackgroundVideo(){
  for(const video of document.querySelectorAll('.bf-after-marquee-video, .bf-hero-video')){
+  // En iOS Safari el atributo media de <source> no siempre escoge la versión deseada.
+  // Forzamos la versión móvil/escritorio como src del propio <video>.
+  if(video.matches('.bf-hero-video')){
+   const selected=bfVideoMobileMedia.matches?video.dataset.mobileSrc:video.dataset.desktopSrc;
+   if(selected && video.getAttribute('src')!==selected){
+    video.setAttribute('src',selected);
+   }
+  }
   video.load();
   const playback=video.play();
   if(playback && typeof playback.catch==='function')playback.catch(()=>{});
