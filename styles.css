@@ -723,3 +723,23 @@ section[id]{scroll-margin-top:92px}
  .bf-neon .site-header .brand .brand-wordmark{display:none!important}
  .bf-neon .site-header .lang-switch{max-width:96px}
 }
+
+/* Corrección final: cápsula centrada y proporciones coherentes según viewport. */
+@media(min-width:1150px){
+ body.bf-neon > #app .site-header{width:clamp(790px,58vw,1080px)!important;max-width:calc(100vw - 48px)!important;margin:16px auto 0!important;border:1.5px solid #e5b66f!important;border-radius:999px!important;background:#140b1bf0!important;box-shadow:0 12px 32px #0007!important}
+ body.bf-neon > #app .site-header .nav-wrap{display:grid!important;grid-template-columns:max-content minmax(0,1fr) max-content!important;width:calc(100% - 30px)!important;gap:12px!important}
+ body.bf-neon > #app .site-header .bf-desktop-nav{display:flex!important;align-items:center!important;justify-content:center!important;gap:clamp(8px,1vw,18px)!important;overflow:visible!important}
+ body.bf-neon > #app .site-header .bf-desktop-nav .nav-link{font-size:clamp(.66rem,.72vw,.82rem)!important;white-space:nowrap!important}
+ body.bf-neon > #app .site-header .brand .brand-wordmark{display:none!important}
+ body.bf-neon > #app .site-header .nav-actions>.btn,body.bf-neon > #app .site-header .header-search-button{display:none!important}
+}
+@media(min-width:701px) and (max-width:1149px){
+ body.bf-neon > #app .site-header{width:min(680px,calc(100% - 32px))!important;margin:12px auto 0!important;border:1.5px solid #e5b66f!important;border-radius:999px!important}
+ body.bf-neon > #app .site-header .nav-wrap{grid-template-columns:minmax(0,1fr) auto!important}
+ body.bf-neon > #app .site-header .bf-desktop-nav{display:none!important}
+}
+@media(max-width:700px){
+ body.bf-neon > #app .site-header{width:calc(100% - 20px)!important;margin:10px auto 0!important;border:1.5px solid #e5b66f!important;border-radius:999px!important}
+ body.bf-neon > #app .site-header .nav-wrap{grid-template-columns:minmax(0,1fr) auto!important}
+ body.bf-neon > #app .site-header .bf-desktop-nav{display:none!important}
+}
