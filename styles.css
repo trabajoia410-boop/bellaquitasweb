@@ -1146,3 +1146,53 @@ body.bf-neon .bf-after-marquee .bf-after-marquee-content :is(
   inset:-12px -16px;
  }
 }
+
+
+/* Portada: vídeo propio, independiente del fondo posterior a la banda dorada.
+   El vídeo se limita estrictamente a #inicio; el menú, logo y textos van encima. */
+body.bf-neon .hero.bf-video-hero{
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+}
+body.bf-neon .hero.bf-video-hero > video.bf-hero-video{
+  position:absolute;
+  inset:0;
+  display:block;
+  width:100%;
+  height:100%;
+  min-width:100%;
+  min-height:100%;
+  object-fit:cover;
+  object-position:center center;
+  opacity:1;
+  z-index:0;
+  pointer-events:none;
+}
+/* Sombra sobre el vídeo, sin afectar al separador amarillo ni al vídeo inferior. */
+body.bf-neon .hero.bf-video-hero::after{
+  background:linear-gradient(180deg,
+    rgba(7,3,12,.55) 0%,
+    rgba(7,3,12,.35) 45%,
+    rgba(7,3,12,.61) 100%);
+  pointer-events:none;
+}
+body.bf-neon .hero.bf-video-hero .hero-inner{
+  position:relative;
+  z-index:2;
+}
+body.bf-neon .hero.bf-video-hero .hero-copy :is(h1,p,.eyebrow,.hero-stat strong,.hero-stat span){
+  text-shadow:0 2px 7px rgba(0,0,0,.85),0 5px 18px rgba(0,0,0,.7);
+}
+@media(max-width:700px){
+ body.bf-neon .hero.bf-video-hero > video.bf-hero-video{
+   object-fit:cover;
+   object-position:50% 50%;
+ }
+ body.bf-neon .hero.bf-video-hero::after{
+   background:linear-gradient(180deg,
+     rgba(7,3,12,.59) 0%,
+     rgba(7,3,12,.43) 45%,
+     rgba(7,3,12,.66) 100%);
+ }
+}
