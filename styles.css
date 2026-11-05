@@ -1395,23 +1395,23 @@ body.bf-neon .bf-after-marquee > .bf-after-marquee-shade{
  }
 }
 
-/* Eventos publicados: tarjeta oscura OPACA, con profundidad y sombra.
-   Se aplica a cualquier evento actual o creado posteriormente.
-   El vídeo sigue visible alrededor, nunca a través de la tarjeta. */
+/* Eventos publicados: cristal oscuro SEMITRANSPARENTE.
+   Solo el fondo pierde opacidad; textos, botones y fechas siguen al 100%.
+   Los eventos creados posteriormente reciben automaticamente el mismo estilo. */
 body.bf-neon #eventos .three-grid > .event-card,
 body.bf-neon .bf-after-marquee .bf-after-marquee-content #eventos .three-grid > .event-card{
- background:linear-gradient(150deg,#2b1b32 0%,#1b1228 44%,#0c0a19 100%)!important;
- background-color:#161020!important;
- border:1px solid rgba(222,179,215,.48)!important;
- box-shadow:0 22px 56px rgba(0,0,0,.64),0 8px 22px rgba(0,0,0,.42),inset 0 1px 0 rgba(255,255,255,.12)!important;
- backdrop-filter:none!important;
- -webkit-backdrop-filter:none!important;
+ background:linear-gradient(150deg,rgba(30,17,42,.70) 0%,rgba(20,11,31,.65) 48%,rgba(10,7,20,.70) 100%)!important;
+ background-color:transparent!important;
+ border:1px solid rgba(222,179,215,.44)!important;
+ box-shadow:0 22px 56px rgba(0,0,0,.58),0 8px 22px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.12)!important;
+ backdrop-filter:blur(7px) saturate(110%)!important;
+ -webkit-backdrop-filter:blur(7px) saturate(110%)!important;
  opacity:1!important;
  isolation:isolate;
 }
 body.bf-neon #eventos .three-grid > .event-card::before,
 body.bf-neon .bf-after-marquee .bf-after-marquee-content #eventos .three-grid > .event-card::before{
- background:radial-gradient(circle,rgba(152,69,125,.18),transparent 72%)!important;
+ background:radial-gradient(circle,rgba(152,69,125,.13),transparent 72%)!important;
  pointer-events:none;
 }
 body.bf-neon #eventos .three-grid > .event-card :is(h3,p,.event-meta,.event-top){
@@ -1421,7 +1421,8 @@ body.bf-neon #eventos .three-grid > .event-card :is(h3,p,.event-meta,.event-top)
 @media(max-width:700px){
  body.bf-neon #eventos .three-grid > .event-card,
  body.bf-neon .bf-after-marquee .bf-after-marquee-content #eventos .three-grid > .event-card{
-  background:linear-gradient(155deg,#281a31 0%,#181124 50%,#0c0a18 100%)!important;
-  box-shadow:0 20px 48px rgba(0,0,0,.68),0 6px 18px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.12)!important;
+  background:linear-gradient(155deg,rgba(32,19,44,.74) 0%,rgba(20,12,32,.69) 50%,rgba(10,7,20,.73) 100%)!important;
+  background-color:transparent!important;
+  box-shadow:0 20px 48px rgba(0,0,0,.62),0 6px 18px rgba(0,0,0,.36),inset 0 1px 0 rgba(255,255,255,.12)!important;
  }
 }
