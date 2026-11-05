@@ -1089,3 +1089,60 @@ body.bf-neon .bf-after-marquee .bf-after-marquee-content #eventos .empty-state{
   box-shadow:0 12px 28px rgba(0,0,0,.42),inset 0 1px 0 rgba(255,255,255,.10)!important;
  }
 }
+
+
+/* Legibilidad uniforme en todas las secciones sobre vídeo — estilo Julieta.
+   Sombras solo en texto, sin oscurecer el vídeo ni modificar tarjetas/medios. */
+body.bf-neon .bf-after-marquee .bf-after-marquee-content :is(
+  .section-head h2,.section-head h3,.section-head p,
+  .section-head .eyebrow,.feature h3,.feature p,
+  .event-card h3,.event-card p,.event-card strong,.event-card small,
+  .big-benefit h2,.big-benefit h3,.big-benefit p,.big-benefit .eyebrow,
+  .benefit-item strong,.benefit-item p,
+  .faq-card h3,.faq-card p,
+  .cta-banner h2,.cta-banner h3,.cta-banner p,.cta-banner .eyebrow,
+  .empty,.empty-state,.empty-state p,
+  .eyebrow,.list-benefits p,.list-benefits strong
+){
+  text-shadow:
+    0 1px 2px rgba(0,0,0,.98),
+    0 3px 8px rgba(0,0,0,.9),
+    0 6px 18px rgba(0,0,0,.76)!important;
+}
+body.bf-neon .bf-after-marquee .bf-after-marquee-content :is(
+  .section-head p,.feature p,.event-card p,
+  .big-benefit p,.benefit-item p,.faq-card p,.cta-banner p,
+  .empty-state p
+){
+  color:#faf4f7!important;
+}
+/* Halo oscuro de borde difuso únicamente detrás de los títulos que flotan
+   directamente sobre el vídeo (no es un panel opaco). */
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .section-head > div{
+  position:relative;
+  isolation:isolate;
+}
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .section-head > div::before{
+  content:"";
+  position:absolute;
+  z-index:-1;
+  inset:-18px -30px;
+  border-radius:45%;
+  background:radial-gradient(ellipse at 28% 48%,
+    rgba(5,3,11,.30) 0%,
+    rgba(5,3,11,.17) 45%,
+    rgba(5,3,11,0) 78%);
+  pointer-events:none;
+}
+/* Sombras en etiquetas de los eventos y textos auxiliares sin tocar botones. */
+body.bf-neon .bf-after-marquee .bf-after-marquee-content :is(
+  .event-card .tag,.event-card .chip,.event-card .meta,
+  .event-card time,.benefit-item span,.faq-card strong
+){
+  text-shadow:0 2px 6px rgba(0,0,0,.9),0 4px 12px rgba(0,0,0,.7)!important;
+}
+@media(max-width:700px){
+ body.bf-neon .bf-after-marquee .bf-after-marquee-content .section-head > div::before{
+  inset:-12px -16px;
+ }
+}
