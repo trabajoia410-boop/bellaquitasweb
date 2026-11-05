@@ -24,11 +24,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=navbar19" />
+  <link rel="stylesheet" href="styles.css?v=navbar20" />
   <script src="config.js"></script>
   <script src="locale-fr.js" defer></script>
   <script src="assets/qr-local.js" defer></script>
-  <script src="app.js?v=navbar19" defer></script>
+  <script src="app.js?v=navbar20" defer></script>
   <style>
     #auth-startup { display:none; }
     html.auth-booting #app { visibility:hidden; }
@@ -39,6 +39,44 @@
     }
     #auth-startup strong {font-size:1.4rem;letter-spacing:.12em;}
     #auth-startup span {color:#ecd2d2;font-size:1rem;}
+  </style>
+
+  <style id="bellaquitas-mobile-hamburger-v20">
+    /* El selector genérico .nav-actions > .btn ocultaba también el botón ☰. */
+    body.bf-neon #app > .site-header .nav-actions > button.menu-toggle.btn{
+      display:inline-flex!important;
+      visibility:visible!important;
+      opacity:1!important;
+      position:relative!important;
+      flex:0 0 42px!important;
+      width:42px!important;
+      min-width:42px!important;
+      height:42px!important;
+      padding:0!important;
+      align-items:center!important;
+      justify-content:center!important;
+      border:1px solid #bd865a!important;
+      border-radius:13px!important;
+      background:#251222!important;
+      color:#f5ce90!important;
+    }
+    body.bf-neon #app > .site-header .nav-actions > button.menu-toggle .bf-menu-lines{
+      display:flex!important;width:22px!important;height:18px!important;
+      flex-direction:column!important;justify-content:space-between!important;
+    }
+    body.bf-neon #app > .site-header .nav-actions > button.menu-toggle .bf-menu-lines i{
+      display:block!important;width:100%!important;height:2.5px!important;
+      flex:0 0 2.5px!important;background:#f5ce90!important;
+      opacity:1!important;transform:none!important;
+    }
+    @media(max-width:600px){
+      body.bf-neon #app > .site-header .nav-actions{gap:6px!important;flex-shrink:0!important}
+      body.bf-neon #app > .site-header .nav-actions .lang-globe{display:none!important}
+      body.bf-neon #app > .site-header .nav-actions > button.menu-toggle.btn{
+        flex-basis:40px!important;width:40px!important;min-width:40px!important;height:40px!important;
+      }
+      body.bf-neon #app > .site-header .brand{flex-shrink:1!important}
+    }
   </style>
   <style id="bellaquitas-navbar-layout-v19">
 
