@@ -1348,3 +1348,49 @@ body.bf-neon .hero.bf-video-hero::after{
   object-fit:cover!important;
  }
 }
+
+/* Video continuo de secciones: pantalla completa sin bandas laterales.
+   Se conserva el fichero original y se elimina cualquier filtro. */
+body.bf-neon .bf-after-marquee{
+ position:relative!important;
+ width:100%!important;
+ max-width:none!important;
+ margin:0!important;
+ padding:0!important;
+ overflow:clip!important;
+ background-color:#08051d!important;
+}
+body.bf-neon .bf-after-marquee > video.bf-after-marquee-video{
+ position:sticky!important;
+ top:0!important;
+ left:0!important;
+ display:block!important;
+ width:100%!important;
+ min-width:100%!important;
+ max-width:none!important;
+ height:100svh!important;
+ min-height:100svh!important;
+ max-height:none!important;
+ margin-bottom:-100svh!important;
+ object-fit:cover!important;
+ object-position:center center!important;
+ border:0!important;
+ border-radius:0!important;
+ background:transparent!important;
+ box-shadow:none!important;
+ transform:none!important;
+ filter:none!important;
+ -webkit-filter:none!important;
+ opacity:1!important;
+ animation:none!important;
+}
+body.bf-neon .bf-after-marquee > .bf-after-marquee-shade{
+ pointer-events:none!important;
+}
+@media(max-width:700px){
+ body.bf-neon .bf-after-marquee > video.bf-after-marquee-video{
+  width:100%!important;
+  height:100svh!important;
+  object-fit:cover!important;
+ }
+}
