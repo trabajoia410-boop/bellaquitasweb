@@ -990,3 +990,48 @@ body.bf-neon .bf-after-marquee > video.bf-after-marquee-video{
    background-position:center center!important;
  }
 }
+
+/* Corrección definitiva de transparencia de las tarjetas sobre el vídeo.
+   Mantener textos y bordes, eliminar rellenos opacos y desenfoque. */
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .feature,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .event-card,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .big-benefit,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .benefit-item,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .faq-card,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .cta-banner,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .loyalty-showcase,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .list-benefits,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .empty-state,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .card,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .info-note,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .pane,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .metric,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .stat-box{
+ background:rgba(13,5,20,.07)!important;
+ background-image:none!important;
+ box-shadow:none!important;
+ backdrop-filter:none!important;
+ -webkit-backdrop-filter:none!important;
+}
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .feature::before,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .feature::after,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .event-card::before,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .event-card::after,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .big-benefit::before,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .big-benefit::after,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .cta-banner::before,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .cta-banner::after{
+ background:transparent!important;
+ background-image:none!important;
+ box-shadow:none!important;
+}
+body.bf-neon .bf-after-marquee .bf-after-marquee-content #eventos,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content #eventos .three-grid,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content #eventos .empty,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content #eventos .empty-state{
+ background:transparent!important;
+ background-image:none!important;
+ box-shadow:none!important;
+ backdrop-filter:none!important;
+ -webkit-backdrop-filter:none!important;
+}
