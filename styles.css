@@ -1196,3 +1196,36 @@ body.bf-neon .hero.bf-video-hero .hero-copy :is(h1,p,.eyebrow,.hero-stat strong,
      rgba(7,3,12,.66) 100%);
  }
 }
+
+/* Portada: mantener toda la altura del hero y mostrar únicamente el vídeo.
+   La retirada de los elementos superpuestos no debe colapsar la sección. */
+body.bf-neon .hero.bf-video-hero{
+ display:block!important;
+ position:relative!important;
+ min-height:100svh!important;
+ height:100svh!important;
+ overflow:hidden!important;
+ background:#100a17!important;
+}
+body.bf-neon .hero.bf-video-hero > video.bf-hero-video{
+ display:block!important;
+ position:absolute!important;
+ inset:0!important;
+ width:100%!important;
+ height:100%!important;
+ object-fit:cover!important;
+ opacity:1!important;
+ visibility:visible!important;
+ z-index:1!important;
+}
+body.bf-neon .hero.bf-video-hero::after{
+ background:transparent!important;
+ opacity:0!important;
+ pointer-events:none!important;
+}
+@media(max-width:700px){
+ body.bf-neon .hero.bf-video-hero{
+  height:100svh!important;
+  min-height:100svh!important;
+ }
+}
