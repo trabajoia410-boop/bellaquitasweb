@@ -1291,3 +1291,60 @@ body.bf-neon .hero.bf-video-hero > video.bf-hero-video{
   border-radius:12px!important;
  }
 }
+
+/* Portada sin marcos: el vídeo cubre todo el hero de borde a borde.
+   El fichero original se reproduce sin filtros ni compresión. */
+body.bf-neon .hero.bf-video-hero{
+ display:block!important;
+ position:relative!important;
+ width:100%!important;
+ min-height:100svh!important;
+ height:100svh!important;
+ margin:0!important;
+ padding:0!important;
+ border:0!important;
+ border-radius:0!important;
+ overflow:hidden!important;
+ background:#08051d!important;
+}
+body.bf-neon .hero.bf-video-hero > video.bf-hero-video{
+ position:absolute!important;
+ inset:0!important;
+ display:block!important;
+ width:100%!important;
+ height:100%!important;
+ min-width:100%!important;
+ min-height:100%!important;
+ max-width:none!important;
+ max-height:none!important;
+ margin:0!important;
+ padding:0!important;
+ border:0!important;
+ border-radius:0!important;
+ box-shadow:none!important;
+ object-fit:cover!important;
+ object-position:center center!important;
+ transform:none!important;
+ filter:none!important;
+ -webkit-filter:none!important;
+ backdrop-filter:none!important;
+ opacity:1!important;
+ animation:none!important;
+ background:transparent!important;
+}
+body.bf-neon .hero.bf-video-hero::after{
+ display:none!important;
+}
+@media(max-width:700px){
+ body.bf-neon .hero.bf-video-hero{
+  width:100%!important;
+  height:100svh!important;
+  min-height:100svh!important;
+  padding:0!important;
+ }
+ body.bf-neon .hero.bf-video-hero > video.bf-hero-video{
+  width:100%!important;
+  height:100%!important;
+  object-fit:cover!important;
+ }
+}
