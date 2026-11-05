@@ -321,8 +321,118 @@ function header(){
  const topbar=`<div class="bf-topbar" role="region" aria-label="${activeLang==='fr'?'Actualités Bellaquitas Fest':'Novedades de Bellaquitas Fest'}"><div class="bf-topbar-track" aria-hidden="true">${tickerSet}${tickerSet}</div></div>`;
  const nav=[['experience','experiencia','nav_experience'],['events','eventos','nav_events'],['benefits','ventajas','nav_benefits'],['faq','preguntas','nav_faq']].filter(([key])=>showSection(key)).map(([,path,label])=>`<a class="nav-link ${route==="/"+path?"active":""}" href="#/${path}" ${route==="/"+path?'aria-current="page"':""}>${preview?`<span data-edit-field="${label}">${H(siteText(label))}</span>`:H(siteText(label))}</a>`).join('');
  const menuAccount=current&&!preview?`<a class="btn btn-secondary" href="#${destinationForUser()}">Mi cuenta</a>${current.role==='admin'?'<a class="btn btn-primary" href="#/editor">✎ Editar web</a>':''}`:`<a class="btn btn-secondary" href="#/acceso">${t('Iniciar sesión')}</a><a class="btn btn-primary" href="#/registro">${t('Crear cuenta')}</a>`;
- return `<header class="site-header"><div class="container nav-wrap"><a class="brand" href="#/" aria-label="Bellaquitas Fest, inicio">${headerBrand(preview)}</a><nav class="bf-desktop-nav" aria-label="Navegación principal"><a class="nav-link ${route==="/"? "active":""}" href="#/" ${route==="/"?'aria-current="page"':""}>${H(siteText('nav_home'))}</a>${nav}</nav><nav id="site-menu" class="main-nav ${menuOpen?'open':''}" aria-label="Navegación principal"><a class="nav-link ${route==="/"? "active":""}" href="#/" ${route==="/"?'aria-current="page"':""}>${preview?`<span data-edit-field="nav_home">${H(siteText('nav_home'))}</span>`:H(siteText('nav_home'))}</a>${nav}<div class="mobile-menu-actions">${menuAccount}</div><button type="button" class="menu-install" data-action="install-app">📲 Instalar la app</button></nav><div class="nav-actions">${langSwitcher()}<button class="header-search-button" type="button" data-action="open-search" aria-label="${t('Buscar')}" aria-expanded="false" aria-controls="site-search-panel" title="${t('Buscar')}">⌕</button>${authActions}<button class="btn btn-secondary btn-mini menu-toggle" type="button" data-action="menu" aria-controls="site-menu" aria-expanded="${menuOpen}" aria-label="${menuOpen?'Cerrar menú':'Abrir menú'}"><span class="bf-menu-lines" aria-hidden="true"><i></i><i></i><i></i></span></button></div></div>${searchPanel()}</header>`;
+ return `<header class="site-header"><div class="container nav-wrap"><a class="brand" href="#/" aria-label="Bellaquitas Fest, inicio">${headerBrand(preview)}</a><nav class="bf-desktop-nav" aria-label="Navegación principal"><a class="nav-link ${route==="/"? "active":""}" href="#/" ${route==="/"?'aria-current="page"':""}>${H(siteText('nav_home'))}</a>${nav}</nav><nav id="site-menu" class="main-nav bf-community-menu ${menuOpen?'open':''}" aria-label="Comunidad Bellaquitas Fest"><a class="community-menu-link ${route==='/sugerencias'?'active':''}" href="#/sugerencias"><span>💌</span><span>Sugerencias<small>Comparte tus ideas</small></span></a><a class="community-menu-link ${route==='/moments'?'active':''}" href="#/moments"><span>📸</span><span>Bellaquitas Moments<small>Fotografías de nuestros eventos</small></span></a><a class="community-menu-link ${route==='/club'?'active':''}" href="#/club"><span>👑</span><span>Club de las Bellaquitas<small>Nuestras redes oficiales</small></span></a></nav><div class="nav-actions">${langSwitcher()}<button class="header-search-button" type="button" data-action="open-search" aria-label="${t('Buscar')}" aria-expanded="false" aria-controls="site-search-panel" title="${t('Buscar')}">⌕</button>${authActions}<button class="btn btn-secondary btn-mini menu-toggle" type="button" data-action="menu" aria-controls="site-menu" aria-expanded="${menuOpen}" aria-label="${menuOpen?'Cerrar menú':'Abrir menú'}"><span class="bf-menu-lines" aria-hidden="true"><i></i><i></i><i></i></span></button></div></div>${searchPanel()}</header>`;
 }
+
+/* Comunidad: secciones públicas y herramientas reales para administración. */
+const communityRoutes=['/sugerencias','/moments','/club'];
+let momentsAlbums=[],momentsPhotos=[],communitySuggestions=[];
+async function loadCommunity(){
+ if(!sb)return;
+ const [a,p]=await Promise.all([
+  sb.from('moments_albums').select('*').order('event_date',{ascending:false}),
+  sb.from('moments_photos').select('*').order('created_at',{ascending:true})
+ ]);
+ if(a.error)console.warn('Álbumes:',a.error.message);
+ if(p.error)console.warn('Fotos:',p.error.message);
+ momentsAlbums=a.data||[];momentsPhotos=p.data||[];
+}
+async function loadCommunityAdmin(){
+ if(!sb||current?.role!=='admin')return;
+ const res=await sb.from('community_suggestions').select('*').order('created_at',{ascending:false}).limit(200);
+ if(res.error)throw new Error('No se pudieron cargar las sugerencias: '+res.error.message);
+ communitySuggestions=res.data||[];
+}
+function communityShell(content){
+ return `${header()}<main class="community-page"><div class="container community-container">${content}</div></main>${footer()}`;
+}
+function suggestionsPage(){
+ return communityShell(`<div class="community-intro"><span class="eyebrow">TU VOZ IMPORTA</span><h1>💌 Sugerencias</h1><p>Cuéntanos qué te gustaría vivir en Bellaquitas Fest. Ideas, propuestas, opiniones o recomendaciones: queremos escucharte.</p></div><div class="community-panel"><form id="community-suggestion-form"><label for="suggestion-name">Nombre <span class="community-muted">(opcional)</span></label><input id="suggestion-name" name="name" maxlength="80" autocomplete="name" placeholder="¿Cómo te llamas?"><label for="suggestion-message">Tu mensaje</label><textarea id="suggestion-message" name="message" minlength="5" maxlength="2000" required rows="6" placeholder="Comparte tu idea con nosotras…"></textarea><div class="community-trap" aria-hidden="true"><label for="suggestion-website">Sitio web</label><input id="suggestion-website" name="website" tabindex="-1" autocomplete="off"></div><button class="btn btn-primary" type="submit">Enviar sugerencia 💌</button><p id="suggestion-feedback" class="community-feedback" role="status" aria-live="polite"></p><small class="community-muted">Tu sugerencia será privada y solo podrá consultarla el equipo de administración.</small></form></div>`);
+}
+function momentsPage(){
+ const albums=momentsAlbums.filter(x=>x.published);
+ const content=albums.length?albums.map(a=>{
+  const photos=momentsPhotos.filter(p=>p.album_id===a.id);
+  return `<section class="community-album"><div class="community-album-head"><h2>${H(a.title)}</h2><span>📅 ${H(recentDate(a.event_date))}</span></div>${photos.length?`<div class="moments-grid">${photos.map(p=>{const url=sb.storage.from(MEDIA_BUCKET).getPublicUrl(p.storage_path).data.publicUrl;return `<button type="button" class="moment-photo" data-action="moment-view" data-photo-url="${H(url)}" data-photo-caption="${H(p.caption||a.title)}" aria-label="Ampliar fotografía de ${H(a.title)}"><img src="${H(url)}" alt="${H(p.caption||a.title)}" loading="lazy"></button>`}).join('')}</div>`:'<p class="community-muted">Pronto compartiremos las fotografías de este evento.</p>'}</section>`;
+ }).join(''):'<div class="community-panel community-empty">Todavía no hay galerías publicadas. Muy pronto compartiremos nuestros mejores momentos. ✨</div>';
+ return communityShell(`<div class="community-intro"><span class="eyebrow">NUESTROS RECUERDOS</span><h1>📸 Bellaquitas Moments</h1><p>Revive los mejores instantes de cada fiesta. Selecciona una foto para verla a pantalla completa.</p></div>${content}<dialog id="moment-dialog" class="moment-dialog"><button type="button" class="moment-close" data-action="moment-close" aria-label="Cerrar fotografía">✕</button><img id="moment-dialog-image" alt="Fotografía ampliada"><p id="moment-dialog-caption"></p></dialog>`);
+}
+function clubPage(){
+ return communityShell(`<div class="community-intro"><span class="eyebrow">SIGUE LA EXPERIENCIA</span><h1>👑 Club de las Bellaquitas</h1><p>La fiesta no termina cuando se apagan las luces. Sigue nuestras redes para descubrir próximos eventos, novedades y momentos especiales.</p></div><div class="community-social-grid"><a class="community-social-card" href="https://www.instagram.com/bellaquitas_fr/" target="_blank" rel="noopener noreferrer"><span class="social-icon social-instagram" aria-hidden="true">◎</span><span><strong>Instagram</strong><small>@bellaquitas_fr</small></span><span aria-hidden="true">↗</span></a><div class="community-social-card coming-soon"><span class="social-icon" aria-hidden="true">♪</span><span><strong>TikTok</strong><small>Próximamente · perfil oficial pendiente</small></span></div></div><p class="community-muted community-social-note">Más redes sociales se incorporarán aquí cuando estén disponibles.</p>`);
+}
+function communityAdminPanel(){
+ const suggestions=communitySuggestions.map(x=>`<article class="community-admin-item"><div><strong>${H(x.name||'Anónimo')}</strong><small>${H(recentDate(x.created_at))} · ${H(x.status)}</small></div><p>${H(x.message)}</p><div class="community-admin-actions"><button class="btn btn-secondary btn-mini" data-action="suggestion-status" data-id="${H(x.id)}" data-status="revisado">Marcar revisada</button><button class="btn btn-secondary btn-mini" data-action="suggestion-status" data-id="${H(x.id)}" data-status="archivado">Archivar</button></div></article>`).join('')||'<p class="community-muted">Todavía no hay sugerencias recibidas.</p>';
+ const albums=momentsAlbums.map(a=>{
+  const photos=momentsPhotos.filter(p=>p.album_id===a.id);
+  return `<article class="community-admin-item"><div class="community-admin-title"><strong>${H(a.title)}</strong><small>${H(recentDate(a.event_date))} · ${a.published?'Publicado':'Borrador'} · ${photos.length} fotos</small></div><div class="community-admin-actions"><button type="button" class="btn btn-secondary btn-mini" data-action="moment-publish" data-id="${H(a.id)}" data-published="${a.published}">${a.published?'Ocultar galería':'Publicar galería'}</button><button type="button" class="btn btn-secondary btn-mini" data-action="moment-album-delete" data-id="${H(a.id)}">Eliminar galería</button></div><form class="moment-upload-form" data-album-id="${H(a.id)}"><label>Añadir fotos reales (JPG, PNG, WebP)</label><input type="file" name="photos" accept="image/jpeg,image/png,image/webp" multiple required><button class="btn btn-primary btn-mini" type="submit">Subir fotografías</button><p class="community-feedback" role="status"></p></form><div class="moments-admin-photos">${photos.map(p=>{const url=sb.storage.from(MEDIA_BUCKET).getPublicUrl(p.storage_path).data.publicUrl;return `<div><img src="${H(url)}" alt="${H(p.caption||'Fotografía del evento')}" loading="lazy"><button type="button" data-action="moment-photo-delete" data-id="${H(p.id)}">Eliminar foto ✕</button></div>`}).join('')}</div></article>`;
+ }).join('')||'<p class="community-muted">No hay galerías creadas.</p>';
+ return `<div class="community-admin"><h2>💌 Sugerencias recibidas</h2><div class="community-admin-list">${suggestions}</div><h2>📸 Bellaquitas Moments</h2><form id="moment-album-form" class="community-panel"><h3>Crear una galería</h3><label for="moment-album-title">Nombre del evento</label><input id="moment-album-title" name="title" minlength="2" maxlength="120" required placeholder="Nombre de la fiesta"><label for="moment-album-date">Fecha del evento</label><input id="moment-album-date" name="event_date" type="date" required><button class="btn btn-primary" type="submit">Crear galería</button><p class="community-feedback" role="status"></p></form><div class="community-admin-list">${albums}</div></div>`;
+}
+async function saveCommunitySuggestion(form){
+ const fd=new FormData(form),feedback=form.querySelector('#suggestion-feedback'),button=form.querySelector('[type="submit"]');
+ if(fd.get('website'))return;
+ const name=String(fd.get('name')||'').trim(),message=String(fd.get('message')||'').trim();
+ if(name.length>80||message.length<5||message.length>2000){feedback.textContent='Escribe una sugerencia de entre 5 y 2000 caracteres.';return;}
+ if(!sb){feedback.textContent='El servicio no está disponible. Inténtalo más tarde.';return;}
+ button.disabled=true;feedback.textContent='Enviando…';
+ try{
+  const {error}=await sb.from('community_suggestions').insert({name,message});
+  if(error)throw error;
+  form.reset();feedback.textContent='¡Gracias! 💌 Tu sugerencia se ha enviado correctamente.';
+ }catch(err){console.error('Sugerencia:',err);feedback.textContent='No se pudo enviar tu mensaje. Inténtalo de nuevo.';}
+ finally{button.disabled=false;}
+}
+async function communityAdminAction(el,act){
+ if(current?.role!=='admin')throw new Error('Acceso restringido.');
+ const id=el.dataset.id;
+ if(act==='suggestion-status'){
+  const {error}=await sb.from('community_suggestions').update({status:el.dataset.status}).eq('id',id);if(error)throw error;
+ }else if(act==='moment-publish'){
+  const {error}=await sb.from('moments_albums').update({published:el.dataset.published!=='true'}).eq('id',id);if(error)throw error;
+ }else if(act==='moment-photo-delete'){
+  if(!ask('¿Eliminar esta fotografía definitivamente?'))return;
+  const p=momentsPhotos.find(x=>x.id===id);if(!p)return;
+  const {error}=await sb.from('moments_photos').delete().eq('id',id);if(error)throw error;
+  const out=await sb.storage.from(MEDIA_BUCKET).remove([p.storage_path]);if(out.error)console.warn('Archivo sin eliminar:',out.error.message);
+ }else if(act==='moment-album-delete'){
+  if(!ask('¿Eliminar la galería y todas sus fotos definitivamente?'))return;
+  const paths=momentsPhotos.filter(x=>x.album_id===id).map(x=>x.storage_path);
+  const {error}=await sb.from('moments_albums').delete().eq('id',id);if(error)throw error;
+  if(paths.length){const out=await sb.storage.from(MEDIA_BUCKET).remove(paths);if(out.error)console.warn('Archivos sin eliminar:',out.error.message);}
+ }
+ await loadCommunity();await loadCommunityAdmin();await render();toast('Cambios guardados.');
+}
+async function createMomentsAlbum(form){
+ if(current?.role!=='admin')return;
+ const fd=new FormData(form),button=form.querySelector('button'),box=form.querySelector('.community-feedback');
+ button.disabled=true;
+ try{
+  const title=String(fd.get('title')||'').trim(),event_date=String(fd.get('event_date')||'');
+  if(title.length<2||title.length>120||!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(event_date))throw new Error('Completa el nombre y la fecha.');
+  const {error}=await sb.from('moments_albums').insert({title,event_date,published:false});if(error)throw error;
+  await loadCommunity();await render();toast('Galería creada. Ahora puedes subir fotos y publicarla.');
+ }catch(err){box.textContent=err.message;button.disabled=false;}
+}
+async function uploadMomentsPhotos(form){
+ if(current?.role!=='admin')return;
+ const albumId=form.dataset.albumId,files=[...form.querySelector('input[type="file"]').files],box=form.querySelector('.community-feedback'),button=form.querySelector('button');
+ if(!momentsAlbums.some(a=>a.id===albumId))throw new Error('Galería no encontrada.');
+ if(!files.length)return;
+ button.disabled=true;box.textContent='Subiendo fotografías…';
+ let count=0;
+ for(const file of files){
+  if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>8*1024*1024){box.textContent='Solo JPG, PNG o WebP de hasta 8 MB por fotografía.';continue;}
+  const ext=file.type==='image/png'?'png':file.type==='image/webp'?'webp':'jpg';
+  const path='moments/'+albumId+'/'+crypto.randomUUID()+'.'+ext;
+  const up=await sb.storage.from(MEDIA_BUCKET).upload(path,file,{contentType:file.type,upsert:false});
+  if(up.error){box.textContent='Error al subir una fotografía: '+up.error.message;continue;}
+  const saved=await sb.from('moments_photos').insert({album_id:albumId,storage_path:path});
+  if(saved.error){await sb.storage.from(MEDIA_BUCKET).remove([path]);box.textContent='Error al registrar una fotografía: '+saved.error.message;continue;}
+  count++;
+ }
+ await loadCommunity();await render();toast(count+' fotografía(s) subida(s).');
+}
+
 function footer(){return `<footer class="footer"><div class="container footer-flex"><div class="brand">${headerBrand(!!editorPreviewOverride)}</div><p>© ${new Date().getFullYear()} Bellaquitas Fest. ${editorPreviewOverride?`<span data-edit-field="footer_desc">${H(siteText('footer_desc'))}</span>`:H(siteText('footer_desc'))}</p><p>${showSection('faq')?'<a href="#/preguntas">Preguntas frecuentes</a> · ':''}<a href="#/acceso">${t('Iniciar sesión')}</a> · <a href="#/registro">${t('Crear cuenta')}</a></p><button type="button" class="footer-install" data-action="install-app">📲 Instalar la app</button></div></footer>`;}
 function publicEvents(limit=3){return data.events.filter(x=>x.active).sort((a,b)=>(a.date_label||'9999').localeCompare(b.date_label||'9999')).slice(0,limit).map((e,i)=>`<article class="event-card" data-catalog-search="${H(searchFold(e.name+' '+(e.description||'')+' '+e.location+' '+e.date_label))}" ${editorPreviewOverride?`data-edit-event-id="${H(e.id)}"`:``}>${safeImage(e.image_url)?`<img class="event-photo" src="${H(safeImage(e.image_url))}" alt="Imagen de ${H(e.name)}" loading="lazy"/>`:``}<div class="event-top"><span class="pill"><span class="dot"></span> ${H(eventDate(e.date_label,e.start_time))}</span><span class="event-num">0${i+1}</span></div><h3>${H(localizedValue(e,'name'))}</h3><p>${H(localizedValue(e,'description'))}</p><div class="event-meta"><span>📍 ${H(e.location)}</span></div></article>`).join('')||'<p class="empty">No hay eventos publicados por ahora.</p>';}
 // Los vídeos de las referencias no se copian: aceptar únicamente material propio o autorizado.
@@ -433,7 +543,7 @@ function profile(){return `${pageHead(t('Mi perfil'),t('Gestiona los datos visib
 function gate(){const members=data.profiles.filter(x=>x.role==='socio');const filtered=members.filter(p=>searchFold(p.name+' '+p.member_code).includes(searchFold(search)));const pending=data.redemptions.filter(r=>r.status==='pendiente').sort(byDate);return `${pageHead('Control de acceso','Validación de socios y canjes desde una cuenta autorizada.','PERSONAL · PUERTA')}<div class="two-col"><div class="pane"><h2>Validar visita</h2><p class="muted small">Lee el QR de un socio o introduce su código de tarjeta.</p><form id="checkin-form" class="checkin-form"><input class="search-field" name="code" placeholder="Código del socio (MBR-...)" required /><button class="btn btn-primary" type="submit">Validar</button></form><div style="display:flex;gap:8px;margin-top:13px;flex-wrap:wrap"><button class="btn btn-secondary btn-mini" data-action="scan" type="button">◎ Activar cámara QR</button><button class="btn btn-ghost btn-mini" data-action="stop-scan" type="button">Detener cámara</button></div><div id="camera-wrap" class="camera-wrap"><video id="camera" muted playsinline></video><p>Apunta al QR del socio. Si no funciona, introduce el código manualmente.</p></div><div class="info-note">Por seguridad, una visita se valida una sola vez por día por socio.</div></div><div class="pane"><h2>Validar canje</h2><p class="muted small">Introduce el código de solicitud que muestra la cuenta del socio.</p><form class="checkin-form" id="validate-form"><input class="search-field" name="code" placeholder="Código CNJ-..." required /><button type="submit" class="btn btn-primary">Validar</button></form><div class="section-title" style="margin-top:26px"><h2>En espera (${pending.length})</h2></div><div class="mini-list">${pending.slice(0,6).map(r=>`<div class="mini-item"><div><strong>${H(getProfile(r.user_id)?.name||'Socio')} · ${H(getReward(r.reward_id)?.name||'Premio')}</strong><small>${H(r.code)}</small></div><button class="btn btn-secondary btn-mini" data-action="validate" data-code="${H(r.code)}">Validar</button></div>`).join('')||'<div class="empty">No hay canjes pendientes.</div>'}</div></div></div><div class="pane section-gap"><div class="section-title"><h2>Buscar socio</h2><span class="muted small">${filtered.length} resultados</span></div><div class="toolbar"><input type="search" class="search-field" id="member-search" placeholder="Buscar por nombre o código" value="${H(search)}" /></div><div class="data-table-wrap"><table class="data-table"><thead><tr><th>Nombre</th><th>Código</th><th>Categoría</th><th>Visitas</th><th>Acción</th></tr></thead><tbody>${filtered.map(p=>`<tr><td><b>${H(p.name)}</b></td><td>${H(p.member_code)}</td><td><span class="role-chip">${H(tier(p.lifetime_points))}</span></td><td>${fmt(p.visits)}</td><td><button class="btn btn-secondary btn-mini" data-action="checkin" data-code="${H(p.member_code)}">Registrar visita</button></td></tr>`).join('')||'<tr><td colspan="5">No se encontraron socios.</td></tr>'}</tbody></table></div></div>`;}
 function countMove(type,daysBack){return data.activity.filter(x=>x.type===type&&new Date(x.created_at)>=new Date(Date.now()-daysBack*86400000)).length;}
 function graph(){const days=Array.from({length:7},(_,i)=>{const date=new Date(Date.now()-(6-i)*86400000).toISOString().slice(0,10);return {date,plus:data.activity.filter(a=>a.created_at.slice(0,10)===date&&a.delta>0).reduce((s,a)=>s+a.delta,0),minus:data.activity.filter(a=>a.created_at.slice(0,10)===date&&a.delta<0).reduce((s,a)=>s-a.delta,0)}});const max=Math.max(1,...days.map(d=>Math.max(d.plus,d.minus)));return `<div class="chart">${days.map(d=>`<div class="chart-col"><div class="bar-pair"><div title="${fmt(d.plus)} puntos añadidos" class="bar" style="height:${Math.max(3,d.plus/max*100)}%"></div><div title="${fmt(d.minus)} puntos canjeados" class="bar out" style="height:${Math.max(3,d.minus/max*100)}%"></div></div><small>${d.date.slice(8)}</small></div>`).join('')}</div><p class="muted small" style="margin-top:28px">● Rosa: puntos sumados. &nbsp; <span class="gold">● Dorado: canjeados.</span></p>`;}
-function adminTabs(){const tabs=[['summary','Inicio'],['events','Eventos'],['rewards','Premios'],['promos','Promociones'],['site','Editar web'],['members','Socios'],['rules','Puntos'],['activity','Movimientos']];return `<nav class="admin-tabs" aria-label="Apartados de administración">${tabs.map(([k,l])=>`<button type="button" class="tab-btn ${adminTab===k?'active':''}" data-action="admin-tab" data-tab="${k}" aria-current="${adminTab===k?'page':'false'}">${l}</button>`).join('')}</nav>`;}
+function adminTabs(){const tabs=[['summary','Inicio'],['events','Eventos'],['rewards','Premios'],['promos','Promociones'],['community','Comunidad'],['site','Editar web'],['members','Socios'],['rules','Puntos'],['activity','Movimientos']];return `<nav class="admin-tabs" aria-label="Apartados de administración">${tabs.map(([k,l])=>`<button type="button" class="tab-btn ${adminTab===k?'active':''}" data-action="admin-tab" data-tab="${k}" aria-current="${adminTab===k?'page':'false'}">${l}</button>`).join('')}</nav>`;}
 function adminSummary(){
  const members=data.profiles.filter(p=>p.role==='socio');const pending=data.redemptions.filter(x=>x.status==='pendiente');
  const actions=[['events','▦','Crear evento','Pon una fecha y un lugar y publícalo.'],['rewards','🎁','Añadir premio','Elige cuántos puntos cuesta.'],['promos','✦','Crear promoción','Anuncia una nueva bonificación.'],['site','✎','Editar toda la web','Modelos, textos y publicación visual.']];
@@ -859,7 +969,7 @@ async function editorAction(el,act){
  finally{editorBusy=false;if(el.isConnected){el.disabled=false;el.textContent=label;}}
 }
 
-function admin(){const subtitle='Crea, publica y cambia el contenido de Bellaquitas Fest sin complicaciones.';const content=adminTab==='summary'?adminSummary():['events','rewards','promos'].includes(adminTab)?adminCatalog(adminTab):adminTab==='site'?adminSite():adminTab==='members'?adminMembers():adminTab==='rules'?adminRules():adminActivity();return `${pageHead('Tu panel de administrador',subtitle,'ADMINISTRACIÓN FÁCIL')}${adminTabs()}${content}`;}
+function admin(){const subtitle='Crea, publica y cambia el contenido de Bellaquitas Fest sin complicaciones.';const content=adminTab==='community'?communityAdminPanel():adminTab==='summary'?adminSummary():['events','rewards','promos'].includes(adminTab)?adminCatalog(adminTab):adminTab==='site'?adminSite():adminTab==='members'?adminMembers():adminTab==='rules'?adminRules():adminActivity();return `${pageHead('Tu panel de administrador',subtitle,'ADMINISTRACIÓN FÁCIL')}${adminTabs()}${content}`;}
 
 async function render(){
   stopScan();route=location.hash.slice(1)||'/';menuOpen=false;
@@ -870,10 +980,13 @@ async function render(){
   const needsAuth=route.startsWith('/mi-')||['/tarjeta','/premios','/agenda','/perfil','/puerta','/panel','/editor'].includes(route);
   if(!current&&needsAuth)route='/acceso';
   if(current&&route in AUTH_ROUTES&&route!=='/restablecer')route=current.role==='admin'?'/panel':current.role==='puerta'?'/puerta':'/mi-espacio';
-  if(current&&route!=='/'&&!allowed(route)&&!['/experiencia','/eventos','/ventajas','/preguntas','/restablecer'].includes(route))route='/mi-espacio';
+  if(current&&route!=='/'&&!allowed(route)&&!['/experiencia','/eventos','/ventajas','/preguntas','/restablecer',...communityRoutes].includes(route))route='/mi-espacio';
   let html='';
   if(route in AUTH_ROUTES)html=auth();
   else if(current&&allowed(route))html=appShell(route==='/mi-espacio'?summary():route==='/tarjeta'?card():route==='/premios'?rewards():route==='/agenda'?agenda():route==='/perfil'?profile():route==='/puerta'?gate():route==='/editor'?editor():admin());
+  else if(route==='/sugerencias')html=suggestionsPage();
+  else if(route==='/moments')html=momentsPage();
+  else if(route==='/club')html=clubPage();
   else html=landing(({experiencia:'experience',eventos:'events',ventajas:'benefits',preguntas:'faq'}[route.slice(1)])||'');
   $('#app').innerHTML=html;
  document.documentElement.classList.remove('auth-booting');
@@ -969,7 +1082,7 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 window.addEventListener('online',()=>{void resumeSavedSession();});
 
 async function loadPublic(){const [e,r,pr,sc]=await Promise.all([sb.from('events').select('*').eq('active',true),sb.from('rewards').select('*').eq('active',true),sb.from('promos').select('*').eq('active',true),sb.from('site_content').select('*')]);data={...emptyData(),events:e.data||[],rewards:r.data||[],promos:pr.data||[],site_content:sc.data||[]};}
-async function refresh(){if(!sb)throw new Error('Servicio de cuentas no configurado.');if(session)await loadLive();else await loadPublic();await render();}
+async function refresh(){if(!sb)throw new Error('Servicio de cuentas no configurado.');if(session)await loadLive();else await loadPublic();await loadCommunity();if(current?.role==='admin')await loadCommunityAdmin();await render();}
 function subscribeToSessionChanges(){
  if(authListenerAttached||!sb)return;
  authListenerAttached=true;
@@ -1013,6 +1126,7 @@ async function init(){
    subscribeToSessionChanges();
    await loadLive();
    if(!session)await loadPublic();
+   await loadCommunity();if(current?.role==='admin')await loadCommunityAdmin();
    const callbackParams=new URLSearchParams(location.search);
    if(callbackParams.get('acceso')==='google'){
     const providerError=callbackParams.get('error_description')||callbackParams.get('error');
@@ -1296,7 +1410,7 @@ async function signInWithGoogle(button){
   }
 }
 document.addEventListener('click',ev=>{const link=ev.target.closest('a[href^="#/"]');if(route==='/editor'&&editorDirty&&link&&link.getAttribute('href')!=='#/editor'&&link.target!=='_blank'&&!ask('Tienes cambios sin guardar. ¿Quieres salir sin guardarlos?')){ev.preventDefault();ev.stopImmediatePropagation();}},true);
-document.addEventListener('click',ev=>{const el=ev.target.closest('[data-action]');if(!el)return;const act=el.dataset.action;execute(async()=>{if(act.startsWith('editor-')){await editorAction(el,act);return;}if(act==='open-search'){setSiteSearchOpen($('#site-search-panel')?.hidden);return;}if(act==='close-search'){setSiteSearchOpen(false);return;}if(act==='menu'){setSiteSearchOpen(false);menuOpen=!menuOpen;$('#site-menu')?.classList.toggle('open',menuOpen);el.setAttribute('aria-expanded',String(menuOpen));el.setAttribute('aria-label',menuOpen?'Cerrar menú':'Abrir menú');el.classList.toggle('is-open',menuOpen);return;}if(act==='set-lang'){if(!['es','fr'].includes(el.dataset.lang))return;activeLang=el.dataset.lang;try{localStorage.setItem('bellaquitas-lang',activeLang);}catch{}document.documentElement.lang=activeLang;await render();return;}if(act==='auth-retry'){try{if(!sb)await init();else{await loadLive();if(!session)await loadPublic();authStartupComplete=true;await render();}}catch(err){showAuthLoadingError(err);}return;}if(act==='install-app'){await installApp();return;}if(act==='auth-tab'){authNotice='';authTab=el.dataset.tab;render();return;}if(act==='google-login'){await signInWithGoogle(el);return;}if(act==='logout'){editorDraft=null;editorDirty=false;stopScan();if(!sb)throw new Error('Servicio no disponible.');await sb.auth.signOut({scope:'local'});session=null;current=null;await loadPublic();to('/acceso');return;}if(act==='loyalty-face'){
+document.addEventListener('click',ev=>{const el=ev.target.closest('[data-action]');if(!el)return;const act=el.dataset.action;execute(async()=>{if(act.startsWith('editor-')){await editorAction(el,act);return;}if(act==='open-search'){setSiteSearchOpen($('#site-search-panel')?.hidden);return;}if(act==='close-search'){setSiteSearchOpen(false);return;}if(act==='menu'){setSiteSearchOpen(false);menuOpen=!menuOpen;$('#site-menu')?.classList.toggle('open',menuOpen);el.setAttribute('aria-expanded',String(menuOpen));el.setAttribute('aria-label',menuOpen?'Cerrar menú':'Abrir menú');el.classList.toggle('is-open',menuOpen);return;}if(['suggestion-status','moment-publish','moment-photo-delete','moment-album-delete'].includes(act)){await communityAdminAction(el,act);return;}if(act==='moment-view'){const dlg=$('#moment-dialog');if(!dlg)return;$('#moment-dialog-image').src=el.dataset.photoUrl;$('#moment-dialog-caption').textContent=el.dataset.photoCaption;dlg.showModal();return;}if(act==='moment-close'){$('#moment-dialog')?.close();return;}if(act==='set-lang'){if(!['es','fr'].includes(el.dataset.lang))return;activeLang=el.dataset.lang;try{localStorage.setItem('bellaquitas-lang',activeLang);}catch{}document.documentElement.lang=activeLang;await render();return;}if(act==='auth-retry'){try{if(!sb)await init();else{await loadLive();if(!session)await loadPublic();authStartupComplete=true;await render();}}catch(err){showAuthLoadingError(err);}return;}if(act==='install-app'){await installApp();return;}if(act==='auth-tab'){authNotice='';authTab=el.dataset.tab;render();return;}if(act==='google-login'){await signInWithGoogle(el);return;}if(act==='logout'){editorDraft=null;editorDirty=false;stopScan();if(!sb)throw new Error('Servicio no disponible.');await sb.auth.signOut({scope:'local'});session=null;current=null;await loadPublic();to('/acceso');return;}if(act==='loyalty-face'){
  const chosen=el.dataset.face==='back'?'back':'front';
  document.querySelectorAll('[data-loyalty-face]').forEach(face=>{face.hidden=face.dataset.loyaltyFace!==chosen;});
  document.querySelectorAll('.loyalty-face-button').forEach(btn=>{const on=btn.dataset.face===chosen;btn.classList.toggle('active',on);btn.setAttribute('aria-pressed',String(on));});
@@ -1354,7 +1468,7 @@ async function handleAuthSubmit(fd){
 }
 document.addEventListener('submit',ev=>{
   const el=ev.target;
-  if(!['auth-form','profile-form','checkin-form','validate-form','admin-item-form','admin-site-form','member-edit-form'].includes(el.id))return;
+  if(el.id==='community-suggestion-form'){ev.preventDefault();void saveCommunitySuggestion(el);return;}if(el.id==='moment-album-form'){ev.preventDefault();void createMomentsAlbum(el);return;}if(el.classList.contains('moment-upload-form')){ev.preventDefault();void uploadMomentsPhotos(el);return;}if(!['auth-form','profile-form','checkin-form','validate-form','admin-item-form','admin-site-form','member-edit-form'].includes(el.id))return;
   ev.preventDefault();const fd=new FormData(el);
   if(el.id==='auth-form'){
     const button=el.querySelector('[type="submit"]');const text=button?.textContent;
