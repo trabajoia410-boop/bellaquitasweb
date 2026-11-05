@@ -1766,3 +1766,38 @@ body.bf-neon .site-header .bf-community-menu .bf-community-account-actions .btn{
   font-size:.74rem!important;
  }
 }
+
+/* Bellaquitas Fest · cinta amarilla verdaderamente infinita (noviembre 2026).
+   El HTML contiene dos mitades idénticas, cada una con 12 repeticiones:
+   desplazarse exactamente media anchura permite reiniciar sin salto ni hueco. */
+body.bf-neon .bf-marquee{
+ overflow:hidden!important;
+}
+body.bf-neon .bf-marquee .bf-marquee-track{
+ display:flex!important;
+ width:max-content!important;
+ flex-wrap:nowrap!important;
+ align-items:center!important;
+ gap:0!important;
+ animation-name:bf-headline!important;
+ animation-timing-function:linear!important;
+ animation-iteration-count:infinite!important;
+ animation-duration:120s!important;
+ will-change:transform;
+}
+body.bf-neon .bf-marquee .bf-marquee-set{
+ display:inline-flex!important;
+ flex:0 0 auto!important;
+ flex-wrap:nowrap!important;
+ gap:0!important;
+}
+body.bf-neon .bf-marquee .bf-marquee-item{
+ flex:0 0 auto!important;
+ white-space:nowrap!important;
+}
+@media(prefers-reduced-motion:reduce){
+ body.bf-neon .bf-marquee .bf-marquee-track{
+  animation:none!important;
+  will-change:auto;
+ }
+}
