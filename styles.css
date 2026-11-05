@@ -925,3 +925,49 @@ body.bf-neon .bf-after-marquee-content #unete .cta-banner{
  body.bf-neon .bf-after-marquee > video.bf-after-marquee-video{object-position:center center!important}
  body.bf-neon .bf-after-marquee > .bf-after-marquee-shade{background:rgba(9,4,12,.3)!important}
 }
+
+
+/* Vídeo Full HD sin recortes: un único plano completo mientras se recorre
+   la página desde la cinta dorada hasta «Tu lugar está aquí».
+   La posición sticky evita estirar un fotograma 16:9 a una sección muy alta. */
+body.bf-neon .bf-after-marquee{
+  position:relative!important;
+  overflow:clip!important;
+  isolation:isolate!important;
+}
+body.bf-neon .bf-after-marquee > video.bf-after-marquee-video{
+  position:sticky!important;
+  inset:auto!important;
+  top:0!important;
+  display:block!important;
+  width:100%!important;
+  max-width:100%!important;
+  height:100vh!important;
+  height:100svh!important;
+  min-height:0!important;
+  margin:0 0 -100vh!important;
+  margin-bottom:-100svh!important;
+  padding:0!important;
+  object-fit:contain!important;
+  object-position:center center!important;
+  background:#10070d!important;
+  opacity:1!important;
+  z-index:0!important;
+  pointer-events:none!important;
+}
+body.bf-neon .bf-after-marquee > .bf-after-marquee-content{
+  position:relative!important;
+  z-index:2!important;
+}
+body.bf-neon .bf-after-marquee > .bf-after-marquee-shade{
+  position:absolute!important;
+  inset:0!important;
+  z-index:1!important;
+  pointer-events:none!important;
+}
+@media(max-width:700px){
+  body.bf-neon .bf-after-marquee > video.bf-after-marquee-video{
+    object-fit:contain!important;
+    object-position:center center!important;
+  }
+}
