@@ -1035,3 +1035,57 @@ body.bf-neon .bf-after-marquee .bf-after-marquee-content #eventos .empty-state{
  backdrop-filter:none!important;
  -webkit-backdrop-filter:none!important;
 }
+
+/* Cristal ahumado estilo Julieta: vídeo visible, lectura nítida y sombra elegante. */
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .feature,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .event-card,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .big-benefit,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .benefit-item,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .faq-card,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .cta-banner,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .loyalty-showcase,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .list-benefits,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .empty-state,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .card,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .info-note,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .pane,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .metric,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .stat-box{
+ background:linear-gradient(145deg,rgba(15,8,23,.48),rgba(17,8,24,.34))!important;
+ background-color:rgba(15,8,23,.42)!important;
+ border-color:rgba(238,192,204,.38)!important;
+ box-shadow:0 16px 42px rgba(0,0,0,.38),0 3px 12px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.10)!important;
+ backdrop-filter:blur(5px) saturate(112%)!important;
+ -webkit-backdrop-filter:blur(5px) saturate(112%)!important;
+}
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .feature h3,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .big-benefit h3,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .faq-card h3,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .cta-banner h2,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .section-head h2{
+ text-shadow:0 2px 8px rgba(0,0,0,.86),0 1px 2px rgba(0,0,0,.9)!important;
+}
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .feature p,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .big-benefit p,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .faq-card p,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .benefit-item p,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content .section-head p{
+ text-shadow:0 1px 5px rgba(0,0,0,.95)!important;
+}
+body.bf-neon .bf-after-marquee .bf-after-marquee-content #eventos .empty,
+body.bf-neon .bf-after-marquee .bf-after-marquee-content #eventos .empty-state{
+ background:rgba(12,6,18,.23)!important;
+ border-radius:18px;
+ text-shadow:0 2px 6px rgba(0,0,0,.95)!important;
+}
+@media(max-width:700px){
+ body.bf-neon .bf-after-marquee .bf-after-marquee-content .feature,
+ body.bf-neon .bf-after-marquee .bf-after-marquee-content .event-card,
+ body.bf-neon .bf-after-marquee .bf-after-marquee-content .big-benefit,
+ body.bf-neon .bf-after-marquee .bf-after-marquee-content .benefit-item,
+ body.bf-neon .bf-after-marquee .bf-after-marquee-content .faq-card,
+ body.bf-neon .bf-after-marquee .bf-after-marquee-content .cta-banner{
+  background:linear-gradient(145deg,rgba(15,8,23,.54),rgba(17,8,24,.42))!important;
+  box-shadow:0 12px 28px rgba(0,0,0,.42),inset 0 1px 0 rgba(255,255,255,.10)!important;
+ }
+}
