@@ -1528,3 +1528,29 @@ body.bf-neon #app:has(> main > .bf-video-hero) > .site-header{
   margin-top:calc(-1 * (76px + 10px))!important;
  }
 }
+
+/* Logo de Bellaquitas Fest más grande y legible en la barra flotante.
+   Sin modificar la cápsula, los enlaces ni el vídeo. */
+body.bf-neon > #app .site-header .brand-symbol{
+ width:62px!important;
+ height:62px!important;
+ min-width:62px!important;
+ flex:0 0 62px!important;
+ overflow:visible!important;
+}
+body.bf-neon > #app .site-header .brand-logo-image{
+ display:block!important;
+ width:100%!important;
+ height:100%!important;
+ max-height:none!important;
+ object-fit:contain!important;
+ object-position:center!important;
+}
+@media(max-width:700px){
+ body.bf-neon > #app .site-header .brand-symbol{
+  width:46px!important;
+  height:46px!important;
+  min-width:46px!important;
+  flex-basis:46px!important;
+ }
+}
