@@ -673,3 +673,6 @@ section[id]{scroll-margin-top:92px}
 @media(max-width:650px){
  .bf-neon .site-header{width:calc(100% - 16px);border-radius:18px}
 }
+
+/* Barra Julieta centrada con enlaces visibles y desplazamiento accesible. */
+@media(min-width:1001px){.bf-neon .site-header{width:50%;border-radius:999px}.bf-neon .site-header .nav-wrap{gap:7px}.bf-neon .site-header .bf-desktop-nav{display:flex;flex:1 1 auto;min-width:0;justify-content:flex-start;gap:12px;overflow-x:auto;scrollbar-width:thin;scrollbar-color:#c58c64 transparent;padding:7px 2px}.bf-neon .site-header .bf-desktop-nav .nav-link{flex:none;font-size:.7rem}.bf-neon .site-header .nav-actions{flex-shrink:0;margin-left:0}.bf-neon .site-header .header-search-button{display:none}.bf-neon .site-header .lang-full{display:none}.bf-neon .site-header .lang-short{display:inline}.bf-neon .site-header .lang-choice{padding:6px 7px}.bf-neon .site-header .menu-toggle{min-width:40px;flex-basis:40px;height:40px;border-radius:12px}}@media(min-width:1001px) and (max-width:1450px){.bf-neon .site-header .brand .brand-wordmark{display:none!important}.bf-neon .site-header .nav-wrap{width:calc(100% - 18px)}}
