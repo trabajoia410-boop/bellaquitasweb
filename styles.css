@@ -1569,7 +1569,6 @@ body.bf-neon .site-header .bf-community-menu{
  text-decoration:none;color:#fff0e0;font-weight:800;font-size:1rem;
  border:1px solid transparent;transition:background .2s,border-color .2s,transform .2s;
 }
-.bf-community-menu .community-menu-link>span:first-child{font-size:1.7rem;flex:none}
 .bf-community-menu .community-menu-link>span:nth-child(2){display:flex;flex-direction:column;gap:4px}
 .bf-community-menu .community-menu-link small{font-size:.76rem;font-weight:500;color:#d8c0c7}
 .bf-community-menu .community-menu-link:hover,.bf-community-menu .community-menu-link:focus-visible,.bf-community-menu .community-menu-link.active{
@@ -1701,5 +1700,69 @@ body.bf-neon .site-header .bf-community-menu .community-menu-copy small{
  body.bf-neon .site-header .bf-community-menu .bf-community-account-actions .btn{
   display:flex!important;align-items:center;justify-content:center;
   min-height:44px;text-align:center;
+ }
+}
+
+
+/* Menú comunidad: el texto ya no es un icono. Tipografía coherente con el menú principal. */
+body.bf-neon .site-header .bf-community-menu .community-menu-link{
+ min-height:unset!important;
+ padding:11px 13px!important;
+ gap:0!important;
+ font-family:Outfit,sans-serif!important;
+ font-size:clamp(.68rem,.86vw,.9rem)!important;
+ font-weight:800!important;
+ line-height:1.25!important;
+}
+body.bf-neon .site-header .bf-community-menu .community-menu-link>.community-menu-copy{
+ display:flex!important;flex:1 1 auto!important;min-width:0!important;
+ flex-direction:column!important;gap:3px!important;
+ font-family:Outfit,sans-serif!important;
+ font-size:clamp(.68rem,.86vw,.9rem)!important;
+ font-weight:800!important;
+ line-height:1.3!important;
+ text-transform:uppercase;
+}
+body.bf-neon .site-header .bf-community-menu .community-menu-copy small{
+ font-family:Outfit,sans-serif!important;
+ font-size:clamp(.64rem,.75vw,.74rem)!important;
+ font-weight:500!important;
+ line-height:1.35!important;
+ text-transform:none!important;
+ color:#d9bed0!important;
+}
+/* Mostrar el acceso en ordenador, donde antiguamente se ocultaba. */
+body.bf-neon .site-header .bf-community-menu .bf-community-account-actions{
+ display:flex!important;
+ flex-direction:column!important;gap:8px!important;
+ padding-top:14px!important;margin-top:10px!important;
+ border-top:1px solid rgba(228,182,120,.45)!important;
+}
+body.bf-neon .site-header .bf-community-menu .bf-community-account-actions .btn{
+ display:flex!important;justify-content:center!important;
+ align-items:center!important;
+ min-height:40px!important;padding:9px 12px!important;
+ font-size:.77rem!important;white-space:normal!important;
+ text-align:center!important;
+}
+@media(max-width:1000px){
+ /* La cuenta aparece primero, sin tener que bajar hasta el final del desplegable. */
+ body.bf-neon .site-header .bf-community-menu .bf-community-account-actions{
+  order:-1!important;
+  margin:0 0 11px!important;padding:0 0 13px!important;
+  border-top:0!important;border-bottom:1px solid rgba(228,182,120,.45)!important;
+ }
+ body.bf-neon .site-header .bf-community-menu .bf-menu-mobile-primary{
+  order:0!important;
+ }
+ body.bf-neon .site-header .bf-community-menu .bf-menu-community-links{
+  order:1!important;
+ }
+ body.bf-neon .site-header .bf-community-menu .community-menu-link,
+ body.bf-neon .site-header .bf-community-menu .community-menu-link>.community-menu-copy{
+  font-size:.98rem!important;
+ }
+ body.bf-neon .site-header .bf-community-menu .community-menu-copy small{
+  font-size:.74rem!important;
  }
 }
