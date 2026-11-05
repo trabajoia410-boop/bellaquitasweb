@@ -1455,3 +1455,34 @@ body.bf-neon .bf-after-marquee .bf-after-marquee-content #unete .cta-banner :is(
  .app-shell .mobile-appbar>a{flex:1 1 0!important;min-width:0!important;padding-left:2px!important;padding-right:2px!important;font-size:clamp(.55rem,2.2vw,.72rem)!important;text-align:center!important}
  .app-shell .app-top-right .app-home-btn{padding:8px 10px!important;font-size:.75rem!important}
 }
+
+/* Pestaña activa: mismo rosa y subrayado de Inicio, moviéndose a la sección visitada. */
+body.bf-neon .site-header :is(.bf-desktop-nav,.main-nav) .nav-link{
+ color:#f5e4de!important;
+ text-shadow:none!important;
+}
+body.bf-neon .site-header :is(.bf-desktop-nav,.main-nav) .nav-link.active,
+body.bf-neon .site-header :is(.bf-desktop-nav,.main-nav) .nav-link[aria-current="page"]{
+ color:#ff8ab5!important;
+ text-shadow:0 0 12px rgba(255,110,165,.32)!important;
+}
+body.bf-neon .site-header .bf-desktop-nav .nav-link{
+ position:relative;
+}
+body.bf-neon .site-header .bf-desktop-nav .nav-link::after{
+ content:"";
+ position:absolute;
+ bottom:0;
+ left:3px;
+ right:3px;
+ height:3px;
+ border-radius:6px;
+ background:transparent;
+}
+body.bf-neon .site-header .bf-desktop-nav .nav-link.active::after{
+ background:#ff8ab5!important;
+ box-shadow:0 0 9px rgba(255,138,181,.45);
+}
+body.bf-neon .site-header .main-nav .nav-link.active{
+ background:rgba(255,138,181,.12)!important;
+}
