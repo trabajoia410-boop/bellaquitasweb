@@ -656,3 +656,20 @@ section[id]{scroll-margin-top:92px}
  .bf-neon .bf-marquee{min-height:38px}
  .bf-neon .bf-marquee-item{font-size:.9rem;gap:10px;padding:4px 12px}
 }
+
+/* Cabecera flotante: media pantalla en escritorio, borde dorado visible. */
+@media(min-width:1001px){
+ .bf-neon .site-header{width:50%;margin:14px auto 0;border:1.5px solid #e5b66f;border-radius:24px;min-height:66px;box-shadow:0 12px 38px #0009,0 0 18px #c98a4b28;overflow:visible}
+ .bf-neon .site-header .nav-wrap{width:calc(100% - 24px);min-height:64px;gap:8px}
+ .bf-neon .site-header .bf-desktop-nav{display:none}
+ .bf-neon .site-header .nav-actions{margin-left:auto}
+ .bf-neon .site-header .nav-actions>.btn{display:none}
+ .bf-neon .site-header .brand{font-size:clamp(.8rem,1.05vw,1.1rem)}
+}
+@media(max-width:1000px){
+ .bf-neon .site-header{width:min(94%,650px);margin:10px auto 0;border:1.5px solid #e5b66f;border-radius:22px;min-height:65px;box-shadow:0 10px 32px #0008}
+ .bf-neon .site-header .nav-wrap{min-height:63px}
+}
+@media(max-width:650px){
+ .bf-neon .site-header{width:calc(100% - 16px);border-radius:18px}
+}
