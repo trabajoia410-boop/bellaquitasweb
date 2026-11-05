@@ -24,11 +24,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=navbar18" />
+  <link rel="stylesheet" href="styles.css?v=navbar19" />
   <script src="config.js"></script>
   <script src="locale-fr.js" defer></script>
   <script src="assets/qr-local.js" defer></script>
-  <script src="app.js?v=navbar18" defer></script>
+  <script src="app.js?v=navbar19" defer></script>
   <style>
     #auth-startup { display:none; }
     html.auth-booting #app { visibility:hidden; }
@@ -39,6 +39,64 @@
     }
     #auth-startup strong {font-size:1.4rem;letter-spacing:.12em;}
     #auth-startup span {color:#ecd2d2;font-size:1rem;}
+  </style>
+  <style id="bellaquitas-navbar-layout-v19">
+
+/* Navbar Bellaquitas: override único de distribución, cargado tras styles.css. */
+body.bf-neon #app > .site-header{
+  width:min(1020px,calc(100% - 40px))!important;
+  max-width:none!important;
+  height:auto!important;
+  min-height:68px!important;
+  margin:14px auto 0!important;
+  padding:0!important;
+  border:1.5px solid #e5b66f!important;
+  border-radius:999px!important;
+  background:#160e1ceb!important;
+  box-shadow:0 12px 32px #0008!important;
+  overflow:visible!important;
+}
+body.bf-neon #app > .site-header > .nav-wrap{
+  display:grid!important;
+  grid-template-columns:max-content minmax(0,1fr) max-content!important;
+  align-items:center!important;
+  gap:clamp(10px,1.4vw,22px)!important;
+  width:calc(100% - 32px)!important;
+  max-width:none!important;
+  min-height:66px!important;
+  margin:auto!important;
+}
+body.bf-neon #app > .site-header .bf-desktop-nav{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:clamp(9px,1.1vw,20px)!important;
+  min-width:0!important;
+  overflow:visible!important;
+}
+body.bf-neon #app > .site-header .bf-desktop-nav .nav-link{font-size:clamp(.68rem,.85vw,.85rem)!important;white-space:nowrap!important}
+body.bf-neon #app > .site-header .nav-actions{display:flex!important;align-items:center!important;justify-content:flex-end!important;gap:7px!important;margin:0!important}
+body.bf-neon #app > .site-header .nav-actions > .btn,
+body.bf-neon #app > .site-header .header-search-button{display:none!important}
+body.bf-neon #app > .site-header .menu-toggle{display:inline-flex!important;align-items:center!important;justify-content:center!important;flex:0 0 42px!important;width:42px!important;height:42px!important}
+body.bf-neon #app > .site-header .main-nav:not(.open){display:none!important}
+body.bf-neon #app > .site-header .main-nav.open{display:flex!important;z-index:50!important}
+@media(max-width:1100px){
+ body.bf-neon #app > .site-header{width:min(660px,calc(100% - 28px))!important}
+ body.bf-neon #app > .site-header > .nav-wrap{grid-template-columns:minmax(0,1fr) max-content!important}
+ body.bf-neon #app > .site-header .bf-desktop-nav{display:none!important}
+}
+@media(max-width:600px){
+ body.bf-neon #app > .site-header{width:calc(100% - 16px)!important;min-height:60px!important;margin-top:8px!important}
+ body.bf-neon #app > .site-header > .nav-wrap{width:calc(100% - 18px)!important;min-height:58px!important;gap:6px!important}
+ body.bf-neon #app > .site-header .brand{min-width:0!important;overflow:hidden!important}
+ body.bf-neon #app > .site-header .nav-actions{gap:4px!important}
+ body.bf-neon #app > .site-header .lang-full{display:none!important}
+ body.bf-neon #app > .site-header .lang-short{display:inline!important}
+ body.bf-neon #app > .site-header .lang-choice{padding:5px!important}
+ body.bf-neon #app > .site-header .menu-toggle{flex-basis:40px!important;width:40px!important;height:40px!important}
+}
+
   </style>
   <script src="assets/auth-startup.js"></script>
 </head>
