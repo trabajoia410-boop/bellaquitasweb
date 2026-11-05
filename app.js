@@ -336,7 +336,7 @@ function safeVideoUrl(value){
 function ambientVideo(value,cls){
  const src=safeVideoUrl(value);if(!src)return '';
  const type=/\.webm(?:[?#]|$)/i.test(src)?'video/webm':'video/mp4';
- return `<video class="${cls}" autoplay muted loop playsinline preload="none" aria-hidden="true" tabindex="-1"><source src="${H(src)}" type="${type}"></video>`;
+ return `<video class="${cls}" autoplay muted loop playsinline preload="${cls==='bf-hero-video'?'metadata':'none'}" aria-hidden="true" tabindex="-1"><source src="${H(src)}" type="${type}"></video>`;
 }
 function animatedMarquee(){
  const title=H(siteText('hero_title_a'))+' '+H(siteText('hero_title_b'));
