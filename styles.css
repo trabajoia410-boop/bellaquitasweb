@@ -1675,3 +1675,20 @@ body.bf-neon .site-header .bf-community-menu{
   background:#ff8ab5!important;box-shadow:0 0 8px #ff8ab577!important;
  }
 }
+
+/* Accesos de cuenta en la barra de navegación móvil, sin duplicarlos en ☰. */
+@media(max-width:1000px){
+ body.bf-neon > #app .bf-mobile-primary-nav .bf-mobile-nav-separator{
+  flex:0 0 1px;height:23px;background:rgba(230,182,111,.55);
+ }
+ body.bf-neon > #app .bf-mobile-primary-nav .bf-mobile-auth-link{
+  display:inline-flex!important;flex:none;align-items:center;justify-content:center;
+  min-height:32px;padding:7px 13px!important;border:1px solid #d8ad76!important;
+  border-radius:999px;background:rgba(76,34,61,.8);color:#ffe7c5!important;
+  font-size:clamp(.72rem,2.6vw,.86rem)!important;font-weight:800;
+  white-space:nowrap;text-decoration:none;
+ }
+ body.bf-neon > #app .bf-mobile-primary-nav .bf-mobile-register-link{
+  background:linear-gradient(115deg,#b85a77,#a72e60);color:white!important;
+ }
+}
