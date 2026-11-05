@@ -361,7 +361,7 @@ function landing(sectionOnly=""){
   const title=siteText({experience:'experience_title',events:'events_title',benefits:'benefits_title',faq:'faq_title',cta:'cta_title'}[sectionOnly]);
   return `${header()}<main class="standalone-page"><div class="container standalone-navigation"><a href="#/" class="btn btn-secondary btn-mini">← ${t('Inicio')}</a><strong>${H(title)}</strong></div>${blocks[sectionOnly]}</main>${footer()}`;
  }
- return `${header()}<main><section class="hero bf-video-hero" id="inicio"><video class="bf-hero-video" autoplay muted loop playsinline preload="auto" aria-hidden="true" tabindex="-1"><source src="assets/Bellaquitas%20Fest%20para%20m%C3%B3vil.mp4" media="(max-width: 700px)" type="video/mp4"><source src="assets/bellaquitas%20fiesta%20portada.mp4" type="video/mp4"></video></section>${animatedMarquee()}${afterMarquee}</main>${footer()}`;
+ return `${header()}<main><section class="hero bf-video-hero" id="inicio"><video class="bf-hero-video" autoplay muted loop playsinline preload="auto" aria-hidden="true" tabindex="-1"><source src="assets/Bellaquitas%20Fest%20para%20m%C3%B3vil.mp4" media="(max-width: 700px)" type="video/mp4"><source src="assets/bellaquitas%20fiesta%20portada.mp4?v=5ae7a4cd7858" type="video/mp4"></video></section>${animatedMarquee()}${afterMarquee}</main>${footer()}`;
 }
 function auth(){
   const titles={login:'Inicia sesión.',signup:'Crea tu cuenta.',recover:'Recupera tu acceso.',reset:'Elige una contraseña nueva.'};
