@@ -1384,5 +1384,16 @@ document.addEventListener('focusin',updateKeyboardState);
 document.addEventListener('focusout',()=>setTimeout(updateKeyboardState,0));
 window.addEventListener('beforeunload',ev=>{if(editorDirty){ev.preventDefault();ev.returnValue='';}});
 window.addEventListener('hashchange',()=>{execute(async()=>{await render();});});
+// Al cruzar el punto de corte móvil/escritorio, volver a seleccionar la fuente de vídeo.
+const bfVideoMobileMedia=window.matchMedia('(max-width: 700px)');
+function bfRefreshBackgroundVideo(){
+ const video=document.querySelector('.bf-after-marquee-video');
+ if(!video)return;
+ video.load();
+ const playback=video.play();
+ if(playback && typeof playback.catch==='function')playback.catch(()=>{});
+}
+if(bfVideoMobileMedia.addEventListener)bfVideoMobileMedia.addEventListener('change',bfRefreshBackgroundVideo);
+else if(bfVideoMobileMedia.addListener)bfVideoMobileMedia.addListener(bfRefreshBackgroundVideo);
 init();
 })();
