@@ -621,3 +621,38 @@ section[id]{scroll-margin-top:92px}
 @keyframes bf-cinematic-reveal{0%{opacity:1;background-color:#070308}100%{opacity:1;background-color:transparent}}
 @keyframes bf-ambient-glow{0%{transform:translate(-20px,12px) scale(.86);opacity:.65}100%{transform:translate(20px,-14px) scale(1.2);opacity:1}}
 @media(prefers-reduced-motion:reduce){.bf-hero-video,.bf-experience-video{display:none!important}.bf-neon .hero:after,.bf-neon .hero-art:before,.bf-experience-section .section-head{animation:none!important}}
+
+/* Diseño aprobado 05-11-2026: cabecera Julieta, idioma fijo, cinta compacta. */
+.bf-neon .bf-topbar{display:none!important}
+.bf-neon .site-header{position:sticky;top:0;height:auto;min-height:78px;background:#100714f5;border-bottom:1px solid #b67a55;box-shadow:0 4px 24px #0006;z-index:80}
+.bf-neon .site-header .nav-wrap{width:min(1400px,calc(100% - 32px));min-height:76px;gap:clamp(8px,1.4vw,20px)}
+.bf-neon .site-header .brand{flex-shrink:0;white-space:nowrap}
+.bf-neon .site-header .bf-desktop-nav{display:flex;align-items:center;justify-content:center;gap:clamp(9px,1.5vw,25px);flex:1;min-width:0}
+.bf-neon .site-header .bf-desktop-nav .nav-link{font-size:clamp(.68rem,.86vw,.9rem);text-transform:uppercase;white-space:nowrap;font-weight:800}
+.bf-neon .site-header .bf-desktop-nav .nav-link[href="#/"]{color:#ff79ae;border-bottom:3px solid #f43e90;padding-bottom:8px}
+.bf-neon .site-header .nav-actions{align-items:center;flex-shrink:0;gap:7px}
+.bf-neon .site-header .lang-switch{flex-shrink:0}
+.bf-neon .site-header .menu-toggle{border-color:#c58765;background:#210e21}
+.bf-neon .site-header .menu-toggle.is-open .bf-menu-lines i{opacity:1;transform:none}
+.bf-neon .bf-marquee{min-height:48px;border-width:1px;background:linear-gradient(90deg,#b78044,#f6d28a 15%,#f4c76c 85%,#b78044)}
+.bf-neon .bf-marquee:before{display:none}
+.bf-neon .bf-marquee-item{font-size:clamp(.95rem,1.7vw,1.55rem);gap:16px;padding:5px 18px;letter-spacing:-.025em}
+.bf-neon .bf-marquee-item b{color:#6d253e}
+.bf-neon .bf-marquee-track{animation-duration:36s}
+@media(max-width:1250px){
+ .bf-neon .site-header .bf-desktop-nav{gap:9px}
+ .bf-neon .site-header .bf-desktop-nav .nav-link{font-size:.68rem}
+ .bf-neon .site-header .nav-actions>.btn{display:none}
+}
+@media(max-width:1000px){
+ .bf-neon .site-header .bf-desktop-nav{display:none}
+ .bf-neon .site-header .nav-actions{margin-left:auto}
+}
+@media(max-width:650px){
+ .bf-neon .site-header .nav-wrap{width:calc(100% - 20px);gap:5px}
+ .bf-neon .site-header .brand{min-width:0}
+ .bf-neon .site-header .nav-actions{gap:4px}
+ .bf-neon .site-header .header-search-button{display:none}
+ .bf-neon .bf-marquee{min-height:38px}
+ .bf-neon .bf-marquee-item{font-size:.9rem;gap:10px;padding:4px 12px}
+}
