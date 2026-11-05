@@ -971,3 +971,22 @@ body.bf-neon .bf-after-marquee > .bf-after-marquee-shade{
     object-position:center center!important;
   }
 }
+
+/* Relleno lateral del vídeo 16:9 con el degradado violeta/azul proporcionado.
+   El vídeo permanece entero y sin alterar su resolución ni calidad. */
+body.bf-neon .bf-after-marquee{
+  background-color:#08051d!important;
+  background-image:url("assets/62609.jpg")!important;
+  background-position:center center!important;
+  background-repeat:no-repeat!important;
+  background-size:cover!important;
+}
+body.bf-neon .bf-after-marquee > video.bf-after-marquee-video{
+  background:transparent!important;
+  object-fit:contain!important;
+}
+@media(max-width:700px){
+ body.bf-neon .bf-after-marquee{
+   background-position:center center!important;
+ }
+}
