@@ -1,0 +1,26 @@
+name: Importar logo Bellaquitas Fest
+on:
+  push:
+    paths:
+      - '.github/workflows/import-bellaquitas-logo.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  logo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Descargar logo de Bellaquitas Fest
+        env:
+          LOGO_URL: "https://media.canva.com/v2/image-resize/format:PNG/height:66/quality:100/uri:ifs%3A%2F%2FM%2F84ee220f-5256-46e0-b725-bd395f597981/watermark:F/width:200?csig=AAAAAAAAAAAAAAAAAAAAAHWMXLLqjtJnS0XKR5iPkRmM2M3-aTNPOOqhHWFveR96&exp=1793932423&osig=AAAAAAAAAAAAAAAAAAAAACld1hFKwVcJTC5mjTGKepJP-4qjKSflC9uxmaSBlbvA&signer=media-rpc&token=AAIAAU0AJDg0ZWUyMjBmLTUyNTYtNDZlMC1iNzI1LWJkMzk1ZjU5Nzk4MQAAAAABoa60b1jqLFoeFszN6Z3QCNjfL-xq6GiaORJenUEjbo4rjrfPhQ&x-canva-quality=thumbnail"
+        run: |
+          mkdir -p assets
+          curl --fail --location --retry 2 --silent --show-error "$LOGO_URL" -o assets/logo-navbar.png
+          file assets/logo-navbar.png
+      - name: Guardar logo en repositorio
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/logo-navbar.png
+          git diff --cached --quiet || (git commit -m "Añadir nuevo logo Bellaquitas Fest a barra flotante" && git push)
