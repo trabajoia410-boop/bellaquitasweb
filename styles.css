@@ -743,3 +743,20 @@ section[id]{scroll-margin-top:92px}
  body.bf-neon > #app .site-header .nav-wrap{grid-template-columns:minmax(0,1fr) auto!important}
  body.bf-neon > #app .site-header .bf-desktop-nav{display:none!important}
 }
+
+/* Experiencia cinematográfica continua inmediatamente después de la banda dorada. */
+.bf-neon .bf-after-marquee{position:relative;isolation:isolate;overflow:hidden;background:#10070d;min-height:500px}
+.bf-neon .bf-after-marquee-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center center;z-index:0;pointer-events:none}
+.bf-neon .bf-after-marquee-shade{position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(180deg,rgba(12,4,13,.58),rgba(13,5,16,.72) 40%,rgba(13,5,16,.77))}
+.bf-neon .bf-after-marquee-content{position:relative;z-index:2}
+.bf-neon .bf-after-marquee-content>.line{background:linear-gradient(90deg,transparent,#d0a16466,transparent)}
+.bf-neon .bf-after-marquee-content>.section{background:transparent!important}
+.bf-neon .bf-after-marquee-content>.bf-experience-section{isolation:auto;overflow:visible}
+.bf-neon .bf-after-marquee-content>.bf-experience-section:before{display:none}
+.bf-neon .bf-after-marquee-content .bf-experience-video{display:none}
+.bf-neon .bf-after-marquee-content .section-head,.bf-neon .bf-after-marquee-content .container{position:relative;z-index:2}
+@media(max-width:700px){
+ .bf-neon .bf-after-marquee-video{object-position:48% center}
+ .bf-neon .bf-after-marquee-shade{background:linear-gradient(180deg,rgba(12,4,13,.66),rgba(13,5,16,.77))}
+}
+@media(prefers-reduced-motion:reduce){.bf-neon .bf-after-marquee-video{display:none}}
