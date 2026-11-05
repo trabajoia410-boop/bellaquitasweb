@@ -1486,3 +1486,24 @@ body.bf-neon .site-header .bf-desktop-nav .nav-link.active::after{
 body.bf-neon .site-header .main-nav .nav-link.active{
  background:rgba(255,138,181,.12)!important;
 }
+
+/* Corregir regla antigua que dejaba Inicio subrayado siempre y desplazado hacia arriba.
+   Todos los enlaces mantienen la misma altura; solo el activo lleva subrayado. */
+body.bf-neon .site-header .bf-desktop-nav .nav-link,
+body.bf-neon .site-header .bf-desktop-nav .nav-link[href="#/"]{
+ border-bottom:0!important;
+ padding-top:7px!important;
+ padding-bottom:7px!important;
+ line-height:1.2!important;
+ align-self:center!important;
+}
+body.bf-neon .site-header .bf-desktop-nav .nav-link::after{
+ bottom:0!important;
+ background:transparent!important;
+ box-shadow:none!important;
+}
+body.bf-neon .site-header .bf-desktop-nav .nav-link.active::after,
+body.bf-neon .site-header .bf-desktop-nav .nav-link[aria-current="page"]::after{
+ background:#ff8ab5!important;
+ box-shadow:0 0 9px rgba(255,138,181,.45)!important;
+}
