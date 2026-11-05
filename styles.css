@@ -883,3 +883,45 @@ body.bf-neon .bf-after-marquee-content #eventos .empty,
 body.bf-neon .bf-after-marquee-content #eventos .event-card{
  background:rgba(12,5,16,.035)!important;
 }
+
+/* Vídeo continuo: desde la banda dorada hasta el final de «Tu lugar está aquí». */
+body.bf-neon .bf-after-marquee{
+  position:relative!important;
+  isolation:isolate!important;
+  overflow:hidden!important;
+  min-height:0!important;
+}
+body.bf-neon .bf-after-marquee > video.bf-after-marquee-video{
+  position:absolute!important;
+  inset:0!important;
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  min-height:100%!important;
+  object-fit:cover!important;
+  object-position:center center!important;
+  opacity:1!important;
+  z-index:0!important;
+  pointer-events:none!important;
+}
+body.bf-neon .bf-after-marquee > .bf-after-marquee-shade{
+  position:absolute!important;
+  inset:0!important;
+  z-index:1!important;
+  background:rgba(9,4,12,.24)!important;
+  pointer-events:none!important;
+}
+body.bf-neon .bf-after-marquee > .bf-after-marquee-content{
+  position:relative!important;
+  z-index:2!important;
+  background:transparent!important;
+}
+body.bf-neon .bf-after-marquee-content #unete,
+body.bf-neon .bf-after-marquee-content #unete .cta-banner{
+  background:transparent!important;
+  background-image:none!important;
+}
+@media(max-width:700px){
+ body.bf-neon .bf-after-marquee > video.bf-after-marquee-video{object-position:center center!important}
+ body.bf-neon .bf-after-marquee > .bf-after-marquee-shade{background:rgba(9,4,12,.3)!important}
+}
