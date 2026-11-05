@@ -361,7 +361,7 @@ function landing(sectionOnly=""){
   const title=siteText({experience:'experience_title',events:'events_title',benefits:'benefits_title',faq:'faq_title',cta:'cta_title'}[sectionOnly]);
   return `${header()}<main class="standalone-page"><div class="container standalone-navigation"><a href="#/" class="btn btn-secondary btn-mini">← ${t('Inicio')}</a><strong>${H(title)}</strong></div>${blocks[sectionOnly]}</main>${footer()}`;
  }
- return `${header()}<main><section class="hero bf-video-hero" id="inicio"><video class="bf-hero-video" autoplay muted loop playsinline preload="auto" aria-hidden="true" tabindex="-1"><source src="assets/Bellaquitas%20Fest%20para%20m%C3%B3vil.mp4" media="(max-width: 700px)" type="video/mp4"><source src="assets/bellaquitas%20fiesta%20portada.mp4?v=5ae7a4cd7858" type="video/mp4"></video></section>${animatedMarquee()}${afterMarquee}</main>${footer()}`;
+ return `${header()}<main><section class="hero bf-video-hero" id="inicio"><video class="bf-hero-video" autoplay muted loop playsinline preload="auto" aria-hidden="true" tabindex="-1"><source src="assets/bellaquitas%20fiesta%20portada%20movil.mp4?v=4d3c9ad99357" media="(max-width: 700px)" type="video/mp4"><source src="assets/bellaquitas%20fiesta%20portada.mp4?v=5ae7a4cd7858" type="video/mp4"></video></section>${animatedMarquee()}${afterMarquee}</main>${footer()}`;
 }
 function auth(){
   const titles={login:'Inicia sesión.',signup:'Crea tu cuenta.',recover:'Recupera tu acceso.',reset:'Elige una contraseña nueva.'};
@@ -1387,11 +1387,11 @@ window.addEventListener('hashchange',()=>{execute(async()=>{await render();});})
 // Al cruzar el punto de corte móvil/escritorio, volver a seleccionar la fuente de vídeo.
 const bfVideoMobileMedia=window.matchMedia('(max-width: 700px)');
 function bfRefreshBackgroundVideo(){
- const video=document.querySelector('.bf-after-marquee-video');
- if(!video)return;
- video.load();
- const playback=video.play();
- if(playback && typeof playback.catch==='function')playback.catch(()=>{});
+ for(const video of document.querySelectorAll('.bf-after-marquee-video, .bf-hero-video')){
+  video.load();
+  const playback=video.play();
+  if(playback && typeof playback.catch==='function')playback.catch(()=>{});
+ }
 }
 if(bfVideoMobileMedia.addEventListener)bfVideoMobileMedia.addEventListener('change',bfRefreshBackgroundVideo);
 else if(bfVideoMobileMedia.addListener)bfVideoMobileMedia.addListener(bfRefreshBackgroundVideo);
