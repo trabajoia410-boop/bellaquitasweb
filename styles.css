@@ -760,3 +760,18 @@ section[id]{scroll-margin-top:92px}
  .bf-neon .bf-after-marquee-shade{background:linear-gradient(180deg,rgba(12,4,13,.66),rgba(13,5,16,.77))}
 }
 @media(prefers-reduced-motion:reduce){.bf-neon .bf-after-marquee-video{display:none}}
+
+/* Vídeo 16:9: encuadre de referencia 1920 × 1080, sin ampliación excesiva. */
+.bf-neon .bf-after-marquee-video{
+  width:100%!important;
+  height:100%!important;
+  object-fit:contain!important;
+  object-position:center top!important;
+}
+.bf-neon .bf-after-marquee{background:#10070d}
+@media(max-width:700px){
+ .bf-neon .bf-after-marquee-video{
+   object-fit:cover!important;
+   object-position:center top!important;
+ }
+}
