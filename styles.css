@@ -863,3 +863,23 @@ body.bf-neon .bf-after-marquee-shade{background:rgba(9,4,12,.32)!important}
  body.bf-neon .bf-after-marquee-content .faq-card,
  body.bf-neon .bf-after-marquee-content .cta-banner{background:rgba(17,8,23,.90)!important;backdrop-filter:none!important}
 }
+
+/* Próximamente / Lo que está por venir: quitar el último panel opaco. */
+body.bf-neon .bf-after-marquee-content #eventos,
+body.bf-neon .bf-after-marquee-content #eventos::before,
+body.bf-neon .bf-after-marquee-content #eventos::after,
+body.bf-neon .bf-after-marquee-content #eventos .three-grid,
+body.bf-neon .bf-after-marquee-content #eventos .empty,
+body.bf-neon .bf-after-marquee-content #eventos .empty-state,
+body.bf-neon .bf-after-marquee-content #eventos .event-card,
+body.bf-neon .bf-after-marquee-content #eventos .section-head{
+ background:transparent!important;
+ background-image:none!important;
+ box-shadow:none!important;
+ backdrop-filter:none!important;
+ -webkit-backdrop-filter:none!important;
+}
+body.bf-neon .bf-after-marquee-content #eventos .empty,
+body.bf-neon .bf-after-marquee-content #eventos .event-card{
+ background:rgba(12,5,16,.035)!important;
+}
