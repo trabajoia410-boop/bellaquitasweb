@@ -1446,3 +1446,12 @@ body.bf-neon .bf-after-marquee .bf-after-marquee-content #unete .cta-banner :is(
   background:linear-gradient(150deg,rgba(29,17,42,.80),rgba(12,8,24,.75))!important;
  }
 }
+
+/* Acceso visible a la portada pública desde la cuenta, sin cerrar sesión. */
+.app-shell .app-top-right .app-home-btn{white-space:nowrap}
+.app-shell .mobile-appbar .app-public-home{color:var(--gold)!important}
+@media(max-width:760px){
+ .app-shell .mobile-appbar{display:flex!important;justify-content:space-around!important;gap:0!important}
+ .app-shell .mobile-appbar>a{flex:1 1 0!important;min-width:0!important;padding-left:2px!important;padding-right:2px!important;font-size:clamp(.55rem,2.2vw,.72rem)!important;text-align:center!important}
+ .app-shell .app-top-right .app-home-btn{padding:8px 10px!important;font-size:.75rem!important}
+}
