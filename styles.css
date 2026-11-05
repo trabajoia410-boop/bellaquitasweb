@@ -1426,3 +1426,23 @@ body.bf-neon #eventos .three-grid > .event-card :is(h3,p,.event-meta,.event-top)
   box-shadow:0 20px 48px rgba(0,0,0,.62),0 6px 18px rgba(0,0,0,.36),inset 0 1px 0 rgba(255,255,255,.12)!important;
  }
 }
+
+/* Última llamada a la acción: cristal oscuro semitransparente como las tarjetas.
+   Oscurecer solo el fondo, sin disminuir la opacidad del texto o del botón. */
+body.bf-neon .bf-after-marquee .bf-after-marquee-content #unete .cta-banner{
+ background:linear-gradient(145deg,rgba(27,15,39,.77),rgba(13,9,25,.72))!important;
+ background-color:transparent!important;
+ border:1px solid rgba(222,179,215,.44)!important;
+ box-shadow:0 22px 56px rgba(0,0,0,.56),0 8px 22px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.12)!important;
+ backdrop-filter:blur(7px) saturate(110%)!important;
+ -webkit-backdrop-filter:blur(7px) saturate(110%)!important;
+ opacity:1!important;
+}
+body.bf-neon .bf-after-marquee .bf-after-marquee-content #unete .cta-banner :is(h2,p,.eyebrow){
+ text-shadow:0 2px 8px rgba(0,0,0,.85)!important;
+}
+@media(max-width:700px){
+ body.bf-neon .bf-after-marquee .bf-after-marquee-content #unete .cta-banner{
+  background:linear-gradient(150deg,rgba(29,17,42,.80),rgba(12,8,24,.75))!important;
+ }
+}
