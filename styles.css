@@ -676,3 +676,50 @@ section[id]{scroll-margin-top:92px}
 
 /* Barra Julieta centrada con enlaces visibles y desplazamiento accesible. */
 @media(min-width:1001px){.bf-neon .site-header{width:50%;border-radius:999px}.bf-neon .site-header .nav-wrap{gap:7px}.bf-neon .site-header .bf-desktop-nav{display:flex;flex:1 1 auto;min-width:0;justify-content:flex-start;gap:12px;overflow-x:auto;scrollbar-width:thin;scrollbar-color:#c58c64 transparent;padding:7px 2px}.bf-neon .site-header .bf-desktop-nav .nav-link{flex:none;font-size:.7rem}.bf-neon .site-header .nav-actions{flex-shrink:0;margin-left:0}.bf-neon .site-header .header-search-button{display:none}.bf-neon .site-header .lang-full{display:none}.bf-neon .site-header .lang-short{display:inline}.bf-neon .site-header .lang-choice{padding:6px 7px}.bf-neon .site-header .menu-toggle{min-width:40px;flex-basis:40px;height:40px;border-radius:12px}}@media(min-width:1001px) and (max-width:1450px){.bf-neon .site-header .brand .brand-wordmark{display:none!important}.bf-neon .site-header .nav-wrap{width:calc(100% - 18px)}}
+
+/* Navbar v17: distribución estructural, sin desbordamientos ni enlaces cortados. */
+.bf-neon .site-header{box-sizing:border-box;isolation:isolate}
+.bf-neon .site-header .nav-wrap{display:grid!important;grid-template-columns:max-content minmax(0,1fr) max-content;align-items:center;justify-content:initial;column-gap:clamp(8px,1vw,18px);max-width:100%;margin-inline:auto}
+.bf-neon .site-header .brand{min-width:0;max-width:100%;overflow:hidden}
+.bf-neon .site-header .nav-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px;min-width:0}
+.bf-neon .site-header .bf-desktop-nav{min-width:0;overflow:visible;justify-content:center}
+.bf-neon .site-header .bf-desktop-nav .nav-link{padding:7px 0;line-height:1.2}
+.bf-neon .site-header .menu-toggle{display:inline-flex!important;flex-shrink:0;align-items:center;justify-content:center}
+.bf-neon .site-header .main-nav{right:0;left:auto;top:calc(100% + 12px);max-width:calc(100vw - 24px)}
+.bf-neon .site-header .main-nav:not(.open){display:none!important}
+.bf-neon .site-header .main-nav.open{display:flex!important}
+.bf-neon .site-header .lang-switch{min-width:0}
+@media(min-width:1501px){
+ .bf-neon .site-header{width:clamp(780px,54vw,1060px);max-width:calc(100% - 40px);border-radius:999px}
+ .bf-neon .site-header .nav-wrap{width:calc(100% - 32px);grid-template-columns:max-content minmax(0,1fr) max-content}
+ .bf-neon .site-header .bf-desktop-nav{display:flex!important;gap:clamp(8px,.9vw,17px);overflow:visible}
+ .bf-neon .site-header .bf-desktop-nav .nav-link{font-size:clamp(.63rem,.7vw,.82rem)}
+ .bf-neon .site-header .brand .brand-wordmark{display:none!important}
+ .bf-neon .site-header .nav-actions>.btn,.bf-neon .site-header .header-search-button{display:none!important}
+}
+@media(min-width:1001px) and (max-width:1500px){
+ .bf-neon .site-header{width:min(760px,calc(100% - 40px));border-radius:999px}
+ .bf-neon .site-header .bf-desktop-nav{display:none!important}
+ .bf-neon .site-header .nav-wrap{grid-template-columns:minmax(0,1fr) auto}
+ .bf-neon .site-header .brand .brand-wordmark{display:flex!important}
+ .bf-neon .site-header .nav-actions>.btn,.bf-neon .site-header .header-search-button{display:none!important}
+}
+@media(max-width:1000px){
+ .bf-neon .site-header{width:min(94%,650px);border-radius:999px}
+ .bf-neon .site-header .nav-wrap{grid-template-columns:minmax(0,1fr) auto}
+ .bf-neon .site-header .bf-desktop-nav{display:none!important}
+ .bf-neon .site-header .nav-actions>.btn{display:none!important}
+}
+@media(max-width:650px){
+ .bf-neon .site-header{width:calc(100% - 16px);min-height:60px}
+ .bf-neon .site-header .nav-wrap{min-height:58px;width:calc(100% - 20px);column-gap:6px}
+ .bf-neon .site-header .brand{gap:5px}
+ .bf-neon .site-header .brand .brand-wordmark{font-size:.64rem!important}
+ .bf-neon .site-header .lang-switch{max-width:105px}
+ .bf-neon .site-header .lang-choice{padding:5px 6px}
+ .bf-neon .site-header .menu-toggle{min-width:40px;flex-basis:40px;height:40px}
+}
+@media(max-width:380px){
+ .bf-neon .site-header .brand .brand-wordmark{display:none!important}
+ .bf-neon .site-header .lang-switch{max-width:96px}
+}
