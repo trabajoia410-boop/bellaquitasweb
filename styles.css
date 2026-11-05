@@ -1249,3 +1249,45 @@ body.bf-neon .hero.bf-video-hero{
   object-fit:contain!important;
  }
 }
+
+/* Portada enmarcada: vídeo completo, centrado, sin ocupar los bordes.
+   No aplicar blur, filtros de nitidez artificial ni ampliaciones por CSS. */
+body.bf-neon .hero.bf-video-hero{
+ min-height:100svh!important;
+ height:100svh!important;
+ display:flex!important;
+ align-items:center!important;
+ justify-content:center!important;
+ padding:clamp(72px,8vh,100px) clamp(18px,5vw,110px) clamp(24px,4vh,55px)!important;
+ box-sizing:border-box!important;
+ background:radial-gradient(ellipse at center,#211330 0%,#0c0719 75%,#070511 100%)!important;
+ overflow:hidden!important;
+}
+body.bf-neon .hero.bf-video-hero > video.bf-hero-video{
+ position:relative!important;
+ inset:auto!important;
+ display:block!important;
+ width:100%!important;
+ height:100%!important;
+ max-width:1920px!important;
+ max-height:calc(100svh - 110px)!important;
+ object-fit:contain!important;
+ object-position:center center!important;
+ transform:none!important;
+ filter:none!important;
+ -webkit-filter:none!important;
+ opacity:1!important;
+ animation:none!important;
+ background:transparent!important;
+ border-radius:clamp(12px,1.6vw,24px)!important;
+ box-shadow:0 24px 72px rgba(0,0,0,.48)!important;
+}
+@media(max-width:700px){
+ body.bf-neon .hero.bf-video-hero{
+  padding:82px 12px 22px!important;
+ }
+ body.bf-neon .hero.bf-video-hero > video.bf-hero-video{
+  max-height:calc(100svh - 104px)!important;
+  border-radius:12px!important;
+ }
+}
