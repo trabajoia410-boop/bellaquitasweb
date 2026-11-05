@@ -1507,3 +1507,24 @@ body.bf-neon .site-header .bf-desktop-nav .nav-link[aria-current="page"]::after{
  background:#ff8ab5!important;
  box-shadow:0 0 9px rgba(255,138,181,.45)!important;
 }
+
+/* Portada a sangre: el vídeo empieza detrás de la cápsula de navegación.
+   Se conserva la cabecera sticky y las demás páginas sin cambios. */
+body.bf-neon #app:has(> main > .bf-video-hero) > main > .hero.bf-video-hero{
+ margin-top:calc(-1 * (76px + 16px))!important;
+ height:100svh!important;
+ min-height:100svh!important;
+}
+body.bf-neon #app:has(> main > .bf-video-hero) > .site-header{
+ z-index:90!important;
+}
+@media(min-width:701px) and (max-width:1149px){
+ body.bf-neon #app:has(> main > .bf-video-hero) > main > .hero.bf-video-hero{
+  margin-top:calc(-1 * (76px + 12px))!important;
+ }
+}
+@media(max-width:700px){
+ body.bf-neon #app:has(> main > .bf-video-hero) > main > .hero.bf-video-hero{
+  margin-top:calc(-1 * (76px + 10px))!important;
+ }
+}
