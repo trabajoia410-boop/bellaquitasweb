@@ -775,3 +775,33 @@ section[id]{scroll-margin-top:92px}
    object-position:center top!important;
  }
 }
+
+/* Transparencia solicitada: eliminar fondos de paneles y tarjetas posteriores a la cinta dorada.
+   El vídeo permanece visible; se conservan textos, bordes y contraste. */
+body.bf-neon .bf-after-marquee-content > .section,
+body.bf-neon .bf-after-marquee-content .feature,
+body.bf-neon .bf-after-marquee-content .event-card,
+body.bf-neon .bf-after-marquee-content .big-benefit,
+body.bf-neon .bf-after-marquee-content .benefit-item,
+body.bf-neon .bf-after-marquee-content .faq-card,
+body.bf-neon .bf-after-marquee-content .cta-banner,
+body.bf-neon .bf-after-marquee-content .loyalty-showcase,
+body.bf-neon .bf-after-marquee-content .list-benefits,
+body.bf-neon .bf-after-marquee-content .empty-state,
+body.bf-neon .bf-after-marquee-content .card,
+body.bf-neon .bf-after-marquee-content .info-note{
+ background:rgba(15,6,17,.035)!important;
+ background-image:none!important;
+ box-shadow:none!important;
+ backdrop-filter:none!important;
+ -webkit-backdrop-filter:none!important;
+}
+body.bf-neon .bf-after-marquee-content .feature::before,
+body.bf-neon .bf-after-marquee-content .feature::after,
+body.bf-neon .bf-after-marquee-content .big-benefit::before,
+body.bf-neon .bf-after-marquee-content .big-benefit::after,
+body.bf-neon .bf-after-marquee-content .cta-banner::before,
+body.bf-neon .bf-after-marquee-content .cta-banner::after{background:transparent!important;box-shadow:none!important}
+body.bf-neon .bf-after-marquee-shade{background:rgba(9,4,12,.20)!important}
+body.bf-neon .bf-after-marquee-content .section{background-color:transparent!important;background-image:none!important}
+@media(max-width:700px){body.bf-neon .bf-after-marquee-shade{background:rgba(9,4,12,.30)!important}}
