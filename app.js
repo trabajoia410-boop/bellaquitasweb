@@ -356,7 +356,7 @@ function landing(sectionOnly=""){
  };
  const blockHTML=validOrder(settings().order).filter(k=>showSection(k)).map(k=>`<div class="line"></div>${blocks[k]}`).join('');
   // Un único vídeo detrás de todas las secciones posteriores a la banda amarilla.
-  const afterMarquee=`<div class="bf-after-marquee"><video class="bf-after-marquee-video" autoplay muted loop playsinline preload="metadata" aria-hidden="true" tabindex="-1"><source src="assets/bellaquitas-fiesta-fondo.mp4" type="video/mp4"></video><div class="bf-after-marquee-shade" aria-hidden="true"></div><div class="bf-after-marquee-content">${blockHTML}</div></div>`;
+  const afterMarquee=`<div class="bf-after-marquee"><video class="bf-after-marquee-video" autoplay muted loop playsinline preload="metadata" aria-hidden="true" tabindex="-1"><source src="assets/bellaquitas-fiesta-fondo-movil.mp4" media="(max-width: 700px)" type="video/mp4"><source src="assets/bellaquitas-fiesta-fondo.mp4" type="video/mp4"></video><div class="bf-after-marquee-shade" aria-hidden="true"></div><div class="bf-after-marquee-content">${blockHTML}</div></div>`;
  if(sectionOnly&&Object.prototype.hasOwnProperty.call(blocks,sectionOnly)){
   const title=siteText({experience:'experience_title',events:'events_title',benefits:'benefits_title',faq:'faq_title',cta:'cta_title'}[sectionOnly]);
   return `${header()}<main class="standalone-page"><div class="container standalone-navigation"><a href="#/" class="btn btn-secondary btn-mini">← ${t('Inicio')}</a><strong>${H(title)}</strong></div>${blocks[sectionOnly]}</main>${footer()}`;
