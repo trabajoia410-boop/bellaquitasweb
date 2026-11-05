@@ -2,6 +2,24 @@
    La autorización y los permisos se verifican en el servidor mediante RLS. */
 (() => {
 'use strict';
+
+// Ajuste exclusivo para vídeo de portada en iPhone/iPad: preservar el encuadre completo.
+// La clase no se añade en Android/Samsung ni en escritorios.
+const bfIosDevice=/iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+ (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+if(bfIosDevice)document.documentElement.classList.add('bf-ios-video-fit');
+function bfFitIosHeroVideo(){
+ if(!bfIosDevice || !window.matchMedia('(max-width: 700px)').matches)return;
+ const video=document.querySelector('.hero.bf-video-hero > video.bf-hero-video');
+ if(!video || !video.videoWidth || !video.videoHeight)return;
+ const hero=video.parentElement;
+ const w=hero.clientWidth,h=hero.clientHeight;
+ if(!w || !h)return;
+ // Se calcula a partir del tamaño real del MP4: ni Safari ni CSS pueden recortarlo.
+ const scale=Math.min(w/video.videoWidth,h/video.videoHeight);
+ video.style.setProperty('--bf-ios-video-width',Math.floor(video.videoWidth*scale)+'px');
+ video.style.setProperty('--bf-ios-video-height',Math.floor(video.videoHeight*scale)+'px');
+}
 const $ = s => document.querySelector(s);
 const H = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt = n => Intl.NumberFormat('es-ES').format(Number(n)||0);
@@ -991,6 +1009,13 @@ async function render(){
   else if(route==='/club')html=clubPage();
   else html=landing(({experiencia:'experience',eventos:'events',ventajas:'benefits',preguntas:'faq'}[route.slice(1)])||'');
   $('#app').innerHTML=html;
+  if(bfIosDevice){
+   const heroVideo=document.querySelector('.hero.bf-video-hero > video.bf-hero-video');
+   if(heroVideo){
+    heroVideo.addEventListener('loadedmetadata',bfFitIosHeroVideo);
+    if(heroVideo.readyState>=1)bfFitIosHeroVideo();
+   }
+  }
  document.documentElement.classList.remove('auth-booting');
  translateDOM(document);
   document.title=(route==='/'?'Bellaquitas Fest':(current&&allowed(route)?translateLabel('Mi cuenta')+' · Bellaquitas Fest':translateLabel('Acceso y registro')+' · Bellaquitas Fest'));
@@ -1502,6 +1527,11 @@ window.addEventListener('beforeunload',ev=>{if(editorDirty){ev.preventDefault();
 window.addEventListener('hashchange',()=>{execute(async()=>{await render();});});
 // Al cruzar el punto de corte móvil/escritorio, volver a seleccionar la fuente de vídeo.
 const bfVideoMobileMedia=window.matchMedia('(max-width: 700px)');
+if(bfIosDevice){
+ window.addEventListener('resize',bfFitIosHeroVideo,{passive:true});
+ window.addEventListener('orientationchange',bfFitIosHeroVideo,{passive:true});
+}
+
 function bfRefreshBackgroundVideo(){
  for(const video of document.querySelectorAll('.bf-after-marquee-video, .bf-hero-video')){
   // En iOS Safari el atributo media de <source> no siempre escoge la versión deseada.
