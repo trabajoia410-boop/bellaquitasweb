@@ -451,7 +451,9 @@ function ambientVideo(value,cls){
 function animatedMarquee(){
  const title=H(siteText('hero_title_a'))+' '+H(siteText('hero_title_b'));
  const segment=`<span class="bf-marquee-item">${title}<b aria-hidden="true">✦</b>BELLAQUITAS FEST<b aria-hidden="true">✦</b></span>`;
- const group=`<span class="bf-marquee-set">${segment}${segment}</span>`;
+ // Cada mitad es idéntica y suficientemente larga para cubrir pantallas ultrapanorámicas.
+ // Al llegar al -50%, la segunda mitad ocupa exactamente la posición de la primera.
+ const group=`<span class="bf-marquee-set">${segment.repeat(12)}</span>`;
  return `<section class="bf-marquee" aria-label="${H(siteText('hero_title_a')+' '+siteText('hero_title_b'))}"><div class="bf-marquee-track" aria-hidden="true">${group}${group}</div></section>`;
 }
 function landing(sectionOnly=""){
