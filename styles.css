@@ -1643,52 +1643,63 @@ body.bf-neon .site-header .bf-community-menu{
 @media(prefers-reduced-motion:reduce){.moment-photo img,.community-social-card,.community-menu-link{transition:none!important}}
 
 
-/* Navegación principal móvil siempre accesible, independiente del menú ☰. */
-.bf-mobile-primary-nav{display:none}
-@media(max-width:1000px){
- body.bf-neon > #app .bf-mobile-primary-nav{
-  display:flex!important;position:relative;z-index:35;
-  align-items:center;gap:clamp(13px,3.2vw,25px);
-  width:calc(100% - 24px);max-width:660px;margin:9px auto 0;
-  padding:10px 16px;box-sizing:border-box;
-  border:1px solid rgba(230,182,111,.65);border-radius:999px;
-  background:rgba(22,12,31,.88);backdrop-filter:blur(14px);
-  overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;
-  box-shadow:0 8px 25px #0005;
- }
- body.bf-neon > #app .bf-mobile-primary-nav::-webkit-scrollbar{display:none}
- body.bf-neon > #app .bf-mobile-primary-nav .nav-link{
-  display:inline-flex!important;flex:none;position:relative;
-  padding:7px 0 9px!important;margin:0!important;
-  border:0!important;min-height:unset!important;
-  color:#fff4eb!important;font-size:clamp(.72rem,2.6vw,.86rem)!important;
-  font-weight:800;line-height:1.2;text-decoration:none;white-space:nowrap;
- }
- body.bf-neon > #app .bf-mobile-primary-nav .nav-link.active,
- body.bf-neon > #app .bf-mobile-primary-nav .nav-link[aria-current="page"]{color:#ff8ab5!important}
- body.bf-neon > #app .bf-mobile-primary-nav .nav-link::after{
-  content:"";position:absolute;left:0;right:0;bottom:2px;height:3px;
-  border-radius:4px;background:transparent!important;box-shadow:none!important;
- }
- body.bf-neon > #app .bf-mobile-primary-nav .nav-link.active::after,
- body.bf-neon > #app .bf-mobile-primary-nav .nav-link[aria-current="page"]::after{
-  background:#ff8ab5!important;box-shadow:0 0 8px #ff8ab577!important;
- }
-}
 
-/* Accesos de cuenta en la barra de navegación móvil, sin duplicarlos en ☰. */
+/* Navegación Bellaquitas Fest: una sola barra flotante en móvil.
+   El desplegable ☰ reúne Explorar, Comunidad y acceso a la cuenta;
+   en ordenador conserva exclusivamente las tres opciones de Comunidad. */
+body.bf-neon .site-header .bf-community-menu .bf-menu-mobile-primary,
+body.bf-neon .site-header .bf-community-menu .bf-community-account-actions{
+ display:none!important;
+}
+body.bf-neon .site-header .bf-community-menu .bf-menu-community-links{
+ display:flex;flex-direction:column;gap:6px;min-width:0;
+}
+body.bf-neon .site-header .bf-community-menu .bf-menu-group-label{
+ display:none;font-size:.76rem;text-transform:uppercase;letter-spacing:.12em;
+ font-weight:850;color:#e7be85;padding:6px 13px 5px;
+}
+body.bf-neon .site-header .bf-community-menu .community-menu-link{
+ display:flex;align-items:center;min-height:65px;padding:12px 15px;
+ font-size:1rem;line-height:1.25;
+}
+body.bf-neon .site-header .bf-community-menu .community-menu-copy{
+ display:flex;flex-direction:column;gap:4px;min-width:0;
+}
+body.bf-neon .site-header .bf-community-menu .community-menu-copy small{
+ color:#dcc3ce;font-size:.79rem;font-weight:500;line-height:1.4;
+}
 @media(max-width:1000px){
- body.bf-neon > #app .bf-mobile-primary-nav .bf-mobile-nav-separator{
-  flex:0 0 1px;height:23px;background:rgba(230,182,111,.55);
+ body.bf-neon .site-header .bf-community-menu{
+  max-height:calc(100dvh - 114px)!important;
+  overflow-y:auto!important;overscroll-behavior:contain;
  }
- body.bf-neon > #app .bf-mobile-primary-nav .bf-mobile-auth-link{
-  display:inline-flex!important;flex:none;align-items:center;justify-content:center;
-  min-height:32px;padding:7px 13px!important;border:1px solid #d8ad76!important;
-  border-radius:999px;background:rgba(76,34,61,.8);color:#ffe7c5!important;
-  font-size:clamp(.72rem,2.6vw,.86rem)!important;font-weight:800;
-  white-space:nowrap;text-decoration:none;
+ body.bf-neon .site-header .bf-community-menu .bf-menu-mobile-primary{
+  display:flex!important;flex-direction:column;gap:3px;
+  padding:2px 0 13px;margin-bottom:5px;
+  border-bottom:1px solid rgba(228,182,120,.45);
  }
- body.bf-neon > #app .bf-mobile-primary-nav .bf-mobile-register-link{
-  background:linear-gradient(115deg,#b85a77,#a72e60);color:white!important;
+ body.bf-neon .site-header .bf-community-menu .bf-menu-group-label{
+  display:block!important;
+ }
+ body.bf-neon .site-header .bf-community-menu .bf-menu-mobile-primary .nav-link{
+  display:block!important;position:relative;
+  padding:10px 14px!important;margin:0!important;
+  min-height:unset!important;border:1px solid transparent!important;
+  border-radius:12px!important;color:#f9eae5!important;
+  font-size:.98rem!important;font-weight:800;line-height:1.25;
+  text-decoration:none;white-space:normal;
+ }
+ body.bf-neon .site-header .bf-community-menu .bf-menu-mobile-primary .nav-link.active,
+ body.bf-neon .site-header .bf-community-menu .bf-menu-mobile-primary .nav-link[aria-current="page"]{
+  color:#ff8ab5!important;background:rgba(255,138,181,.1)!important;
+  border-color:rgba(255,138,181,.35)!important;
+ }
+ body.bf-neon .site-header .bf-community-menu .bf-community-account-actions{
+  display:flex!important;flex-direction:column;gap:9px;
+  padding-top:13px;margin-top:8px;border-top:1px solid rgba(228,182,120,.45);
+ }
+ body.bf-neon .site-header .bf-community-menu .bf-community-account-actions .btn{
+  display:flex!important;align-items:center;justify-content:center;
+  min-height:44px;text-align:center;
  }
 }
