@@ -1801,3 +1801,34 @@ body.bf-neon .bf-marquee .bf-marquee-item{
   will-change:auto;
  }
 }
+
+
+/* iOS Safari: mantener el logo entero en el vídeo de portada.
+   No confiar solo en object-fit:cover (recorta los laterales en iPhone).
+   JS calcula dimensiones a partir del ancho/alto reales del MP4.
+   Android/Samsung y vídeo de escritorio conservan su presentación. */
+@media(max-width:700px){
+ html.bf-ios-video-fit body.bf-neon .hero.bf-video-hero{
+  background:radial-gradient(ellipse at center,#24112b 0%,#10091a 70%,#090714 100%)!important;
+ }
+ html.bf-ios-video-fit body.bf-neon .hero.bf-video-hero > video.bf-hero-video{
+  display:block!important;
+  position:absolute!important;
+  inset:auto!important;
+  left:50%!important;
+  top:50%!important;
+  width:var(--bf-ios-video-width,100%)!important;
+  height:var(--bf-ios-video-height,auto)!important;
+  min-width:0!important;
+  min-height:0!important;
+  max-width:100%!important;
+  max-height:100%!important;
+  object-fit:contain!important;
+  object-position:center center!important;
+  transform:translate(-50%,-50%)!important;
+  -webkit-transform:translate(-50%,-50%)!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+ }
+}
