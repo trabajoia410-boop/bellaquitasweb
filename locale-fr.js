@@ -698,5 +698,6 @@ window.BELLAQUITAS_I18N_FR={
  "Público": "Public",
  "Privado": "Privé",
  "No se pudo completar el acceso con Google. Revisa los permisos e inténtalo de nuevo.": "La connexion avec Google a échoué. Vérifiez les autorisations puis réessayez.",
- "No se ha completado el acceso con Google. Inténtalo otra vez o utiliza tu correo.": "La connexion avec Google n’a pas abouti. Réessayez ou utilisez votre adresse e-mail."
+ "No se ha completado el acceso con Google. Inténtalo otra vez o utiliza tu correo.": "La connexion avec Google n’a pas abouti. Réessayez ou utilisez votre adresse e-mail.",
+ "Todavía no hay eventos. Puedes crear el primero con el botón de arriba.": "Aucun événement pour le moment. Vous pouvez créer le premier avec le bouton ci-dessus."
 };
