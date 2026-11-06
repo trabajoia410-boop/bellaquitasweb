@@ -328,7 +328,7 @@ async function removeStoredPublicUrl(url){
 function adminMeta(table,x){return table==='events'?eventDate(x.date_label,x.start_time)+' · '+x.location:table==='rewards'?`${fmt(x.cost)} puntos · ${x.category}`:`+${fmt(x.bonus)} puntos`;}
 function adminLabel(table){return {events:'evento',rewards:'premio',promos:'promoción'}[table]||'contenido';}
 function focusAdminForm(){requestAnimationFrame(()=>document.getElementById('admin-item-form')?.querySelector('input[name="name"]')?.focus());}
-function recentDate(d) { try {return new Date(d).toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'});}catch {return '—';} }
+function recentDate(d) { try {return new Date(d).toLocaleDateString(activeLang==='fr'?'fr-FR':'es-ES',{day:'2-digit',month:'short',year:'numeric'});}catch {return '—';} }
 function ask(message){return window.confirm(translateLabel(message));}
 function toast(message) {const el=$('#toast'); if(!el)return;clearTimeout(noticeTimer);el.textContent=translateLabel(message);el.classList.add('show');noticeTimer=setTimeout(()=>el.classList.remove('show'),4000);}
 function header(){
@@ -379,10 +379,10 @@ function clubPage(){
  return communityShell(`<div class="community-intro"><span class="eyebrow">SIGUE LA EXPERIENCIA</span><h1>👑 Club de las Bellaquitas</h1><p>La fiesta no termina cuando se apagan las luces. Sigue nuestras redes para descubrir próximos eventos, novedades y momentos especiales.</p></div><div class="community-social-grid"><a class="community-social-card" href="https://www.instagram.com/bellaquitas_fr/" target="_blank" rel="noopener noreferrer"><span class="social-icon social-instagram" aria-hidden="true"><svg viewBox="0 0 24 24" width="38" height="38" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="6"/><circle cx="12" cy="12" r="4.4"/><circle cx="17.7" cy="6.4" r="1" fill="currentColor" stroke="none"/></svg></span><span><strong>Instagram</strong><small>@bellaquitas_fr</small></span><span aria-hidden="true">↗</span></a><div class="community-social-card coming-soon"><span class="social-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="38" height="38" fill="currentColor"><path d="M16.7 2h-3.5v13.5a3.2 3.2 0 1 1-2.9-3.2V8.8a6.7 6.7 0 1 0 6.4 6.7V8.3a9 9 0 0 0 5.3 1.7V6.5A5.4 5.4 0 0 1 16.7 2Z"/></svg></span><span><strong>TikTok</strong><small>Próximamente · perfil oficial pendiente</small></span></div></div><p class="community-muted community-social-note">Más redes sociales se incorporarán aquí cuando estén disponibles.</p>`);
 }
 function communityAdminPanel(){
- const suggestions=communitySuggestions.map(x=>`<article class="community-admin-item"><div><strong>${H(x.name||'Anónimo')}</strong><small>${H(recentDate(x.created_at))} · ${H(x.status)}</small></div><p>${H(x.message)}</p><div class="community-admin-actions"><button class="btn btn-secondary btn-mini" data-action="suggestion-status" data-id="${H(x.id)}" data-status="revisado">Marcar revisada</button><button class="btn btn-secondary btn-mini" data-action="suggestion-status" data-id="${H(x.id)}" data-status="archivado">Archivar</button></div></article>`).join('')||'<p class="community-muted">Todavía no hay sugerencias recibidas.</p>';
+ const suggestions=communitySuggestions.map(x=>`<article class="community-admin-item"><div><strong>${H(x.name||'Anónimo')}</strong><small>${H(recentDate(x.created_at))} · ${H(translateLabel(x.status))}</small></div><p>${H(x.message)}</p><div class="community-admin-actions"><button class="btn btn-secondary btn-mini" data-action="suggestion-status" data-id="${H(x.id)}" data-status="revisado">Marcar revisada</button><button class="btn btn-secondary btn-mini" data-action="suggestion-status" data-id="${H(x.id)}" data-status="archivado">Archivar</button></div></article>`).join('')||'<p class="community-muted">Todavía no hay sugerencias recibidas.</p>';
  const albums=momentsAlbums.map(a=>{
   const photos=momentsPhotos.filter(p=>p.album_id===a.id);
-  return `<article class="community-admin-item"><div class="community-admin-title"><strong>${H(a.title)}</strong><small>${H(recentDate(a.event_date))} · ${a.published?'Publicado':'Borrador'} · ${photos.length} fotos</small></div><div class="community-admin-actions"><button type="button" class="btn btn-secondary btn-mini" data-action="moment-publish" data-id="${H(a.id)}" data-published="${a.published}">${a.published?'Ocultar galería':'Publicar galería'}</button><button type="button" class="btn btn-secondary btn-mini" data-action="moment-album-delete" data-id="${H(a.id)}">Eliminar galería</button></div><form class="moment-upload-form" data-album-id="${H(a.id)}"><label>Añadir fotos reales (JPG, PNG, WebP)</label><input type="file" name="photos" accept="image/jpeg,image/png,image/webp" multiple required><button class="btn btn-primary btn-mini" type="submit">Subir fotografías</button><p class="community-feedback" role="status"></p></form><div class="moments-admin-photos">${photos.map(p=>{const url=sb.storage.from(MEDIA_BUCKET).getPublicUrl(p.storage_path).data.publicUrl;return `<div><img src="${H(url)}" alt="${H(p.caption||'Fotografía del evento')}" loading="lazy"><button type="button" data-action="moment-photo-delete" data-id="${H(p.id)}">Eliminar foto ✕</button></div>`}).join('')}</div></article>`;
+  return `<article class="community-admin-item"><div class="community-admin-title"><strong>${H(a.title)}</strong><small>${H(recentDate(a.event_date))} · ${t(a.published?'Publicado':'Borrador')} · ${photos.length} ${t('fotos')}</small></div><div class="community-admin-actions"><button type="button" class="btn btn-secondary btn-mini" data-action="moment-publish" data-id="${H(a.id)}" data-published="${a.published}">${a.published?'Ocultar galería':'Publicar galería'}</button><button type="button" class="btn btn-secondary btn-mini" data-action="moment-album-delete" data-id="${H(a.id)}">Eliminar galería</button></div><form class="moment-upload-form" data-album-id="${H(a.id)}"><label>Añadir fotos reales (JPG, PNG, WebP)</label><input type="file" name="photos" accept="image/jpeg,image/png,image/webp" multiple required><button class="btn btn-primary btn-mini" type="submit">Subir fotografías</button><p class="community-feedback" role="status"></p></form><div class="moments-admin-photos">${photos.map(p=>{const url=sb.storage.from(MEDIA_BUCKET).getPublicUrl(p.storage_path).data.publicUrl;return `<div><img src="${H(url)}" alt="${H(p.caption||'Fotografía del evento')}" loading="lazy"><button type="button" data-action="moment-photo-delete" data-id="${H(p.id)}">Eliminar foto ✕</button></div>`}).join('')}</div></article>`;
  }).join('')||'<p class="community-muted">No hay galerías creadas.</p>';
  return `<div class="community-admin"><h2>💌 Sugerencias recibidas</h2><div class="community-admin-list">${suggestions}</div><h2>📸 Bellaquitas Moments</h2><form id="moment-album-form" class="community-panel"><h3>Crear una galería</h3><label for="moment-album-title">Nombre del evento</label><input id="moment-album-title" name="title" minlength="2" maxlength="120" required placeholder="Nombre de la fiesta"><label for="moment-album-date">Fecha del evento</label><input id="moment-album-date" name="event_date" type="date" required><button class="btn btn-primary" type="submit">Crear galería</button><p class="community-feedback" role="status"></p></form><div class="community-admin-list">${albums}</div></div>`;
 }
@@ -390,14 +390,14 @@ async function saveCommunitySuggestion(form){
  const fd=new FormData(form),feedback=form.querySelector('#suggestion-feedback'),button=form.querySelector('[type="submit"]');
  if(fd.get('website'))return;
  const name=String(fd.get('name')||'').trim(),message=String(fd.get('message')||'').trim();
- if(name.length>80||message.length<5||message.length>2000){feedback.textContent='Escribe una sugerencia de entre 5 y 2000 caracteres.';return;}
- if(!sb){feedback.textContent='El servicio no está disponible. Inténtalo más tarde.';return;}
- button.disabled=true;feedback.textContent='Enviando…';
+ if(name.length>80||message.length<5||message.length>2000){feedback.textContent=translateLabel('Escribe una sugerencia de entre 5 y 2000 caracteres.');return;}
+ if(!sb){feedback.textContent=translateLabel('El servicio no está disponible. Inténtalo más tarde.');return;}
+ button.disabled=true;feedback.textContent=translateLabel('Enviando…');
  try{
   const {error}=await sb.from('community_suggestions').insert({name,message});
   if(error)throw error;
-  form.reset();feedback.textContent='¡Gracias! 💌 Tu sugerencia se ha enviado correctamente.';
- }catch(err){console.error('Sugerencia:',err);feedback.textContent='No se pudo enviar tu mensaje. Inténtalo de nuevo.';}
+  form.reset();feedback.textContent=translateLabel('¡Gracias! 💌 Tu sugerencia se ha enviado correctamente.');
+ }catch(err){console.error('Sugerencia:',err);feedback.textContent=translateLabel('No se pudo enviar tu mensaje. Inténtalo de nuevo.');}
  finally{button.disabled=false;}
 }
 async function communityAdminAction(el,act){
@@ -429,26 +429,26 @@ async function createMomentsAlbum(form){
   if(title.length<2||title.length>120||!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(event_date))throw new Error('Completa el nombre y la fecha.');
   const {error}=await sb.from('moments_albums').insert({title,event_date,published:false});if(error)throw error;
   await loadCommunity();await render();toast('Galería creada. Ahora puedes subir fotos y publicarla.');
- }catch(err){box.textContent=err.message;button.disabled=false;}
+ }catch(err){box.textContent=translateLabel(err.message);button.disabled=false;}
 }
 async function uploadMomentsPhotos(form){
  if(current?.role!=='admin')return;
  const albumId=form.dataset.albumId,files=[...form.querySelector('input[type="file"]').files],box=form.querySelector('.community-feedback'),button=form.querySelector('button');
  if(!momentsAlbums.some(a=>a.id===albumId))throw new Error('Galería no encontrada.');
  if(!files.length)return;
- button.disabled=true;box.textContent='Subiendo fotografías…';
+ button.disabled=true;box.textContent=translateLabel('Subiendo fotografías…');
  let count=0;
  for(const file of files){
-  if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>8*1024*1024){box.textContent='Solo JPG, PNG o WebP de hasta 8 MB por fotografía.';continue;}
+  if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>8*1024*1024){box.textContent=translateLabel('Solo JPG, PNG o WebP de hasta 8 MB por fotografía.');continue;}
   const ext=file.type==='image/png'?'png':file.type==='image/webp'?'webp':'jpg';
   const path='moments/'+albumId+'/'+crypto.randomUUID()+'.'+ext;
   const up=await sb.storage.from(MEDIA_BUCKET).upload(path,file,{contentType:file.type,upsert:false});
-  if(up.error){box.textContent='Error al subir una fotografía: '+up.error.message;continue;}
+  if(up.error){box.textContent=(activeLang==='fr'?'Erreur lors de l’importation d’une photo : ':'Error al subir una fotografía: ')+up.error.message;continue;}
   const saved=await sb.from('moments_photos').insert({album_id:albumId,storage_path:path});
-  if(saved.error){await sb.storage.from(MEDIA_BUCKET).remove([path]);box.textContent='Error al registrar una fotografía: '+saved.error.message;continue;}
+  if(saved.error){await sb.storage.from(MEDIA_BUCKET).remove([path]);box.textContent=(activeLang==='fr'?'Erreur lors de l’enregistrement d’une photo : ':'Error al registrar una fotografía: ')+saved.error.message;continue;}
   count++;
  }
- await loadCommunity();await render();toast(count+' fotografía(s) subida(s).');
+ await loadCommunity();await render();toast(activeLang==='fr'?count+' photo(s) importée(s).':count+' fotografía(s) subida(s).');
 }
 
 function footer(){return `<footer class="footer"><div class="container footer-flex"><div class="brand">${headerBrand(!!editorPreviewOverride)}</div><p>© ${new Date().getFullYear()} Bellaquitas Fest. ${editorPreviewOverride?`<span data-edit-field="footer_desc">${H(siteText('footer_desc'))}</span>`:H(siteText('footer_desc'))}</p><p>${showSection('faq')?'<a href="#/preguntas">Preguntas frecuentes</a> · ':''}<a href="#/acceso">${t('Iniciar sesión')}</a> · <a href="#/registro">${t('Crear cuenta')}</a></p><button type="button" class="footer-install" data-action="install-app">📲 Instalar la app</button></div></footer>`;}
@@ -1018,7 +1018,8 @@ async function render(){
   }
  document.documentElement.classList.remove('auth-booting');
  translateDOM(document);
-  document.title=(route==='/'?'Bellaquitas Fest':(current&&allowed(route)?translateLabel('Mi cuenta')+' · Bellaquitas Fest':translateLabel('Acceso y registro')+' · Bellaquitas Fest'));
+  const publicTitles={'/':'Bellaquitas Fest','/experiencia':translateLabel('Experiencia'),'/eventos':translateLabel('Eventos'),'/ventajas':translateLabel('Ventajas'),'/preguntas':translateLabel('Preguntas'),'/sugerencias':translateLabel('Sugerencias'),'/moments':'Bellaquitas Moments','/club':translateLabel('Club de las Bellaquitas')};
+  document.title=route==='/'?'Bellaquitas Fest':((publicTitles[route]||(current&&allowed(route)?translateLabel('Mi cuenta'):translateLabel('Acceso y registro')))+' · Bellaquitas Fest');
   document.querySelector('meta[name="robots"]')?.setAttribute('content',current&&allowed(route)?'noindex,nofollow':'index,follow');
   window.scrollTo({top:0,behavior:'instant'});
   if(route==='/tarjeta'||route==='/perfil')createQR(current.member_code);
