@@ -1,5 +1,5 @@
 /* Bellaquitas Fest: PWA de contenido estático. Nunca almacenar respuestas de Supabase ni datos privados. */
-const CACHE = 'bellaquitas-static-2026-11-05-v19';
+const CACHE = 'bellaquitas-static-2026-11-06-v20';
 const STATIC = ['./','./index.html','./styles.css','./app.js','./locale-fr.js','./config.js','./manifest.webmanifest',
   './assets/auth-startup.js','./assets/favicon.svg','./assets/google-g.svg','./assets/logo-bellaquitas.webp',
   './assets/icon-180.png','./assets/icon-192.png','./assets/icon-512.png','./assets/icon-maskable-512.png',
