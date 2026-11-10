@@ -6,8 +6,7 @@ Actualizado: 11 de noviembre de 2026.
 - Rutas /v1/auth/email/status, /register, /verify, /login, /forgot, /reset.
 - Tablas aisladas en D1 (migración `0006-email-auth.sql` aplicada): `auth_email_credentials`,
   `auth_email_tokens` y `auth_email_rate_limits`, inicialmente vacías.
-- Contraseñas protegidas con PBKDF2-HMAC-SHA256 (600.000 iteraciones,
-  salt aleatorio de 256 bits por contraseña), sin contraseña en texto claro.
+- Contraseñas protegidas en staging con un esquema **versionado**, `pbkdf2-chain6-sha256-v1`: seis derivaciones PBKDF2-HMAC-SHA256 secuenciales de 100.000 iteraciones cada una, con salt aleatorio de 256 bits y diferenciación por fase. **No es idéntico al PBKDF2 estándar de 600.000 iteraciones**; se requiere auditoría independiente antes de producción.
 - Token aleatorio de un solo uso de 256 bits para confirmación (30 minutos)
   y recuperación (20 minutos), almacenado solo como SHA-256.
 - Revocación de las sesiones tras restablecer contraseña.
@@ -127,3 +126,13 @@ y https://developers.cloudflare.com/workers/runtime-apis/web-crypto/
 - **Pruebas realizadas:** handlers con entorno ficticio muestran `login=true` y `registration=true`; si falta secreto Turnstile, registro se bloquea. Navegador remoto confirmó que el formulario de registro de staging es visible y el aviso de uso exclusivo para pruebas aparece.
 - **Pendiente:** recorrer el registro con una dirección real destinada a pruebas, recepción del email enviado desde el Worker, enlace de verificación, login con contraseña, logout, restablecimiento y antiabuso real. No afirmar que el flujo completo funciona hasta terminarlo.
 - **Producción intacta:** `bellaquitas.fr` continúa en GitHub Pages + Supabase. Nunca reutilizar contraseñas de producción en staging.
+
+## Corrección de Cloudflare PBKDF2 (11/11/2026)
+- Se reprodujo de forma aislada el error real en un Worker: `NotSupportedError: Pbkdf2 failed: iteration counts above 100000 are not supported (requested 600000)`.
+- La API `node:crypto.pbkdf2` presenta el mismo límite en Cloudflare, por lo que no sirve para esquivarlo.
+- Se comprobó en el Worker una secuencia de seis derivaciones PBKDF2 de 100.000 cada una, con salts distintos por fase: resultado de 32 bytes sin error.
+- Implementado esquema versionado `pbkdf2-chain6-sha256-v1$`, con 6 × 100.000 operaciones secuenciales y salt aleatorio por credencial. Es un esquema compuesto **distinto de PBKDF2 estándar** y necesita auditoría antes del corte definitivo. La columna `password_iterations=600000` representa trabajo acumulado del esquema versionado, no una llamada PBKDF2 de 600.000.
+- Guardado y borrado comprobados en D1 con un token **ficticio** `qa-only@example.invalid`; tras la limpieza quedaron cero tokens.
+- Módulos redeployados desde la rama de pruebas, sin el endpoint de diagnóstico temporal.
+- Tras despliegue: 6 perfiles, 1.999.998 puntos, 0 visitas, 0 credenciales email y 0 tokens; los flags de seguridad permanecen activos.
+- Falta prueba real del circuito de confirmación/recuperación, y revisión independiente del KDF antes de usar contraseñas de producción.
