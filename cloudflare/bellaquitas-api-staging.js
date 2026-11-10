@@ -88,6 +88,31 @@ export default {
         if (!row) return jsonResponse(request, {error: "Publicación no encontrada"}, 404);
         return jsonResponse(request, {site: withJsonFields([row])[0]});
       }
+      // These three logo objects were public at the source and have been
+      // copied and checksum-verified in private R2. No other R2 keys are public.
+      const logo = pathname.match(/^\/v1\/assets\/logos\/([0-9a-f-]{36}\.(?:png|jpg))$/i);
+      if (logo) {
+        const permitted = new Set([
+          "705cc152-5de2-407a-a880-1e78ca4b30ea.png",
+          "af5b256c-877b-4c9c-8d36-d00854885c4b.jpg",
+          "f4978ae8-1058-43a7-b5cd-ef9b17c11843.png"
+        ]);
+        const name = logo[1].toLowerCase();
+        if (!permitted.has(name)) return jsonResponse(request,{error:"Imagen no encontrada"},404);
+        const object = await env.MEDIA.get("logos/" + name);
+        if (!object) return jsonResponse(request,{error:"Imagen no encontrada"},404);
+        const mime = name.endsWith(".png")?"image/png":"image/jpeg";
+        if (object.httpMetadata?.contentType !== mime)
+          return jsonResponse(request,{error:"Formato inválido"},415);
+        return new Response(object.body,{
+          status:200,headers:responseHeaders(request,{
+            "Content-Type":mime,
+            "Content-Disposition":"inline",
+            "Cache-Control":"public, max-age=86400, immutable",
+            "X-Content-Type-Options":"nosniff"
+          })
+        });
+      }
       const photo = pathname.match(/^\/v1\/moments\/photos\/([0-9a-f-]{36})$/i);
       if (photo) {
         const record = await env.DB.prepare(
