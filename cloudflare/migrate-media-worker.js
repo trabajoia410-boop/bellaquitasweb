@@ -7,10 +7,7 @@ async function sha256(b){
  const digest=new Uint8Array(await crypto.subtle.digest("SHA-256",b));
  return Array.from(digest,x=>x.toString(16).padStart(2,"0")).join("");
 }
-export default {
- async fetch(){return new Response("Not found",{status:404});},
- async scheduled(_event,env,ctx){
-  ctx.waitUntil((async()=>{
+async function migrateAll(env){
    for(const file of files){
     const dest=await env.MEDIA.head(file.key);
     if(dest && dest.size===file.size){
@@ -37,6 +34,21 @@ export default {
       await env.DB.prepare("INSERT OR REPLACE INTO media_migration_log(storage_key,status,bytes,sha256,detail,updated_at) VALUES (?,'error',0,'',?,datetime('now'))").bind(file.key,String(e?.message||"error").slice(0,160)).run();
     }
    }
-  })());
- }
+}
+export default {
+ async fetch(request,env){
+  const url=new URL(request.url);
+  if(request.method!=="GET" || url.pathname!=="/_migration/run" ||
+     !env.MIGRATION_TOKEN || url.searchParams.get("token")!==env.MIGRATION_TOKEN){
+    return new Response("Not found",{status:404});
+  }
+  await migrateAll(env);
+  const result=await env.DB.prepare("SELECT status, COUNT(*) AS count FROM media_migration_log GROUP BY status").all();
+  return new Response(JSON.stringify({migration:result.results||[]}),{
+    status:200,headers:{"Content-Type":"application/json","Cache-Control":"no-store",
+      "X-Robots-Tag":"noindex, nofollow","Referrer-Policy":"no-referrer"}
+  });
+ },
+ async scheduled(_event,env,ctx){ctx.waitUntil(migrateAll(env));}
 };
+
