@@ -58,7 +58,9 @@ async function turnstile(env,request,token){
  const params=new URLSearchParams({secret:env.TURNSTILE_SECRET,response:token});
  const ip=request.headers.get("CF-Connecting-IP");if(ip)params.set("remoteip",ip);
  const r=await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify",{method:"POST",body:params});
- if(!r.ok)return false;const result=await r.json();return result.success===true;
+ if(!r.ok)return false;const result=await r.json();
+ const expected=(env.TURNSTILE_EXPECTED_HOSTNAME||new URL(env.PUBLIC_ORIGIN).hostname);
+ return result.success===true&&result.hostname===expected;
 }
 async function sendMail(env,to,subject,message){
  const response=await fetch("https://api.resend.com/emails",{
