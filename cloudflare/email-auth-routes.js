@@ -9,11 +9,13 @@ const unavailable=()=>json({error:"El acceso por correo no está activado todav�
 const bad=(message="Solicitud no válida",status=400)=>json({error:message},status);
 const ITERATIONS=600000;
 const emailLoginReady=env=>env.EMAIL_AUTH_ENABLED==="yes"&&typeof env.EMAIL_RATE_KEY==="string"&&env.EMAIL_RATE_KEY.length>=32;
-const emailSendingReady=env=>emailLoginReady(env)&&env.ALLOW_NEW_ACCOUNTS==="yes"&&
+// La alta por email se controla independientemente de las altas nuevas de Google.
+const emailDeliveryReady=env=>emailLoginReady(env)&&
   typeof env.RESEND_API_KEY==="string"&&env.RESEND_API_KEY.length>8&&
   typeof env.RESEND_FROM==="string"&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(env.RESEND_FROM)&&
   typeof env.TURNSTILE_SECRET==="string"&&env.TURNSTILE_SECRET.length>8&&
   typeof env.TURNSTILE_SITE_KEY==="string"&&env.TURNSTILE_SITE_KEY.length>8;
+const emailRegistrationReady=env=>emailDeliveryReady(env)&&env.EMAIL_REGISTRATION_ENABLED==="yes";
 const encode=bytes=>btoa(String.fromCharCode(...bytes)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
 function decode(value){if(typeof value!=="string"||!/^[A-Za-z0-9_-]{18,120}$/.test(value))throw Error("Malformed encoding");return Uint8Array.from(atob(value.replace(/-/g,"+").replace(/_/g,"/")),c=>c.charCodeAt(0));}
 const random=()=>{const b=new Uint8Array(32);crypto.getRandomValues(b);return encode(b);};
@@ -72,7 +74,7 @@ async function sendMail(env,to,subject,message){
 }
 const publicResponse={ok:true,message:"Si es posible continuar, recibirás instrucciones por correo."};
 async function registration(request,env,data){
- if(!emailSendingReady(env))return unavailable();
+ if(!emailRegistrationReady(env))return unavailable();
  const address=email(data.email),name=typeof data.name==="string"?data.name.trim():"";
  if(!address||name.length<2||name.length>80||!validPassword(data.password))return bad("Comprueba los datos y usa una contraseña de al menos 12 caracteres");
  if(!await checkRate(env,request,"register",address))return bad("Demasiados intentos. Prueba más tarde.",429);
@@ -92,7 +94,7 @@ async function registration(request,env,data){
  return json(publicResponse);
 }
 async function verify(request,env,data){
- if(!emailSendingReady(env))return unavailable();
+ if(!emailDeliveryReady(env))return unavailable();
  const token=data.token;
  if(typeof token!=="string"||!/^[A-Za-z0-9_-]{43}$/.test(token))return bad("Enlace inválido",400);
  const tokenHash=await sha256(token);
@@ -124,7 +126,7 @@ async function login(request,env,data){
  return json({authenticated:true},200,{"Set-Cookie":cookie});
 }
 async function forgot(request,env,data){
- if(!emailSendingReady(env))return unavailable();
+ if(!emailDeliveryReady(env))return unavailable();
  const address=email(data.email);if(!address)return bad("Introduce un correo válido");
  if(!await checkRate(env,request,"forgot",address))return bad("Demasiados intentos. Prueba más tarde.",429);
  if(!await turnstile(env,request,data.turnstileToken))return bad("Verificación anti-bot no superada",403);
@@ -143,7 +145,7 @@ async function forgot(request,env,data){
  return json(publicResponse);
 }
 async function reset(request,env,data){
- if(!emailSendingReady(env))return unavailable();
+ if(!emailDeliveryReady(env))return unavailable();
  if(typeof data.token!=="string"||!/^[A-Za-z0-9_-]{43}$/.test(data.token)||!validPassword(data.password))return bad("Enlace o contraseña inválidos");
  const tokenHash=await sha256(data.token);
  const pending=await env.DB.prepare(
@@ -161,7 +163,7 @@ export async function emailAuthRoute(request,env){
  const path=new URL(request.url).pathname;
  if(path==="/v1/auth/email/status"){
    if(request.method!=="GET")return bad("Método no permitido",405);
-   return json({login:emailLoginReady(env),registration:emailSendingReady(env),turnstileSiteKey:emailSendingReady(env)?env.TURNSTILE_SITE_KEY:null});
+   return json({login:emailLoginReady(env),registration:emailRegistrationReady(env),turnstileSiteKey:emailRegistrationReady(env)?env.TURNSTILE_SITE_KEY:null});
  }
  const routes={"/v1/auth/email/register":registration,"/v1/auth/email/verify":verify,
    "/v1/auth/email/login":login,"/v1/auth/email/forgot":forgot,"/v1/auth/email/reset":reset};
