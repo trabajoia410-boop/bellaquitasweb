@@ -39,3 +39,19 @@ const {response: cors} = await check("/health", 200, {
 });
 assert.equal(cors.headers.get("access-control-allow-origin"), "https://bellaquitas.fr");
 console.log("Todas las comprobaciones no destructivas han terminado correctamente.");
+
+const preview = await fetch(new URL("/preview", base), {redirect:"error"});
+assert.equal(preview.status,200);
+assert.match(preview.headers.get("content-type")||"",/text\/html/);
+assert.match(preview.headers.get("content-security-policy")||"",/script-src 'self'/);
+const previewHTML = await preview.text();
+assert.match(previewHTML,/\/preview\/app\.js/);
+console.log("✓ /preview — interfaz de acceso segura");
+const previewScript = await fetch(new URL("/preview/app.js", base));
+assert.equal(previewScript.status,200);
+assert.match(previewScript.headers.get("content-type")||"",/javascript/);
+assert.match(await previewScript.text(),/\/v1\/auth\/logout/);
+console.log("✓ /preview/app.js — sesión, perfil, cierre de sesión");
+await check("/v1/auth/me", 200);
+await check("/v1/auth/logout", 405);
+await check("/v1/auth/logout", 403, {method:"POST",headers:{"Content-Type":"application/json"},body:"{}"});
