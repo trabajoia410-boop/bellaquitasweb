@@ -92,3 +92,15 @@ de prueba, únicamente en D1 staging.
   Cloudflare Browser Rendering respondió 429 (limitación temporal),
   por lo que no se marca como confirmación de comportamiento HTTP.
 - Se mantiene la web pública GitHub Pages + Supabase sin alteraciones.
+
+## Pruebas unitarias con mocks (sin tráfico ni datos reales)
+Se ejecutaron rutas compiladas con objetos Response/URL simulados:
+- `GET /v1/auth/email/status`: HTTP 200, `login=false`,
+  `registration=false`, `turnstileSiteKey=null`.
+- `POST /v1/auth/email/register` sin credenciales/flags: HTTP 503
+  (operación **desactivada**).
+- `GET /v1/auth/email/login`: HTTP 405.
+- `GET /v1/door/members` y `GET /v1/admin/members`
+  sin identidad: HTTP 401 (lectura protegida).
+Estos son tests unitarios de los handlers, **no** validan de extremo a
+extremo el envío de emails ni la cámara móvil.
