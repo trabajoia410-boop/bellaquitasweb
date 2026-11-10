@@ -104,3 +104,22 @@ Se ejecutaron rutas compiladas con objetos Response/URL simulados:
   sin identidad: HTTP 401 (lectura protegida).
 Estos son tests unitarios de los handlers, **no** validan de extremo a
 extremo el envío de emails ni la cámara móvil.
+
+## Activación acotada de correo — 11/11/2026
+- Secretos en Worker: RESEND_API_KEY, EMAIL_RATE_KEY, TURNSTILE_SECRET,
+  GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET verificados por **nombre/tipo**; sin lectura de valores.
+- Turnstile widget configurado en el hostname exacto del Worker, modalidad managed.
+- Se ha separado EMAIL_REGISTRATION_ENABLED de ALLOW_NEW_ACCOUNTS:
+  las altas por correo de **pruebas** pueden abrirse sin abrir nuevas identidades Google.
+- Flags actuales: EMAIL_AUTH_ENABLED=yes, EMAIL_REGISTRATION_ENABLED=yes,
+  ALLOW_NEW_ACCOUNTS=no, STAGING_MUTATIONS=disabled.
+- Tests de handler con env simulado: registro se anuncia disponible cuando
+  las claves existen; sin secreto Turnstile se anuncia como deshabilitado;
+  GET en una ruta POST devuelve 405.
+- Renderizado real de /preview: campos de inicio y registro email visibles,
+  contenedor Turnstile y aviso de contraseña exclusiva para pruebas visibles.
+- Consulta D1 posterior al despliegue: 6 perfiles, 1.999.998 puntos,
+  0 visitas, 0 credenciales email, 0 tokens; ninguna escritura en esa consulta.
+- **Pendiente:** uso de un buzón de prueba con acceso para realizar el flujo
+  registro → entrega → confirmación → login → logout → recuperación, y prueba
+  de controles de abuso. No dar por completado todo el módulo todavía.
