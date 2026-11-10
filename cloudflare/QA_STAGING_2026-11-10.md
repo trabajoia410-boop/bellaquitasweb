@@ -156,3 +156,13 @@ extremo el envío de emails ni la cámara móvil.
   simulada al proveedor.
 - Pendiente que el usuario repita **una sola solicitud real** para
   verificar si Turnstile acepta el token y si Resend entrega el correo.
+
+## Reproducción y corrección de fallo de PBKDF2 (11/11/2026)
+- Tras corregir el bloqueo de intentos, el formulario mostraba `Servicio temporalmente no disponible` con Turnstile verde y cero tokens emitidos.
+- Reproducción real con petición de diagnóstico temporal al Worker: `NotSupportedError`, Cloudflare WebCrypto rechaza PBKDF2 con 600.000 iteraciones (máximo 100.000 por invocación). `node:crypto.pbkdf2` devuelve la misma excepción.
+- Prueba interna de seis derivaciones de 100.000 iteraciones, fase a fase: éxito, 32 bytes derivados.
+- Código del KDF actualizado a `pbkdf2-chain6-sha256-v1` **versionado** (no equivalente al PBKDF2 monolítico); pendiente revisión de seguridad antes de producción.
+- Prueba D1 sin datos reales: token ficticio insertado, consultado y eliminado correctamente. Estado final cero tokens.
+- Worker redeployado únicamente en staging, quitando por completo los endpoints temporales de diagnóstico.
+- Verificación posterior: página de registro visible, Turnstile y mensajes; 6 perfiles, 1.999.998 puntos, 0 visitas; cero credenciales email y cero tokens.
+- **Pendiente**: comprobar el nuevo formulario con un único intento real y confirmar correo recibido de Resend; no afirmar funcionamiento extremo a extremo todavía.
