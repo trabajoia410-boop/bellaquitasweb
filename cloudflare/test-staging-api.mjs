@@ -38,6 +38,20 @@ const {response: cors} = await check("/health", 200, {
   headers: {Origin: "https://bellaquitas.fr"}
 });
 assert.equal(cors.headers.get("access-control-allow-origin"), "https://bellaquitas.fr");
+
+const emailStatus = await check("/v1/auth/email/status");
+assert.equal(emailStatus.payload.login,false,"No activar login email sin configuración y pruebas");
+assert.equal(emailStatus.payload.registration,false,"No activar registro email sin correo y Turnstile");
+await check("/v1/auth/email/register",405);
+await check("/v1/auth/email/verify",405);
+for (const path of ["/preview/qr-local.js","/preview/jsqr-local.js","/preview/extras.js","/preview/email.js"]) {
+  const response = await fetch(new URL(path,base), {redirect:"error",signal:AbortSignal.timeout(10000)});
+  assert.equal(response.status,200, `${path} debe servirse desde el mismo origen`);
+  assert.match(response.headers.get("content-type")||"",/javascript/);
+  assert.equal(response.headers.get("x-content-type-options"),"nosniff");
+  console.log(`✓ ${path} — librería local cargable`);
+}
+
 console.log("Todas las comprobaciones no destructivas han terminado correctamente.");
 
 const preview = await fetch(new URL("/preview", base), {redirect:"error"});
