@@ -12,7 +12,8 @@ const emailLoginReady=env=>env.EMAIL_AUTH_ENABLED==="yes"&&typeof env.EMAIL_RATE
 const emailSendingReady=env=>emailLoginReady(env)&&env.ALLOW_NEW_ACCOUNTS==="yes"&&
   typeof env.RESEND_API_KEY==="string"&&env.RESEND_API_KEY.length>8&&
   typeof env.RESEND_FROM==="string"&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(env.RESEND_FROM)&&
-  typeof env.TURNSTILE_SECRET==="string"&&env.TURNSTILE_SECRET.length>8;
+  typeof env.TURNSTILE_SECRET==="string"&&env.TURNSTILE_SECRET.length>8&&
+  typeof env.TURNSTILE_SITE_KEY==="string"&&env.TURNSTILE_SITE_KEY.length>8;
 const encode=bytes=>btoa(String.fromCharCode(...bytes)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
 function decode(value){if(typeof value!=="string"||!/^[A-Za-z0-9_-]{18,120}$/.test(value))throw Error("Malformed encoding");return Uint8Array.from(atob(value.replace(/-/g,"+").replace(/_/g,"/")),c=>c.charCodeAt(0));}
 const random=()=>{const b=new Uint8Array(32);crypto.getRandomValues(b);return encode(b);};
@@ -160,7 +161,7 @@ export async function emailAuthRoute(request,env){
  const path=new URL(request.url).pathname;
  if(path==="/v1/auth/email/status"){
    if(request.method!=="GET")return bad("Método no permitido",405);
-   return json({login:emailLoginReady(env),registration:emailSendingReady(env)});
+   return json({login:emailLoginReady(env),registration:emailSendingReady(env),turnstileSiteKey:emailSendingReady(env)?env.TURNSTILE_SITE_KEY:null});
  }
  const routes={"/v1/auth/email/register":registration,"/v1/auth/email/verify":verify,
    "/v1/auth/email/login":login,"/v1/auth/email/forgot":forgot,"/v1/auth/email/reset":reset};
