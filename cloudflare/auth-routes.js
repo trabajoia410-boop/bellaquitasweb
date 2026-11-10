@@ -82,6 +82,14 @@ function clearCookie() {
 function sessionCookie(value) {
   return COOKIE+"="+value+"; Path=/; Max-Age="+SESSION_SECONDS+"; Secure; HttpOnly; SameSite=Lax";
 }
+// Solo lo utiliza el Worker tras verificar una credencial de identidad.
+export async function createAuthSession(profileId,env) {
+  if(typeof profileId!=="string"||!/^[a-f0-9-]{36}$/i.test(profileId))throw Error("Invalid profile identifier");
+  const raw=token(),hash=await digest(raw);
+  await env.DB.prepare("INSERT INTO auth_sessions(token_hash,profile_id,expires_at) VALUES (?,?,unixepoch()+?)")
+    .bind(hash,profileId,SESSION_SECONDS).run();
+  return sessionCookie(raw);
+}
 export async function authenticatedProfile(request,env) {
   const secret=readCookie(request,COOKIE);
   if(!/^[A-Za-z0-9_-]{43}$/.test(secret))return null;
