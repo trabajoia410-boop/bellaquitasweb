@@ -1,5 +1,5 @@
 # Bellaquitas Fest — seguimiento de migración a Cloudflare
-**Actualizado:** 10 de noviembre de 2026.
+**Actualizado:** 11 de noviembre de 2026.
 
 ## Completado y verificado
 - [x] Cloudflare conectado a ChatGPT.
@@ -24,7 +24,7 @@
 ## Bloqueos antes de cambiar la web real
 - [x] Añadidos `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET` como secretos de Cloudflare; callback autorizado en Google Cloud Console.
 - [~] Inicio Google, perfil admin y sesión persistente comprobados por el usuario. Cierre de sesión autenticado confirmado mediante capturas del estado antes y después; quedan por probar otras cuentas y dispositivos.
-- [~] Rutas y formularios email/contraseña implementados en staging y tablas D1 aplicadas; desactivados hasta configurar Resend Free + Turnstile, verificar correo y hacer QA. Cuentas anteriores solo Google.
+- [~] Rutas y formularios email/contraseña habilitados SOLO en staging; Resend/Turnstile verificados y secretos enlazados. Falta registro real ficticio extremo a extremo, email entregado desde Worker, login/reset y QA móvil. Cuentas anteriores siguen usando Google.
 - [ ] Activar y probar escrituras en staging usando perfiles de pruebas, nunca datos reales.
 - [~] Añadida y desplegada la interfaz de pruebas del mismo origen en `/preview` con perfil, eventos, login y logout. Pendiente adaptar `app.js` completo y sesiones de primera parte bajo `bellaquitas.fr`.
 - [ ] Preparar DNS Cloudflare y Workers Route `bellaquitas.fr/v1/*` sin afectar GitHub Pages hasta el corte.
@@ -53,7 +53,7 @@
 - [x] Despliegue de nuevo Worker sin perder bindings ni secretos existentes.
 - [x] Página de pruebas verificada mediante renderizado remoto: módulos QR/email presentes, eventos visibles y sesión anónima sin errores.
 - [ ] Comprobar lectura QR real en iPhone/Samsung (requiere dispositivo físico).
-- [ ] Configurar Resend/Turnstile y verificar los endpoints email con cuentas ficticias, antes de activar altas.
+- [~] Resend/Turnstile configurados; formularios email activados en staging con banderas independientes. Pendiente prueba de cuenta ficticia con correo real y cierre de sesión.
 - [ ] Adaptar el `app.js` de producción y todas las funcionalidades al API Cloudflare.
 
 **Importante:** estas pruebas no equivalen a una migración completa de la web real.
@@ -64,3 +64,13 @@
 - [x] Estado HTTP real `/v1/auth/email/status`: `login=false`, `registration=false` (fail-closed).
 - [x] Datos D1 sin cambios: 6 perfiles, 1.999.998 puntos y 0 visitas. Sin altas email.
 - [ ] Envío y recepción de correo y alta ficticia de prueba, con protección anti-bot y monitorización; no activar altas públicas antes.
+
+## Activación restringida de email, 11/11/2026
+- [x] Resend tiene dominio verificado; Widget Turnstile autorizado para hostname staging.
+- [x] Resend, Turnstile y clave de limitación de intentos permanecen en secretos Cloudflare.
+- [x] `EMAIL_AUTH_ENABLED=yes`, `EMAIL_REGISTRATION_ENABLED=yes` habilitados únicamente en Worker staging.
+- [x] `ALLOW_NEW_ACCOUNTS=no` mantiene cerradas nuevas identidades Google.
+- [x] `STAGING_MUTATIONS=disabled`: visitas y puntos continúan bloqueados.
+- [x] En navegador remoto: formularios de correo visibles, advertencia «solo pruebas» visible.
+- [x] D1 comparada: 6 perfiles, 1.999.998 puntos, 0 visitas, cero credenciales email, cero tokens pendientes.
+- [ ] Confirmar envío de email **desde el Worker** con buzón de prueba autorizado y verificar el resto del flujo de alta y recuperación.
