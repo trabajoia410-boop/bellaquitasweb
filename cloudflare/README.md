@@ -36,3 +36,25 @@ de frecuencia y transacciones atómicas.
 
 El origen `app.js` de la web oficial no depende de este Worker hasta el
 cambio de backend. No agregar credenciales o secretos al repositorio.
+
+## Despliegue verificado por API de Cloudflare (10-11-2026)
+
+- Worker: `bellaquitas-api-staging`
+- Dirección: `https://bellaquitas-api-staging.bellaquitas-fest-410.workers.dev`
+- Binding D1: `DB` -> `bellaquitas-staging`.
+- Binding R2: `MEDIA` -> `bellaquitas-media-staging`.
+- `workers.dev` habilitado, previews desactivadas.
+- Versión desplegada al 100 %, según consulta de despliegues de Cloudflare.
+- El dominio público de R2 (`r2.dev`) está **deshabilitado**, sin dominios personalizados.
+- Esquema exacto versionado en `migrations/0001-schema.sql`.
+- Copia de catálogo público realizada: 1 evento, 1 configuración de sitio.
+  Sin miembros, puntos ni visitas en la base de pruebas.
+- La base original contiene 3 imágenes de logos en Storage que aún deben
+  copiarse a R2 antes de cambiar referencias de archivo.
+- Pruebas HTTP no destructivas disponibles con `node cloudflare/test-staging-api.mjs`.
+  El acceso directo desde el entorno de conexión no ha podido verificarse;
+  la API de Cloudflare sí confirma el despliegue y los bindings.
+
+**Pendiente crítico**: elegir e implementar autenticación de usuarios
+(correo/contraseña y Google), sesiones y permisos en Workers/D1; verificar
+la migración de cuentas y sus datos antes de cualquier cambio de producción.
