@@ -57,3 +57,10 @@
 - [ ] Adaptar el `app.js` de producción y todas las funcionalidades al API Cloudflare.
 
 **Importante:** estas pruebas no equivalen a una migración completa de la web real.
+
+## Validación secretos de correo (11/11/2026)
+- [x] `RESEND_API_KEY` y `EMAIL_RATE_KEY` guardados por el usuario y verificados en el Worker staging.
+- [x] `TURNSTILE_SECRET` y claves Google conservadas; D1/R2 vinculados.
+- [x] Estado HTTP real `/v1/auth/email/status`: `login=false`, `registration=false` (fail-closed).
+- [x] Datos D1 sin cambios: 6 perfiles, 1.999.998 puntos y 0 visitas. Sin altas email.
+- [ ] Envío y recepción de correo y alta ficticia de prueba, con protección anti-bot y monitorización; no activar altas públicas antes.
