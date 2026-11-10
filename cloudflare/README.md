@@ -37,31 +37,50 @@ producción a Cloudflare antes de validar Google, correo/contraseña y permisos.
   desde Supabase a R2 (sin endpoints HTTP, ejecución programada de una sola
   operación lógica). Detener los Cron Triggers tras verificar resultado.
 
-## Antes de poder iniciar sesión en Cloudflare
+## Estado del acceso y de la interfaz de pruebas (10/11/2026)
 
-Google OAuth está **desactivado por falta de credenciales**. En Google Cloud
-Console, crear o reutilizar un OAuth Client de tipo *Aplicación web*, añadir
-esta URL de redirección:
+El cliente OAuth de Google ya tiene `GOOGLE_CLIENT_ID` y
+`GOOGLE_CLIENT_SECRET` como secretos del Worker. El usuario ha confirmado
+el inicio de sesión, el rol de administrador, la persistencia y el cierre
+de sesión mediante capturas del mismo navegador.
 
-`https://bellaquitas-api-staging.bellaquitas-fest-410.workers.dev/v1/auth/google/callback`
+La nueva pantalla de pruebas está disponible en:
+`https://bellaquitas-api-staging.bellaquitas-fest-410.workers.dev/preview`
 
-Guardar de forma **secreta** en el Worker:
-- `GOOGLE_CLIENT_ID` (Client ID).
-- `GOOGLE_CLIENT_SECRET` (Client Secret).
+Incluye:
+- Inicio y cierre de sesión con Google con cookies del mismo origen.
+- Perfil de socio y QR personal generado de manera local, con opción ampliar.
+- Lector de cámara para puerta con biblioteca `jsQR` local como alternativa
+  a las API nativas, orientado a Safari/iPhone y Android.
+- **Control de puerta de solo lectura**: consulta de códigos autorizada
+  a personal de puerta y administrador, sin registrar visitas.
+- Movimientos propios, resumen de administrador solo lectura,
+  catálogo público de eventos, selector ES/FR.
+- Formularios opcionales de correo/contraseña **ocultos y desactivados**.
 
-**No poner secretos en GitHub, en config.js ni en este chat.**
+### Correo y contraseña
 
-Las seis cuentas existentes usan Google; ninguna tiene contraseña almacenada
-en Supabase. Para ofrecer email/contraseña a NUEVOS socios hay que integrar
-un proveedor de correo, verificación de email y recuperación segura de
-contraseñas, con limitación de intentos.
+La migración `0006-email-auth.sql` ya creó tablas privadas vacías de
+credenciales y tokens en Cloudflare D1 staging; el código contiene rutas
+de registro, verificación, login, recuperación y reset. NO están activas.
+Se necesitan un proveedor de correo transaccional (Resend gratuito es
+una alternativa), su remitente verificado, Cloudflare Turnstile y una
+prueba integral con cuentas ficticias. Véase `EMAIL_AUTH_PLAN.md`.
 
-La aplicación que usa cookies de sesión necesita compartir ORIGEN con el
-backend. Mientras la web se sirve desde GitHub Pages, no se pueden
-habilitar sesiones de producción en `workers.dev` confiando en cookies
-de terceros (Safari y otros las bloquean). La migración definitiva deberá
-servir la web y la API desde el mismo sitio, o asegurar una integración de
-sesión de primera parte bajo `bellaquitas.fr`.
+Estado de seguridad: `ALLOW_NEW_ACCOUNTS=no`, `STAGING_MUTATIONS=disabled`;
+las operaciones de fidelización no pueden escribirse desde el Worker.
+
+### Pruebas del QR
+
+Generación y decodificación sintética comprobadas con el mismo
+`MBR-` de prueba. Se necesita comprobación presencial en iPhone y
+Android para cámara, permisos y lectura física real.
+
+**No se ha adaptado aún el `app.js` de la web pública**. Esta página
+es una interfaz auxiliar de staging, no la sustitución de la portada
+actual. `bellaquitas.fr` sigue en GitHub Pages + Supabase. Conservar
+producción intacta hasta validar autenticación por correo, el QR en
+dispositivo real, operaciones de roles, copias y corte reversible.
 
 ## No cambiar producción antes de
 
