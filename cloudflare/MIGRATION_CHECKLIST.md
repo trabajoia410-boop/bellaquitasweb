@@ -24,11 +24,11 @@
 ## Bloqueos antes de cambiar la web real
 - [x] Añadidos `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET` como secretos de Cloudflare; callback autorizado en Google Cloud Console.
 - [~] Inicio Google, perfil admin y sesión persistente comprobados por el usuario. Cierre de sesión autenticado confirmado mediante capturas del estado antes y después; quedan por probar otras cuentas y dispositivos.
-- [~] Diseñado el plan de alta segura en `EMAIL_AUTH_PLAN.md`. No activar sin envío de correo/verificación/recuperación (las 6 cuentas existentes solo usan Google).
+- [~] Rutas y formularios email/contraseña implementados en staging y tablas D1 aplicadas; desactivados hasta configurar Resend Free + Turnstile, verificar correo y hacer QA. Cuentas anteriores solo Google.
 - [ ] Activar y probar escrituras en staging usando perfiles de pruebas, nunca datos reales.
 - [~] Añadida y desplegada la interfaz de pruebas del mismo origen en `/preview` con perfil, eventos, login y logout. Pendiente adaptar `app.js` completo y sesiones de primera parte bajo `bellaquitas.fr`.
 - [ ] Preparar DNS Cloudflare y Workers Route `bellaquitas.fr/v1/*` sin afectar GitHub Pages hasta el corte.
-- [ ] Probar cámara QR en iPhone y Android, canje, corrección de puntos, edición admin y galerías.
+- [~] QR personal, lector de cámara con jsQR local y consulta de puerta/admin de solo lectura desplegados en `/preview`. Pendientes pruebas reales en iPhone/Android y operaciones de escritura con perfiles ficticios, canjes y galerías.
 - [ ] Preparar backup de producción y exportación diferencial final; repetir reconciliación de datos.
 - [ ] Realizar cambio gradual y reversible de backend, dominio/OAuth, seguimiento y recuperación.
 - [ ] Retirar Supabase solo cuando la web nueva esté 100 % verificada.
@@ -44,3 +44,16 @@
 - El usuario compartió capturas de `/preview` con sesión autenticada (perfil y rol admin visibles) y, tras pulsar cerrar sesión, `Sesión cerrada correctamente` con botón `Continuar con Google`. Test manual de cierre de sesión completado para esa cuenta/navegador; no implica cobertura de otros roles o dispositivos.
 - Cambios aislados en la rama `cloudflare-preview-login-20261110` y en el Worker **staging**.
 
+
+## Fase adicional: QR y correo (10/11/2026)
+- [x] `/preview` incluye QR de socio, pantalla ampliada, movimientos y consulta de puerta/admin.
+- [x] Cámara en modo prueba con jsQR local para Safari/iPhone y lectura manual alternativa, sin llamadas al endpoint de registro de visitas.
+- [x] Migración `0006-email-auth.sql` aplicada SOLO en D1 staging: credenciales 0, tokens 0; perfiles 6, puntos 1.999.998, visitas 0.
+- [x] Código de rutas email creado (registro, confirmación, login, recuperación, reset), con PBKDF2/Turnstile/límites; acceso desactivado por defecto y formulario oculto.
+- [x] Despliegue de nuevo Worker sin perder bindings ni secretos existentes.
+- [x] Página de pruebas verificada mediante renderizado remoto: módulos QR/email presentes, eventos visibles y sesión anónima sin errores.
+- [ ] Comprobar lectura QR real en iPhone/Samsung (requiere dispositivo físico).
+- [ ] Configurar Resend/Turnstile y verificar los endpoints email con cuentas ficticias, antes de activar altas.
+- [ ] Adaptar el `app.js` de producción y todas las funcionalidades al API Cloudflare.
+
+**Importante:** estas pruebas no equivalen a una migración completa de la web real.
