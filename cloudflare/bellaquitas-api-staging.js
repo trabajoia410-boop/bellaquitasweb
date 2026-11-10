@@ -1,3 +1,5 @@
+import {authRoute} from "./auth-routes.js";
+import {protectedRoute} from "./protected-routes.js";
 /**
  * Bellaquitas Fest — API de lectura para entorno de pruebas en Cloudflare.
  * No usar para gestionar usuarios, puntos, visitas ni permisos.
@@ -51,11 +53,15 @@ export default {
     if (request.method === "OPTIONS") {
       return new Response(null, {status: 204, headers: responseHeaders(request)});
     }
-    if (request.method !== "GET") {
-      return jsonResponse(request, {error: "Método no permitido"}, 405);
-    }
-    const {pathname} = new URL(request.url);
     try {
+      const authResponse = await authRoute(request, env);
+      if (authResponse) return authResponse;
+      const protectedResponse = await protectedRoute(request, env);
+      if (protectedResponse) return protectedResponse;
+      if (request.method !== "GET") {
+        return jsonResponse(request, {error: "Método no permitido"}, 405);
+      }
+      const {pathname} = new URL(request.url);
       if (pathname === "/health") {
         const record = await env.DB.prepare("SELECT 1 AS ok").first();
         return jsonResponse(request, {
