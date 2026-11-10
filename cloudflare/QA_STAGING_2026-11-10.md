@@ -66,3 +66,29 @@ de prueba, únicamente en D1 staging.
   y subdominio. No queda tarea de copia recurrente.
 - ✅ GET /v1/auth/me: HTTP 200 y authenticated=false para visitante
   no autenticado. No se revela información del socio sin sesión.
+
+## Nueva fase: interfaz, QR y correo
+
+- Verificación visual del usuario: Google login correcto con rol admin,
+  persistencia en navegador y botón «Cerrar sesión» devuelve a acceso Google.
+- `/preview` desplegada con QR personal, movimientos, modo puerta
+  solo lectura, resumen de administración y ES/FR.
+- Librerías QR y jsQR servidas desde el Worker staging por el mismo origen;
+  no se depende de servicios externos para dibujar o decodificar el QR.
+- Prueba automática sintética de la lógica: la librería crea SVG para
+  `MBR-TESTABC123`; convertido en imagen, jsQR recupera
+  exactamente `MBR-TESTABC123`. **No es una prueba de cámara física**.
+- Migración D1 `0006-email-auth.sql` aplicada sin modificar cuentas:
+  tablas de credenciales y tokens vacías, 6 perfiles, 1.999.998 puntos
+  y 0 visitas mantenidos.
+- Módulo de email desplegado (registro, verificación, acceso, olvido,
+  restablecimiento), pero `EMAIL_AUTH_ENABLED` ausente;
+  `ALLOW_NEW_ACCOUNTS=no` y `STAGING_MUTATIONS=disabled`.
+- La interfaz y el endpoint de estado se han incluido en el Worker;
+  los formularios email permanecen ocultos hasta añadir todos los secretos
+  y la configuración. La última prueba de renderizado confirma el DOM con
+  `emailTools` oculto y visita anónima.
+- Prueba HTTP adicional del endpoint `/v1/auth/email/status` pendiente:
+  Cloudflare Browser Rendering respondió 429 (limitación temporal),
+  por lo que no se marca como confirmación de comportamiento HTTP.
+- Se mantiene la web pública GitHub Pages + Supabase sin alteraciones.
