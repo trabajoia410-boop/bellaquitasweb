@@ -53,3 +53,16 @@ de prueba, únicamente en D1 staging.
 - Copia verificada de los tres logos de Supabase Storage a R2.
 - Pruebas HTTP completas, navegador móvil, perfil administrador y QR.
 - Reconciliación final de datos tras congelar escrituras antes del corte.
+
+## Transferencia de archivos y limpieza
+- ✅ Copiados los 3 logos originales a R2, con 1.939.302 bytes en total.
+- ✅ Tamaños individuales verificados: 904.603 + 130.096 + 904.603.
+- ✅ SHA-256 registrado para cada archivo (64 caracteres hexadecimales).
+- ✅ GET /v1/assets/logos/705cc152-5de2-407a-a880-1e78ca4b30ea.png:
+  HTTP 200, content-type image/png (navegador remoto Cloudflare).
+- ✅ D1 site_content y site_drafts reescritos a /v1/assets/logos/;
+  JSON válido conservado.
+- ✅ Worker temporal de migración borrado tras desactivar cron
+  y subdominio. No queda tarea de copia recurrente.
+- ✅ GET /v1/auth/me: HTTP 200 y authenticated=false para visitante
+  no autenticado. No se revela información del socio sin sesión.
