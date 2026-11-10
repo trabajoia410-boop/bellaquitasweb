@@ -28,15 +28,35 @@ async function parseJson(request){
  const raw=await request.text();if(raw.length>2048)throw Error("Large");
  const data=JSON.parse(raw);if(!data||typeof data!=="object"||Array.isArray(data))throw Error("JSON");return data;
 }
+// v1: six sequential PBKDF2-HMAC-SHA256 phases of 100,000 iterations.
+// Cloudflare Workers WebCrypto rejects individual PBKDF2 calls above 100,000.
+// The stored scheme prefix prevents treating a chained digest as standard PBKDF2.
+// This stays staging-only pending independent security review.
+const HASH_SCHEME="pbkdf2-chain6-sha256-v1$";
 async function passwordHash(password,salt,iterations=ITERATIONS){
- if(!validPassword(password)||!Number.isSafeInteger(iterations)||iterations<600000||iterations>1200000)throw Error("Invalid credentials");
- const key=await crypto.subtle.importKey("raw",new TextEncoder().encode(password),"PBKDF2",false,["deriveBits"]);
- return encode(new Uint8Array(await crypto.subtle.deriveBits({name:"PBKDF2",salt:decode(salt),iterations,hash:"SHA-256"},key,256)));
+ if(!validPassword(password)||iterations!==600000)throw Error("Invalid password parameters");
+ const baseSalt=decode(salt);
+ if(baseSalt.length!==32)throw Error("Invalid salt");
+ let material=new TextEncoder().encode(password);
+ for(let phase=0;phase<6;phase++){
+   const phaseSalt=new Uint8Array(baseSalt.length+1);
+   phaseSalt.set(baseSalt);
+   phaseSalt[baseSalt.length]=phase;
+   const key=await crypto.subtle.importKey("raw",material,"PBKDF2",false,["deriveBits"]);
+   material=new Uint8Array(await crypto.subtle.deriveBits(
+     {name:"PBKDF2",salt:phaseSalt,iterations:100000,hash:"SHA-256"},key,256));
+ }
+ return HASH_SCHEME+encode(material);
 }
 function constantMatch(first,second){
- const a=decode(first),b=decode(second);let diff=a.length^b.length;for(let i=0;i<Math.max(a.length,b.length);i++)diff|=(a[i]||0)^(b[i]||0);return diff===0;
+ if(typeof first!=="string"||typeof second!=="string"||
+   !first.startsWith(HASH_SCHEME)||!second.startsWith(HASH_SCHEME))return false;
+ const a=decode(first.slice(HASH_SCHEME.length));
+ const b=decode(second.slice(HASH_SCHEME.length));
+ let diff=a.length^b.length;
+ for(let i=0;i<Math.max(a.length,b.length);i++)diff|=(a[i]||0)^(b[i]||0);
+ return diff===0;
 }
-// Registrar solo solicitudes autenticadas por Turnstile en las cuotas de envío.
 async function limit(env,request,scope,identifier,byEmail=false){
  const ip=request.headers.get("CF-Connecting-IP")||"unknown";
  const keyText=byEmail?"email:"+identifier:"ip:"+ip;
