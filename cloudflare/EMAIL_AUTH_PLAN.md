@@ -87,9 +87,8 @@ y https://developers.cloudflare.com/workers/runtime-apis/web-crypto/
 
 - Resend: dominio `bellaquitas.fr` **verified** en región `eu-west-1`, envío habilitado.
 - Resend: creada API key de permiso **sending_access**, restringida a
-  `bellaquitas.fr`. **PENDIENTE guardarla manualmente como `RESEND_API_KEY`
-  en Cloudflare**. La transferencia automática de credenciales entre
-  conectores fue bloqueada por controles de seguridad. Nunca copiar la
+  `bellaquitas.fr`. **GUARDADA por el usuario** como secreto `RESEND_API_KEY`
+  en Cloudflare; su presencia fue verificada sin consultar el valor. Nunca copiar la
   clave a GitHub, capturas o archivos del repositorio.
 - Cloudflare Turnstile: widget **Bellaquitas Fest - registro staging**
   creado para el hostname staging y clave secreta instalada como
@@ -98,9 +97,21 @@ y https://developers.cloudflare.com/workers/runtime-apis/web-crypto/
   y remitente `RESEND_FROM=no-reply@bellaquitas.fr` configurados.
 - `EMAIL_AUTH_ENABLED=no`, `ALLOW_NEW_ACCOUNTS=no` y
   `STAGING_MUTATIONS=disabled`: permanecen **desactivados**.
-- **PENDIENTE**: secreto independiente aleatorio `EMAIL_RATE_KEY` en
-  Cloudflare (no se pudo guardar automáticamente por controles de seguridad).
+- **GUARDADO por el usuario**: secreto independiente `EMAIL_RATE_KEY` en
+  Cloudflare. Se verificó su presencia sin mostrar el valor.
 - **NO activar** registro ni contraseñas antes de comprobar
   `RESEND_API_KEY` y `EMAIL_RATE_KEY` instalados, entrega efectiva
   de correo, protección Turnstile y QA con identidades ficticias.
 - No se han modificado cuentas, visitas o puntos reales.
+
+## Control después de guardar los secretos (11/11/2026)
+- Se comprobó en Cloudflare la presencia de los cinco secretos:
+  `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `RESEND_API_KEY`,
+  `EMAIL_RATE_KEY` y `TURNSTILE_SECRET`. No se leyeron sus valores.
+- Petición pública de solo lectura a `/v1/auth/email/status` respondía
+  `login:false`, `registration:false`, `turnstileSiteKey:null`: protección cerrada correcta.
+- D1: 6 perfiles, 1.999.998 puntos, 0 visitas; 0 cuentas por email, 0 tokens pendientes.
+- No se han activado `EMAIL_AUTH_ENABLED` ni `ALLOW_NEW_ACCOUNTS`;
+  la web pública continúa sin cambios.
+- **Prueba de envío aún pendiente**: se necesita un remitente autorizado y un destino de prueba
+  para ejecutar una prueba real a través del Worker/Resend. No debe usarse un correo real sin indicar el destinatario.
