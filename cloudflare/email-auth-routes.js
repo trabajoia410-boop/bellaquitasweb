@@ -36,25 +36,50 @@ async function passwordHash(password,salt,iterations=ITERATIONS){
 function constantMatch(first,second){
  const a=decode(first),b=decode(second);let diff=a.length^b.length;for(let i=0;i<Math.max(a.length,b.length);i++)diff|=(a[i]||0)^(b[i]||0);return diff===0;
 }
+// Registrar solo solicitudes autenticadas por Turnstile en las cuotas de envío.
 async function limit(env,request,scope,identifier,byEmail=false){
  const ip=request.headers.get("CF-Connecting-IP")||"unknown";
  const keyText=byEmail?"email:"+identifier:"ip:"+ip;
  const hmac=await crypto.subtle.importKey("raw",new TextEncoder().encode(env.EMAIL_RATE_KEY),{name:"HMAC",hash:"SHA-256"},false,["sign"]);
  const key=encode(new Uint8Array(await crypto.subtle.sign("HMAC",hmac,new TextEncoder().encode(scope+":"+keyText))));
- const duration=scope==="login"?900:3600,maximum=byEmail?(scope==="login"?8:3):(scope==="login"?25:12);
+ const duration=scope==="login"?900:3600;
+ const maximum=scope==="login"?(byEmail?8:25):
+   scope==="captcha-failed"?20:(byEmail?5:20);
  const row=await env.DB.prepare(
   "INSERT INTO auth_email_rate_limits(key_hash,attempts,expires_at) VALUES (?,1,unixepoch()+?) "+
   "ON CONFLICT(key_hash) DO UPDATE SET "+
   "attempts=CASE WHEN expires_at<=unixepoch() THEN 1 ELSE attempts+1 END,"+
   "expires_at=CASE WHEN expires_at<=unixepoch() THEN unixepoch()+? ELSE expires_at END "+
-  "RETURNING attempts"
+  "RETURNING attempts,MAX(0,expires_at-unixepoch()) AS retry_seconds"
  ).bind(key,duration,duration).first();
- return row&&row.attempts<=maximum;
+ return {allowed:!!row&&row.attempts<=maximum,
+   retrySeconds:Math.max(1,Number(row?.retry_seconds)||duration)};
 }
 async function checkRate(env,request,scope,address){
- const ipOk=await limit(env,request,scope,"",false);
- const addrOk=await limit(env,request,scope,address,true);
- return ipOk&&addrOk;
+ const ip=await limit(env,request,scope,"",false);
+ if(!ip.allowed)return ip;
+ return await limit(env,request,scope,address,true);
+}
+const rateRejected=result=>json({
+  error:"Demasiados intentos. Vuelve a intentarlo dentro de "+Math.ceil(result.retrySeconds/60)+" minutos.",
+  retry_after_seconds:result.retrySeconds
+},429,{"Retry-After":String(result.retrySeconds)});
+async function checkCaptchaAndRate(request,env,data,scope,address){
+ const ip=request.headers.get("CF-Connecting-IP")||"unknown";
+ // Bloquear abusos de la verificación sin gastar intentos de registro de socios.
+ const hmac=await crypto.subtle.importKey("raw",new TextEncoder().encode(env.EMAIL_RATE_KEY),{name:"HMAC",hash:"SHA-256"},false,["sign"]);
+ const key=encode(new Uint8Array(await crypto.subtle.sign("HMAC",hmac,new TextEncoder().encode("captcha-failed:ip:"+ip))));
+ const penalty=await env.DB.prepare(
+  "SELECT attempts,MAX(0,expires_at-unixepoch()) AS retry_seconds FROM auth_email_rate_limits WHERE key_hash=?"
+ ).bind(key).first();
+ if(penalty&&Number(penalty.attempts)>=20&&Number(penalty.retry_seconds)>0)
+   return rateRejected({retrySeconds:Number(penalty.retry_seconds)});
+ if(!await turnstile(env,request,data.turnstileToken)){
+   await limit(env,request,"captcha-failed","",false);
+   return bad("No se pudo validar Turnstile. Actualiza la página y vuelve a completar la verificación.",403);
+ }
+ const quota=await checkRate(env,request,scope,address);
+ return quota.allowed?null:rateRejected(quota);
 }
 async function turnstile(env,request,token){
  if(typeof token!=="string"||token.length<10||token.length>2048)return false;
@@ -70,6 +95,7 @@ async function sendMail(env,to,subject,message){
    method:"POST",headers:{Authorization:"Bearer "+env.RESEND_API_KEY,"Content-Type":"application/json"},
    body:JSON.stringify({from:env.RESEND_FROM,to:[to],subject,text:message})
  });
+ if(!response.ok)console.error("Resend rejected mail with HTTP",response.status);
  return response.ok;
 }
 const publicResponse={ok:true,message:"Si es posible continuar, recibirás instrucciones por correo."};
@@ -77,8 +103,8 @@ async function registration(request,env,data){
  if(!emailRegistrationReady(env))return unavailable();
  const address=email(data.email),name=typeof data.name==="string"?data.name.trim():"";
  if(!address||name.length<2||name.length>80||!validPassword(data.password))return bad("Comprueba los datos y usa una contraseña de al menos 12 caracteres");
- if(!await checkRate(env,request,"register",address))return bad("Demasiados intentos. Prueba más tarde.",429);
- if(!await turnstile(env,request,data.turnstileToken))return bad("Verificación anti-bot no superada",403);
+ const rejected=await checkCaptchaAndRate(request,env,data,"register",address);
+ if(rejected)return rejected;
  const existing=await env.DB.prepare("SELECT profile_id FROM auth_email_credentials WHERE email=?").bind(address).first();
  if(existing)return json(publicResponse);
  const salt=random(),hash=await passwordHash(data.password,salt),rawToken=random(),tokenHash=await sha256(rawToken);
@@ -90,7 +116,11 @@ async function registration(request,env,data){
  const target=(env.PUBLIC_ORIGIN||new URL(request.url).origin).replace(/\/+$/,"")+"/preview#verify="+rawToken;
  const sent=await sendMail(env,address,"Confirma tu cuenta Bellaquitas Fest",
    "Para confirmar tu correo, abre este enlace antes de 30 minutos:\n"+target+"\nSi no has solicitado una cuenta, ignora este mensaje.");
- if(!sent){console.error("Email provider failed to send verification");return bad("Servicio de correo no disponible",503);}
+ if(!sent){
+   await env.DB.prepare("DELETE FROM auth_email_tokens WHERE token_hash=?").bind(tokenHash).run();
+   console.error("Email provider failed to send verification");
+   return bad("No se ha podido enviar el correo. Inténtalo de nuevo más tarde.",503);
+ }
  return json(publicResponse);
 }
 async function verify(request,env,data){
@@ -116,7 +146,8 @@ async function login(request,env,data){
  if(!emailLoginReady(env))return unavailable();
  const address=email(data.email);
  if(!address||!validPassword(data.password))return bad("Correo o contraseña incorrectos",401);
- if(!await checkRate(env,request,"login",address))return bad("Demasiados intentos. Prueba más tarde.",429);
+ const quota=await checkRate(env,request,"login",address);
+ if(!quota.allowed)return rateRejected(quota);
  const record=await env.DB.prepare("SELECT email,profile_id,password_hash,password_salt,password_iterations FROM auth_email_credentials WHERE email=? AND verified_at>0").bind(address).first();
  if(!record)return bad("Correo o contraseña incorrectos",401);
  let valid=false;
@@ -128,8 +159,8 @@ async function login(request,env,data){
 async function forgot(request,env,data){
  if(!emailDeliveryReady(env))return unavailable();
  const address=email(data.email);if(!address)return bad("Introduce un correo válido");
- if(!await checkRate(env,request,"forgot",address))return bad("Demasiados intentos. Prueba más tarde.",429);
- if(!await turnstile(env,request,data.turnstileToken))return bad("Verificación anti-bot no superada",403);
+ const rejected=await checkCaptchaAndRate(request,env,data,"forgot",address);
+ if(rejected)return rejected;
  const existing=await env.DB.prepare("SELECT profile_id FROM auth_email_credentials WHERE email=?").bind(address).first();
  if(existing){
    const rawToken=random(),tokenHash=await sha256(rawToken);
