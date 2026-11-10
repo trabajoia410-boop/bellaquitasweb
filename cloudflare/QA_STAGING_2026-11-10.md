@@ -123,3 +123,36 @@ extremo el envío de emails ni la cámara móvil.
 - **Pendiente:** uso de un buzón de prueba con acceso para realizar el flujo
   registro → entrega → confirmación → login → logout → recuperación, y prueba
   de controles de abuso. No dar por completado todo el módulo todavía.
+
+## Corrección del bloqueo prematuro de registro (11/11/2026)
+- El usuario informó de bloqueo "Demasiados intentos" tras verificaciones Turnstile verdes, sin correo de verificación.
+- Diagnóstico D1 (lectura solamente): 6 registros de cuota; hasta 10 intentos;
+  0 tokens pendientes y 0 cuentas verificadas, con 6 perfiles anteriores intactos.
+- Resend listó únicamente el antiguo correo de prueba, entregado; ninguna
+  petición de confirmación había llegado al proveedor.
+- Causa de comportamiento erróneo: la cuota de registro y recuperación se
+  incrementaba **antes** de validar Turnstile; el límite por dirección
+  era 3/hora e impedía pruebas tras varios rechazos del CAPTCHA.
+- Corregido: revisar Turnstile primero, contabilizar cupo de envío solo
+  tras desafío validado; errores del CAPTCHA ahora tienen un contador
+  independiente de seguridad por IP.
+- Cupo de registro/recuperación: 5 por correo y 20 por IP/hora, con error
+  HTTP 429 y Retry-After explícito si se excede; no se eliminó el límite.
+- El formulario muestra ahora respuestas junto al botón de **cada**
+  operación, y ya no debajo del formulario de recuperación.
+- Se eliminan tokens pendientes al fallar Resend, con registro solo del
+  código HTTP del proveedor sin divulgar datos de email ni secretos.
+- El Worker staging se desplegó y comprobó en navegador remoto:
+  registro visible, Turnstile y mensajes individuales presentes;
+  `ALLOW_NEW_ACCOUNTS=no`, `STAGING_MUTATIONS=disabled`.
+- Se **reiniciaron exclusivamente 6 contadores** de
+  `auth_email_rate_limits` del entorno de pruebas; no se tocaron
+  perfiles, identidades, credenciales, tokens, puntos o visitas.
+- D1 tras limpiar: 6 perfiles, 1.999.998 puntos, 0 visitas, cero
+  credenciales email, cero tokens pendientes, cero contadores de bloqueo.
+- Pruebas unitarias simuladas con Resend/Turnstile *ficticios*:
+  CAPTCHA inválido -> HTTP 403, solo contador de fracaso y ningún
+  envío; CAPTCHA válido -> HTTP 200, contadores de registro y llamada
+  simulada al proveedor.
+- Pendiente que el usuario repita **una sola solicitud real** para
+  verificar si Turnstile acepta el token y si Resend entrega el correo.
