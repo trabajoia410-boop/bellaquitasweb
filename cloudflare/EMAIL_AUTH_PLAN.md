@@ -1,47 +1,84 @@
-# Bellaquitas Fest — preparar registro con correo y contraseña (sin activar)
+# Bellaquitas Fest — acceso por correo en Cloudflare
 Actualizado: 10 de noviembre de 2026.
 
-## Estado
-El inicio Google funciona en staging con sesiones mediante cookies HttpOnly.
-La interfaz de pruebas de Cloudflare está en `/preview` y usa el mismo origen
-de la API para evitar el bloqueo de cookies de terceros en iPhone/Safari.
+## Implementado SOLO EN STAGING (desactivado)
 
-**No se permiten altas por email ni contraseñas hasta tener proveedor de
-entrega de correo, verificación, recuperación y protección contra abuso.**
-Las cuentas importadas de Supabase son identidades de Google: no existen
-contraseñas que podamos recuperar o copiar.
+- Rutas /v1/auth/email/status, /register, /verify, /login, /forgot, /reset.
+- Tablas aisladas en D1 (migración `0006-email-auth.sql` aplicada): `auth_email_credentials`,
+  `auth_email_tokens` y `auth_email_rate_limits`, inicialmente vacías.
+- Contraseñas protegidas con PBKDF2-HMAC-SHA256 (600.000 iteraciones,
+  salt aleatorio de 256 bits por contraseña), sin contraseña en texto claro.
+- Token aleatorio de un solo uso de 256 bits para confirmación (30 minutos)
+  y recuperación (20 minutos), almacenado solo como SHA-256.
+- Revocación de las sesiones tras restablecer contraseña.
+- Límite de intentos por dirección IP y correo usando claves HMAC
+  seudonimizadas, validación JSON/longitud y control Origin estricto.
+- Integración de **Resend** para correo transaccional y **Cloudflare Turnstile**
+  para altas y recuperación; tokens Turnstile verificados en servidor,
+  incluido el hostname esperado.
+- Autenticación con cookies HttpOnly + Secure + SameSite=Lax del mismo
+  origen, ya existente para Google.
+- Formularios para login/registro/verificación/recuperación en `/preview`,
+  ocultos automáticamente hasta que la configuración sea suficiente.
+- Cuentas antiguas con Google: **no se importan contraseñas, no se vincula
+  automáticamente una cuenta por coincidencia de correo**. Deben entrar con Google.
+- `ALLOW_NEW_ACCOUNTS=no`, `STAGING_MUTATIONS=disabled` siguen activos.
+  `EMAIL_AUTH_ENABLED` no está configurado y por tanto el acceso de correo
+  **falla cerrado**. Nadie puede crear cuentas por correo todavía.
 
-## Arquitectura propuesta
-- Identidad interna D1 enlazada a perfiles mediante una tabla privada de
-  credenciales; NO editar la propiedad `role` desde datos de usuario.
-- Contraseñas con un KDF específico para contraseñas de uso moderno, con
-  salt individual y parámetros versionados. No almacenar contraseñas
-  reversibles ni hashes SHA-256 simples. Auditar límites CPU de Workers.
-- Alta pendiente de confirmación por correo: generar token criptográfico
-  aleatorio, almacenar exclusivamente hash con expiración corta y consumir
-  una sola vez. No activar sesión antes de validar email.
-- Restablecimiento de contraseña con tokens de un solo uso, expiración,
-  invalidación de sesiones previas y respuestas indistinguibles para cuentas
-  existentes o no existentes.
-- Rate limits por IP y cuenta, defensa anti-bot (por ejemplo Turnstile),
-  límites de longitud, mensajes neutros y registros de auditoría sin secretos.
-- Envío transaccional con proveedor verificado y dominio remitente firmado.
-  Cloudflare Email Sending para destinatarios arbitrarios requiere Workers
-  Paid en noviembre de 2026; **no activarlo ni contratarlo sin decidir la
-  opción gratuita o el coste aceptable**.
-- Registro `ALLOW_NEW_ACCOUNTS=no` y mutaciones `STAGING_MUTATIONS=disabled`
-  hasta pasar pruebas. Las rutas deben fallar cerradas sin proveedor.
-- Pruebas de creación, confirmación, acceso, recuperar, cierre y caducidad,
-  empleando cuentas ficticias aisladas en staging. Ningún cambio de puntos
-  o visitas de cuentas reales.
+## Configuración necesaria antes de permitir pruebas con email
 
-## Antes de la migración de producción
-1. Confirmar remitente y servicio para correo transaccional.
-2. Implementar /v1/auth/email/register, verify, login, forgot y reset
-   con las verificaciones indicadas arriba.
-3. Auditar RLS/privilegios, rate limiting, CSRF y cookies de primera parte.
-4. Probar en iPhone/Safari y Android, y un usuario/rol de cada tipo.
-5. Adaptar el frontend completo a las rutas Cloudflare (no solo el preview).
-6. Crear copias de seguridad, reconciliar datos y preparar reversión.
+1. Crear un proyecto de **Resend** con plan Free, sin activar
+   sobrecostes/pay-as-you-go, y verificar el dominio remitente
+   `bellaquitas.fr` mediante los registros DNS que solicite Resend en
+   Hostinger (no trasladar el dominio ni cambiar el hosting).
+   Precio público consultado 10/11/2026: Free $0/mes, 3.000 emails/mes,
+   máximo 100 al día. Ver https://resend.com/pricing
+2. Crear un widget **Cloudflare Turnstile** para el hostname del Worker de
+   pruebas `bellaquitas-api-staging.bellaquitas-fest-410.workers.dev`;
+   conservar la site key pública y el secret privado.
+3. En `bellaquitas-api-staging` añadir secretos (no enviarlos por chat):
+   - `RESEND_API_KEY`: API token de Resend (tipo Secreto).
+   - `EMAIL_RATE_KEY`: valor aleatorio secreto de 32 bytes o más, en texto
+     seguro; no reutilizar contraseñas ni tokens de Google (tipo Secreto).
+   - `TURNSTILE_SECRET`: clave secreta del widget (tipo Secreto).
+4. Añadir variables públicas:
+   - `RESEND_FROM`: una dirección del dominio verificado, por ejemplo
+     `acceso@bellaquitas.fr` **solo si esa dirección y dominio quedan
+     autorizados para envío**.
+   - `TURNSTILE_SITE_KEY`: site key pública del widget.
+   - `TURNSTILE_EXPECTED_HOSTNAME`: hostname exacto del staging si se
+     utiliza un hostname distinto a `PUBLIC_ORIGIN`.
+5. Activar, únicamente después de revisar límites/dominio y con perfiles
+   de prueba, `EMAIL_AUTH_ENABLED=yes` y `ALLOW_NEW_ACCOUNTS=yes`.
+   No cambiar `STAGING_MUTATIONS=disabled` para probar autenticación:
+   los puntos y visitas seguirán protegidos.
+6. Probar registro con una cuenta FICTICIA nueva, confirmación, login,
+   persistencia, logout, recuperación y doble uso de tokens; retirar al
+   terminar el usuario ficticio si procede. Verificar que ningún dato de
+   los seis perfiles importados cambió. Probar también iPhone y Android.
 
-Web pública: sigue en GitHub Pages + Supabase. No cambiar DNS ni borrar datos.
+## Avisos operativos
+
+- Sin las credenciales, los endpoints regresan HTTP 503 o indican
+  `registration:false`; no simulan un email enviado.
+- El proveedor elegido no puede activarse sin verificar DNS, y el API
+  token de Resend no puede inventarse. Son pasos que necesitan acceso a
+  cuentas externas.
+- La API de pruebas ya tiene protección de origen y roles. Aun así,
+  antes de abrir registros al público se necesita revisión de seguridad
+  adicional, comprobación de entregabilidad y monitorización.
+- **No desplegar este flujo de correo en el dominio público sin
+  validar cuenta/contraseña, CSRF, envío real y protección antiabuso.**
+
+## Trabajo pendiente para retirar Supabase
+- Adaptar todas las secciones y el editor completo de la web al backend
+  Cloudflare, comprobar el QR/cámara en iPhone real, controles de puerta
+  y rol admin. Probar la escritura **únicamente con perfiles ficticios**.
+- Copias de seguridad, migración incremental final, permisos, DNS,
+  HTTPS, OAuth de origen propio y plan de reversión.
+- Mantener el sitio actual `bellaquitas.fr` en GitHub Pages + Supabase
+  hasta completar las pruebas.
+
+Fuentes técnicas: https://resend.com/docs/send-with-cloudflare-workers
+y https://developers.cloudflare.com/workers/runtime-apis/web-crypto/
