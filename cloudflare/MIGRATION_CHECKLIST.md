@@ -82,3 +82,10 @@
 - [x] Reiniciados exclusivamente contadores antispam de staging para permitir una nueva prueba.
 - [x] D1 conservó 6 perfiles, 1.999.998 puntos, 0 visitas, 0 registros email tras el arreglo.
 - [ ] Confirmar la entrega real del correo desde la página de pruebas, completar confirmación del enlace, login y recuperación.
+
+## Depuración KDF y correo, 11/11/2026
+- [x] Identificada la causa del error genérico del registro: Cloudflare limita PBKDF2 a 100.000 iteraciones por llamada; 600.000 devolvía NotSupportedError.
+- [x] Implementado hash versionado por seis fases secuenciales de 100.000, validado con diagnóstico real en Worker; no confundir con PBKDF2 estándar de 600.000.
+- [x] Confirmado almacenamiento de solicitud ficticia en D1 y limpieza posterior.
+- [x] Diagnóstico temporal retirado del Worker y despliegue corregido solo en staging; totales reales intactos.
+- [ ] Confirmar entrega de email real desde registro corregido y el ciclo completo; hacer auditoría independiente del KDF antes de producción.
