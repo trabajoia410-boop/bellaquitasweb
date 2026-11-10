@@ -1,60 +1,88 @@
-# Bellaquitas Fest — Cloudflare (entorno de pruebas)
+# Bellaquitas Fest — Cloudflare staging
 
-Este directorio contiene el código de la API **solo de lectura** desplegada como
-`bellaquitas-api-staging`. La web oficial en `https://bellaquitas.fr/` sigue
-utilizando Supabase y GitHub Pages hasta completar una migración segura.
+**La web pública sigue en GitHub Pages + Supabase.** No pasar tráfico de
+producción a Cloudflare antes de validar Google, correo/contraseña y permisos.
 
-## Recursos separados de producción
+## Infraestructura conectada y verificada
 
-- D1: `bellaquitas-staging` (jurisdicción UE).
-- R2: `bellaquitas-media-staging` (bucket **privado**).
-- Worker: `bellaquitas-api-staging` (solo endpoints públicos GET).
+- Cloudflare D1: `bellaquitas-staging` (jurisdicción UE).
+- Cloudflare R2: `bellaquitas-media-staging` (ubicación WEUR; privado).
+- Cloudflare Worker: `bellaquitas-api-staging`.
+- URL de pruebas:
+  `https://bellaquitas-api-staging.bellaquitas-fest-410.workers.dev`
+- Bindings: `DB` (D1), `MEDIA` (R2), `PUBLIC_ORIGIN`,
+  `ALLOW_NEW_ACCOUNTS=no`, `STAGING_MUTATIONS=disabled`.
+- Ruta `GET /health` verificada por HTTP en Cloudflare Browser Rendering:
+  estado OK, base de datos conectada y R2 configurado.
+- 12 tablas de negocio en D1 + tablas privadas de OAuth, sesiones y auditoría.
+- Datos copiados desde Supabase, incluyendo seis perfiles y seis vínculos
+  de Google. Recuentos y suma de puntos y visitas verificados.
+- Copia de datos pública: 1 evento y 1 configuración de página.
+- Reglas atómicas para evitar dobles visitas, aplicar canjes y auditar
+  cambios administrativos. Probadas con perfiles FICTICIOS; limpiados
+  posteriormente. Saldos reales de producción NO modificados.
 
-Los endpoints son `/health`, `/v1/site`, `/v1/events`,
-`/v1/rewards`, `/v1/promos`, `/v1/moments` y
-`/v1/moments/photos/:id`. Las fotografías se sirven únicamente si
-la galería está publicada, su registro existe y el objeto R2 es una imagen válida.
+## Código y migraciones
 
-**No existen endpoints para cuentas, QR, puntos, visitas, administradores,
-registro, login, Google o escrituras.** No habilitarlos sin revisión de
-autenticación, autorización, protección de sesiones, CSRF, validación, límites
-de frecuencia y transacciones atómicas.
+- `bellaquitas-api-staging.js`: lectura pública y despacho a rutas privadas.
+- `auth-routes.js`: Google OAuth con PKCE + nonce + verificación de firma
+  de ID token, estados de un solo uso y cookies de sesión HttpOnly.
+- `protected-routes.js`: rutas para perfil, puerta, canjes, administración
+  de socios y fotografías R2. **Escrituras desactivadas** por defecto.
+- `migrations/0001-schema.sql`: tablas de negocio.
+- `migrations/0002-auth-and-invariants.sql`: identidades, auditoría y
+  triggers de seguridad transaccional.
+- `migrations/0003-oauth-sessions.sql`: estados OAuth y sesiones.
+- `migrate-media-worker.js`: migrador TEMPORAL de tres imágenes públicas
+  desde Supabase a R2 (sin endpoints HTTP, ejecución programada de una sola
+  operación lógica). Detener los Cron Triggers tras verificar resultado.
 
-## Migración controlada
+## Antes de poder iniciar sesión en Cloudflare
 
-1. Copiar contenido público de Supabase a D1 y verificar su consistencia.
-2. Diseñar un servicio de identidad para email y Google sin exponer contraseñas.
-3. Implementar lógica transaccional para puntos, visitas, canjes y puerta con
-   auditoría y autorización de servidor (nunca confiar en roles del navegador).
-4. Migrar las cuentas de forma segura y preparar una política de reautenticación
-   o restablecimiento de contraseña cuando sea necesario.
-5. Transferir ficheros a R2 y verificar permisos y URLs.
-6. Probar con cuentas de ensayo y datos ficticios; no realizar check-ins ni
-   alterar puntos o visitas reales durante pruebas.
-7. Solo entonces cambiar la web y el dominio en un despliegue reversible.
-8. Mantener una copia de seguridad comprobada antes de retirar Supabase.
+Google OAuth está **desactivado por falta de credenciales**. En Google Cloud
+Console, crear o reutilizar un OAuth Client de tipo *Aplicación web*, añadir
+esta URL de redirección:
 
-El origen `app.js` de la web oficial no depende de este Worker hasta el
-cambio de backend. No agregar credenciales o secretos al repositorio.
+`https://bellaquitas-api-staging.bellaquitas-fest-410.workers.dev/v1/auth/google/callback`
 
-## Despliegue verificado por API de Cloudflare (10-11-2026)
+Guardar de forma **secreta** en el Worker:
+- `GOOGLE_CLIENT_ID` (Client ID).
+- `GOOGLE_CLIENT_SECRET` (Client Secret).
 
-- Worker: `bellaquitas-api-staging`
-- Dirección: `https://bellaquitas-api-staging.bellaquitas-fest-410.workers.dev`
-- Binding D1: `DB` -> `bellaquitas-staging`.
-- Binding R2: `MEDIA` -> `bellaquitas-media-staging`.
-- `workers.dev` habilitado, previews desactivadas.
-- Versión desplegada al 100 %, según consulta de despliegues de Cloudflare.
-- El dominio público de R2 (`r2.dev`) está **deshabilitado**, sin dominios personalizados.
-- Esquema exacto versionado en `migrations/0001-schema.sql`.
-- Copia de catálogo público realizada: 1 evento, 1 configuración de sitio.
-  Sin miembros, puntos ni visitas en la base de pruebas.
-- La base original contiene 3 imágenes de logos en Storage que aún deben
-  copiarse a R2 antes de cambiar referencias de archivo.
-- Pruebas HTTP no destructivas disponibles con `node cloudflare/test-staging-api.mjs`.
-  El acceso directo desde el entorno de conexión no ha podido verificarse;
-  la API de Cloudflare sí confirma el despliegue y los bindings.
+**No poner secretos en GitHub, en config.js ni en este chat.**
 
-**Pendiente crítico**: elegir e implementar autenticación de usuarios
-(correo/contraseña y Google), sesiones y permisos en Workers/D1; verificar
-la migración de cuentas y sus datos antes de cualquier cambio de producción.
+Las seis cuentas existentes usan Google; ninguna tiene contraseña almacenada
+en Supabase. Para ofrecer email/contraseña a NUEVOS socios hay que integrar
+un proveedor de correo, verificación de email y recuperación segura de
+contraseñas, con limitación de intentos.
+
+La aplicación que usa cookies de sesión necesita compartir ORIGEN con el
+backend. Mientras la web se sirve desde GitHub Pages, no se pueden
+habilitar sesiones de producción en `workers.dev` confiando en cookies
+de terceros (Safari y otros las bloquean). La migración definitiva deberá
+servir la web y la API desde el mismo sitio, o asegurar una integración de
+sesión de primera parte bajo `bellaquitas.fr`.
+
+## No cambiar producción antes de
+
+1. Guardar copia de seguridad de la BD y el almacenamiento, y comprobarla.
+2. Confirmar que inicia sesión cada cuenta con Google en Cloudflare.
+3. Configurar registro y restablecimiento de contraseña con email.
+4. Probar sesión persistente, logout y autorizaciones socio/puerta/admin.
+5. Verificar que el QR escaneado en iPhone/Android registra una sola visita,
+   con dos actores de pruebas y sin tocar puntos de producción.
+6. Verificar canjes y cambios de socio con auditoría.
+7. Verificar todas las imágenes transferidas a R2 por bytes y hash.
+8. Migrar los cambios de datos ocurridos desde el snapshot y verificar
+   reconciliación contra producción.
+9. Adaptar la web pública, probar despliegue completo y acceso HTTPS.
+10. Planificar corte reversible de DNS y OAuth, conservar Supabase en
+    modo recuperación hasta verificarlo todo.
+
+## Pruebas
+
+`node cloudflare/test-staging-api.mjs` (solo GET y controles negativos;
+no altera puntos ni visitas), una vez que el endpoint resulte accesible
+desde la máquina que ejecuta Node. Prueba HTTP de /health ya realizada
+por el navegador remoto de Cloudflare; el resto de llamadas estuvieron
+limitadas por HTTP 429 y no se consideran verificadas.
