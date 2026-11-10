@@ -89,3 +89,10 @@
 - [x] Confirmado almacenamiento de solicitud ficticia en D1 y limpieza posterior.
 - [x] Diagnóstico temporal retirado del Worker y despliegue corregido solo en staging; totales reales intactos.
 - [ ] Confirmar entrega de email real desde registro corregido y el ciclo completo; hacer auditoría independiente del KDF antes de producción.
+
+## Email de confirmación entregado y cuenta verificada (11/11/2026)
+- [x] Resend confirma entrega real del primer correo de registro enviado desde Worker staging.
+- [x] D1 muestra 1 identidad por email con `verified_at>0`, perfil de rol `socio` y 0 puntos/visitas.
+- [x] Se conservan las 6 cuentas migradas; nuevo total staging 7 perfiles, 1.999.998 puntos, 0 visitas.
+- [ ] Probar contraseña, persistencia, logout y recuperación de la nueva cuenta.
+- [ ] Revisar hashing versionado e integración completa antes de producción.
