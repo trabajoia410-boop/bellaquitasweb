@@ -166,3 +166,10 @@ extremo el envío de emails ni la cámara móvil.
 - Worker redeployado únicamente en staging, quitando por completo los endpoints temporales de diagnóstico.
 - Verificación posterior: página de registro visible, Turnstile y mensajes; 6 perfiles, 1.999.998 puntos, 0 visitas; cero credenciales email y cero tokens.
 - **Pendiente**: comprobar el nuevo formulario con un único intento real y confirmar correo recibido de Resend; no afirmar funcionamiento extremo a extremo todavía.
+
+## Primera confirmación de email en staging (11/11/2026)
+- Resend registra el correo de confirmación **del formulario de registro** con estado `delivered` (distinto del email de prueba anterior).
+- Consulta solo lectura a D1 tras recibir la captura: **1 cuenta por email verificada**, su perfil tiene rol `socio`, puntos 0 y visitas 0. No quedan tokens de registro pendientes.
+- Total staging: 7 perfiles tras el alta nueva (6 migrados + 1 socio de pruebas), **1.999.998 puntos y 0 visitas**, intactos.
+- Confirmación se produjo mientras se revisaba el estado; no se invocó ninguna ruta de confirmación ni se utilizaron enlaces/tokens desde el asistente.
+- Pendiente: probar el login con email/contraseña, sesión, logout, reset y permisos antes de habilitar este sistema en producción.
