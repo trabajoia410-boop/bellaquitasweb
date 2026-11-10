@@ -23,7 +23,7 @@
 
 ## Bloqueos antes de cambiar la web real
 - [x] Añadidos `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET` como secretos de Cloudflare; callback autorizado en Google Cloud Console.
-- [~] Login Google comprobado con una cuenta importada de rol admin y sesión persistente confirmada por el usuario. Pendiente probar otras cuentas y cierre de sesión autenticado.
+- [~] Inicio Google, perfil admin y sesión persistente comprobados por el usuario. Cierre de sesión autenticado confirmado mediante capturas del estado antes y después; quedan por probar otras cuentas y dispositivos.
 - [~] Diseñado el plan de alta segura en `EMAIL_AUTH_PLAN.md`. No activar sin envío de correo/verificación/recuperación (las 6 cuentas existentes solo usan Google).
 - [ ] Activar y probar escrituras en staging usando perfiles de pruebas, nunca datos reales.
 - [~] Añadida y desplegada la interfaz de pruebas del mismo origen en `/preview` con perfil, eventos, login y logout. Pendiente adaptar `app.js` completo y sesiones de primera parte bajo `bellaquitas.fr`.
@@ -41,6 +41,6 @@
 - Los secretos OAuth y vínculos D1/R2 conservados después del despliegue.
 - Consulta de solo lectura en D1: 6 perfiles, 1.999.998 puntos, 0 visitas; 0 cambios en la consulta.
 - `STAGING_MUTATIONS=disabled` y `ALLOW_NEW_ACCOUNTS=no` se mantienen.
-- El acceso Google ha sido comprobado por el administrador; el cierre de sesión real aún requiere prueba con navegador autenticado.
+- El usuario compartió capturas de `/preview` con sesión autenticada (perfil y rol admin visibles) y, tras pulsar cerrar sesión, `Sesión cerrada correctamente` con botón `Continuar con Google`. Test manual de cierre de sesión completado para esa cuenta/navegador; no implica cobertura de otros roles o dispositivos.
 - Cambios aislados en la rama `cloudflare-preview-login-20261110` y en el Worker **staging**.
 
