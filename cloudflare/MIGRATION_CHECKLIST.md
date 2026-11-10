@@ -74,3 +74,11 @@
 - [x] En navegador remoto: formularios de correo visibles, advertencia «solo pruebas» visible.
 - [x] D1 comparada: 6 perfiles, 1.999.998 puntos, 0 visitas, cero credenciales email, cero tokens pendientes.
 - [ ] Confirmar envío de email **desde el Worker** con buzón de prueba autorizado y verificar el resto del flujo de alta y recuperación.
+
+## Corrección registro con correo, 11/11/2026
+- [x] Diagnóstico de ausencia de correos: antes de llegar a Resend se bloquearon 10 intentos por cuotas consumidas antes de Turnstile.
+- [x] Arreglados el orden de verificación CAPTCHA/cuotas y el mensaje de error situado debajo del botón correspondiente.
+- [x] Reaplicados los cambios solo a Worker `bellaquitas-api-staging`.
+- [x] Reiniciados exclusivamente contadores antispam de staging para permitir una nueva prueba.
+- [x] D1 conservó 6 perfiles, 1.999.998 puntos, 0 visitas, 0 registros email tras el arreglo.
+- [ ] Confirmar la entrega real del correo desde la página de pruebas, completar confirmación del enlace, login y recuperación.
