@@ -96,3 +96,12 @@
 - [x] Se conservan las 6 cuentas migradas; nuevo total staging 7 perfiles, 1.999.998 puntos, 0 visitas.
 - [ ] Probar contraseña, persistencia, logout y recuperación de la nueva cuenta.
 - [ ] Revisar hashing versionado e integración completa antes de producción.
+
+## Confirmación de acceso y recuperación, 11/11/2026
+- [x] El usuario confirma haber probado el restablecimiento de contraseña; captura muestra el correo recibido.
+- [x] Resend confirma entrega del mensaje «Recuperar acceso Bellaquitas Fest» desde la infraestructura de correo.
+- [x] Captura de la pantalla de staging muestra la tarjeta QR del socio tras su inicio de sesión con correo.
+- [x] D1 confirma 7 perfiles, 1 cuenta de correo verificada, 1.999.998 puntos y cero visitas; no hay enlaces de registro ni reset pendientes.
+- [x] Corregida duplicación de «Todavía no hay movimientos» provocada por dos actualizaciones concurrentes de la interfaz; cambio desplegado solo en Worker staging.
+- [ ] Validar lectura real de QR con cámara iPhone y Android y roles de puerta sin alterar visitas de socios reales.
+- [ ] Auditoría de seguridad del KDF versionado y flujo completo, previa al corte de producción.
