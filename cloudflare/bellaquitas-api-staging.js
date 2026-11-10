@@ -1,6 +1,7 @@
 import {authRoute} from "./auth-routes.js";
 import {previewRoute} from "./preview-page.js";
 import {protectedRoute} from "./protected-routes.js";
+import {emailAuthRoute} from "./email-auth-routes.js";
 /**
  * Bellaquitas Fest — API de lectura para entorno de pruebas en Cloudflare.
  * No usar para gestionar usuarios, puntos, visitas ni permisos.
@@ -57,6 +58,8 @@ export default {
     try {
       const previewResponse = previewRoute(request);
       if (previewResponse) return previewResponse;
+      const emailResponse = await emailAuthRoute(request, env);
+      if (emailResponse) return emailResponse;
       const authResponse = await authRoute(request, env);
       if (authResponse) return authResponse;
       const protectedResponse = await protectedRoute(request, env);
