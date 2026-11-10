@@ -22,15 +22,25 @@
 - [x] Escrituras y registro de nuevas cuentas deshabilitados hasta pruebas de identidad.
 
 ## Bloqueos antes de cambiar la web real
-- [ ] Añadir en Cloudflare `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET` usando un cliente OAuth de Google; añadir el URI de callback en Google Cloud Console.
-- [ ] Probar login Google con las 6 cuentas importadas y logout/sesión persistente.
-- [ ] Diseñar y activar altas con correo/contraseña, verificación de correo y recuperación segura (las 6 cuentas existentes usan solo Google).
+- [x] Añadidos `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET` como secretos de Cloudflare; callback autorizado en Google Cloud Console.
+- [~] Login Google comprobado con una cuenta importada de rol admin y sesión persistente confirmada por el usuario. Pendiente probar otras cuentas y cierre de sesión autenticado.
+- [~] Diseñado el plan de alta segura en `EMAIL_AUTH_PLAN.md`. No activar sin envío de correo/verificación/recuperación (las 6 cuentas existentes solo usan Google).
 - [ ] Activar y probar escrituras en staging usando perfiles de pruebas, nunca datos reales.
-- [ ] Adaptar `app.js` a las nuevas APIs Cloudflare y configurar sesiones de primera parte bajo `bellaquitas.fr`.
+- [~] Añadida y desplegada la interfaz de pruebas del mismo origen en `/preview` con perfil, eventos, login y logout. Pendiente adaptar `app.js` completo y sesiones de primera parte bajo `bellaquitas.fr`.
 - [ ] Preparar DNS Cloudflare y Workers Route `bellaquitas.fr/v1/*` sin afectar GitHub Pages hasta el corte.
 - [ ] Probar cámara QR en iPhone y Android, canje, corrección de puntos, edición admin y galerías.
 - [ ] Preparar backup de producción y exportación diferencial final; repetir reconciliación de datos.
 - [ ] Realizar cambio gradual y reversible de backend, dominio/OAuth, seguimiento y recuperación.
 - [ ] Retirar Supabase solo cuando la web nueva esté 100 % verificada.
 
-**Producción no modificada**: Github Pages, dominio y Supabase siguen operativos.
+**Producción no modificada**: GitHub Pages, dominio y Supabase siguen operativos.
+
+## Verificación adicional 10/11/2026
+- Worker de pruebas desplegado con `/preview` y `/preview/app.js`, CSP y noindex.
+- Navegador de Cloudflare: pantalla cargada, script ejecutado, visitante anónimo y eventos consultados correctamente.
+- Los secretos OAuth y vínculos D1/R2 conservados después del despliegue.
+- Consulta de solo lectura en D1: 6 perfiles, 1.999.998 puntos, 0 visitas; 0 cambios en la consulta.
+- `STAGING_MUTATIONS=disabled` y `ALLOW_NEW_ACCOUNTS=no` se mantienen.
+- El acceso Google ha sido comprobado por el administrador; el cierre de sesión real aún requiere prueba con navegador autenticado.
+- Cambios aislados en la rama `cloudflare-preview-login-20261110` y en el Worker **staging**.
+
