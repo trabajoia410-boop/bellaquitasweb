@@ -187,7 +187,7 @@ async function callbackGoogle(request,env) {
     "INSERT INTO auth_sessions(token_hash,profile_id,expires_at) VALUES (?,?,unixepoch()+?)"
   ).bind(hash,actor.id,SESSION_SECONDS).run();
   return new Response(null,{status:303,headers:{
-    "Location":base(env)+"/v1/auth/me",
+    "Location":base(env)+"/preview",
     "Set-Cookie":sessionCookie(session),
     "Cache-Control":"no-store","Referrer-Policy":"no-referrer"
   }});
