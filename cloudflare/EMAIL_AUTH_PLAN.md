@@ -28,13 +28,13 @@ Actualizado: 10 de noviembre de 2026.
 
 ## Configuración necesaria antes de permitir pruebas con email
 
-1. Crear un proyecto de **Resend** con plan Free, sin activar
+1. [COMPLETADO] Crear un proyecto de **Resend** con plan Free, sin activar
    sobrecostes/pay-as-you-go, y verificar el dominio remitente
    `bellaquitas.fr` mediante los registros DNS que solicite Resend en
    Hostinger (no trasladar el dominio ni cambiar el hosting).
    Precio público consultado 10/11/2026: Free $0/mes, 3.000 emails/mes,
    máximo 100 al día. Ver https://resend.com/pricing
-2. Crear un widget **Cloudflare Turnstile** para el hostname del Worker de
+2. [COMPLETADO] Crear un widget **Cloudflare Turnstile** para el hostname del Worker de
    pruebas `bellaquitas-api-staging.bellaquitas-fest-410.workers.dev`;
    conservar la site key pública y el secret privado.
 3. En `bellaquitas-api-staging` añadir secretos (no enviarlos por chat):
@@ -82,3 +82,25 @@ Actualizado: 10 de noviembre de 2026.
 
 Fuentes técnicas: https://resend.com/docs/send-with-cloudflare-workers
 y https://developers.cloudflare.com/workers/runtime-apis/web-crypto/
+
+## Estado de integración 11 de noviembre de 2026
+
+- Resend: dominio `bellaquitas.fr` **verified** en región `eu-west-1`, envío habilitado.
+- Resend: creada API key de permiso **sending_access**, restringida a
+  `bellaquitas.fr`. **PENDIENTE guardarla manualmente como `RESEND_API_KEY`
+  en Cloudflare**. La transferencia automática de credenciales entre
+  conectores fue bloqueada por controles de seguridad. Nunca copiar la
+  clave a GitHub, capturas o archivos del repositorio.
+- Cloudflare Turnstile: widget **Bellaquitas Fest - registro staging**
+  creado para el hostname staging y clave secreta instalada como
+  `TURNSTILE_SECRET`.
+- Clave pública `TURNSTILE_SITE_KEY`, `TURNSTILE_EXPECTED_HOSTNAME`
+  y remitente `RESEND_FROM=no-reply@bellaquitas.fr` configurados.
+- `EMAIL_AUTH_ENABLED=no`, `ALLOW_NEW_ACCOUNTS=no` y
+  `STAGING_MUTATIONS=disabled`: permanecen **desactivados**.
+- **PENDIENTE**: secreto independiente aleatorio `EMAIL_RATE_KEY` en
+  Cloudflare (no se pudo guardar automáticamente por controles de seguridad).
+- **NO activar** registro ni contraseñas antes de comprobar
+  `RESEND_API_KEY` y `EMAIL_RATE_KEY` instalados, entrega efectiva
+  de correo, protección Turnstile y QA con identidades ficticias.
+- No se han modificado cuentas, visitas o puntos reales.
