@@ -38,6 +38,12 @@ Los navegadores de CI emulan dimensiones y agente de usuario; **NO son un iPhone
 - **11/11 comprobaciones del editor en navegador** usando el Worker real en localhost y sesión admin ficticia: borrador, publicación, idiomas ES/FR y vista previa móvil. [Evidencia](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43021180171)
 - Queda **pendiente** el ensayo de estos flujos con autenticación real sobre una instancia de backend de pruebas totalmente aislada y el reconocimiento/validación QR en iPhone/Samsung físicos.
 
+### Comprobación ampliada del escáner sin dispositivo real
+
+- **20/20 controles del Worker completo** con base ficticia, incluidos códigos QR válidos/invalidos, restricciones de personal y doble visita rechazada. [Resultado](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43111575023)
+- **8/8 comprobaciones del recorrido visual del QR en Chrome** con la biblioteca `BellaQR` original, fallback `jsQR`, cámara sintética desde Canvas, sesión ficticia de puerta y SQLite en memoria. Primera lectura +10 puntos / 1 visita; segunda lectura rechazada con HTTP 409, sin duplicación. [Resultado](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43112449913)
+- Sigue **pendiente** el permiso de cámara en Safari de iPhone y Chrome de Samsung físicos. No usar QR ni cuentas reales para pruebas.
+
 ## Bloque B — Últimas verificaciones que requieren dispositivos reales
 
 ### iPhone con Safari
