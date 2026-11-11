@@ -1,6 +1,7 @@
 import {authRoute} from "./auth-routes.js";
 import {previewRoute} from "./preview-page.js";
 import {mirrorRoute} from "./web-mirror.js";
+import {mirrorDataRoute} from "./mirror-data-routes.js";
 import {protectedRoute} from "./protected-routes.js";
 import {emailAuthRoute} from "./email-auth-routes.js";
 /**
@@ -65,6 +66,8 @@ export default {
       if (emailResponse) return emailResponse;
       const authResponse = await authRoute(request, env);
       if (authResponse) return authResponse;
+      const mirrorData = await mirrorDataRoute(request, env);
+      if (mirrorData) return mirrorData;
       const protectedResponse = await protectedRoute(request, env);
       if (protectedResponse) return protectedResponse;
       if (request.method !== "GET") {
