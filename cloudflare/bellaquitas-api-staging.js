@@ -3,6 +3,7 @@ import {previewRoute} from "./preview-page.js";
 import {mirrorRoute} from "./web-mirror.js";
 import {mirrorDataRoute} from "./mirror-data-routes.js";
 import {mirrorWriteRoute} from "./mirror-write-routes.js";
+import {suggestionRoute} from "./suggestion-routes.js";
 import {protectedRoute} from "./protected-routes.js";
 import {emailAuthRoute} from "./email-auth-routes.js";
 /**
@@ -67,6 +68,8 @@ export default {
       if (emailResponse) return emailResponse;
       const authResponse = await authRoute(request, env);
       if (authResponse) return authResponse;
+      const suggestionResponse = await suggestionRoute(request, env);
+      if (suggestionResponse) return suggestionResponse;
       const mirrorWrite = await mirrorWriteRoute(request, env);
       if (mirrorWrite) return mirrorWrite;
       const mirrorData = await mirrorDataRoute(request, env);
