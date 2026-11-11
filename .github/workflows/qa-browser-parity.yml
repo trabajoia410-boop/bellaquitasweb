@@ -1,0 +1,32 @@
+name: Paridad visual y funcional — sitio original vs Cloudflare
+on:
+  push:
+    branches:
+      - auditoria/fase5-2026-11-11
+    paths:
+      - cloudflare/test-browser-parity.mjs
+      - .github/workflows/qa-browser-parity.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  parity-readonly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar Playwright Core gratuito
+        run: npm install --no-save --no-package-lock --ignore-scripts playwright-core@1.56.1
+      - name: Comparar cabecera, idioma, sugerencias y vídeos sin datos privados
+        run: node cloudflare/test-browser-parity.mjs
+      - name: Guardar reporte de paridad
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bellaquitas-parity-readonly
+          path: parity-evidence/
+          retention-days: 7
+          if-no-files-found: warn
