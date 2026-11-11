@@ -1,5 +1,24 @@
 # Bellaquitas Fest — plan seguro de respaldo, pruebas y cambio de backend
 
+## Regla de presupuesto cero — requisito del propietario (11 noviembre 2026)
+
+**Prioridad absoluta:** Bellaquitas Fest no debe necesitar cuotas de hosting, servidor, base de datos, email ni almacenamiento, ni actualizarse a planes de pago ni cobrar automáticamente por superar una franquicia. El coste de renovación del dominio `bellaquitas.fr`, ya comprado en Hostinger, es una excepción inevitable de conservar un dominio propio y debe comunicarse antes de su renovación.
+
+**Política de despliegue:**
+1. **Prohibido activar Workers Paid, Resend Pro, Supabase Pro o complementos de pago**, así como cualquier cambio de plan o servicio con cargos por consumo, sin decisión expresa del propietario.
+2. Mantener GitHub Pages Free, Cloudflare Workers Free, D1 Free, Resend Free y Google OAuth sin compras adicionales; solo emplear funcionalidades verdaderamente gratuitas.
+3. **R2 no es gratuito sin límite:** ofrece una franquicia gratuita mensual en clase Standard, pero puede generar facturas si se excede; por tanto no afirmar «R2 = 0€ garantizados». Antes del corte verificar la facturación, límites y la posibilidad de bloquear cargos o usar almacenamiento alternativo con bloqueo duro al exceder la cuota.
+4. Queues existe en Workers Free con 10.000 operaciones/día, pero **NO se creará una cola ni se aceptará como necesaria** hasta revisar límites y garantizar ausencia de cargos. La opción `waitUntil` tiene el riesgo de pérdida de correos que requiere solución sin cuota.
+5. **Problema técnico crítico para el plan Free:** Workers Free limita a **10 ms de CPU por invocación** (octubre de 2026); el login por correo actual calcula seis etapas PBKDF2 de 100.000 iteraciones y puede superar el límite, especialmente si se añade el cálculo ficticio de protección ante enumeración. **No suponer que las pruebas Node representan el rendimiento de Workers Free en producción**. Medir sobre un Worker de prueba separado y sin datos reales antes de considerar viable el corte. Si no cabe en el límite, rediseñar autenticación usando servicios gratuitos que funcionen sin exceder cuotas; nunca «solucionar» pagando.
+6. Resend Free tiene un máximo publicado de **100 correos/día y 3.000/mes** (noviembre de 2026). El sistema debe gestionar ese tope y avisar de la indisponibilidad; no recomendar suscripción ni activar cobro por excedentes.
+7. Trabajar bajo la hipótesis **sin costes mensuales** hasta verificar con el propietario los planes reales y si existen servicios con cobro automático. El conector de Cloudflare devolvió **403** al intentar consultar suscripciones y políticas de gasto: **NO se verificó la facturación actual**.
+8. Nunca almacenar claves bancarias ni datos de pago en GitHub ni añadir una tarjeta de crédito para validar una prueba.
+
+**Fuentes oficiales verificadas:** https://developers.cloudflare.com/workers/platform/pricing/ ; https://developers.cloudflare.com/workers/platform/limits/ ; https://developers.cloudflare.com/r2/pricing/ ; https://developers.cloudflare.com/queues/platform/pricing/ ; https://resend.com/pricing .
+
+---
+
+
 **Preparado:** 11 de noviembre de 2026. **Estado: PLAN, SIN EJECUTAR CAMBIO DE PRODUCCIÓN.**
 
 ## Límites innegociables
