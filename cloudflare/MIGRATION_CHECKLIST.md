@@ -116,5 +116,5 @@
 ## Confirmación del lector en móvil Android — 11/11/2026
 - [x] Captura facilitada por usuario del móvil Android muestra «Código reconocido» y nombre/código del socio identificados correctamente mediante interfaz `/preview`.
 - [x] Se mantiene aviso «Modo pruebas: registrar visitas está desactivado»; reconocimiento y consulta no equivalen a marcar asistencia.
-- [ ] Determinar si la prueba fue con cámara en directo o foto/captura (ambas opciones disponibles); verificar específicamente cámara en directo si todavía no se hizo.
+- [x] Usuario confirmó expresamente que el QR fue reconocido **directamente con la cámara** en Android, no mediante foto/captura. El reconocimiento y la consulta del socio funcionaron sin registrar visita.
 - [ ] Validar también Safari/iPhone y perfiles de puerta distintos de administrador, sin registrar visitas ni puntos reales.
