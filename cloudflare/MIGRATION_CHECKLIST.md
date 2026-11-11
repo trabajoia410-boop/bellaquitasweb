@@ -165,3 +165,54 @@
 - [x] Navegador de pruebas móvil 390px: navbar, botón hamburguesa, portada de vídeo y selector FR presentes, sin error de arranque.
 - [ ] Probar un envío auténtico a Sugerencias con Turnstile y comprobar acceso desde admin.
 - [ ] Auditoría integral, editor completo con cambios ficticios aislados, comparativas visuales desktop/Android; iPhone diferido.
+
+## Pruebas reales de API en entorno efímero (11/11/2026)
+
+- Se crearon exclusivamente para esta prueba:
+  - Worker efímero `bellaquitas-qa-phase5-20261111-b1d4` con
+    `STAGING_MUTATIONS=enabled` **solo en este Worker de QA**.
+  - Base de datos D1 `bellaquitas-qa-phase5-20261111-b1d4` con
+    migraciones 0001–0003 y cuatro perfiles ficticios, sesiones inventadas
+    sin usuarios reales, una recompensa y portada ficticia.
+  - Bucket R2 efímero `bellaquitas-qa-phase5-20261111-b1d4`.
+- El Worker principal `bellaquitas-api-staging` siguió en
+  `STAGING_MUTATIONS=disabled` durante toda la prueba.
+- Prueba real de HTTP/rutas del backend sobre D1/R2 independientes:
+  **25/25 comprobaciones superadas**:
+  1. Admin autenticado con cookie falsa válida en D1 QA (200).
+  2. Datos de catálogo privado bloqueados a anónimos (401).
+  3. Catálogo privado bloqueado a socio (403).
+  4. Visita rechazada para socio sin rol de puerta (403).
+  5. Primer registro de visita por puerta (200, +10 puntos).
+  6. Visita repetida el mismo día rechazada (409).
+  7. Balance correcto: 110 puntos, 1 visita.
+  8. Canje sin fondos rechazado (409).
+  9. Canje con saldo admitido (200).
+  10. Validación de canje rechazada a usuario no autorizado (403).
+  11. Validación por puerta admitida (200).
+  12. Validación duplicada de canje rechazada (404).
+  13. Balance tras canje: 80 puntos, 1 visita.
+  14. Cambio de puntos por personal sin rol admin rechazado (403).
+  15. Cambio de puntos por admin auditado (200).
+  16. Registro de auditoría creado correctamente (1 entrada).
+  17. Alta de evento ficticio desde el backend del editor (200).
+  18. Lectura del catálogo completo para admin (200).
+  19. Traducción francesa del evento preservada.
+  20. Guardado de borrador de editor (200).
+  21. Publicación del editor (200).
+  22. Textos publicados reflejados en D1 QA.
+  23. Subida PNG ficticia a R2 QA (200).
+  24. Lectura de PNG desde R2 QA (67 bytes, 200).
+  25. Eliminación de la imagen desde R2 QA (200).
+- Al terminar se eliminaron **con éxito** el Worker QA, el bucket R2 QA y
+  la base D1 QA. No quedaron recursos temporales.
+- Comprobación post-limpieza de la base staging: **7 perfiles,
+  1.999.998 puntos, 0 visitas y 0 sugerencias**. Únicamente permanece
+  `bellaquitas-staging` en D1 y `bellaquitas-media-staging` en R2.
+- Banderas verificadas en el Worker staging:
+  `STAGING_MUTATIONS=disabled`, `ALLOW_NEW_ACCOUNTS=no`,
+  `SUGGESTIONS_ENABLED=yes` (esta última afecta solo a las sugerencias
+  en el espejo de pruebas).
+- Estas comprobaciones verifican los endpoints del backend, **no**
+  completan la revisión del KDF, UX en iPhone, circuito de edición visual
+  end-to-end desde navegador ni el plan de rollback al dominio público.
