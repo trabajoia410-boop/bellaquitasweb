@@ -1,5 +1,11 @@
 import {authRoute} from "./auth-routes.js";
+import {previewRoute} from "./preview-page.js";
+import {mirrorRoute} from "./web-mirror.js";
+import {mirrorDataRoute} from "./mirror-data-routes.js";
+import {mirrorWriteRoute} from "./mirror-write-routes.js";
+import {suggestionRoute} from "./suggestion-routes.js";
 import {protectedRoute} from "./protected-routes.js";
+import {emailAuthRoute} from "./email-auth-routes.js";
 /**
  * Bellaquitas Fest — API de lectura para entorno de pruebas en Cloudflare.
  * No usar para gestionar usuarios, puntos, visitas ni permisos.
@@ -54,8 +60,20 @@ export default {
       return new Response(null, {status: 204, headers: responseHeaders(request)});
     }
     try {
+      const mirrorResponse = await mirrorRoute(request, env);
+      if (mirrorResponse) return mirrorResponse;
+      const previewResponse = previewRoute(request);
+      if (previewResponse) return previewResponse;
+      const emailResponse = await emailAuthRoute(request, env);
+      if (emailResponse) return emailResponse;
       const authResponse = await authRoute(request, env);
       if (authResponse) return authResponse;
+      const suggestionResponse = await suggestionRoute(request, env);
+      if (suggestionResponse) return suggestionResponse;
+      const mirrorWrite = await mirrorWriteRoute(request, env);
+      if (mirrorWrite) return mirrorWrite;
+      const mirrorData = await mirrorDataRoute(request, env);
+      if (mirrorData) return mirrorData;
       const protectedResponse = await protectedRoute(request, env);
       if (protectedResponse) return protectedResponse;
       if (request.method !== "GET") {

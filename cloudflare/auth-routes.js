@@ -82,6 +82,14 @@ function clearCookie() {
 function sessionCookie(value) {
   return COOKIE+"="+value+"; Path=/; Max-Age="+SESSION_SECONDS+"; Secure; HttpOnly; SameSite=Lax";
 }
+// Solo lo utiliza el Worker tras verificar una credencial de identidad.
+export async function createAuthSession(profileId,env) {
+  if(typeof profileId!=="string"||!/^[a-f0-9-]{36}$/i.test(profileId))throw Error("Invalid profile identifier");
+  const raw=token(),hash=await digest(raw);
+  await env.DB.prepare("INSERT INTO auth_sessions(token_hash,profile_id,expires_at) VALUES (?,?,unixepoch()+?)")
+    .bind(hash,profileId,SESSION_SECONDS).run();
+  return sessionCookie(raw);
+}
 export async function authenticatedProfile(request,env) {
   const secret=readCookie(request,COOKIE);
   if(!/^[A-Za-z0-9_-]{43}$/.test(secret))return null;
@@ -101,7 +109,10 @@ async function beginGoogle(request,env) {
   if(!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET)return fail(
     "Google OAuth no está configurado en Cloudflare",503);
   if(request.method!=="GET")return fail("Método no permitido",405);
-  const state=token(),verifier=token(),nonce=token();
+  // Estado de 43 caracteres: ruta de retorno autenticada y ligada al state.
+  // Los 42 caracteres aleatorios restantes conservan entropía suficiente.
+  const returnToMirror=new URL(request.url).searchParams.get("return")==="mirror";
+  const state=(returnToMirror?"M":"P")+token().slice(1),verifier=token(),nonce=token();
   const stateHash=await digest(state);
   const challenge=await digest(verifier);
   // Expired PKCE states contain no user information.
@@ -187,7 +198,7 @@ async function callbackGoogle(request,env) {
     "INSERT INTO auth_sessions(token_hash,profile_id,expires_at) VALUES (?,?,unixepoch()+?)"
   ).bind(hash,actor.id,SESSION_SECONDS).run();
   return new Response(null,{status:303,headers:{
-    "Location":base(env)+"/v1/auth/me",
+    "Location":base(env)+(state.startsWith("M")?"/espejo/#/mi-espacio":"/preview"),
     "Set-Cookie":sessionCookie(session),
     "Cache-Control":"no-store","Referrer-Policy":"no-referrer"
   }});

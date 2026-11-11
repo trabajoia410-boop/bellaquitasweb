@@ -38,4 +38,140 @@ const {response: cors} = await check("/health", 200, {
   headers: {Origin: "https://bellaquitas.fr"}
 });
 assert.equal(cors.headers.get("access-control-allow-origin"), "https://bellaquitas.fr");
+
+const emailStatus = await check("/v1/auth/email/status");
+assert.equal(typeof emailStatus.payload.login,"boolean");
+assert.equal(typeof emailStatus.payload.registration,"boolean");
+if(emailStatus.payload.registration){
+  assert.equal(emailStatus.payload.login,true);
+  assert.ok(emailStatus.payload.turnstileSiteKey,"Registro activo requiere Turnstile");
+}
+await check("/v1/auth/email/register",405);
+await check("/v1/auth/email/verify",405);
+for (const path of ["/preview/qr-local.js","/preview/jsqr-local.js","/preview/extras.js","/preview/email.js"]) {
+  const response = await fetch(new URL(path,base), {redirect:"error",signal:AbortSignal.timeout(10000)});
+  assert.equal(response.status,200, `${path} debe servirse desde el mismo origen`);
+  assert.match(response.headers.get("content-type")||"",/javascript/);
+  assert.equal(response.headers.get("x-content-type-options"),"nosniff");
+  console.log(`✓ ${path} — librería local cargable`);
+}
+
 console.log("Todas las comprobaciones no destructivas han terminado correctamente.");
+
+const preview = await fetch(new URL("/preview", base), {redirect:"error"});
+assert.equal(preview.status,200);
+assert.match(preview.headers.get("content-type")||"",/text\/html/);
+assert.match(preview.headers.get("content-security-policy")||"",/script-src 'self'/);
+const previewHTML = await preview.text();
+assert.match(previewHTML,/\/preview\/app\.js/);
+console.log("✓ /preview — interfaz de acceso segura");
+const previewScript = await fetch(new URL("/preview/app.js", base));
+assert.equal(previewScript.status,200);
+assert.match(previewScript.headers.get("content-type")||"",/javascript/);
+assert.match(await previewScript.text(),/\/v1\/auth\/logout/);
+console.log("✓ /preview/app.js — sesión, perfil, cierre de sesión");
+await check("/v1/auth/me", 200);
+await check("/v1/auth/logout", 405);
+await check("/v1/auth/logout", 403, {method:"POST",headers:{"Content-Type":"application/json"},body:"{}"});
+
+
+// Espejo de la web actual: mismas hojas de estilo, vídeos y renderer,
+// con las conexiones a Supabase reemplazadas en la rama de pruebas.
+const mirrorURL = new URL("/espejo/",base);
+const mirrorResponse = await fetch(mirrorURL,{redirect:"error",signal:AbortSignal.timeout(15000)});
+assert.equal(mirrorResponse.status,200,"Espejo visual disponible");
+assert.match(mirrorResponse.headers.get("x-robots-tag")||"",/noindex/);
+const mirrorHtml=await mirrorResponse.text();
+assert.ok(mirrorHtml.includes("styles.css?v="));
+assert.ok(mirrorHtml.includes("app.js?v="));
+assert.ok(mirrorHtml.includes('challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'));
+assert.ok(mirrorHtml.includes('src="/espejo/auth-ui.js"'));
+assert.ok(mirrorHtml.includes('https://challenges.cloudflare.com'));
+
+assert.match(mirrorHtml,/PRUEBAS · SOLO LECTURA/);
+assert.ok(!mirrorHtml.includes("vlsipvngvxcgnwrhpjgg.supabase.co"),
+  "Espejo no puede conectar a Supabase real");
+console.log("✓ /espejo — HTML original y enlace a la hoja CSS, sin Supabase");
+const [mirrorApp,mirrorBridge,mirrorCss,mirrorAuthUI] = await Promise.all([
+  fetch(new URL("/espejo/app.js",base),{signal:AbortSignal.timeout(15000)}),
+  fetch(new URL("/espejo/bridge.js",base),{signal:AbortSignal.timeout(15000)}),
+  fetch(new URL("/espejo/styles.css",base),{signal:AbortSignal.timeout(15000)}),
+  fetch(new URL("/espejo/auth-ui.js",base),{signal:AbortSignal.timeout(15000)})
+]);
+assert.equal(mirrorApp.status,200);
+assert.equal(mirrorBridge.status,200);
+assert.equal(mirrorCss.status,200);
+assert.equal(mirrorAuthUI.status,200);
+const appSource=await mirrorApp.text(),bridgeSource=await mirrorBridge.text(),styleSource=await mirrorCss.text();
+assert.match(appSource,/import\('\/espejo\/bridge.js'\)/);
+assert.ok(!appSource.includes("await import('https://esm.sh/@supabase"));
+assert.ok(bridgeSource.includes("READONLY_ERROR"));
+assert.ok(bridgeSource.includes("return=mirror"));
+assert.ok((await mirrorAuthUI.text()).includes("/v1/auth/email/reset"));
+assert.ok(bridgeSource.includes("/v1/auth/me"));
+assert.ok(styleSource.length>50000,"Conservar la hoja completa del diseño");
+console.log("✓ /espejo — mismo renderer y CSS original, adaptador Cloudflare");
+const prohibited=await fetch(new URL("/espejo/",base),{method:"POST",redirect:"manual"});
+assert.equal(prohibited.status,405);
+const media=await fetch(new URL("/espejo/assets/logo-bellaquitas.webp",base),{redirect:"error"});
+assert.equal(media.status,200,"Logo original desde R2 sin redirigir al dominio de producción");
+assert.equal(Number(media.headers.get("content-length")),317366);
+assert.match(media.headers.get("content-type")||"",/image\/webp/);
+const fullMedia=await media.arrayBuffer();
+assert.equal(fullMedia.byteLength,317366);
+const videoURL=new URL("/espejo/assets/bellaquitas%20fiesta%20portada.mp4",base);
+const videoHead=await fetch(videoURL,{method:"HEAD",redirect:"error"});
+assert.equal(videoHead.status,200,"Vídeo original servido desde R2");
+assert.equal(Number(videoHead.headers.get("content-length")),25437525);
+const videoSlice=await fetch(videoURL,{headers:{Range:"bytes=0-1023"},redirect:"error"});
+assert.equal(videoSlice.status,206,"Video debe permitir Range HTTP para Safari");
+assert.equal((await videoSlice.arrayBuffer()).byteLength,1024);
+assert.equal(videoSlice.headers.get("content-range"),"bytes 0-1023/25437525");
+console.log("✓ /espejo — logos/vídeos desde R2 verificado, sin redirección y con Range para Safari");
+const [qrLocal,jsQrLocal]=await Promise.all([
+ fetch(new URL("/espejo/assets/qr-local.js",base),{redirect:"error"}),
+ fetch(new URL("/espejo/assets/jsqr-local.js",base),{redirect:"error"})
+]);
+assert.equal(qrLocal.status,200,"El QR se sirve del mismo origen bajo CSP");
+assert.equal(jsQrLocal.status,200,"El escáner se sirve del mismo origen bajo CSP");
+assert.match(qrLocal.headers.get("content-type")||"",/javascript/);
+assert.match(jsQrLocal.headers.get("content-type")||"",/javascript/);
+console.log("✓ /espejo — generador y lector QR compatibles con CSP");
+const publicPhotos=await check("/v1/mirror/public/photos");
+assert.ok(Array.isArray(publicPhotos.payload.items));
+for(const path of [
+ "/v1/mirror/admin/catalog/events",
+ "/v1/mirror/admin/community",
+ "/v1/mirror/admin/site-drafts",
+ "/v1/mirror/admin/activity",
+ "/v1/mirror/me/redemptions"
+]){
+ await check(path,401); // Falta la sesión; no deben filtrarse datos privados.
+}
+await check("/v1/mirror/admin/write",405);
+await check("/v1/mirror/admin/write",401,{method:"POST",
+ headers:{"Content-Type":"application/json","Origin":new URL(base).origin},
+ body:JSON.stringify({kind:"catalog",table:"events",action:"insert",item:{name:"Nunca escribir"}})});
+const uploadDenied=await fetch(new URL("/v1/mirror/admin/media/upload",base),{
+ method:"PUT",redirect:"error",headers:{"Content-Type":"image/png","Origin":new URL(base).origin},
+ body:new Uint8Array([137,80,78,71])});
+assert.equal(uploadDenied.status,401,"No permitir subir archivos sin sesión");
+console.log("✓ /v1/mirror — consultas privadas bloqueadas a anónimos; escrituras sin sesión rechazadas");
+// Envío de Sugerencias limitado a staging: sin CAPTCHA válido no se puede escribir.
+const {payload:suggestionStatus}=await check("/v1/mirror/public/suggestions/status");
+assert.equal(typeof suggestionStatus.enabled,"boolean");
+if(suggestionStatus.enabled)
+ assert.ok(suggestionStatus.turnstileSiteKey,"El buzón requiere Turnstile");
+const suggestionsJs=await fetch(new URL("/espejo/suggestions-ui.js",base),{redirect:"error"});
+assert.equal(suggestionsJs.status,200);
+assert.match(suggestionsJs.headers.get("content-type")||"",/javascript/);
+const suggestionsSource=await suggestionsJs.text();
+assert.match(suggestionsSource,/\/v1\/mirror\/public\/suggestions/);
+await check("/v1/mirror/public/suggestions",405);
+await check("/v1/mirror/public/suggestions",403,{
+ method:"POST",headers:{"Content-Type":"application/json"},
+ body:JSON.stringify({name:"Test",message:"Nunca debe llegar a D1"})
+});
+console.log("✓ Sugerencias — Turnstile, ruta integrada y POST sin Origin bloqueado");
+
+console.log("Todas las pruebas no destructivas del Worker han terminado.");
