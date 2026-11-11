@@ -114,6 +114,7 @@ try{
   await m.locator(".menu-toggle").click();
   await m.locator("#site-menu a[href='#/sugerencias']").click();
   await m.waitForFunction(()=>location.hash==="#/sugerencias");
+  await m.locator("#community-suggestion-form").waitFor({state:"attached",timeout:15000});
   assert.equal(await m.locator("#community-suggestion-form").count(),1);
   test("móvil: sugerencias accesibles sin enviar mensajes");
 
@@ -150,12 +151,14 @@ try{
 
   await m.goto(SITE+"#/moments",{waitUntil:"domcontentloaded"});
   await m.locator(".site-header").waitFor();
+  await m.locator(".community-intro h1").first().waitFor({state:"attached",timeout:15000});
   assert.equal(await m.evaluate(()=>document.documentElement.lang),"fr");
   assert.ok((await m.locator(".community-intro h1").first().textContent()).includes("Bellaquitas Moments"));
   test("móvil: página Bellaquitas Moments abre en francés");
 
   await m.goto(SITE+"#/club",{waitUntil:"domcontentloaded"});
   await m.locator(".site-header").waitFor();
+  await m.locator(".community-intro h1").first().waitFor({state:"attached",timeout:15000});
   assert.equal(await m.evaluate(()=>document.documentElement.lang),"fr");
   assert.ok((await m.locator(".community-intro h1").first().textContent()).includes("Club"));
   test("móvil: página Club conserva idioma francés");
