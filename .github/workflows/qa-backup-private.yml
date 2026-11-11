@@ -1,0 +1,31 @@
+name: Seguridad del respaldo privado — solo datos sintéticos
+
+on:
+  push:
+    branches:
+      - auditoria/fase5-2026-11-11
+    paths:
+      - cloudflare/backup_privado_local.py
+      - .github/workflows/qa-backup-private.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  no-production-access:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - name: Comprobar sintaxis sin requerir claves
+        run: python3 -m py_compile cloudflare/backup_privado_local.py
+      - name: Restaurar SQL sintético en SQLite y detectar datos incompletos
+        run: python3 cloudflare/backup_privado_local.py --self-test
+      - name: Verificar que --run está bloqueado en GitHub Actions
+        run: |
+          if python3 cloudflare/backup_privado_local.py --run; then
+            echo "ERROR: se permitió un backup real en CI" >&2
+            exit 1
+          fi
+          echo "OK: ningún backup remoto puede ejecutarse en CI."
