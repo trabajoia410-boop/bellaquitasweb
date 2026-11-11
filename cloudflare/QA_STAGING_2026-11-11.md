@@ -452,3 +452,22 @@ Se creó `cloudflare/backup_privado_local.py` para copias privadas cifradas **Po
 Evidencia: https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43114946070
 
 **Pendiente:** copia real privada y restauración de prueba, revisión CPU/contraseñas Workers Free, conmutación reversible y pruebas físicas posteriores a la publicación oficial, según decisión del propietario. No se han realizado cambios de producción.
+
+
+## 18. Nuevo panel de administrador en pestaña independiente
+
+Requisito explícito del propietario: al pulsar **Panel de administrador** o **Editar web**, abrir una pestaña separada, pedir email y contraseña y mostrar una aplicación tipo WordPress para gestión de contenidos, eventos, socios y comunidad.
+
+Se ha desarrollado la solución en `cloudflare/qa-candidates/` y cambiado **solo en la rama de auditoría** `app.js` para que abra `/administracion/` o `/administracion/?seccion=web` con `target="_blank"` + `noopener noreferrer`. Las antiguas rutas internas `#/panel` y `#/editor` ya no se utilizarán como editor cuando se publique la nueva versión. Las otras secciones públicas y los vídeos no se han modificado.
+
+La consola incluye su propio formulario de login y **cookie independiente de admin**, con autenticación por email/contraseña, comprobación de rol en D1, protección de origen y expiración en 1 hora; no acepta la cookie normal de socio. Ofrece escritorio, editor ES/FR con borradores, gestión de eventos, premios/promos, socios con auditoría, sugerencias, álbumes y actividad.
+
+**Pruebas sin producción:**
+- 13/13 verificaciones de backend y separación de sesiones, lectura/escritura aislada y autorización de administrador. https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43119060936
+- 11/11 pruebas Chrome de interfaz real con datos ficticios: nueva pestaña, login, escritorio de siete áreas, borrador, publicación ES/FR, eventos, socios y cierre de sesión. https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43119061223
+
+**Bloqueo previo a despliegue:** en Cloudflare hay dos roles admin y **cero credenciales admin verificadas por email**. Falta vincular una contraseña a un admin existente mediante confirmación de su correo; no inventar contraseñas ni crear perfiles duplicados. También falta revisar CPU/hash en plan gratuito y crear/validar respaldos privados.
+
+Instrucciones completas: `cloudflare/PANEL_ADMIN_INDEPENDIENTE.md`.
+
+**NO DESPLEGADO:** la ruta `/administracion/` todavía no existe en el Worker ni en bellaquitas.fr. El dominio, DNS, código main y socios/puntos/visitas siguen igual.
