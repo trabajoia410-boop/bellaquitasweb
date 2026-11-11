@@ -83,14 +83,16 @@ function captchaResponse(){
 }
 async function ensure(){
  const kind=formKind(),form=$("#auth-form");
- if(!form||!kind){
+ if(!form){
   if(activeForm&&!document.contains(activeForm))clearWidget();
   return;
  }
- if(kind==="reset"){
-  await attachVerify();
+ if(verifyToken&&location.hash.startsWith("#/acceso"))await attachVerify();
+ if(!kind){
+  if(activeForm&&!document.contains(activeForm))clearWidget();
   return;
  }
+ if(kind==="reset")return;
  const status=await statusPromise;
  if(!document.contains(form)||form!==$("#auth-form"))return;
  if(kind!=="register"&&kind!=="forgot"){return;}
