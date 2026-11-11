@@ -2,6 +2,7 @@
 (function(){
 "use strict";
 const ROOT="/administracion/api";
+const initialSection=new URLSearchParams(location.search).get("seccion")==="web"?"web":"inicio";
 const $=selector=>document.querySelector(selector);
 const H=value=>String(value==null?"":value).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
 let state={tab:"inicio",section:"hero",language:"es",collection:"events",
@@ -299,7 +300,7 @@ async function login(e){
   const response=await api("/login",{method:"POST",body:{email,password}});
   if(response.profile?.role!=="admin")throw new Error("Acceso reservado a administradores");
   sessionStorage.setItem("bf_admin_unlocked","yes");showPortal(response.profile);
-  $("#admin-password").value="";switchTab("inicio");
+  $("#admin-password").value="";switchTab(initialSection);
  }catch(err){loginFeedback(err.message,true);}
  finally{button.disabled=false;button.textContent="Entrar al panel";}
 }
@@ -374,7 +375,7 @@ document.addEventListener("submit",async e=>{
 $("#admin-password").value="";
 if(sessionStorage.getItem("bf_admin_unlocked")==="yes"){
  api("/me").then(data=>{
-  if(data.profile?.role==="admin"){showPortal(data.profile);switchTab("inicio");}
+  if(data.profile?.role==="admin"){showPortal(data.profile);switchTab(initialSection);}
   else showLogin();
  }).catch(()=>showLogin());
 }else showLogin();
