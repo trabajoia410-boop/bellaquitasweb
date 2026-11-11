@@ -1,0 +1,34 @@
+name: Navegador móvil y traducciones — solo lectura
+on:
+  push:
+    branches:
+      - auditoria/fase5-2026-11-11
+    paths:
+      - cloudflare/test-browser-staging.mjs
+      - .github/workflows/qa-browser-staging.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  navegador:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar Playwright Core (software libre, no instala navegador)
+        run: npm install --no-save --no-package-lock --ignore-scripts playwright-core@1.56.1
+      - name: Comprobar navegador Chrome disponible
+        run: google-chrome --version
+      - name: Comprobar menú, idiomas ES/FR, navegación y vídeos sin login
+        run: node cloudflare/test-browser-staging.mjs
+      - name: Guardar capturas y diagnóstico (7 días)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bellaquitas-browser-evidence
+          path: browser-evidence/
+          retention-days: 7
+          if-no-files-found: warn
