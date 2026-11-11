@@ -173,3 +173,15 @@ extremo el envío de emails ni la cámara móvil.
 - Total staging: 7 perfiles tras el alta nueva (6 migrados + 1 socio de pruebas), **1.999.998 puntos y 0 visitas**, intactos.
 - Confirmación se produjo mientras se revisaba el estado; no se invocó ninguna ruta de confirmación ni se utilizaron enlaces/tokens desde el asistente.
 - Pendiente: probar el login con email/contraseña, sesión, logout, reset y permisos antes de habilitar este sistema en producción.
+
+## Reparación del escáner de puerta móvil (11/11/2026)
+- Reporte: cámara del teléfono abre pero el QR no se reconoce.
+- Diagnóstico del lector anterior: detectaba códigos solo `MBR-...` y descartaba los demás en silencio; al encontrar uno válido, exigía además pulsar «Consultar socio».
+- Corrección solo en `/preview` de staging: reconocimiento de QR nativo (`BarcodeDetector`) cuando existe, con fallback local `jsQR` en Android/Safari, lectura continua y mensajes para QR no-Bellaquitas, QR no encontrado y errores de cámara.
+- El QR `MBR-` válido ahora dispara **automáticamente una consulta GET** a `/v1/door/members`, restringida en servidor a perfiles `admin` o `puerta`; no registra una visita ni añade puntos.
+- Se añadió selector de fotografía/captura para QR mostrado en el mismo móvil, sin subir imágenes al servidor.
+- Prueba sintética en JavaScript: `MBR-TESTABC123` generado como QR y descodificado exactamente con la biblioteca local `jsQR`.
+- Prueba de handler simulada: QR ajeno muestra aviso sin consultar servidor; QR de socio hace únicamente `GET /v1/door/members`.
+- Worker staging desplegado desde rama aislada; Browser Rendering confirma presencia de botones/cámara/formulario de foto y mensaje de ayuda en HTML.
+- D1 tras el despliegue: 7 perfiles, 1.999.998 puntos, 0 visitas; consulta de solo lectura.
+- **Pendiente la prueba de cámara física en móvil**, con otra pantalla que muestre el QR; escaneo para personal `admin`/`puerta` únicamente.
