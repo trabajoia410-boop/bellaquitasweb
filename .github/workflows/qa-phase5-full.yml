@@ -1,0 +1,34 @@
+name: Bellaquitas fase 5 - batería completa sin mutaciones
+on:
+  push:
+    branches:
+      - auditoria/fase5-2026-11-11
+    paths:
+      - cloudflare/test*.mjs
+      - cloudflare/test_sqlite_rules.py
+      - cloudflare/staging-source-2026-11-11/**
+      - cloudflare/migrations/0001-schema.sql
+      - cloudflare/migrations/0002-auth-and-invariants.sql
+      - .github/workflows/qa-phase5-full.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  pruebas-sin-datos-reales:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Comprobar SQL de visitas, puntos y canjes en memoria
+        run: python3 -m unittest discover -s cloudflare -p test_sqlite_rules.py -v
+      - name: Recuperar los módulos actuales del Worker sin desplegarlos
+        run: node cloudflare/staging-source-2026-11-11/extract-modules.mjs
+      - name: Probar autenticación y permisos con bases y proveedores simulados
+        run: node --experimental-default-type=module --test cloudflare/test_staging_roles.mjs cloudflare/test_staging_auth.mjs cloudflare/test_staging_google.mjs
+      - name: Probar API pública y denegaciones anónimas en staging
+        run: node cloudflare/test-staging-api.mjs
+      - name: Comprobar streaming de cinco vídeos y HTTP Range
+        run: node cloudflare/test-staging-media.mjs
