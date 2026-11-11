@@ -1,0 +1,34 @@
+name: iPhone WebKit emulado - paridad Bellaquitas
+on:
+  push:
+    branches:
+      - auditoria/fase5-2026-11-11
+    paths:
+      - cloudflare/test-webkit-iphone.mjs
+      - .github/workflows/qa-webkit-iphone.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  ios-webkit-readonly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar motor WebKit abierto, sin comprar servicios
+        run: |
+          npm install --no-save --no-package-lock --ignore-scripts playwright@1.56.1
+          npx playwright install --with-deps webkit
+      - name: Comparar iPhone emulado en WebKit, original y Cloudflare
+        run: node cloudflare/test-webkit-iphone.mjs
+      - name: Guardar evidencias temporales
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bellaquitas-iphone-webkit
+          path: webkit-evidence/
+          retention-days: 7
+          if-no-files-found: warn
