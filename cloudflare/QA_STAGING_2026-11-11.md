@@ -400,3 +400,40 @@ Evidencia: https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/4302
 - `STAGING_MUTATIONS=enabled` se utiliza **solo en objetos JavaScript dentro del proceso de CI**; el Worker desplegado continúa bloqueado con `STAGING_MUTATIONS=disabled`.
 - No hemos contratado nuevos productos. Las pruebas se ejecutan en el plan disponible de GitHub Actions sin habilitar funciones Cloudflare de pago.
 - La fase 5 sigue abierta hasta tener copias privadas restaurables, seguridad del login revisada, comprobación física y autorización de corte. No se ha migrado la web pública.
+
+
+## 16. QR por cámara simulada y doble lectura con Worker real — APROBADO
+
+**Fecha:** 11 noviembre 2026.
+
+### 20/20 pruebas de integración del Worker — aprobado
+
+En el test `cloudflare/test_worker_full_stack.mjs`, se añadieron cinco casos a las quince pruebas anteriores:
+- Sin sesión, la ruta de puerta devuelve 401.
+- Un socio sin rol de puerta no puede validar visitas (403).
+- Se rechazan códigos QR inválidos o no encontrados (400/404).
+- El personal de puerta valida el código ficticio `MBR-QA-TESTSOCIO`, registra una visita y concede exactamente 10 puntos.
+- La segunda validación del mismo código ese día devuelve 409 y no altera puntos, visitas ni el historial adicional.
+
+La prueba ejecuta **el entrypoint completo del Worker** sobre SQLite D1 en memoria, nunca la D1 real. Evidencia:
+https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43111575023
+
+### 8/8 pruebas de Chrome con cámara sintética y lector jsQR original — aprobado
+
+En `cloudflare/test_browser_qr_isolated.mjs` se levanta un Worker completo sobre `localhost` con sesión ficticia de personal de puerta. Una imagen QR generada mediante `BellaQR.render`, la misma biblioteca de la web original, se reproduce sobre un `canvas.captureStream()` que simula una cámara del navegador. Se fuerza el lector auxiliar `jsQR` para comprobar el funcionamiento aun sin BarcodeDetector nativo.
+
+La interfaz real abre la cámara simulada desde «Activar cámara QR», el lector reconoce el código de un socio ficticio y envía la solicitud al Worker local. La primera lectura devuelve HTTP 200 y suma 10 puntos; **la segunda devuelve HTTP 409**, y la base SQLite mantiene exactamente 10 puntos, 1 visita y 1 registro histórico. También se verifican el número de aperturas de cámara y ausencia de errores JS/HTTP 5xx.
+
+Evidencia: https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43112449913
+
+Se detectó y corrigió **una carrera en la secuencia de pruebas**: la segunda apertura de cámara se hacía mientras la vista todavía se refrescaba después de la primera validación. No se ha modificado el código del sitio por este hallazgo; la ejecución final pasa tras esperar la confirmación de la primera visita.
+
+### Condiciones y límites
+
+- Se utilizaron IDs, sesiones, puntos y códigos **totalmente inventados**.
+- La cámara es un flujo Canvas del navegador; **no es una cámara física**, ni una prueba en Safari iPhone o Samsung real.
+- `STAGING_MUTATIONS=enabled` se usa solamente en el Worker local en memoria, **jamás** en el Worker remoto con los perfiles originales.
+- El flujo de regresión `qa-phase5-full.yml` ejecuta ahora también los 20 casos del Worker completo. Las pruebas individuales pueden solaparse; no sumar resultados como funciones independientes.
+- Quedan pendientes las copias privadas restaurables de datos, la revisión completa de autenticación, la prueba física en dispositivos reales y el corte reversible de fase 6.
+
+**Confirmado: no hubo cambios en DNS, bellaquitas.fr, D1 staging, Supabase ni puntos/visitas reales.**
