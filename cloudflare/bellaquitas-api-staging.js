@@ -59,7 +59,7 @@ export default {
       return new Response(null, {status: 204, headers: responseHeaders(request)});
     }
     try {
-      const mirrorResponse = await mirrorRoute(request);
+      const mirrorResponse = await mirrorRoute(request, env);
       if (mirrorResponse) return mirrorResponse;
       const previewResponse = previewRoute(request);
       if (previewResponse) return previewResponse;
