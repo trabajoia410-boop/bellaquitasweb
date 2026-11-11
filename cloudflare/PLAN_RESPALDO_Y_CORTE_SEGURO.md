@@ -35,6 +35,17 @@
 - Se conserva un snapshot del código desplegado (17 módulos) en `cloudflare/staging-source-2026-11-11/`.
 - A fecha de la comprobación, las 6 cuentas originales coincidían por ID, nombre, rol, código QR, puntos y visitas; 1 cuenta adicional de correo existe solo en staging.
 
+## Orden de fases actualizado — pruebas físicas tras la publicación oficial
+
+**Preferencia explícita del propietario (11/11/2026):** probar iPhone y Samsung físicamente **después** de que la migración ya esté publicada en `bellaquitas.fr`, no en el entorno de staging. El dominio existe y ya sirve la web original; aquí «publicar oficialmente» significa cambiarla al **nuevo backend**.
+
+- **Fase 5 — Antes del cambio:** mantener diseño igual al actual, completar pruebas automáticas, seguridad y autenticación crítica, copias privadas verificables, conciliación de datos, coste cero y reversión lista. **No exigir pruebas con dispositivos físicos en esta fase.**
+- **Fase 6 — Publicación controlada:** realizar el cambio reversible al backend de Cloudflare **solo cuando los requisitos anteriores estén cumplidos**. No retirar Supabase ni suprimir recursos originales al publicar.
+- **Fase 6 — Justo después de publicar:** probar de forma prioritaria en iPhone Safari y Samsung/Android los dos vídeos, hamburguesa, ES/FR, registro e inicio de sesión, sesión persistente, QR y control de puerta. Para QR, puntos y canjes usar cuentas preparadas y procedimientos controlados; no sumar visitas o puntos de socios reales por pruebas.
+- **Si falla algo crítico:** revertir a la versión anterior con el plan de recuperación previamente verificado y reconciliar operaciones antes de reactivar escrituras.
+
+**No interpretar este cambio de orden como autorización para activar DNS, editar producción o publicar ahora.**
+
 ## 1. Antes de probar operaciones de escritura
 
 1. Crear o reservar un **entorno separado de ensayo** con base y almacenamiento ficticios, sin importar socios reales (ni sus puntos, códigos, hashes, sesiones o emails). Nunca habilitar escrituras en la D1 que conserva copias reales mientras esté mezclada con cuentas de pruebas.
@@ -55,7 +66,7 @@ Estos respaldos **todavía no se han creado/verificado** en esta auditoría. Sol
 - Guardar y verificar fuera de GitHub las configuraciones de OAuth, correo y Turnstile **sin exponer los valores secretos**.
 - Probar restauración y medir diferencias antes de considerar válido cualquier backup.
 
-## 3. Verificación manual con usuarios de ensayo
+## 3. Verificación manual con usuarios de ensayo — fase 6, tras publicación
 
 | Función | iPhone Safari | Samsung/Android | Ordenador | Criterio |
 |---|---|---|---|---|
