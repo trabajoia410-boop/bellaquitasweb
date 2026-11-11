@@ -108,6 +108,8 @@ try{
   assert.equal(await m.locator(".menu-toggle").getAttribute("aria-expanded"),"false");
   assert.equal(await m.locator("#site-menu").isVisible(),false);
   test("móvil: Eventos navega y cierra hamburguesa");
+  assert.equal(await m.locator("#site-menu .bf-menu-mobile-primary a[href='#/eventos']").getAttribute("aria-current"),"page");
+  test("móvil: Eventos aparece como pestaña activa");
 
   await m.locator(".menu-toggle").click();
   await m.locator("#site-menu a[href='#/sugerencias']").click();
@@ -125,6 +127,40 @@ try{
   test("móvil: francés traduce hamburguesa y persiste preferencia");
   await evidence(m,"staging-mobile-fr");
 
+  // Verificar un formulario real traducido, sin pulsar Enviar ni acceder a usuarios.
+  assert.ok((await m.locator("#community-suggestion-form label[for='suggestion-message']").textContent()).includes("Votre message"));
+  assert.ok((await m.locator("#community-suggestion-form button[type='submit']").textContent()).includes("Envoyer une suggestion"));
+  assert.ok((await m.locator("#suggestion-message").getAttribute("placeholder")).includes("Partagez"));
+  test("móvil: etiquetas y placeholder de Sugerencias traducidos al francés");
+
+  await m.locator(".menu-toggle").click();
+  assert.equal(await m.locator(".menu-toggle").getAttribute("aria-expanded"),"false");
+  await m.locator(".header-search-button").click();
+  assert.equal(await m.locator(".header-search-button").getAttribute("aria-expanded"),"true");
+  assert.equal(await m.locator("#site-search-panel").isVisible(),true);
+  await m.keyboard.press("Escape");
+  assert.equal(await m.locator("#site-search-panel").isVisible(),false);
+  test("móvil: búsqueda se abre y cierra con Escape");
+
+  await m.reload({waitUntil:"domcontentloaded"});
+  await m.locator(".site-header").waitFor();
+  assert.equal(await m.evaluate(()=>localStorage.getItem("bellaquitas-lang")),"fr");
+  assert.equal(await m.evaluate(()=>document.documentElement.lang),"fr");
+  test("móvil: idioma francés persiste al recargar");
+
+  await m.goto(SITE+"#/moments",{waitUntil:"domcontentloaded"});
+  await m.locator(".site-header").waitFor();
+  assert.equal(await m.evaluate(()=>document.documentElement.lang),"fr");
+  assert.ok((await m.locator(".community-intro h1").first().textContent()).includes("Bellaquitas Moments"));
+  test("móvil: página Bellaquitas Moments abre en francés");
+
+  await m.goto(SITE+"#/club",{waitUntil:"domcontentloaded"});
+  await m.locator(".site-header").waitFor();
+  assert.equal(await m.evaluate(()=>document.documentElement.lang),"fr");
+  assert.ok((await m.locator(".community-intro h1").first().textContent()).includes("Club"));
+  test("móvil: página Club conserva idioma francés");
+
+
   // Comprobación visual de reglas específicas de encuadre iPhone,
   // emulando user agent pero SIN afirmar que es Safari.
   const iphone=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,
@@ -139,6 +175,12 @@ try{
   assert.match(await v.getAttribute("src"),/bellaquitas%20fiesta%20portada%20movil\.mp4/);
   diagnostics.iPhone.hero=await v.getAttribute("src");
   test("iPhone emulado: clase de encuadre iOS y vídeo móvil aplicados");
+  // El segundo fondo conserva sus fuentes, sin transcodificarlas.
+  const secondVideo=p.locator(".bf-after-marquee-video");
+  assert.equal(await secondVideo.count(),1);
+  const secondSources=await secondVideo.locator("source").evaluateAll(list=>list.map(x=>x.getAttribute("src")));
+  assert.ok(secondSources.some(x=>x&&x.includes("Bellaquitas%20Fest%20para%20m%C3%B3vil.mp4")));
+  test("iPhone emulado: segundo vídeo incluye recurso móvil original");
 
   // Las rutas de cuentas protegidas no deben mostrar datos sin autenticación.
   await p.goto(SITE+"#/panel",{waitUntil:"domcontentloaded"});
