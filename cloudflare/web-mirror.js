@@ -1,5 +1,5 @@
 import {MIRROR_SNAPSHOT} from "./mirror-snapshot.js";
-const SOURCE="https://bellaquitas.fr";
+import {SITE_MEDIA} from "./site-media-manifest.js";
 const MIRROR_BASE="/espejo/";
 const PROTECTED={
  "Cache-Control":"no-store",
@@ -42,7 +42,7 @@ function sameDesignJS(source){
  return source.replace(needle,"await import('/espejo/bridge.js')")
    .replace(live,"const live = true; // Catálogos y sesiones de Cloudflare, sin Supabase.");
 }
-export async function mirrorRoute(request){
+export async function mirrorRoute(request,env){
  const url=new URL(request.url),path=url.pathname;
  if(path==="/espejo")return Response.redirect(url.origin+MIRROR_BASE,302);
  if(!path.startsWith(MIRROR_BASE))return null;
@@ -51,17 +51,56 @@ export async function mirrorRoute(request){
  if(path==="/espejo/config.js")return js(config);
  if(path==="/espejo/bridge.js")return js(BRIDGE);
  if(path.startsWith("/espejo/assets/")){
-   const filename=path.slice("/espejo/assets/".length);
-   if(!filename||filename.includes("..")||filename.includes("%2e")||
-      !/^[a-zA-Z0-9%_.+\-]+$/i.test(filename)||
-      !/\.(?:mp4|webm|webp|png|jpg|jpeg|svg|js)$/i.test(filename))return fail(404,"Recurso no permitido");
-   // Las librerías JS deben proceder del MISMO origen para respetar CSP.
+   let filename;
+   try{filename=decodeURIComponent(path.slice("/espejo/assets/".length));}
+   catch{return fail(404,"Nombre de archivo no válido");}
+   if(!filename||filename.includes("/")||filename.includes("\\")||
+      filename==="."||filename===".."||
+      filename.length>200||/[\x00-\x1f]/.test(filename))
+      return fail(404,"Recurso no permitido");
+   // Bibliotecas originales idénticas a producción, sin redirecciones externas.
    if(filename==="qr-local.js"||filename==="jsqr-local.js"){
      try{return js(await original("assets/"+filename));}
      catch(_){return fail(503,"No se pudo cargar el generador/lector QR");}
    }
-   // Vídeos e imágenes se sirven sin recomprimir desde la web original.
-   return new Response(null,{status:302,headers:{...PROTECTED,Location:SOURCE+"/assets/"+filename}});
+   const expected=SITE_MEDIA.find(f=>f.path===filename);
+   if(!expected)return fail(404,"Este archivo no pertenece al diseño original");
+   if(!env?.MEDIA)return fail(503,"R2 no está disponible");
+   const key="site-original/"+filename;
+   try{
+     // La API R2 permite servir intervalos de bytes; imprescindible en Safari.
+     // HEAD no descarga el objeto ni descomprime vídeo.
+     const object=request.method==="HEAD"
+       ?await env.MEDIA.head(key)
+       :await env.MEDIA.get(key,{range:request.headers});
+     if(!object||object.size!==expected.bytes||
+        object.customMetadata?.gitSha1!==expected.gitSha1)
+       return fail(503,"Archivo pendiente de verificación en R2");
+     const headers=new Headers({
+       ...PROTECTED,
+       "Content-Type":expected.type,
+       "Cache-Control":"public, max-age=86400",
+       "Accept-Ranges":"bytes",
+       "X-Content-Type-Options":"nosniff",
+       "Content-Disposition":"inline"
+     });
+     headers.set("ETag",object.httpEtag);
+     object.writeHttpMetadata(headers);
+     headers.set("Content-Type",expected.type);
+     headers.set("Accept-Ranges","bytes");
+     headers.set("Content-Length",String(
+       request.method==="HEAD"?object.size:(object.range?.length||object.size)));
+     if(request.method==="HEAD")return new Response(null,{status:200,headers});
+     const isRange=!!request.headers.get("Range")&&!!object.range;
+     if(isRange){
+       const offset=object.range.offset||0;
+       headers.set("Content-Range",`bytes ${offset}-${offset+object.range.length-1}/${object.size}`);
+     }
+     return new Response(object.body,{status:isRange?206:200,headers});
+   }catch(error){
+     console.error("R2 media mirror:",String(error?.message||"error").slice(0,105));
+     return fail(503,"El archivo todavía no está disponible desde R2");
+   }
  }
  try{
   if(path==="/espejo/"||path==="/espejo/index.html"){
