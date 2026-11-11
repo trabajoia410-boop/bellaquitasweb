@@ -105,3 +105,10 @@
 - [x] Corregida duplicación de «Todavía no hay movimientos» provocada por dos actualizaciones concurrentes de la interfaz; cambio desplegado solo en Worker staging.
 - [ ] Validar lectura real de QR con cámara iPhone y Android y roles de puerta sin alterar visitas de socios reales.
 - [ ] Auditoría de seguridad del KDF versionado y flujo completo, previa al corte de producción.
+
+## Reparación lector QR móvil, 11/11/2026
+- [x] Lector en staging mejorado con decodificación nativa y `jsQR`, mensajes de estado claros y consulta automática sin escrituras.
+- [x] Lectura alternativa desde foto/captura local para QR mostrado en el mismo móvil.
+- [x] Prueba sintética QR generado/decodificado correcta y controles de acceso conservados.
+- [x] Despliegue controlado sin modificar totales: 7 perfiles, 1.999.998 puntos y 0 visitas.
+- [ ] Verificación cámara real iPhone/Android, escaneando código `MBR-` desde otro dispositivo y confirmando coincidencia de socio.
