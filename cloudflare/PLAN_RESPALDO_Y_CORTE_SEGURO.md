@@ -21,6 +21,31 @@
 
 **Preparado:** 11 de noviembre de 2026. **Estado: PLAN, SIN EJECUTAR CAMBIO DE PRODUCCIÓN.**
 
+## Copia privada preparada y auditoría de esquema (11/11/2026)
+
+Se ha preparado `cloudflare/backup_privado_local.py`, que **solo se ejecutará con confirmación explícita desde un equipo del propietario y con credenciales privadas**. No usa GitHub Actions para exportar datos, no añade compras y no hace ninguna escritura de producción.
+
+- `--check`: verifica herramientas, sin conectarse.
+- `--self-test`: valida restauración SQL sintética y detección de objetos incompletos, sin conexión.
+- `--run`: exporta a una carpeta privada fuera de Git, verifica y cifra con GPG cuatro fuentes:
+  1. **Postgres Supabase** completo, exigiendo presencia de datos `public`, `auth.users`, `auth.identities` y metadatos de `storage.objects`.
+  2. **D1 staging**, comprobando que el SQL se restaura en SQLite de memoria y contiene las tablas y saldos esperados.
+  3. **Cloudflare R2**, incluyendo todos sus objetos y verificación de tamaños (actualmente, 20).
+  4. **Supabase Storage**, que todavía alberga 3 objetos binarios en `bellaquitas-media`. Los objetos **NO quedan guardados en un dump SQL**. Se requiere acceso S3 del proyecto configurado localmente; no registrar claves en GitHub.
+- Genera manifiesto de hashes SHA-256 y un contenedor `tar.gz.gpg` protegido por contraseña privada. Necesita una carpeta ubicada en un volumen cifrado para evitar riesgos durante los archivos temporales; después elimina el área provisional.
+- **Todavía NO se ha ejecutado `--run` ni se han realizado respaldos reales.** Las pruebas automáticas con archivos ficticios sí están aprobadas: https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43114946070
+- Una verificación de formato/listado no sustituye la **restauración completa de PostgreSQL** en una instancia aislada. Sin esa comprobación no se autoriza la fase 6.
+- D1 Time Travel en Workers Free dura **7 días** según documentación actual; no reemplaza la copia privada exportada.
+- El proyecto Supabase sigue en Free. Al dejar de recibir tráfico después del corte, podría pausarse por inactividad: no asumir que permitirá una reversión instantánea indefinidamente. Mantener un procedimiento de reactivación y archivos restaurables; no pagar para evitar la pausa.
+
+**Avisos de Supabase:** se verificó RLS activado en 12/12 tablas `public`. Siete `SECURITY DEFINER` accesibles a autenticados tienen comprobaciones internas de identidad/rol; ninguno permite `EXECUTE` al rol anónimo. Análisis: `cloudflare/AUDITORIA_PERMISOS_SUPABASE_2026-11-11.md`. No se han modificado esos permisos.
+
+## Próximo paso obligatorio antes del corte
+
+Completar desde un entorno privado del propietario una copia real cifrada y su restauración controlada, verificar que incluye los seis usuarios, sus identidades, los puntos/visitas y los archivos originales, y conciliar de nuevo con D1. **No enviar contraseñas, tokens, hashes ni dumps completos al chat ni a GitHub.**
+
+---
+
 ## Límites innegociables
 - No cambiar `bellaquitas.fr`, su diseño, DNS, Hosting/GitHub Pages ni el proveedor de autenticación actual durante las pruebas.
 - No alterar, reiniciar ni usar puntos, visitas, QR, canjes ni cuentas de los seis usuarios importados de Supabase.
