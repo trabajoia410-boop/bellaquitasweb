@@ -118,3 +118,21 @@
 - [x] Se mantiene aviso «Modo pruebas: registrar visitas está desactivado»; reconocimiento y consulta no equivalen a marcar asistencia.
 - [x] Usuario confirmó expresamente que el QR fue reconocido **directamente con la cámara** en Android, no mediante foto/captura. El reconocimiento y la consulta del socio funcionaron sin registrar visita.
 - [ ] Validar también Safari/iPhone y perfiles de puerta distintos de administrador, sin registrar visitas ni puntos reales.
+
+## Fase 4 — pruebas con socios ficticios en D1 independiente, 11/11/2026
+- [x] Se creó una base de datos D1 **temporal aislada** (sin importar cuentas ni puntos reales), se instalaron 16 tablas, índices y 5 triggers, y se borró tras probar.
+- [x] Visita ficticia suma +10 puntos y +1 visita; segunda visita del mismo día bloqueada por índice único.
+- [x] Canje descontó 30 puntos; sin saldo rechazado por trigger `Puntos insuficientes`.
+- [x] Personal sin permisos no puede validar canjes; no se puede reabrir canje validado.
+- [x] Usuario sin rol admin no puede modificar puntos; ajuste del admin pasó por tabla de auditoría.
+- [x] Confirmado tras pruebas: solo queda la base D1 original `bellaquitas-staging`, con 7 perfiles, 1.999.998 puntos y 0 visitas.
+- [ ] Prueba física de puerta que REGISTRE una visita en un entorno independiente, después de revisar seguridad; nunca con cuentas reales.
+
+## Fase 5 — espejo visual original conectado a Cloudflare, 11/11/2026
+- [x] Desplegado `/espejo/` en Worker staging, sirviendo el HTML/CSS/renderer originales de `bellaquitas.fr` y la misma ruta de vídeos y logos, sin recompresión.
+- [x] Adaptador de **solo lectura** para eventos, premios, promociones, site_content, perfiles y sesión de Cloudflare; se han bloqueado las mutaciones.
+- [x] Aislamiento: no se descargan credenciales de Supabase; CSP bloquea sus conexiones, noindex, sin service worker de staging.
+- [x] Browser Rendering: título Bellaquitas Fest, navbar, portada, vídeo y enlaces, sin error de arranque.
+- [x] Generador y lector QR entregados con mismo origen para CSP.
+- [ ] Migración completa de las funcionalidades restantes (panel, edición visual, sugerencias, fotografías, subidas R2) y comparación visual exhaustiva móvil/escritorio.
+- [ ] No migrar dominio ni retirar Supabase antes de completar toda la fase 5 y QA de fase 6.
