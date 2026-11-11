@@ -273,3 +273,20 @@ Una comparación de solo lectura confirmó:
 - Revisión independiente del esquema de contraseñas personalizado.
 
 La fase 5 sigue abierta hasta completar esos puntos; no se cambió producción, DNS ni el diseño público.
+
+
+## 12. Auditoría adicional: exposición de cuentas por tiempos en email login
+
+Se encontró en el Worker respaldado un posible **vector de enumeración de correos**: si el correo no existe, el login responde antes de calcular PBKDF2; si existe pero la contraseña es incorrecta, calcula seis derivaciones. OWASP advierte que los tiempos pueden revelar existencia de cuentas incluso con respuestas genéricas.
+
+Se ha creado **solo un candidato de corrección** `cloudflare/qa-candidates/email-auth-routes.js` que realiza el mismo cálculo para una cuenta desconocida utilizando una sal ficticia y mantiene el código y formato de contraseñas existentes para cuentas registradas.
+
+- Prueba instrumentada: 6 derivaciones PBKDF2 para correo existente y 6 para inexistente; mensajes y status 401 iguales.
+- Regresión original de correo: 10/10.
+- Regresión completa con candidato inyectado **solo en el runner de GitHub**: 10 SQL + 10 correo + 10 roles + 10 Google + 12 editor + 28 HTTP, todas aprobadas, más streaming 6/6.
+- Evidencia: https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/42997836661
+- Hallazgos y condiciones de despliegue: `cloudflare/SEGURIDAD_LOGIN_CORREO.md`.
+
+**No se ha desplegado la corrección.** Sigue pendiente resolver la diferencia de tiempos del registro de correo, evaluar límites de CPU bajo ataque y obtener una revisión criptográfica independiente del esquema personalizado `pbkdf2-chain6-sha256-v1`. No sustituir la implementación existente por un hash incompatible sin plan de actualización de credenciales y pruebas reales.
+
+**Estado fase 5:** auditoría ampliada y corrección candidata probada; pruebas físicas, backups privados y revisión de seguridad completa siguen pendientes.
