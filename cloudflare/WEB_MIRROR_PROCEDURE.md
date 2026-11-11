@@ -11,13 +11,11 @@ de backend. La comparación visual se hace sobre la web pública actual.
 ## Primer resultado desplegado (solo staging)
 
 - URL del espejo: `https://bellaquitas-api-staging.bellaquitas-fest-410.workers.dev/espejo/`
-- `cloudflare/web-mirror.js` sirve el HTML, CSS, traducciones y `app.js`
-  actuales desde `https://bellaquitas.fr`. El renderer principal, los
+- `cloudflare/web-mirror.js` sirve el HTML, CSS, traducciones, `app.js` y librerías QR
+  **congelados** en `cloudflare/mirror-snapshot.js` desde los archivos visuales originales. No depende del dominio público para consultar estos archivos. El renderer principal, los
   elementos de navegación, los nombres de vídeos y las animaciones se mantienen.
 - Se cambian **solo** el arranque de Supabase y la carga del adaptador a
-  `/espejo/bridge.js`. Las imágenes y los MP4 se siguen sirviendo desde
-  los archivos originales, sin recomprimir; la generación QR y jsQR se
-  sirven desde el mismo origen del espejo para satisfacer CSP.
+  `/espejo/bridge.js`. Las imágenes y los MP4 aún se obtienen desde el dominio público original, **sin recomprimir**, hasta completar la copia R2. El generador QR y jsQR ya se sirven desde el mismo origen del espejo utilizando la copia fija.
 - `cloudflare/web-mirror-bridge.js` traduce lecturas hacia Cloudflare D1
   (`/v1/events`, `/v1/rewards`, `/v1/promos`, `/v1/site`, etc.) y
   recupera la identidad desde `/v1/auth/me`.
@@ -70,3 +68,62 @@ de backend. La comparación visual se hace sobre la web pública actual.
 
 **Producción:** `bellaquitas.fr` continúa en GitHub Pages + Supabase hasta
 completar las verificaciones. La rama Cloudflare sigue sin fusionarse.
+
+## Avance del 11/11/2026 — lectura y edición preparadas
+
+- Añadida `cloudflare/mirror-data-routes.js`, con GET de álbumes, fotos públicas y
+  privadas, sugerencias, borradores, catálogo completo (incluidos borradores),
+  movimientos, auditoría y canjes según permisos de socio/puerta/admin.
+- Control de acceso probado con actores simulados: anónimo 401, socio no autorizado
+  403 y administrador 200; fotografías privadas sin filtrar rutas internas de R2.
+- Añadida `cloudflare/mirror-write-routes.js` con rutas tipadas para editor,
+  eventos, premios, promociones, estados de sugerencias, borrado de álbumes,
+  subida de imágenes y borrado seguro de medios. Son **rutas preparadas, no
+  habilitadas**: todas devuelven HTTP 423 en staging por `STAGING_MUTATIONS=disabled`.
+- El adaptador del renderer original `web-mirror-bridge.js` ya dirige los
+  formularios y RPC originales a estas rutas, conservando la interfaz. Pruebas
+  simuladas comprobaron que los intentos de escritura no aparentan éxito.
+- Prueba D1 separada: crear/editar un evento y su traducción francesa,
+  crear un premio y una promoción, guardar/publicar ajustes del editor, actualizar
+  sugerencias y borrar una galería ficticia en cascada. **La base D1 temporal
+  fue eliminada** después. No se tocaron las siete cuentas de pruebas.
+- Estado de D1 staging verificado: 7 perfiles, 1.999.998 puntos, 0 visitas,
+  una cuenta por correo verificada; únicamente existe la base
+  `bellaquitas-staging`.
+
+## Copia fija de diseño original
+
+`cloudflare/mirror-snapshot.js` contiene exactamente estos ficheros
+del repositorio de diseño, en esta versión de la migración:
+
+| Archivo | Bytes/Caracteres de origen |
+|---|---:|
+| `index.html` | 16.750 |
+| `app.js` | 177.758 |
+| `styles.css` | 138.290 |
+| `locale-fr.js` | 48.909 |
+| `assets/qr-local.js` | 30.260 |
+| `assets/jsqr-local.js` | 256.723 |
+
+Los archivos quedan congelados en el módulo del Worker de pruebas y no
+dependen de llamadas al dominio público. Los MP4 e imágenes binarias
+siguen pendientes de copia exacta a R2, sin reducción ni transformación.
+**No se debe cambiar DNS ni dominio antes de cerrar esta dependencia.**
+
+## Diferencias pendientes frente a la web definitiva
+
+- La pantalla de registro, recuperación por email, Google OAuth y retorno a la
+  ruta original del espejo necesitan unificar sus enlaces con la aplicación
+  final; la pantalla `/preview` ya sirve de referencia funcional para ellos.
+- El editor, los uploads y el control de puerta están **preparados**, pero
+  permanecen deshabilitados por seguridad. Falta un entorno separado donde
+  habilitarlos y ejecutar pruebas reales antes de pasar a producción.
+- La sección Sugerencias está en modo de solo lectura para el envío: necesita
+  protección anti-spam/Turnstile y límites antes de habilitarlo públicamente.
+- Falta copiar y verificar imágenes/vídeos en R2, probar imágenes externas ya
+  referenciadas en D1, ensayar recuperación y rollback, confirmar permisos
+  de producción y auditar el KDF del login.
+- La comparación de DOM del espejo y la web original en ancho móvil confirmó
+  portada, menú hamburguesa, barra animada y ES/FR. Eso **no demuestra todavía
+  paridad visual de todos los píxeles ni todos los dispositivos**.
+  El iPhone se probará más adelante a petición del usuario.
