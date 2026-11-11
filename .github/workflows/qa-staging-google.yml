@@ -1,0 +1,27 @@
+name: Google OAuth — firmas y sesiones simuladas
+on:
+  push:
+    branches:
+      - auditoria/fase5-2026-11-11
+    paths:
+      - cloudflare/test_staging_google.mjs
+      - cloudflare/staging-source-2026-11-11/**
+      - .github/workflows/qa-staging-google.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  oauth-memory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Recuperar módulos originales del Worker
+        run: node cloudflare/staging-source-2026-11-11/extract-modules.mjs
+      - name: Comprobar sintaxis
+        run: node --check cloudflare/test_staging_google.mjs
+      - name: Validar OAuth con claves RSA y proveedor Google simulados
+        run: node --experimental-default-type=module --test cloudflare/test_staging_google.mjs
