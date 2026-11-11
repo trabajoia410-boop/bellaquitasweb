@@ -30,6 +30,8 @@ jobs:
         run: node --experimental-default-type=module --test cloudflare/test_staging_roles.mjs cloudflare/test_staging_auth.mjs cloudflare/test_staging_google.mjs
       - name: Probar editor, borradores, eventos y R2 sobre SQLite ficticia
         run: node --experimental-sqlite --experimental-default-type=module --test cloudflare/test_staging_editor.mjs
+      - name: Probar Worker completo, control de puerta y dobles lecturas QR con datos ficticios
+        run: node --experimental-sqlite --experimental-default-type=module --test cloudflare/test_worker_full_stack.mjs
       - name: Probar API pública y denegaciones anónimas en staging
         run: node cloudflare/test-staging-api.mjs
       - name: Comprobar streaming de cinco vídeos y HTTP Range
