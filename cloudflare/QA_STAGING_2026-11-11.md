@@ -437,3 +437,18 @@ Se detectó y corrigió **una carrera en la secuencia de pruebas**: la segunda a
 - Quedan pendientes las copias privadas restaurables de datos, la revisión completa de autenticación, la prueba física en dispositivos reales y el corte reversible de fase 6.
 
 **Confirmado: no hubo cambios en DNS, bellaquitas.fr, D1 staging, Supabase ni puntos/visitas reales.**
+
+## 17. Respaldo gratuito y auditoría de Supabase — preparados, no ejecutados
+
+**Auditoría de solo lectura:**
+- Supabase Free confirmado; **12/12 tablas públicas con RLS**.
+- Security Advisor: siete funciones `SECURITY DEFINER` invocables por `authenticated`, ninguna por `anon`; sus definiciones muestran comprobaciones internas de identidad o rol. El aviso requiere seguimiento, no revocación masiva sin pruebas.
+- Protección de contraseña filtrada desactivada; no contratar Pro para activarla.
+- Supabase Storage conserva **3 objetos**, además de los seis perfiles y seis identidades; los binarios no están dentro de Postgres.
+- Cloudflare R2 conserva 20 objetos de staging; D1 tiene tablas de negocio y autenticación que deben respaldarse.
+
+Se creó `cloudflare/backup_privado_local.py` para copias privadas cifradas **Postgres + Supabase Storage + D1 + R2** con verificación de archivo y fallos por objetos ausentes. Su modo `--self-test` pasó con datos ficticios; `--run` se bloquea en CI y aún **NO se ha ejecutado con datos reales**.
+
+Evidencia: https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43114946070
+
+**Pendiente:** copia real privada y restauración de prueba, revisión CPU/contraseñas Workers Free, conmutación reversible y pruebas físicas posteriores a la publicación oficial, según decisión del propietario. No se han realizado cambios de producción.
