@@ -266,9 +266,17 @@ async function renderCommunity(){
   "<div class=\"list-item\"><div><strong>"+H(x.name||"Anónimo")+"</strong><small class=\"muted\"> · "+H(x.status)+"</small>"+
   "<p>"+H(x.message)+"</p></div><div class=\"actions\"><button class=\"secondary\" type=\"button\" data-suggestion-id=\""+H(x.id)+"\" data-status=\"revisado\">Revisada</button>"+
   "<button class=\"subtle\" type=\"button\" data-suggestion-id=\""+H(x.id)+"\" data-status=\"archivado\">Archivar</button></div></div>").join("");
- const albums=(result.albums||[]).map(x=>
-  "<div class=\"list-item\"><div><strong>"+H(x.title)+"</strong><p>"+H(x.event_date)+" · "+(x.published?"Publicada":"Oculta")+"</p></div>"+
-  "<div class=\"actions\"><button type=\"button\" class=\"secondary\" data-album-id=\""+H(x.id)+"\" data-published=\""+(x.published?"true":"false")+"\">"+(x.published?"Ocultar":"Publicar")+"</button></div></div>").join("");
+ const albums=(result.albums||[]).map(x=>{
+  const photos=(result.photos||[]).filter(p=>p.album_id===x.id).map(p=>
+   "<div class=\"photo-tile\"><img alt=\"Foto de galería\" loading=\"lazy\" src=\"/administracion/api/photos/"+H(p.id)+"\">"+
+   "<button type=\"button\" class=\"danger\" data-delete-photo=\""+H(p.id)+"\">Eliminar foto</button></div>").join("");
+  return "<div class=\"list-item album-item\"><div class=\"album-main\"><strong>"+H(x.title)+"</strong><p>"+H(x.event_date)+" · "+(x.published?"Publicada":"Oculta")+"</p>"+
+   "<div class=\"photo-grid\">"+photos+"</div>"+
+   "<div class=\"actions\"><input type=\"file\" aria-label=\"Subir una foto a "+H(x.title)+"\" data-file-album=\""+H(x.id)+"\" accept=\"image/jpeg,image/png,image/webp\">"+
+   "<button type=\"button\" class=\"secondary\" data-upload-album=\""+H(x.id)+"\">Subir foto</button></div></div>"+
+   "<div class=\"actions\"><button type=\"button\" class=\"secondary\" data-album-id=\""+H(x.id)+"\" data-published=\""+(x.published?"true":"false")+"\">"+(x.published?"Ocultar":"Publicar")+"</button>"+
+   "<button type=\"button\" class=\"danger\" data-delete-album=\""+H(x.id)+"\">Borrar galería</button></div></div>";
+ }).join("");
  $("#work-content").innerHTML="<div class=\"panel\"><h2>Sugerencias recibidas</h2><div class=\"list-items\">"+(suggestions||"<div class=\"empty\">No hay sugerencias nuevas.</div>")+"</div></div>"+
  "<div class=\"panel\"><h2>Bellaquitas Moments</h2><p>Crear una galería para fotografías de un evento.</p>"+
  "<form id=\"album-form\" class=\"row-form\">"+formInput("title","Título del álbum")+formInput("event_date","Fecha del evento","","date")+
@@ -352,6 +360,26 @@ document.addEventListener("click",async e=>{
    await api("/moments/publish",{method:"POST",body:{album_id:el.dataset.albumId,published:el.dataset.published!=="true"}});
    await renderCommunity();feedback("Estado de la galería actualizado.");return;
   }
+  if(el.dataset.uploadAlbum){
+   const input=document.querySelector("[data-file-album=\""+el.dataset.uploadAlbum+"\"]");
+   const file=input?.files?.[0];
+   if(!file)throw new Error("Selecciona primero una fotografía.");
+   if(!["image/jpeg","image/png","image/webp"].includes(file.type)||file.size>8*1024*1024||file.size===0)
+     throw new Error("La foto debe ser JPG, PNG o WebP y pesar hasta 8 MB.");
+   await api("/moments/"+encodeURIComponent(el.dataset.uploadAlbum)+"/photo",{method:"POST",body:file});
+   await renderCommunity();feedback("Fotografía subida correctamente.");return;
+  }
+  if(el.dataset.deletePhoto){
+   if(!confirm("¿Eliminar la fotografía de la galería?"))return;
+   await api("/write",{method:"POST",body:{kind:"moments_photos",action:"delete",id:el.dataset.deletePhoto}});
+   await renderCommunity();feedback("Fotografía eliminada.");return;
+  }
+  if(el.dataset.deleteAlbum){
+   if(!confirm("¿Eliminar esta galería y sus fotografías?"))return;
+   await api("/write",{method:"POST",body:{kind:"moments_albums",action:"delete",id:el.dataset.deleteAlbum}});
+   await renderCommunity();feedback("Galería eliminada.");return;
+  }
+
  }catch(err){feedback(err.message,true);}
 });
 document.addEventListener("submit",async e=>{
