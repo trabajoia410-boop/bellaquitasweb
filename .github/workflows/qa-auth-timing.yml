@@ -29,3 +29,9 @@ jobs:
           node --experimental-default-type=module --test cloudflare/test_staging_auth_timing.mjs
       - name: Comprobar registro, acceso y recuperación existentes (regresión)
         run: node --experimental-default-type=module --test cloudflare/test_staging_auth.mjs
+      - name: Ejecutar regresión completa con el módulo candidato (solo runner)
+        run: |
+          python3 -m unittest discover -s cloudflare -p test_sqlite_rules.py -v
+          node --experimental-sqlite --experimental-default-type=module --test cloudflare/test_staging_roles.mjs cloudflare/test_staging_google.mjs cloudflare/test_staging_editor.mjs
+          node cloudflare/test-staging-api.mjs
+          node cloudflare/test-staging-media.mjs
