@@ -350,3 +350,53 @@ Evidencia: https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/4301
 La fase 5 sigue abierta hasta completar las pruebas finales físicas de móvil/QR, las verificaciones de autenticación con cuentas ficticias, las copias privadas restaurables y la revisión de seguridad de contraseñas.
 
 **Estado acumulado de esta auditoría:** 80 verificaciones lógicas/API, 6 verificaciones HTTP de medios, 21 controles de interfaz Chrome, 13 comparaciones Chrome con sitio original y 19 pruebas WebKit, todos aprobados en sus últimas ejecuciones. Estas cifras son de suites diferentes y pueden solaparse; no representan 139 funcionalidades independientes.
+
+
+## 15. Segundo vídeo Safari y editor extremo a extremo aislado
+
+### Segundo vídeo iPhone WebKit — MP4 móvil decodificado y reproducido
+
+Se comprobó con motor WebKit de Playwright, dimensiones emuladas de iPhone y **sin credenciales**:
+- En `https://bellaquitas.fr/` y en `/espejo/`, el elemento `video.bf-after-marquee-video` seleccionó el archivo `Bellaquitas Fest para móvil.mp4` (ruta web con codificación de caracteres).
+- **Ambos** decodificaron el mismo MP4 a `1080 × 1920`, `readyState=4`, sin error HTMLMediaElement.
+- La promesa `video.play()` se resolvió en los dos casos. Las dimensiones y el archivo seleccionado coinciden.
+- No se editó ni descargó una nueva versión de los vídeos; fue lectura/reproducción pública del sitio y del espejo.
+
+Evidencia: https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43019648645
+
+### Worker completo, datos 100 % ficticios — 15/15 APROBADO
+
+Se ejecutó **el entrypoint real** `bellaquitas-api-staging.js` con las 17 fuentes del Worker recuperadas, D1 SQLite `:memory:` y R2 falso. Incluye:
+- `/health`, archivos del espejo, traducción FR, `noindex`, evento y sesión anónima.
+- Tres perfiles ficticios (admin/socio/puerta): roles y permisos comprobados de extremo a extremo.
+- Publicación de un evento ficticio mediante `POST /v1/mirror/admin/write` y lectura desde `GET /v1/events`.
+- Rechazos de escrituras de socio/puerta, origen externo, y bloqueo de ediciones con `STAGING_MUTATIONS=disabled`.
+- Ausencia de filtración de datos y saldos ficticios sin cambios.
+
+Evidencia: https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43020117830
+
+### Interfaz del panel/editor en navegador Chrome, usando Worker local — 11/11 APROBADO
+
+Se arrancó un servidor **localhost efímero** que enruta todas las solicitudes al Worker original, alimentado por SQLite `:memory:` y los 17 recursos estáticos verificados **desde los archivos del repositorio** (emulación R2 con manifest Git). La sesión `admin` es una identidad simulada inyectada únicamente por el servidor de pruebas, **NO es login real, NO usa cookies de socios y NO hace peticiones a Cloudflare/Supabase/Resend**.
+
+Comprobado en el navegador:
+1. Salud del Worker local.
+2. Vista principal del panel de administración.
+3. Herramientas del editor visual visibles.
+4. Guardar un borrador no altera el contenido publicado.
+5. Publicación del texto español modifica solo la base ficticia.
+6. Lectura del contenido publicado a través de la API local del Worker.
+7. Guardar el texto francés no modifica el español.
+8. Publicar ES/FR conserva las dos versiones de idioma.
+9. Botón de vista previa móvil funciona.
+10. Ningún punto/visita cambia en los perfiles de ensayo.
+11. Sin errores JavaScript ni solicitudes HTTP 5xx al backend local.
+
+Evidencia: https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43021180171
+
+### Precauciones y próximos bloqueos
+
+- Los tres sistemas de prueba son **ensayos automatizados aislados**; todavía no se han hecho pruebas físicas en iPhone ni Samsung, ni verificación completa del lector cámara QR con cuentas ficticias y acceso real.
+- `STAGING_MUTATIONS=enabled` se utiliza **solo en objetos JavaScript dentro del proceso de CI**; el Worker desplegado continúa bloqueado con `STAGING_MUTATIONS=disabled`.
+- No hemos contratado nuevos productos. Las pruebas se ejecutan en el plan disponible de GitHub Actions sin habilitar funciones Cloudflare de pago.
+- La fase 5 sigue abierta hasta tener copias privadas restaurables, seguridad del login revisada, comprobación física y autorización de corte. No se ha migrado la web pública.
