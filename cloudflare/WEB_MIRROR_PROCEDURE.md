@@ -15,7 +15,7 @@ de backend. La comparación visual se hace sobre la web pública actual.
   **congelados** en `cloudflare/mirror-snapshot.js` desde los archivos visuales originales. No depende del dominio público para consultar estos archivos. El renderer principal, los
   elementos de navegación, los nombres de vídeos y las animaciones se mantienen.
 - Se cambian **solo** el arranque de Supabase y la carga del adaptador a
-  `/espejo/bridge.js`. Las imágenes y los MP4 aún se obtienen desde el dominio público original, **sin recomprimir**, hasta completar la copia R2. El generador QR y jsQR ya se sirven desde el mismo origen del espejo utilizando la copia fija.
+  `/espejo/bridge.js`. Las 17 imágenes y vídeos originales ya se sirven desde **R2 staging**, con tamaños y SHA1 Git verificados, sin recomprimir. El generador QR y jsQR ya se sirven desde el mismo origen del espejo utilizando la copia fija.
 - `cloudflare/web-mirror-bridge.js` traduce lecturas hacia Cloudflare D1
   (`/v1/events`, `/v1/rewards`, `/v1/promos`, `/v1/site`, etc.) y
   recupera la identidad desde `/v1/auth/me`.
@@ -43,7 +43,7 @@ de backend. La comparación visual se hace sobre la web pública actual.
   Bellaquitas Fest, clase `bf-neon`, navbar, vídeo de portada, enlaces de
   Eventos, y sin error de inicio de sesión.
 - CSP: QR y jsQR servidos como JavaScript de primera parte; MP4 originales
-  redirigidos al dominio público sin transcodificar.
+  leídos desde R2 con soporte de `Range` para Safari, sin transcodificar.
 - Se conservan `ALLOW_NEW_ACCOUNTS=no` y
   `STAGING_MUTATIONS=disabled`, sin escrituras en los datos de fidelidad.
 - Base D1 staging: 7 perfiles, 1.999.998 puntos, 0 visitas.
@@ -106,9 +106,9 @@ del repositorio de diseño, en esta versión de la migración:
 | `assets/jsqr-local.js` | 256.723 |
 
 Los archivos quedan congelados en el módulo del Worker de pruebas y no
-dependen de llamadas al dominio público. Los MP4 e imágenes binarias
-siguen pendientes de copia exacta a R2, sin reducción ni transformación.
-**No se debe cambiar DNS ni dominio antes de cerrar esta dependencia.**
+dependen de llamadas al dominio público. Los 17 ficheros de vídeo e imagen binaria ya están copiados a R2 staging
+sin reducción ni transformación, con hashes de objeto versionados.
+**No cambiar DNS ni dominio antes de completar la validación funcional y de seguridad.**
 
 ## Diferencias pendientes frente a la web definitiva
 
@@ -118,12 +118,33 @@ siguen pendientes de copia exacta a R2, sin reducción ni transformación.
 - El editor, los uploads y el control de puerta están **preparados**, pero
   permanecen deshabilitados por seguridad. Falta un entorno separado donde
   habilitarlos y ejecutar pruebas reales antes de pasar a producción.
-- La sección Sugerencias está en modo de solo lectura para el envío: necesita
-  protección anti-spam/Turnstile y límites antes de habilitarlo públicamente.
-- Falta copiar y verificar imágenes/vídeos en R2, probar imágenes externas ya
-  referenciadas en D1, ensayar recuperación y rollback, confirmar permisos
+- La sección Sugerencias ya está habilitada **solo en el espejo de staging** mediante
+  `SUGGESTIONS_ENABLED=yes`, Turnstile, origen estricto y 5 mensajes por IP y hora.
+  Pendiente prueba real de envío con desafío válido y revisión antispam antes de producción.
+- Los 17 recursos originales ya se sirven desde R2 staging. Falta revisar las imágenes
+  externas referenciadas en D1, ensayar recuperación y rollback, confirmar permisos
   de producción y auditar el KDF del login.
 - La comparación de DOM del espejo y la web original en ancho móvil confirmó
   portada, menú hamburguesa, barra animada y ES/FR. Eso **no demuestra todavía
   paridad visual de todos los píxeles ni todos los dispositivos**.
   El iPhone se probará más adelante a petición del usuario.
+
+## Nueva integración de Sugerencias — 11/11/2026
+
+- Formulario original `#/sugerencias`, sin rediseño; añadido exclusivamente un widget Turnstile
+  necesario para el envío. Funciona en ES/FR con mensaje de resultado.
+- Backend público `/v1/mirror/public/suggestions` y estado separado
+  `/v1/mirror/public/suggestions/status`.
+- Protección en servidor: `Origin` exacto, token Turnstile validado con hostname,
+  control de tamaño, mensaje entre 5 y 2.000 caracteres, nombre opcional de hasta
+  80 caracteres, honeypot y HMAC-IP con máximo de 5 sugerencias/hora.
+- Pruebas simuladas: sin flag HTTP 423, origen externo 403, CAPTCHA inválido 403,
+  primera inserción ficticia 201, sexta solicitud 429. Los inserts fueron con DB
+  simulada, **no se crearon sugerencias ficticias en D1 staging**.
+- D1 real validó por `EXPLAIN` las consultas SQL, sin modificar datos.
+- Worker staging actualizado con `SUGGESTIONS_ENABLED=yes`; `STAGING_MUTATIONS=disabled`
+  mantiene bloqueados puntos, visitas, editor, permisos y canjes.
+- Browser Rendering confirma formulario y contenedor de Turnstile en el espejo móvil;
+  el endpoint de estado responde `enabled=true` con clave pública del widget.
+- **Pendiente**: una prueba end-to-end con Turnstile resuelto por una persona, para confirmar
+  que la sugerencia llega al panel de administración. No afirmar todavía éxito real.
