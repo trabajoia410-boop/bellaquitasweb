@@ -129,6 +129,16 @@ async function writes(env,body){
    .bind(hero,announcement).run();
   return {ok:true};
  }
+ if(kind==="media"&&action==="remove"){
+  if(!Array.isArray(body.keys)||body.keys.length>30)throw Error("Lista de archivos inválida");
+  for(const key of body.keys){
+   if(typeof key!=="string"||
+     !/^media\/(?:events|rewards|promos|logos)\/[0-9a-f-]{36}\.(?:png|jpg|webp)$/i.test(key))
+     throw Error("Ruta de imagen no autorizada");
+  }
+  for(const key of body.keys)await env.MEDIA.delete(key);
+  return {ok:true};
+ }
  if(kind==="community_suggestions"&&action==="status"){
   if(!uuid(body.id)||!["nuevo","revisado","archivado"].includes(body.status))throw Error("Estado inválido");
   const r=await env.DB.prepare("UPDATE community_suggestions SET status=? WHERE id=? RETURNING id")
