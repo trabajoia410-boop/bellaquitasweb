@@ -1,5 +1,6 @@
 import {authRoute} from "./auth-routes.js";
 import {previewRoute} from "./preview-page.js";
+import {mirrorRoute} from "./web-mirror.js";
 import {protectedRoute} from "./protected-routes.js";
 import {emailAuthRoute} from "./email-auth-routes.js";
 /**
@@ -56,6 +57,8 @@ export default {
       return new Response(null, {status: 204, headers: responseHeaders(request)});
     }
     try {
+      const mirrorResponse = await mirrorRoute(request);
+      if (mirrorResponse) return mirrorResponse;
       const previewResponse = previewRoute(request);
       if (previewResponse) return previewResponse;
       const emailResponse = await emailAuthRoute(request, env);
