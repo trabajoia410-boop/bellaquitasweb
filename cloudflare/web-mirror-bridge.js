@@ -48,6 +48,7 @@ function queryBuilder(table){
       }else if(["events","rewards","promos","moments_albums"].includes(table)){
         const endpoint={events:"events",rewards:"rewards",promos:"promos",moments_albums:"moments"}[table];
         rows=(await requestJson("/v1/"+endpoint)).items||[];
+        if(["events","rewards","promos"].includes(table))rows=rows.map(x=>({...x,active:true}));
         if(table==="moments_albums")rows=rows.map(x=>({...x,published:true}));
       }else if(table==="site_content"){
         const result=await requestJson("/v1/site");
