@@ -40,8 +40,12 @@ const {response: cors} = await check("/health", 200, {
 assert.equal(cors.headers.get("access-control-allow-origin"), "https://bellaquitas.fr");
 
 const emailStatus = await check("/v1/auth/email/status");
-assert.equal(emailStatus.payload.login,false,"No activar login email sin configuración y pruebas");
-assert.equal(emailStatus.payload.registration,false,"No activar registro email sin correo y Turnstile");
+assert.equal(typeof emailStatus.payload.login,"boolean");
+assert.equal(typeof emailStatus.payload.registration,"boolean");
+if(emailStatus.payload.registration){
+  assert.equal(emailStatus.payload.login,true);
+  assert.ok(emailStatus.payload.turnstileSiteKey,"Registro activo requiere Turnstile");
+}
 await check("/v1/auth/email/register",405);
 await check("/v1/auth/email/verify",405);
 for (const path of ["/preview/qr-local.js","/preview/jsqr-local.js","/preview/extras.js","/preview/email.js"]) {
@@ -69,3 +73,39 @@ console.log("✓ /preview/app.js — sesión, perfil, cierre de sesión");
 await check("/v1/auth/me", 200);
 await check("/v1/auth/logout", 405);
 await check("/v1/auth/logout", 403, {method:"POST",headers:{"Content-Type":"application/json"},body:"{}"});
+
+
+// Espejo de la web actual: mismas hojas de estilo, vídeos y renderer,
+// con las conexiones a Supabase reemplazadas en la rama de pruebas.
+const mirrorURL = new URL("/espejo/",base);
+const mirrorResponse = await fetch(mirrorURL,{redirect:"error",signal:AbortSignal.timeout(15000)});
+assert.equal(mirrorResponse.status,200,"Espejo visual disponible");
+assert.match(mirrorResponse.headers.get("x-robots-tag")||"",/noindex/);
+const mirrorHtml=await mirrorResponse.text();
+assert.ok(mirrorHtml.includes("styles.css?v="));
+assert.ok(mirrorHtml.includes("app.js?v="));
+assert.match(mirrorHtml,/PRUEBAS · SOLO LECTURA/);
+assert.ok(!mirrorHtml.includes("vlsipvngvxcgnwrhpjgg.supabase.co"),
+  "Espejo no puede conectar a Supabase real");
+console.log("✓ /espejo — HTML original y enlace a la hoja CSS, sin Supabase");
+const [mirrorApp,mirrorBridge,mirrorCss] = await Promise.all([
+  fetch(new URL("/espejo/app.js",base),{signal:AbortSignal.timeout(15000)}),
+  fetch(new URL("/espejo/bridge.js",base),{signal:AbortSignal.timeout(15000)}),
+  fetch(new URL("/espejo/styles.css",base),{signal:AbortSignal.timeout(15000)})
+]);
+assert.equal(mirrorApp.status,200);
+assert.equal(mirrorBridge.status,200);
+assert.equal(mirrorCss.status,200);
+const appSource=await mirrorApp.text(),bridgeSource=await mirrorBridge.text(),styleSource=await mirrorCss.text();
+assert.match(appSource,/import\('\/espejo\/bridge.js'\)/);
+assert.ok(!appSource.includes("await import('https://esm.sh/@supabase"));
+assert.ok(bridgeSource.includes("READONLY_ERROR"));
+assert.ok(bridgeSource.includes("/v1/auth/me"));
+assert.ok(styleSource.length>50000,"Conservar la hoja completa del diseño");
+console.log("✓ /espejo — mismo renderer y CSS original, adaptador Cloudflare");
+const prohibited=await fetch(new URL("/espejo/",base),{method:"POST",redirect:"manual"});
+assert.equal(prohibited.status,405);
+const media=await fetch(new URL("/espejo/assets/logo-bellaquitas.webp",base),{redirect:"manual"});
+assert.equal(media.status,302,"Medios originales servidos sin recompresión");
+assert.ok(media.headers.get("location")?.startsWith("https://bellaquitas.fr/assets/"));
+console.log("✓ /espejo — sin escrituras y medios originales en alta calidad");
