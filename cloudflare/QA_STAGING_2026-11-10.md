@@ -241,3 +241,15 @@ extremo el envío de emails ni la cámara móvil.
   1.999.998 puntos, 0 visitas. Los dos flags de bloqueo siguen activos.
 - Pendiente: MP4/imágenes R2, CRUD activado solo en QA aislada, sugerencias
   anti-spam, auth completa sobre el renderer original y cambio reversible.
+
+## Sugerencias + paridad del diseño en staging (11/11/2026)
+- `cloudflare/suggestion-routes.js`: pruebas simuladas de HTTP 200 status, HTTP 423 flag off, HTTP 403 CSRF, HTTP 403 captcha inválido, HTTP 201 primera inserción y HTTP 429 sexta solicitud. Todos los inserts usan mock D1; no hay sugerencias reales de prueba.
+- SQL INSERT/SELECT sometido a EXPLAIN en D1 staging sin persistencia de datos.
+- `cloudflare/mirror-suggestions-ui.js`: mantiene el formulario original y añade únicamente el CAPTCHA necesario; script servido bajo `/espejo/suggestions-ui.js`.
+- Browser Rendering móvil con `#/sugerencias`: formulario real y contenedor de CAPTCHA presentes, sin error de arranque.
+- GET real `/v1/mirror/public/suggestions/status`: `enabled=true`, contiene sitio público Turnstile.
+- Flags Cloudflare: `SUGGESTIONS_ENABLED=yes` SOLO staging, `STAGING_MUTATIONS=disabled`, `ALLOW_NEW_ACCOUNTS=no`; 16 bindings, secretos conservados.
+- D1 staging: 7 perfiles, 1.999.998 puntos, 0 visitas, 1 credencial email, **0 sugerencias**. R2 mantiene 17 recursos originales.
+- SHA de todos los archivos de diseño del repo `main` frente a la rama de staging coinciden.
+- Prueba browser móvil 390px: header, menú de tres barras, vídeo principal, selector FR, título y badge de solo lectura; sin error de arranque.
+- Pendiente E2E Turnstile humano y confirmación de sugerencia desde admin; pendiente revisión visual pixel a pixel.
