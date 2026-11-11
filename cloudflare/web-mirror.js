@@ -55,7 +55,12 @@ export async function mirrorRoute(request){
    if(!filename||filename.includes("..")||filename.includes("%2e")||
       !/^[a-zA-Z0-9%_.+\-]+$/i.test(filename)||
       !/\.(?:mp4|webm|webp|png|jpg|jpeg|svg|js)$/i.test(filename))return fail(404,"Recurso no permitido");
-   // Los medios se sirven sin recomprimir desde la web original.
+   // Las librerías JS deben proceder del MISMO origen para respetar CSP.
+   if(filename==="qr-local.js"||filename==="jsqr-local.js"){
+     try{return js(await original("assets/"+filename));}
+     catch(_){return fail(503,"No se pudo cargar el generador/lector QR");}
+   }
+   // Vídeos e imágenes se sirven sin recomprimir desde la web original.
    return new Response(null,{status:302,headers:{...PROTECTED,Location:SOURCE+"/assets/"+filename}});
  }
  try{
