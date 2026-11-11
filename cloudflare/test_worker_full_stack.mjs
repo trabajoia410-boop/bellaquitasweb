@@ -190,8 +190,51 @@ test("Worker completo: error JSON en vez de divulgar datos privados",async()=>{
   assert.equal(typeof b.error,"string");
   assert.ok(!JSON.stringify(b).includes("MBR-QA-TESTSOCIO"));
 });
-test("Worker completo: los saldos de todos los usuarios ficticios continúan en cero",()=>{
+test("Worker completo: rechaza lectura o registro de QR sin sesión",async()=>{
+  await expected("/v1/door/checkin",401,{
+    method:"POST",body:{code:"MBR-QA-TESTSOCIO"}
+  });
+});
+test("Worker completo: un socio no puede registrar visitas propias ni ajenas",async()=>{
+  await expected("/v1/door/checkin",403,{
+    method:"POST",role:"member",body:{code:"MBR-QA-TESTPUERTA"}
+  });
+  assert.equal(DB.raw.prepare("SELECT COUNT(*) AS n FROM activity WHERE type='visita'").get().n,0);
+});
+test("Worker completo: rechaza código QR ajeno al formato y QR inexistente",async()=>{
+  await expected("/v1/door/checkin",400,{
+    method:"POST",role:"door",body:{code:"NO-VALIDO"}
+  });
+  await expected("/v1/door/checkin",404,{
+    method:"POST",role:"door",body:{code:"MBR-QA-NOEXISTE"}
+  });
+});
+test("Worker completo: QR ficticio válido registra +10 puntos y una visita",async()=>{
+  const res=await expected("/v1/door/checkin",200,{
+    method:"POST",role:"door",body:{code:"mbr-qa-testsocio"}
+  });
+  assert.equal((await res.json()).points_awarded,10);
+  const member=DB.raw.prepare("SELECT points,lifetime_points,visits FROM profiles WHERE id=?").get(MEMBER);
+  assert.deepEqual({...member},{points:10,lifetime_points:10,visits:1});
+  const activity=DB.raw.prepare("SELECT type,delta,staff_id FROM activity WHERE user_id=?").get(MEMBER);
+  assert.deepEqual({...activity},{type:"visita",delta:10,staff_id:DOOR});
+});
+test("Worker completo: dos lecturas del mismo QR en un día no duplican puntos",async()=>{
+  const res=await expected("/v1/door/checkin",409,{
+    method:"POST",role:"door",body:{code:"MBR-QA-TESTSOCIO"}
+  });
+  const body=await res.json();
+  assert.match(body.error,/ya se ha validado hoy/i);
+  const member=DB.raw.prepare("SELECT points,lifetime_points,visits FROM profiles WHERE id=?").get(MEMBER);
+  assert.deepEqual({...member},{points:10,lifetime_points:10,visits:1});
+  assert.equal(DB.raw.prepare("SELECT COUNT(*) AS n FROM activity WHERE user_id=? AND type='visita'").get(MEMBER).n,1);
+});
+test("Worker completo: los saldos del personal ficticio siguen intactos",()=>{
   const profiles=DB.raw.prepare("SELECT role,points,lifetime_points,visits FROM profiles").all();
   assert.equal(profiles.length,3);
-  assert.ok(profiles.every(p=>p.points===0&&p.lifetime_points===0&&p.visits===0));
+  const expectedPoints=profiles.find(p=>p.role==="socio");
+  assert.equal(expectedPoints.points,10);
+  assert.equal(expectedPoints.lifetime_points,10);
+  assert.equal(expectedPoints.visits,1);
+  assert.ok(profiles.filter(p=>p.role!=="socio").every(p=>p.points===0&&p.lifetime_points===0&&p.visits===0));
 });
