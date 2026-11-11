@@ -1,4 +1,4 @@
-import {createClient as createCloudflareClient} from "./web-mirror-bridge.js";
+import {MIRROR_SNAPSHOT} from "./mirror-snapshot.js";
 const SOURCE="https://bellaquitas.fr";
 const MIRROR_BASE="/espejo/";
 const PROTECTED={
@@ -12,10 +12,10 @@ const PROTECTED={
 function js(code){return new Response(code,{headers:{...PROTECTED,"Content-Type":"application/javascript; charset=utf-8"}});}
 function fail(status,message){return new Response(message,{status,headers:{...PROTECTED,"Content-Type":"text/plain; charset=utf-8"}});}
 async function original(file){
-  // Ruta fija a los ficheros del sitio actual. No se admite URL de origen del usuario.
-  const response=await fetch(SOURCE+"/"+file,{redirect:"follow",headers:{"Accept":"text/html, text/css, application/javascript, */*"}});
-  if(!response.ok)throw Error("Public source responded "+response.status);
-  return response.text();
+ // Copia verificada y congelada en GitHub; ya NO pide HTML/CSS/JS a producción.
+ if(!Object.prototype.hasOwnProperty.call(MIRROR_SNAPSHOT,file))
+  throw Error("El archivo no forma parte de la copia visual original.");
+ return MIRROR_SNAPSHOT[file];
 }
 const config=String.raw`// Espejo de solo lectura. No existen claves Supabase en este origen.
 window.BELLAQUITAS_CONFIG={supabaseUrl:"",supabaseAnonKey:"",siteUrl:"https://bellaquitas.fr/"};
