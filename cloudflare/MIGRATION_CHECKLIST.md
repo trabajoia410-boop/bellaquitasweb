@@ -136,3 +136,19 @@
 - [x] Generador y lector QR entregados con mismo origen para CSP.
 - [ ] Migración completa de las funcionalidades restantes (panel, edición visual, sugerencias, fotografías, subidas R2) y comparación visual exhaustiva móvil/escritorio.
 - [ ] No migrar dominio ni retirar Supabase antes de completar toda la fase 5 y QA de fase 6.
+
+## Fase 5 — Conexión del editor original y copia visual independiente (11/11/2026)
+- [x] El espejo ya sirve una copia **fija de HTML, CSS, renderer, FR, QR/jsQR** desde el módulo `mirror-snapshot.js`; no consulta la web pública para esos archivos.
+- [x] Misma estructura de diseño, dos vídeos, marquesina animada, menú, ES/FR y enlaces; validado render móvil de 390 px sin errores.
+- [x] Catálogo completo de eventos/premios/promos, álbumes, fotos, sugerencias y borradores disponible mediante GET con roles en servidor.
+- [x] Fotos públicas accesibles solo si su álbum está publicado; álbumes ocultos únicamente en admin; no se devuelve la ruta privada R2 al cliente.
+- [x] Formulario original conectado por adaptador a rutas futuras para guardar eventos, premios, promociones, textos, borradores, imágenes y galerías.
+- [x] Rutas de escritura protegidas por sesión de administrador, comprobación Origin y `STAGING_MUTATIONS=disabled` -> 423. Se probó rechazo por rol y por origen.
+- [x] SQL ensayado en D1 **temporal aislada** para eventos con traducción FR, premios, promociones, editor, sugerencias y galería; prueba exitosa, DB eliminada.
+- [x] Worker staging desplegado con 14 módulos; 7 perfiles, 1.999.998 puntos, 0 visitas intactos.
+- [ ] Migrar MP4 e imágenes **binarios** a R2 verificando tamaños y hash, para eliminar la dependencia de `bellaquitas.fr` al cambiar dominio.
+- [ ] Activar y probar CRUD real con **base de datos totalmente aislada**, incluyendo medios R2; staging actual sigue en solo lectura por seguridad.
+- [ ] Integrar Turnstile para sugerencias públicas; unificar registro/reset Google/email con la interfaz definitiva.
+- [ ] Auditoría independiente del esquema KDF, permisos y datos de migración antes de publicar.
+- [ ] Comparación visual extensa de todas las páginas/idiomas y pruebas iPhone **más adelante**, como acordado.
+- [ ] Corte de DNS y hosting con backup + rollback; **no ejecutar** sin completar los puntos anteriores.
