@@ -216,3 +216,14 @@
 - Estas comprobaciones verifican los endpoints del backend, **no**
   completan la revisión del KDF, UX en iPhone, circuito de edición visual
   end-to-end desde navegador ni el plan de rollback al dominio público.
+
+## Fase 5 — verificación de integridad visual y permisos (11/11/2026)
+- [x] Comparación Git exacta de las 6 fuentes del diseño entre `main` y la rama Cloudflare: `index.html`, `app.js`, `styles.css`, `locale-fr.js`, `assets/qr-local.js` y `assets/jsqr-local.js`; las 6 siguen idénticas.
+- [x] Comparada además la copia fija `mirror-snapshot.js` con esos 6 archivos: coincidencia exacta, incluidos los 256.723 caracteres de la biblioteca jsQR y el CSS íntegro.
+- [x] Fuentes de vídeo/logo clave permanecen byte a byte iguales en Git respecto a `main`.
+- [x] Comprobación simulada de permisos sobre las rutas reales de administración: 11 casos; rechazados anónimo, socio, puerta, origen externo y estado sin escrituras. Lectura administrativa solo para admin; fotos públicas accesibles como lectura.
+- [x] Añadido `cloudflare/test-mirror-regression.mjs` para ejecutar localmente estas garantías con Node.js, sin red ni datos reales.
+- [x] Añadido `.github/workflows/cloudflare-migration-qa.yml` para ejecutar la prueba sin despliegue ni secretos al comprobar cambios de la rama; la ejecución automática debe confirmarse en GitHub.
+- [ ] Ejecutar la suite CI y verificar resultado verde; por ahora la API de GitHub no devuelve ninguna ejecución.
+- [ ] Auditoría del backend para producción, ensayos completos de CRUD real en D1/R2 aislados, comprobación visual en ordenadores/Android y prueba en iPhone pospuesta por el usuario.
+- [ ] Mantener `bellaquitas.fr` en GitHub Pages + Supabase hasta completar estas verificaciones, plan de copias/rollback y aprobación final del cambio público.
