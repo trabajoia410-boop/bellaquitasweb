@@ -110,7 +110,7 @@ try{
   assert.equal(await page.locator("[data-action='editor-publish']").count()>0,true);
   pass("Editor visual muestra textos, controles de guardado y publicación");
 
-  const original=DB.prepare("SELECT hero_text FROM site_content WHERE key='homepage'").get().hero_text;
+  const original=DB.prepare("SELECT hero_text FROM site_content WHERE key='homepage'").get()?.hero_text??null;
   await page.locator("#editor-hero_text").fill("Texto ficticio para comprobar Bellaquitas QA");
   await page.locator("[data-action='editor-save']").first().click();
   await page.waitForFunction(()=>{
@@ -120,7 +120,7 @@ try{
   const draft=DB.prepare("SELECT settings FROM site_drafts WHERE key='homepage'").get();
   assert.ok(draft);
   assert.equal(JSON.parse(draft.settings).hero_text,"Texto ficticio para comprobar Bellaquitas QA");
-  assert.equal(DB.prepare("SELECT hero_text FROM site_content WHERE key='homepage'").get().hero_text,original);
+  assert.equal(DB.prepare("SELECT hero_text FROM site_content WHERE key='homepage'").get()?.hero_text??null,original);
   pass("Guardar borrador no cambia la versión publicada");
 
   page.on("dialog",d=>d.accept());
