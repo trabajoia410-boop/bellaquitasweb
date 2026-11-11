@@ -185,3 +185,37 @@ extremo el envío de emails ni la cámara móvil.
 - Worker staging desplegado desde rama aislada; Browser Rendering confirma presencia de botones/cámara/formulario de foto y mensaje de ayuda en HTML.
 - D1 tras el despliegue: 7 perfiles, 1.999.998 puntos, 0 visitas; consulta de solo lectura.
 - **Pendiente la prueba de cámara física en móvil**, con otra pantalla que muestre el QR; escaneo para personal `admin`/`puerta` únicamente.
+
+## Fase 4: verificación de triggers en base D1 temporal (11/11/2026)
+- Migraciones 0001 y 0002 ejecutadas con **cuatro perfiles ficticios** y
+  recompensa ficticia en D1 QA aislada. No se copiaron los datos reales.
+- Visita 1: +10 puntos, +1 visita; visita 2 mismo día: rechazo UNIQUE.
+- Canje disponible: −30 puntos; sin saldo: fallo `Puntos insuficientes`.
+- Validador no staff: fallo `Personal no autorizado`; estado de canje
+  cerrado no se puede volver a pendiente.
+- Ajuste de puntos por actor no admin: fallo del trigger.
+  Ajuste admin: registrado con auditoría, saldo actualizado.
+- Base temporal ELIMINADA en el bloque finally de la prueba.
+  Consulta posterior lista solo `bellaquitas-staging`.
+- D1 staging sigue con 7 perfiles, 1.999.998 puntos y 0 visitas.
+
+## Fase 5: espejo visual de pruebas del sitio original (11/11/2026)
+- URL: `https://bellaquitas-api-staging.bellaquitas-fest-410.workers.dev/espejo/`.
+- `index.html`, `styles.css`, `locale-fr.js` y `app.js` tomados de la
+  web pública; el código de presentación se conserva. Cambia la conexión
+  de Supabase por `/espejo/bridge.js` y se anulan las escrituras.
+- Simulación de recursos: CSS y traducción se entregan byte por byte iguales
+  al archivo original; HTML contiene same CSS/JS; el cliente ya no importa
+  el SDK Supabase.
+- Prueba del adaptador con respuesta simulada D1: eventos y premios activos,
+  site content, perfil admin, bloqueo de mutations.
+- Navegador remoto carga `/espejo/`: `bf-neon`, `site-header`, vídeo
+  original, título Bellaquitas Fest, enlaces `#/eventos`, sin error boot.
+- Cambios del menú, animaciones y textos NO son intención de migración;
+  cualquier variación de visualización deberá corregirse antes de la
+  publicación.
+- Fix CSP: QR local / jsQR servidos desde `/espejo/assets` como JS propio,
+  no redirigidos a otro origen; vídeos e imágenes continúan sin recompresión.
+- `STAGING_MUTATIONS=disabled`, `ALLOW_NEW_ACCOUNTS=no` preservados.
+- **Pendiente** prueba completa del diseño ES/FR y móvil y port completo del
+  panel admin, editor, sugerencias, álbumes, R2 y escritura simulada segura.
