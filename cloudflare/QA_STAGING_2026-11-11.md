@@ -118,3 +118,55 @@ Los 15 módulos de lógica se guardaron en `modules.json`, y los dos voluminosos
 5. Plan de reversión y aprobación de la sustitución de backend: conservar DNS y Supabase originales hasta completar las pruebas.
 
 **Confirmación:** las pruebas nuevas no modificaron usuarios reales, puntos, visitas, DNS, dominio, Worker ni sitio en producción.
+
+
+## 8. Continuación: reglas y permisos aislados (11 de noviembre, 10:00 h París)
+
+### 10 pruebas de puntos, QR, canjes y cambios administrativos — APROBADAS
+
+Se ejecutaron las migraciones originales `0001-schema.sql` y `0002-auth-and-invariants.sql` **en SQLite en memoria**, con perfiles ficticios. Se verificaron:
+- Una visita concede exactamente 10 puntos; la segunda visita en el mismo día queda rechazada sin duplicar saldo.
+- Un canje no permite saldo insuficiente, descuenta el coste una sola vez y no puede reabrirse tras validación.
+- Un socio no autorizado no puede validar el canje.
+- Los cambios del administrador son atómicos y auditados; personal de puerta no puede modificar puntos.
+- No puede degradarse el último administrador; los cambios basados en datos antiguos se rechazan.
+
+Evidencia: https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/42992642358
+Prueba reproducible: `cloudflare/test_sqlite_rules.py`.
+
+### 10 pruebas de permisos usando los módulos de Worker recuperados — APROBADAS
+
+Se recuperaron los 17 módulos respaldados y se ejecutaron `protectedRoute`, `mirrorDataRoute`, `mirrorWriteRoute` y `authRoute` con un entorno D1 y sesiones **simulados en memoria**. Rechazos y permisos comprobados:
+- Sin sesión: HTTP 401.
+- Socio: HTTP 403 en rutas de puerta/administración y publicación del editor.
+- Puerta: acceso a sus consultas; no a las de administrador.
+- Admin: lectura permitida de catálogo, socios y borradores.
+- Cambios con `STAGING_MUTATIONS=disabled`: HTTP 423; origen externo: HTTP 403.
+- QR no permitido para socio; la actividad se filtra por el ID autenticado; logout desde origen externo rechazado.
+
+Evidencia: https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/42993023814
+Prueba reproducible: `cloudflare/test_staging_roles.mjs`.
+
+**Limitación:** son pruebas de código del Worker con identidades simuladas, no pruebas reales de la cámara, de Google, ni de editar/publicar con una sesión real.
+
+### Inventario R2 detallado — CONFORME
+
+Se listó el bucket `bellaquitas-media-staging` en modo lectura: 20 objetos, repartidos entre 3 logos (1.939.302 bytes) y 17 recursos originales del sitio (54.846.317 bytes).
+
+Se compararon los 17 recursos `site-original/` uno por uno con `SITE_MEDIA` del Worker. El número de archivos, cada tamaño y cada SHA-1 de blob Git almacenado en metadatos de R2 coinciden. Los 17 tienen, además, metadatos SHA-256 presentes. Esto **no supone** haber recalculado el hash SHA-256 de todos los contenidos descargados.
+
+### Comprobación de datos después de las pruebas — SIN CAMBIOS
+
+Supabase conserva 6 perfiles. Cloudflare D1 conserva esos mismos 6 IDs y una cuenta adicional de correo de staging (7 perfiles totales). Los 6 originales coinciden en nombre, rol, código, puntos, puntos históricos y visitas. Total de puntos: 1.999.998 en ambos sistemas; visitas: 0. El Worker mantiene `STAGING_MUTATIONS=disabled`.
+
+**No se ha cambiado ningún usuario real ni el DNS.**
+
+## 9. Siguiente cierre de fase, aún pendiente
+
+1. Una prueba con navegador **real** de login Google y correo, verificación, persistencia y logout en iPhone y Android, sin revelar contraseñas.
+2. Pruebas de la cámara QR y de la experiencia completa del editor con usuarios **ficticios aislados**, con escrituras habilitadas exclusivamente en esa prueba controlada (no en la D1 actual con perfiles reales).
+3. Revisión de reproducción y composición del vídeo en Safari iPhone y Android real. Las capturas automáticas son indicios, no sustituyen la validación visual.
+4. Copia privada **verificable y restaurable de datos** de Supabase y D1, más un inventario/copia de los objetos R2, antes de cualquier migración definitiva. El código respaldado y D1 Time Travel no sustituyen estas copias.
+5. Comparación diferencial final y plan de conmutación/reversión del backend manteniendo Supabase hasta que todo funcione.
+
+**Estado operativo:** la migración NO se ha cortado a Cloudflare; el PR de auditoría permanece en borrador y la web pública no ha sufrido modificaciones.
