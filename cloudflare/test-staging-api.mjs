@@ -84,22 +84,30 @@ assert.match(mirrorResponse.headers.get("x-robots-tag")||"",/noindex/);
 const mirrorHtml=await mirrorResponse.text();
 assert.ok(mirrorHtml.includes("styles.css?v="));
 assert.ok(mirrorHtml.includes("app.js?v="));
+assert.ok(mirrorHtml.includes('challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'));
+assert.ok(mirrorHtml.includes('src="/espejo/auth-ui.js"'));
+assert.ok(mirrorHtml.includes('https://challenges.cloudflare.com'));
+
 assert.match(mirrorHtml,/PRUEBAS · SOLO LECTURA/);
 assert.ok(!mirrorHtml.includes("vlsipvngvxcgnwrhpjgg.supabase.co"),
   "Espejo no puede conectar a Supabase real");
 console.log("✓ /espejo — HTML original y enlace a la hoja CSS, sin Supabase");
-const [mirrorApp,mirrorBridge,mirrorCss] = await Promise.all([
+const [mirrorApp,mirrorBridge,mirrorCss,mirrorAuthUI] = await Promise.all([
   fetch(new URL("/espejo/app.js",base),{signal:AbortSignal.timeout(15000)}),
   fetch(new URL("/espejo/bridge.js",base),{signal:AbortSignal.timeout(15000)}),
-  fetch(new URL("/espejo/styles.css",base),{signal:AbortSignal.timeout(15000)})
+  fetch(new URL("/espejo/styles.css",base),{signal:AbortSignal.timeout(15000)}),
+  fetch(new URL("/espejo/auth-ui.js",base),{signal:AbortSignal.timeout(15000)})
 ]);
 assert.equal(mirrorApp.status,200);
 assert.equal(mirrorBridge.status,200);
 assert.equal(mirrorCss.status,200);
+assert.equal(mirrorAuthUI.status,200);
 const appSource=await mirrorApp.text(),bridgeSource=await mirrorBridge.text(),styleSource=await mirrorCss.text();
 assert.match(appSource,/import\('\/espejo\/bridge.js'\)/);
 assert.ok(!appSource.includes("await import('https://esm.sh/@supabase"));
 assert.ok(bridgeSource.includes("READONLY_ERROR"));
+assert.ok(bridgeSource.includes("return=mirror"));
+assert.ok((await mirrorAuthUI.text()).includes("/v1/auth/email/reset"));
 assert.ok(bridgeSource.includes("/v1/auth/me"));
 assert.ok(styleSource.length>50000,"Conservar la hoja completa del diseño");
 console.log("✓ /espejo — mismo renderer y CSS original, adaptador Cloudflare");
