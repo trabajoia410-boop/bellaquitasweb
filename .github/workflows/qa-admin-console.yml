@@ -1,0 +1,36 @@
+name: Panel independiente — acceso admin y permisos (sin producción)
+on:
+  push:
+    branches:
+      - auditoria/fase5-2026-11-11
+    paths:
+      - cloudflare/qa-candidates/admin-console*.js
+      - cloudflare/qa-candidates/admin-console.html
+      - cloudflare/qa-candidates/admin-console.css
+      - cloudflare/qa-candidates/bellaquitas-api-staging-admin.js
+      - cloudflare/test_admin_console.mjs
+      - .github/workflows/qa-admin-console.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  secure-admin:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Recuperar el Worker original, sin desplegarlo
+        run: node cloudflare/staging-source-2026-11-11/extract-modules.mjs
+      - name: Integrar SOLO en el runner los módulos candidatos del nuevo panel
+        run: |
+          cp cloudflare/qa-candidates/admin-console-routes.js cloudflare/staging-source-2026-11-11/recovered-src/admin-console-routes.js
+          cp cloudflare/qa-candidates/admin-console-ui.js cloudflare/staging-source-2026-11-11/recovered-src/admin-console-ui.js
+          cp cloudflare/qa-candidates/bellaquitas-api-staging-admin.js cloudflare/staging-source-2026-11-11/recovered-src/bellaquitas-api-staging.js
+      - name: Verificar sintaxis y control de acceso admin sobre SQLite ficticia
+        run: |
+          node --check cloudflare/staging-source-2026-11-11/recovered-src/admin-console-routes.js
+          node --check cloudflare/staging-source-2026-11-11/recovered-src/admin-console-ui.js
+          node --experimental-sqlite --experimental-default-type=module --test cloudflare/test_admin_console.mjs
