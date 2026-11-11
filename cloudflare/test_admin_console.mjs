@@ -116,7 +116,7 @@ test("contraseña correcta y rol admin crean cookie INDEPENDIENTE y una hora en 
  assert.match(out.cookie,/Max-Age=3600/);
  assert.ok(!out.cookie.includes("__Host-bf_session"));
  adminCookie=out.cookie.split(";")[0];
- const dbRecord=db.prepare("SELECT expires_at-unixepoch() AS ttl FROM auth_sessions WHERE profile_id=? ORDER BY created_at DESC LIMIT 1").get(ADMIN);
+ const dbRecord=db.prepare("SELECT MIN(expires_at-unixepoch()) AS ttl FROM auth_sessions WHERE profile_id=?").get(ADMIN);
  assert.ok(dbRecord.ttl>0&&dbRecord.ttl<=3600);
 });
 test("sesión admin permite datos privados y rol comprobado desde el servidor",async()=>{
