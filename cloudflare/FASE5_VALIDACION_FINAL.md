@@ -79,3 +79,12 @@ Los navegadores de CI emulan dimensiones y agente de usuario; **NO son un iPhone
 - [ ] Preparar y aprobar corte **reversible**, con Supabase original conservado como respaldo
 
 **Importante:** las pruebas físicas son una **validación posterior al lanzamiento de fase 6**, no un bloqueo previo de fase 5. El corte sí exige respaldos restaurables, revisión de seguridad, protección de datos y reversión preparada. No se ha migrado el backend del dominio ni se han modificado los datos originales.
+
+
+## Nuevo requisito — administración en otra pestaña
+
+- **Preparado en rama de auditoría**: nueva ruta `/administracion/` con login propio email/contraseña y nuevo CMS con siete secciones; ambos botones públicos abren una pestaña nueva con `noopener`. El editor abre directamente `/administracion/?seccion=web`.
+- **13/13 pruebas de autenticación y permisos** y **11/11 pruebas visuales de Chrome** aprobadas sobre datos ficticios. [Backend](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43119060936) · [Interfaz](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43119061223).
+- **Pendiente obligatorio para el lanzamiento**: activar el login de email de uno de los **perfiles admin existentes**, con verificación de titularidad y sin crear usuarios duplicados. Actualmente 0 administradores tienen credencial de correo verificada en D1.
+- El nuevo panel **todavía no está desplegado**. Ver `cloudflare/PANEL_ADMIN_INDEPENDIENTE.md`.
+
