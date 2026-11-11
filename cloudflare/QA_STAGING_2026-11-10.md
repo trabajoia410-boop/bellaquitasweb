@@ -219,3 +219,25 @@ extremo el envío de emails ni la cámara móvil.
 - `STAGING_MUTATIONS=disabled`, `ALLOW_NEW_ACCOUNTS=no` preservados.
 - **Pendiente** prueba completa del diseño ES/FR y móvil y port completo del
   panel admin, editor, sugerencias, álbumes, R2 y escritura simulada segura.
+
+## Fase 5: QA de bridge, permisos, escritura bloqueada y snapshot (11/11/2026)
+- Bridge probado con funciones simuladas: admin recupera eventos activos y borradores,
+  álbumes, fotos de un álbum oculto, sugerencias, borradores de editor, historial
+  y canjes; URL de la foto privada apunta al endpoint autorizado de Cloudflare.
+- Escrituras simuladas de eventos, visita y borrador devolvieron error 423 y
+  **no mostraron falso éxito** en las respuestas del adaptador.
+- En API de servidor aislada: sin login 401, socio 403, admin 200 para datos
+  privados. La foto no filtra `storage_path` real de R2.
+- Guardas de escritura: admin con flag bloqueada 423, upload 423, socio 403,
+  anónimo 401, origen no permitido 403, método no permitido 405.
+- SQL en D1 **temporal** con datos exclusivamente inventados: alta/edición
+  evento con FR, premio, promoción, borrador y publicación, sugerencias,
+  álbum y borrado en cascada. DB eliminada automáticamente al acabar.
+- Copia visual congelada de seis ficheros (HTML, CSS, JS, FR, QR/jsQR):
+  espejo carga en formato móvil 390×844 con vídeo, nav hamburguesa, idioma,
+  marquesina y badge de solo lectura. La misma estructura de navegación se
+  observó en la web original; falta QA pixel a pixel, navegadores y contenido.
+- Worker desplegado: 14 módulos. D1 staging mantiene 7 perfiles,
+  1.999.998 puntos, 0 visitas. Los dos flags de bloqueo siguen activos.
+- Pendiente: MP4/imágenes R2, CRUD activado solo en QA aislada, sugerencias
+  anti-spam, auth completa sobre el renderer original y cambio reversible.
