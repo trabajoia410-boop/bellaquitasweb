@@ -1,3 +1,34 @@
+# Estado actualizado de Bellaquitas Cloudflare — 11/11/2026
+
+**Producción NO modificada.** La web real `bellaquitas.fr` permanece con su
+diseño original, GitHub Pages y Supabase. La migración Cloudflare continúa
+exclusivamente en rama de pruebas y Worker staging.
+
+- **Prueba visual original:** `https://bellaquitas-api-staging.bellaquitas-fest-410.workers.dev/espejo/`
+- **Prueba de login/QR:** `https://bellaquitas-api-staging.bellaquitas-fest-410.workers.dev/preview`
+- **Registro/email:** Resend, Turnstile, confirmación y recuperación de contraseña
+  probados en staging; Google OAuth operativo. Todavía falta auditoría de
+  seguridad del hash de contraseña versionado.
+- **Fase 4:** QR reconocido con la cámara Samsung por el usuario; reglas de
+  visitas/canjes y permisos probadas con perfiles ficticios en D1 aislada.
+  iPhone aplazado según solicitud.
+- **Fase 5 en curso:** El diseño original (HTML, CSS, app JS, traducciones,
+  QR/jsQR) está congelado en `mirror-snapshot.js`; catálogo y panel de lectura
+  conectado a D1. API de formularios/editor preparada, pero **sin escrituras**:
+  `STAGING_MUTATIONS=disabled`.
+- **Medios todavía pendientes:** Copiar MP4 e imágenes binarias a R2 y verificar
+  exactitud sin recomprimir. Las imágenes/vídeos del espejo todavía referencian
+  los medios de la web original; no cortar producción en esta situación.
+- **Datos:** 7 perfiles en staging, 1.999.998 puntos y 0 visitas. No usar
+  cuentas reales para ensayos destructivos. Las pruebas de escritura utilizaron
+  una base D1 temporal aislada, ya eliminada.
+
+Los párrafos que siguen incluyen **el registro histórico de fases anteriores**,
+por ejemplo formularios de correo inicialmente desactivados. Para el estado
+actual prevalecen este encabezado y `MIGRATION_CHECKLIST.md`.
+
+---
+
 # Bellaquitas Fest — Cloudflare staging
 
 **La web pública sigue en GitHub Pages + Supabase.** No pasar tráfico de
