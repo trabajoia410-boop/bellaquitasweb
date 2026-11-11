@@ -105,10 +105,21 @@ assert.ok(styleSource.length>50000,"Conservar la hoja completa del diseño");
 console.log("✓ /espejo — mismo renderer y CSS original, adaptador Cloudflare");
 const prohibited=await fetch(new URL("/espejo/",base),{method:"POST",redirect:"manual"});
 assert.equal(prohibited.status,405);
-const media=await fetch(new URL("/espejo/assets/logo-bellaquitas.webp",base),{redirect:"manual"});
-assert.equal(media.status,302,"Medios originales servidos sin recompresión");
-assert.ok(media.headers.get("location")?.startsWith("https://bellaquitas.fr/assets/"));
-console.log("✓ /espejo — sin escrituras y medios originales en alta calidad");
+const media=await fetch(new URL("/espejo/assets/logo-bellaquitas.webp",base),{redirect:"error"});
+assert.equal(media.status,200,"Logo original desde R2 sin redirigir al dominio de producción");
+assert.equal(Number(media.headers.get("content-length")),317366);
+assert.match(media.headers.get("content-type")||"",/image\/webp/);
+const fullMedia=await media.arrayBuffer();
+assert.equal(fullMedia.byteLength,317366);
+const videoURL=new URL("/espejo/assets/bellaquitas%20fiesta%20portada.mp4",base);
+const videoHead=await fetch(videoURL,{method:"HEAD",redirect:"error"});
+assert.equal(videoHead.status,200,"Vídeo original servido desde R2");
+assert.equal(Number(videoHead.headers.get("content-length")),25437525);
+const videoSlice=await fetch(videoURL,{headers:{Range:"bytes=0-1023"},redirect:"error"});
+assert.equal(videoSlice.status,206,"Video debe permitir Range HTTP para Safari");
+assert.equal((await videoSlice.arrayBuffer()).byteLength,1024);
+assert.equal(videoSlice.headers.get("content-range"),"bytes 0-1023/25437525");
+console.log("✓ /espejo — logos/vídeos desde R2 verificado, sin redirección y con Range para Safari");
 const [qrLocal,jsQrLocal]=await Promise.all([
  fetch(new URL("/espejo/assets/qr-local.js",base),{redirect:"error"}),
  fetch(new URL("/espejo/assets/jsqr-local.js",base),{redirect:"error"})
