@@ -32,7 +32,12 @@ try{
     await page.locator(".hero.bf-video-hero > video.bf-hero-video")
       .waitFor({state:"attached",timeout:40000});
     await page.evaluate(()=>document.fonts?.ready||Promise.resolve());
-    await page.waitForTimeout(600);
+    // Comprobar decodificación REAL del MP4 en WebKit, no solo presencia de <video>.
+    await page.waitForFunction(()=>{
+      const v=document.querySelector(".hero.bf-video-hero > video.bf-hero-video");
+      return !!v&&v.readyState>=2&&v.videoWidth>0&&v.videoHeight>0;
+    },null,{timeout:30000});
+    await page.waitForTimeout(300);
     const metrics=await page.evaluate(()=>{
       const video=document.querySelector(".hero.bf-video-hero > video.bf-hero-video");
       const second=document.querySelector(".bf-after-marquee-video");
@@ -61,6 +66,8 @@ try{
       /bellaquitas%20fiesta%20portada%20movil\.mp4/.test(metrics.video.src||""));
     await check(key+": atributos Safari de vídeo inline y autoplay",
       metrics.video.autoplay&&metrics.video.muted&&metrics.video.loop&&metrics.video.playsInline);
+    await check(key+": WebKit decodifica el MP4 y obtiene dimensiones reales",
+      metrics.video.readyState>=2&&metrics.video.videoWidth>0&&metrics.video.videoHeight>0);
     await check(key+": fuente del segundo vídeo móvil original",
       metrics.second.present&&metrics.second.srcs.some(s=>s?.includes("Bellaquitas%20Fest%20para%20m%C3%B3vil.mp4")));
     await check(key+": cabecera y logo visibles",metrics.header.w>200&&metrics.logoWidth>100);
