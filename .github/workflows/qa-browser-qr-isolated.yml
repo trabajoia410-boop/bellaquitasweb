@@ -1,0 +1,34 @@
+name: QR cámara simulada y puerta aislada en Chrome
+on:
+  push:
+    branches:
+      - auditoria/fase5-2026-11-11
+    paths:
+      - cloudflare/test_browser_qr_isolated.mjs
+      - .github/workflows/qa-browser-qr-isolated.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  synthetic-camera:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar Playwright Core sin navegador adicional de pago
+        run: npm install --no-save --no-package-lock --ignore-scripts playwright-core@1.56.1
+      - name: Recuperar Worker original en runner efímero
+        run: node cloudflare/staging-source-2026-11-11/extract-modules.mjs
+      - name: Comprobar el lector QR jsQR con cámara sintética y D1 SQLite
+        run: node --experimental-sqlite --experimental-default-type=module cloudflare/test_browser_qr_isolated.mjs
+      - name: Guardar evidencia del ensayo
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bellaquitas-qr-browser-synthetic
+          path: browser-qr-evidence/
+          retention-days: 7
+          if-no-files-found: warn
