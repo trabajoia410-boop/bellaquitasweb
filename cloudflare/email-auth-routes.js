@@ -133,7 +133,8 @@ async function registration(request,env,data){
    env.DB.prepare("INSERT INTO auth_email_tokens(token_hash,email,purpose,profile_name,password_hash,password_salt,password_iterations,expires_at) VALUES (? ,?,'register',?,?,?,?,unixepoch()+1800)")
      .bind(tokenHash,address,name,hash,salt,ITERATIONS)
  ]);
- const target=(env.PUBLIC_ORIGIN||new URL(request.url).origin).replace(/\/+$/,"")+"/preview#verify="+rawToken;
+ const origin=(env.PUBLIC_ORIGIN||new URL(request.url).origin).replace(/\/+$/,"");
+ const target=data.return_to==="espejo"?origin+"/espejo/?verify="+rawToken+"#/acceso":origin+"/preview#verify="+rawToken;
  const sent=await sendMail(env,address,"Confirma tu cuenta Bellaquitas Fest",
    "Para confirmar tu correo, abre este enlace antes de 30 minutos:\n"+target+"\nSi no has solicitado una cuenta, ignora este mensaje.");
  if(!sent){
@@ -188,7 +189,8 @@ async function forgot(request,env,data){
     env.DB.prepare("DELETE FROM auth_email_tokens WHERE email=? AND purpose='reset'").bind(address),
     env.DB.prepare("INSERT INTO auth_email_tokens(token_hash,email,purpose,expires_at) VALUES (?,?,'reset',unixepoch()+1200)").bind(tokenHash,address)
    ]);
-   const target=(env.PUBLIC_ORIGIN||new URL(request.url).origin).replace(/\/+$/,"")+"/preview#reset="+rawToken;
+   const origin=(env.PUBLIC_ORIGIN||new URL(request.url).origin).replace(/\/+$/,"");
+   const target=data.return_to==="espejo"?origin+"/espejo/?reset_token="+rawToken+"#/restablecer":origin+"/preview#reset="+rawToken;
    const sent=await sendMail(env,address,"Recuperar acceso Bellaquitas Fest",
      "Para restablecer tu contraseña abre este enlace en los próximos 20 minutos:\n"+target+"\nSi no lo solicitaste, ignora el mensaje.");
    if(!sent)console.error("Email provider failed to send password reset");
