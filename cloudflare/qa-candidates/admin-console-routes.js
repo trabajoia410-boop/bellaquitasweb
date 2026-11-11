@@ -43,7 +43,7 @@ const tokenFrom=(request,name)=>{
 function translated(request,path,token){
   const target=new URL(request.url);
   target.pathname=path;
-  target.search="";
+  target.search=path==="/v1/mirror/admin/media/upload"?target.search:"";
   const headers=new Headers(request.headers);
   headers.delete("Cookie");
   if(token)headers.set("Cookie",PUBLIC_COOKIE+"="+token);
@@ -171,8 +171,13 @@ export async function adminConsoleRoute(request,env){
   if(request.method==="PUT"&&suffix==="/upload"){
     if(!checkOrigin(request,env))return json({error:"Origen no autorizado"},403);
     const req=translated(request,"/v1/mirror/admin/media/upload",authenticated.token);
-    const u=new URL(req.url);u.search=url.search;
-    return wrap(await mirrorWriteRoute(new Request(u,req),env));
+    return wrap(await mirrorWriteRoute(req,env));
+  }
+  const photo=suffix.match(/^\/moments\/([0-9a-f-]{36})\/photo$/i);
+  if(request.method==="POST"&&photo){
+    if(!checkOrigin(request,env))return json({error:"Origen no autorizado"},403);
+    const req=translated(request,"/v1/admin/moments/"+photo[1]+"/photo",authenticated.token);
+    return wrap(await protectedRoute(req,env));
   }
   return json({error:"Ruta no encontrada"},404);
 }
