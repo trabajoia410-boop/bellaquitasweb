@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#09090e">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <title>Administración · Bellaquitas Fest</title>
+  <link rel="stylesheet" href="/administracion/styles.css">
+  <script defer src="/administracion/app.js"></script>
+</head>
+<body>
+  <div id="access" class="access">
+    <div class="access-brand"><img src="/espejo/assets/logo-navbar.png" alt="Bellaquitas Fest"><strong>Panel de administración</strong></div>
+    <div class="access-card">
+      <div class="eyebrow">BELLAQUITAS FEST · ACCESO PRIVADO</div>
+      <h1>Bienvenido al panel</h1>
+      <p>Gestiona tu página como en WordPress, desde una pestaña independiente.</p>
+      <form id="login-form" autocomplete="on">
+        <label for="admin-email">Correo del administrador</label>
+        <input id="admin-email" type="email" autocomplete="username" inputmode="email" maxlength="254" placeholder="tu@email.com" required>
+        <label for="admin-password">Contraseña</label>
+        <div class="password-row"><input id="admin-password" type="password" autocomplete="current-password" minlength="12" required><button id="show-password" type="button" aria-label="Mostrar u ocultar contraseña">Ver</button></div>
+        <button class="primary full" type="submit" id="login-submit">Entrar al panel</button>
+        <div id="login-feedback" class="feedback" role="status" aria-live="polite"></div>
+      </form>
+      <p class="access-hint">Solo pueden entrar las cuentas con permisos de administrador y una contraseña de correo previamente verificada. La sesión pública de socio no abre este panel.</p>
+      <a class="return-link" href="/" target="_blank" rel="noopener noreferrer">Abrir web pública ↗</a>
+    </div>
+    <small class="access-footer">Administración protegida · Conexión segura · Bellaquitas Fest</small>
+  </div>
+
+  <div id="portal" class="portal" hidden>
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand"><img src="/espejo/assets/logo-navbar.png" alt="Bellaquitas Fest"><small>ADMINISTRACIÓN</small></div>
+      <nav id="admin-nav" aria-label="Secciones del administrador">
+        <button type="button" data-tab="inicio" class="selected">⌂ <span>Escritorio</span></button>
+        <button type="button" data-tab="web">✎ <span>Editar página</span></button>
+        <button type="button" data-tab="eventos">▦ <span>Eventos</span></button>
+        <button type="button" data-tab="ventajas">✦ <span>Premios y ventajas</span></button>
+        <button type="button" data-tab="socios">♙ <span>Socios y permisos</span></button>
+        <button type="button" data-tab="comunidad">◈ <span>Comunidad</span></button>
+        <button type="button" data-tab="actividad">▤ <span>Historial</span></button>
+      </nav>
+      <div class="sidebar-bottom"><a href="/" target="_blank" rel="noopener noreferrer">↗ Ver la página pública</a><button type="button" id="logout-side">Cerrar sesión</button></div>
+    </aside>
+    <div class="workarea">
+      <header class="topbar">
+        <div class="topbar-title"><button type="button" class="menu-mobile" id="admin-menu" aria-label="Mostrar menú" aria-expanded="false">☰</button><span>Panel de administración</span><small id="user-name"></small></div>
+        <div class="topbar-actions"><span class="private-indicator">● Acceso privado</span><a href="/" target="_blank" rel="noopener noreferrer">Ver web ↗</a><button type="button" id="logout-top">Salir</button></div>
+      </header>
+      <main class="workspace">
+        <div class="workspace-head"><div><div class="eyebrow" id="section-caption">ADMINISTRACIÓN</div><h1 id="section-title">Escritorio</h1><p id="section-description">Todas las herramientas de Bellaquitas Fest en un único lugar.</p></div><div id="section-actions"></div></div>
+        <div id="work-feedback" class="feedback" role="status" aria-live="polite"></div>
+        <div id="work-content" class="content"></div>
+      </main>
+      <footer class="work-footer">Bellaquitas Fest · Panel privado · Los cambios se guardan solo al pulsar Guardar o Publicar.</footer>
+    </div>
+  </div>
+</body>
+</html>
