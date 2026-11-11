@@ -1,0 +1,170 @@
+/**
+ * Administración independiente — prueba integral en D1 SQLite :memory:.
+ * Credenciales y usuarios 100% sintéticos. No solicita Google, Resend ni Internet.
+ * Ejecuta el código Worker candidato, no modifica producción.
+ */
+import assert from "node:assert/strict";
+import {test,before,after} from "node:test";
+import {DatabaseSync} from "node:sqlite";
+import fs from "node:fs";
+import vm from "node:vm";
+import path from "node:path";
+import {fileURLToPath,pathToFileURL} from "node:url";
+const here=path.dirname(fileURLToPath(import.meta.url));
+const root=path.join(here,"staging-source-2026-11-11","recovered-src");
+const {default:worker}=await import(pathToFileURL(path.join(root,"bellaquitas-api-staging.js")).href);
+const {createAuthSession}=await import(pathToFileURL(path.join(root,"auth-routes.js")).href);
+const {ADMIN_JS}=await import(pathToFileURL(path.join(root,"admin-console-ui.js")).href);
+const BASE="https://bellaquitas-api-staging.bellaquitas-fest-410.workers.dev";
+const ADMIN="00000000-0000-4000-8000-000000000201";
+const MEMBER="00000000-0000-4000-8000-000000000202";
+const PASSWORD="ContraseñaAdminFicticia#2026";
+const FAKES=[["admin@example.test",ADMIN,"admin"],["socio@example.test",MEMBER,"socio"]];
+const db=new DatabaseSync(":memory:");
+db.exec("PRAGMA foreign_keys=ON");
+for(const file of ["0001-schema.sql","0002-auth-and-invariants.sql","0003-oauth-sessions.sql"]){
+ db.exec(fs.readFileSync(path.join(here,"migrations",file),"utf8"));
+}
+db.exec("CREATE TABLE auth_email_credentials (email TEXT PRIMARY KEY COLLATE NOCASE,profile_id TEXT NOT NULL UNIQUE REFERENCES profiles(id),password_hash TEXT NOT NULL,password_salt TEXT NOT NULL,password_iterations INTEGER NOT NULL,verified_at INTEGER NOT NULL,created_at INTEGER NOT NULL DEFAULT (unixepoch()),updated_at INTEGER NOT NULL DEFAULT (unixepoch()));");
+db.exec("CREATE TABLE auth_email_rate_limits(key_hash TEXT PRIMARY KEY,attempts INTEGER NOT NULL DEFAULT 0,expires_at INTEGER NOT NULL);");
+const D1={
+ prepare(sql){
+  const s=db.prepare(sql);
+  return {bind(...a){return {async first(){return s.get(...a)??null;},async all(){return {results:s.all(...a)};},async run(){return {success:true,meta:s.run(...a)};}};},
+   async first(){return s.get()??null;},async all(){return {results:s.all()};},async run(){return {success:true,meta:s.run()};}};
+ },
+ async batch(stmts){const r=[];for(const stmt of stmts)r.push(await stmt.run());return r;}
+};
+const MEDIA={async get(){return null;},async put(){throw Error("R2 no accesible");},async delete(){throw Error("R2 no accesible");}};
+const env={DB:D1,MEDIA,STAGING_MUTATIONS:"disabled",ALLOW_NEW_ACCOUNTS:"no",
+ PUBLIC_ORIGIN:BASE,EMAIL_AUTH_ENABLED:"yes",EMAIL_RATE_KEY:"FAKE-KEY-WITH-AT-LEAST-32-BYTES-000000"};
+const enc=x=>Buffer.from(x).toString("base64url");
+async function hashPassword(password,salt){
+ const b=Buffer.from(salt,"base64url");
+ let material=new TextEncoder().encode(password);
+ for(let i=0;i<6;i++){
+  const saltBytes=new Uint8Array(33);saltBytes.set(b);saltBytes[32]=i;
+  const k=await crypto.subtle.importKey("raw",material,"PBKDF2",false,["deriveBits"]);
+  material=new Uint8Array(await crypto.subtle.deriveBits({name:"PBKDF2",salt:saltBytes,iterations:100000,hash:"SHA-256"},k,256));
+ }
+ return "pbkdf2-chain6-sha256-v1$"+enc(material);
+}
+let publicCookie="";
+before(async()=>{
+ for(const [mail,id,role] of FAKES){
+  db.prepare("INSERT INTO profiles(id,name,role,member_code) VALUES (?,?,?,?)")
+    .run(id,role==="admin"?"Administrador ficticio":"Socio ficticio",role,"MBR-TEST-"+role.toUpperCase());
+  const salt=enc(Buffer.alloc(32,role==="admin"?7:8));
+  const hash=await hashPassword(PASSWORD,salt);
+  db.prepare("INSERT INTO auth_email_credentials(email,profile_id,password_hash,password_salt,password_iterations,verified_at) VALUES (?,?,?,?,600000,unixepoch())")
+    .run(mail,id,hash,salt);
+ }
+ publicCookie=(await createAuthSession(ADMIN,env)).split(";")[0];
+});
+after(()=>db.close());
+function req(route,{method="GET",cookie,origin=BASE,body}={}){
+ const headers={Origin:origin,"Sec-Fetch-Site":origin===BASE?"same-origin":"cross-site"};
+ if(cookie)headers.Cookie=cookie;
+ if(body!==undefined)headers["Content-Type"]="application/json";
+ return new Request(BASE+route,{method,headers,body:body===undefined?undefined:JSON.stringify(body)});
+}
+async function call(route,opts){
+ const response=await worker.fetch(req(route,opts),env);
+ const obj=response.headers.get("content-type")?.includes("application/json")?await response.json():null;
+ return {response,obj,status:response.status,cookie:response.headers.get("set-cookie")};
+}
+const sign=async(email,password=PASSWORD)=>call("/administracion/api/login",{method:"POST",body:{email,password}});
+let adminCookie;
+test("HTML, CSS, JS admin son páginas separadas y no indexables",async()=>{
+ for(const [url,type] of [["/administracion/","text/html"],["/administracion/styles.css","text/css"],["/administracion/app.js","javascript"]]){
+  const {response,status}=await call(url);
+  assert.equal(status,200,url);
+  assert.match(response.headers.get("content-type"),new RegExp(type));
+  assert.match(response.headers.get("x-robots-tag"),/noindex/i);
+  assert.match(response.headers.get("content-security-policy"),/frame-ancestors 'none'/);
+  assert.equal(response.headers.get("set-cookie"),null);
+ }
+ new vm.Script(ADMIN_JS);
+});
+test("cookie pública del administrador NO abre la consola independiente",async()=>{
+ const res=await call("/administracion/api/me",{cookie:publicCookie});
+ assert.equal(res.status,401);assert.equal(res.cookie,null);
+ const members=await call("/administracion/api/members",{cookie:publicCookie});
+ assert.equal(members.status,401);
+});
+test("no acepta acceso sin contraseña ni origen ajeno",async()=>{
+ assert.equal((await call("/administracion/api/login",{method:"POST",body:{email:"admin@example.test"}})).status,401);
+ assert.equal((await call("/administracion/api/login",{method:"POST",origin:"https://externo.invalid",
+  body:{email:"admin@example.test",password:PASSWORD}})).status,403);
+});
+test("no permite a un socio abrir la consola aunque conozca su contraseña",async()=>{
+ const out=await sign("socio@example.test");
+ assert.equal(out.status,401);assert.equal(out.cookie,null);
+ const count=db.prepare("SELECT COUNT(*) AS n FROM auth_sessions WHERE profile_id=?").get(MEMBER).n;
+ assert.equal(count,0,"Una sesión de socio fallida no queda abierta");
+});
+test("contraseña incorrecta de administrador rechazada",async()=>{
+ const out=await sign("admin@example.test","ContraseñaFicticiaIncorrecta!");
+ assert.equal(out.status,401);assert.equal(out.cookie,null);
+});
+test("contraseña correcta y rol admin crean cookie INDEPENDIENTE y una hora en DB",async()=>{
+ const out=await sign("admin@example.test");
+ assert.equal(out.status,200,JSON.stringify(out.obj));
+ assert.equal(out.obj.profile.role,"admin");
+ assert.match(out.cookie,/__Host-bf_admin=[A-Za-z0-9_-]{43}/);
+ assert.match(out.cookie,/Secure; HttpOnly; SameSite=Strict/);
+ assert.match(out.cookie,/Max-Age=3600/);
+ assert.ok(!out.cookie.includes("__Host-bf_session"));
+ adminCookie=out.cookie.split(";")[0];
+ const dbRecord=db.prepare("SELECT expires_at-unixepoch() AS ttl FROM auth_sessions WHERE profile_id=? ORDER BY created_at DESC LIMIT 1").get(ADMIN);
+ assert.ok(dbRecord.ttl>0&&dbRecord.ttl<=3600);
+});
+test("sesión admin permite datos privados y rol comprobado desde el servidor",async()=>{
+ const me=await call("/administracion/api/me",{cookie:adminCookie});
+ assert.equal(me.status,200);assert.equal(me.obj.profile.role,"admin");
+ const members=await call("/administracion/api/members",{cookie:adminCookie});
+ assert.equal(members.status,200);assert.equal(members.obj.items.length,2);
+});
+test("una sesión de socio renombrada a cookie admin NO supera verificación rol",async()=>{
+ const socioToken=(await createAuthSession(MEMBER,env)).match(/__Host-bf_session=([A-Za-z0-9_-]{43})/)[1];
+ const attempt=await call("/administracion/api/me",{cookie:"__Host-bf_admin="+socioToken});
+ assert.equal(attempt.status,401);
+});
+test("lectura de eventos, editor y sugerencias desde consola independiente",async()=>{
+ for(const route of ["/events","/rewards","/promos","/site","/site-drafts","/community","/activity","/changes"]){
+  const result=await call("/administracion/api"+route,{cookie:adminCookie});
+  assert.equal(result.status,200,route+": "+JSON.stringify(result.obj));
+ }
+});
+test("publicar NO escribe mientras STAGING_MUTATIONS está desactivado",async()=>{
+ const body={kind:"catalog",table:"events",action:"insert",item:{
+  name:"Evento ficticio",date_label:"2027-01-15",location:"Sala ficticia",description:"Test",start_time:"21:00",active:true
+ }};
+ assert.equal((await call("/administracion/api/write",{method:"POST",cookie:adminCookie,body})).status,423);
+ assert.equal(db.prepare("SELECT COUNT(*) AS n FROM events").get().n,0);
+});
+test("escritura real en SQLite aislada, sin tocar socios",async()=>{
+ env.STAGING_MUTATIONS="enabled";
+ const body={kind:"catalog",table:"events",action:"insert",item:{
+  name:"Evento ficticio",date_label:"2027-01-15",location:"Sala ficticia",description:"Test",start_time:"21:00",active:true,
+  localized_content:{fr:{name:"Soirée fictive"}}
+ }};
+ const out=await call("/administracion/api/write",{method:"POST",cookie:adminCookie,body});
+ assert.equal(out.status,200,JSON.stringify(out.obj));
+ assert.equal(db.prepare("SELECT COUNT(*) AS n FROM events").get().n,1);
+ assert.equal((await call("/administracion/api/events",{cookie:adminCookie})).obj.items.length,1);
+ assert.equal(db.prepare("SELECT COALESCE(SUM(points),0) AS n FROM profiles").get().n,0);
+ env.STAGING_MUTATIONS="disabled";
+});
+test("CSRF bloquea modificaciones desde sitios ajenos",async()=>{
+ const r=await call("/administracion/api/write",{method:"POST",cookie:adminCookie,
+  origin:"https://malicioso.invalid",body:{kind:"catalog",table:"events",action:"delete",id:"00000000-0000-4000-8000-000000000111"}});
+ assert.equal(r.status,403);
+});
+test("cerrar sesión admin revoca credencial y deja la cookie pública intacta",async()=>{
+ const out=await call("/administracion/api/logout",{method:"POST",cookie:adminCookie,body:{}});
+ assert.equal(out.status,200);assert.match(out.cookie,/__Host-bf_admin=; Path=\/; Max-Age=0/);
+ assert.equal((await call("/administracion/api/me",{cookie:adminCookie})).status,401);
+ const check=await call("/v1/auth/me",{cookie:publicCookie});
+ assert.equal(check.obj.authenticated,true);
+});
