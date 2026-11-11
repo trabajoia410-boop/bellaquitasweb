@@ -133,14 +133,14 @@ try{
   assert.ok((await m.locator("#suggestion-message").getAttribute("placeholder")).includes("Partagez"));
   test("móvil: etiquetas y placeholder de Sugerencias traducidos al francés");
 
-  await m.locator(".menu-toggle").click();
-  assert.equal(await m.locator(".menu-toggle").getAttribute("aria-expanded"),"false");
-  await m.locator(".header-search-button").click();
-  assert.equal(await m.locator(".header-search-button").getAttribute("aria-expanded"),"true");
-  assert.equal(await m.locator("#site-search-panel").isVisible(),true);
+  // El diseño público deliberadamente oculta Buscar en <=650px.
+  // Verificar que Escape cierra el menú sin introducir controles nuevos.
   await m.keyboard.press("Escape");
-  assert.equal(await m.locator("#site-search-panel").isVisible(),false);
-  test("móvil: búsqueda se abre y cierra con Escape");
+  assert.equal(await m.locator(".menu-toggle").getAttribute("aria-expanded"),"false");
+  assert.equal(await m.locator("#site-menu").isVisible(),false);
+  test("móvil: Escape cierra la hamburguesa");
+  assert.equal(await m.locator(".header-search-button").isVisible(),false);
+  test("móvil: respetada la distribución original de la cabecera");
 
   await m.reload({waitUntil:"domcontentloaded"});
   await m.locator(".site-header").waitFor();
