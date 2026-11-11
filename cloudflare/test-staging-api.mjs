@@ -118,4 +118,24 @@ assert.equal(jsQrLocal.status,200,"El escáner se sirve del mismo origen bajo CS
 assert.match(qrLocal.headers.get("content-type")||"",/javascript/);
 assert.match(jsQrLocal.headers.get("content-type")||"",/javascript/);
 console.log("✓ /espejo — generador y lector QR compatibles con CSP");
+const publicPhotos=await check("/v1/mirror/public/photos");
+assert.ok(Array.isArray(publicPhotos.payload.items));
+for(const path of [
+ "/v1/mirror/admin/catalog/events",
+ "/v1/mirror/admin/community",
+ "/v1/mirror/admin/site-drafts",
+ "/v1/mirror/admin/activity",
+ "/v1/mirror/me/redemptions"
+]){
+ await check(path,401); // Falta la sesión; no deben filtrarse datos privados.
+}
+await check("/v1/mirror/admin/write",405);
+await check("/v1/mirror/admin/write",401,{method:"POST",
+ headers:{"Content-Type":"application/json","Origin":new URL(base).origin},
+ body:JSON.stringify({kind:"catalog",table:"events",action:"insert",item:{name:"Nunca escribir"}})});
+const uploadDenied=await fetch(new URL("/v1/mirror/admin/media/upload",base),{
+ method:"PUT",redirect:"error",headers:{"Content-Type":"image/png","Origin":new URL(base).origin},
+ body:new Uint8Array([137,80,78,71])});
+assert.equal(uploadDenied.status,401,"No permitir subir archivos sin sesión");
+console.log("✓ /v1/mirror — consultas privadas bloqueadas a anónimos; escrituras sin sesión rechazadas");
 console.log("Todas las pruebas no destructivas del Worker han terminado.");
