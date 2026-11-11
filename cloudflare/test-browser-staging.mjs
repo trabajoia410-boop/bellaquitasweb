@@ -52,7 +52,7 @@ try{
   const fr=page.locator(".lang-switch button[data-action='set-lang'][data-lang='fr']");
   await fr.click();
   await page.waitForFunction(()=>document.documentElement.lang==="fr",{timeout:15000});
-  assert.equal(await page.locator(".bf-desktop-nav a[href='#/']").innerText(),"Accueil");
+  assert.equal(await page.locator(".bf-desktop-nav a[href='#/']").textContent(),"Accueil");
   assert.equal(await page.locator(".lang-switch button[data-lang='fr']").getAttribute("aria-pressed"),"true");
   assert.equal(await page.evaluate(()=>localStorage.getItem("bellaquitas-lang")),"fr");
   test("desktop: selector francés traduce navegación y guarda preferencia");
@@ -60,12 +60,12 @@ try{
   await page.reload({waitUntil:"domcontentloaded"});
   await page.locator(".bf-desktop-nav a[href='#/']").waitFor({state:"visible"});
   await page.waitForFunction(()=>document.documentElement.lang==="fr");
-  assert.equal(await page.locator(".bf-desktop-nav a[href='#/']").innerText(),"Accueil");
+  assert.equal(await page.locator(".bf-desktop-nav a[href='#/']").textContent(),"Accueil");
   test("desktop: francés persiste tras recargar");
 
   await page.locator(".lang-switch button[data-lang='es']").click();
   await page.waitForFunction(()=>document.documentElement.lang==="es");
-  assert.equal(await page.locator(".bf-desktop-nav a[href='#/']").innerText(),"Inicio");
+  assert.equal(await page.locator(".bf-desktop-nav a[href='#/']").textContent(),"Inicio");
   test("desktop: vuelve correctamente al español");
   await evidence(page,"staging-desktop-menu");
 
@@ -94,11 +94,11 @@ try{
   assert.equal(await m.locator(".menu-toggle").getAttribute("aria-expanded"),"true");
   assert.equal(await m.locator("#site-menu").isVisible(),true);
   for(const text of ["Inicio","Experiencia","Eventos","Ventajas","Preguntas"]){
-    assert.ok((await m.locator("#site-menu .bf-menu-mobile-primary").innerText()).includes(text),
+    assert.ok((await m.locator("#site-menu .bf-menu-mobile-primary").textContent()).includes(text),
       "Falta sección del menú "+text);
   }
   for(const text of ["Sugerencias","Bellaquitas Moments","Club de las Bellaquitas"]){
-    assert.ok((await m.locator("#site-menu").innerText()).includes(text),"Falta "+text);
+    assert.ok((await m.locator("#site-menu").textContent()).includes(text),"Falta "+text);
   }
   test("móvil: hamburguesa abre 5 secciones y 3 opciones de comunidad");
   await evidence(m,"staging-mobile-menu-open");
@@ -118,9 +118,9 @@ try{
   await m.locator(".lang-switch button[data-lang='fr']").click();
   await m.waitForFunction(()=>document.documentElement.lang==="fr");
   await m.locator(".menu-toggle").click();
-  assert.ok((await m.locator("#site-menu").innerText()).includes("Suggestions"));
-  assert.ok((await m.locator("#site-menu").innerText()).includes("Événements"));
-  assert.ok((await m.locator("#site-menu").innerText()).includes("Expériences"));
+  assert.ok((await m.locator("#site-menu").textContent()).includes("Suggestions"));
+  assert.ok((await m.locator("#site-menu").textContent()).includes("Événements"));
+  assert.ok((await m.locator("#site-menu").textContent()).includes("Expériences"));
   assert.equal(await m.evaluate(()=>localStorage.getItem("bellaquitas-lang")),"fr");
   test("móvil: francés traduce hamburguesa y persiste preferencia");
   await evidence(m,"staging-mobile-fr");
