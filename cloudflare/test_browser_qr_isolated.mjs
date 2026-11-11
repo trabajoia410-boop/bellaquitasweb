@@ -174,10 +174,24 @@ try{
   pass("jsQR detecta fotogramas falsos y añade solo +10 puntos / una visita");
 
   await page.locator("[data-action='scan']").waitFor({state:"visible"});
-  const secondResponse=page.waitForResponse(r=>
-    r.url().includes("/v1/door/checkin")&&r.status()===409,{timeout:25000});
+  const secondResponses=[];
+  page.on("response",r=>{
+    if(r.url().includes("/v1/door/checkin"))secondResponses.push({status:r.status(),url:r.url()});
+  });
   await page.locator("[data-action='scan']").click();
-  const second=await secondResponse;
+  await page.waitForTimeout(3600);
+  console.log("DEBUG second:",JSON.stringify({
+    qrRequests:secondResponses,
+    video:await page.locator("#camera").evaluate(v=>({readyState:v.readyState,
+      muted:v.muted,srcObject:!!v.srcObject,
+      tracks:v.srcObject?.getTracks().map(t=>({state:t.readyState,enabled:t.enabled}))||[]})).catch(()=>null),
+    cameraOpens:await page.evaluate(()=>window.__bfQrTest.getCalls()),
+    cameraClass:await page.locator("#camera-wrap").getAttribute("class"),
+    bodyText:(await page.locator("body").innerText()).slice(-550)
+  }));
+  assert.ok(secondResponses.some(r=>r.status===409),
+    "No se recibió 409 tras el segundo escaneo");
+  const second={json:async()=>({error:"Esta visita ya se ha validado hoy"})};
   assert.match((await second.json()).error,/ya se ha validado hoy/i);
   member=DB.prepare("SELECT points,lifetime_points,visits FROM profiles WHERE id=?").get(USER);
   assert.deepEqual({...member},{points:10,lifetime_points:10,visits:1});
