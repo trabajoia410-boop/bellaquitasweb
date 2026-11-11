@@ -156,6 +156,33 @@ try{
   assert.equal((await pub.json()).site.hero_text,"Texto ficticio para comprobar Bellaquitas QA");
   pass("El contenido publicado aparece en el endpoint del Worker ficticio");
 
+  // Cambiar idioma de edición NO puede sobrescribir el contenido español publicado.
+  await page.locator("[data-action='editor-lang'][data-lang='fr']").click();
+  await page.locator("#editor-hero_text").waitFor({state:"visible",timeout:10000});
+  await page.locator("#editor-hero_text").fill("Texte fictif uniquement pour les tests Bellaquitas");
+  await page.locator("[data-action='editor-save']").first().click();
+  await page.waitForFunction(()=>document.querySelector("#editor-status")?.textContent?.includes("Borrador guardado"),
+    null,{timeout:15000});
+  const localizedDraft=JSON.parse(DB.prepare("SELECT settings FROM site_drafts WHERE key='homepage'").get().settings);
+  assert.equal(localizedDraft.translations.fr.hero_text,"Texte fictif uniquement pour les tests Bellaquitas");
+  assert.equal(localizedDraft.hero_text,"Texto ficticio para comprobar Bellaquitas QA");
+  pass("Borrador en francés se guarda sin sobrescribir español");
+
+  await page.locator("[data-action='editor-publish']").first().click();
+  await page.waitForFunction(()=>document.querySelector("#editor-status")?.textContent?.includes("Publicado para todos"),
+    null,{timeout:15000});
+  const localizedPublished=JSON.parse(DB.prepare("SELECT page_settings FROM site_content WHERE key='homepage'").get().page_settings);
+  assert.equal(localizedPublished.hero_text,"Texto ficticio para comprobar Bellaquitas QA");
+  assert.equal(localizedPublished.translations.fr.hero_text,"Texte fictif uniquement pour les tests Bellaquitas");
+  pass("Publicación ES/FR preserva ambos idiomas en D1 aislada");
+
+  await page.locator("[data-action='editor-device'][data-device='mobile']").click();
+  const preview=page.locator("#editor-preview");
+  await preview.waitFor({state:"attached"});
+  assert.ok(await preview.evaluate(el=>el.classList.contains("mobile")));
+  assert.equal(await page.locator("[data-action='editor-device'][data-device='mobile']").getAttribute("aria-pressed"),"true");
+  pass("Vista previa móvil del editor se activa correctamente");
+
   const totals=DB.prepare("SELECT COUNT(*) AS n, SUM(points) AS points,SUM(visits) AS visits FROM profiles").get();
   assert.equal(totals.n,2);
   assert.equal(totals.points,0);assert.equal(totals.visits,0);
