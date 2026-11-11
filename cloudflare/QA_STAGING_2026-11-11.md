@@ -69,3 +69,52 @@ Esto respalda que el espejo conserva los archivos del diseño original; **no equ
 8. Solo después, planificar el cambio reversible de backend y dominio, conservando Supabase como respaldo.
 
 **Decisión de seguridad:** no cambiar el dominio, la web pública ni los datos de producción mientras estas comprobaciones sigan pendientes.
+
+
+## 6. Verificación automatizada posterior (11 de noviembre)
+
+### 28 comprobaciones de API — APROBADAS
+
+GitHub Actions ejecutó **28 de 28 comprobaciones** sin usar cookies, contraseñas ni datos reales:
+- Salud de D1/R2 y lectura de eventos, premios, promociones, galería, fotos y contenido.
+- Estado público de correo y `/v1/auth/me` sin sesión.
+- Denegación HTTP 401 para rutas privadas de socio, puerta, administrador, borradores y cambios editoriales.
+- Denegación HTTP 401 para solicitudes POST sin sesión a puerta, cambios de socios, canjes y editor.
+- Ruta de perfil no publicada, CORS permitido solo para origen autorizado.
+- Espejo visual `/espejo/` accesible con CSS, traducción francesa y logo de R2.
+
+Evidencia: https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/42945687797
+
+### Cinco vídeos originales + streaming Safari — APROBADOS a nivel HTTP
+
+Se verificaron mediante HEAD los tamaños originales de los cinco vídeos MP4 en R2 (manifest `SITE_MEDIA`), su MIME y `Accept-Ranges: bytes`. Un GET limitado a **64 bytes** devolvió correctamente `HTTP 206 Partial Content`, `Content-Range` y `Content-Length: 64`.
+
+Evidencia: https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/42946915076
+
+Esto **no prueba reproducción real en Safari/iPhone**, pero valida el requisito de streaming parcial.
+
+### Capturas escritorio y móvil — TOMADAS, pero revisión iPhone pendiente
+
+Se guardaron cuatro capturas desde Google Chrome headless (web real y espejo, escritorio y ancho móvil): https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/42946391704
+
+- En escritorio, cabecera (1440×82) y zona central seleccionada coinciden visualmente sin diferencias de píxeles; el espejo añade exclusivamente una insignia «PRUEBAS · SOLO LECTURA» en la esquina inferior derecha dentro de la captura.
+- En móvil, la cabecera y la distribución se mantienen, pero las capturas muestran **distintos estados temporales de carga del vídeo** (página real oscura, espejo con imagen borrosa/cargador). No se interpreta como una prueba de igualdad completa ni como fallo definitivo del vídeo.
+- No se ha probado Safari real ni Samsung físico en esta auditoría. Las capturas del navegador Chrome no sustituyen esa prueba.
+
+### Backup técnico del Worker desplegado — REALIZADO
+
+Se han preservado **17 módulos** de código del Worker desplegado en:
+`cloudflare/staging-source-2026-11-11/`.
+Los 15 módulos de lógica se guardaron en `modules.json`, y los dos voluminosos `mirror-snapshot.js` y `preview-jsqr-lib.js` como archivos separados. `extract-modules.mjs` permite reconstruir los 17 archivos sin desplegar ni modificar datos.
+
+**Este backup es exclusivamente de código; NO es copia de D1/Supabase/R2 ni contiene los secretos del Worker.**
+
+## 7. Bloqueos actuales antes de cerrar fase 5
+
+1. Autenticación Google/correo, verificación, recuperación, logout y sesión persistente en navegadores reales (se dispone de pruebas positivas históricas del usuario, falta auditoría conjunta).
+2. Ejecución con roles socio, puerta y administrador en un entorno aislado: editar/publicar, cambios de rol, QR, visitas y canjes sin usar perfiles originales.
+3. Prueba visual móvil real, especialmente iPhone Safari y vídeos de la portada. No alterar los vídeos originales para forzar una coincidencia en capturas.
+4. Copia privada y verificable de **datos de producción** e inventario de objetos R2, seguida de sincronización diferencial al momento del corte.
+5. Plan de reversión y aprobación de la sustitución de backend: conservar DNS y Supabase originales hasta completar las pruebas.
+
+**Confirmación:** las pruebas nuevas no modificaron usuarios reales, puntos, visitas, DNS, dominio, Worker ni sitio en producción.
