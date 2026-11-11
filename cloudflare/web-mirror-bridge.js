@@ -38,26 +38,49 @@ function queryBuilder(table){
     try{
       let rows=[];
       const profile=await getAuth().catch(()=>null);
+      const isAdmin=profile?.role==="admin";
+      const isStaff=isAdmin||profile?.role==="puerta";
       const identity=spec.filters.find(x=>x[0]==="id")?.[1];
       if(table==="profiles"){
         if(!profile)rows=[];
         else if(identity)rows=profile.id===identity?[profile]:[];
-        else if(profile.role==="admin")rows=(await requestJson("/v1/admin/members")).items||[];
-        else if(profile.role==="puerta")rows=(await requestJson("/v1/door/members")).items||[];
+        else if(isAdmin)rows=(await requestJson("/v1/admin/members")).items||[];
+        else if(isStaff)rows=(await requestJson("/v1/door/members")).items||[];
         else rows=[profile];
-      }else if(["events","rewards","promos","moments_albums"].includes(table)){
-        const endpoint={events:"events",rewards:"rewards",promos:"promos",moments_albums:"moments"}[table];
-        rows=(await requestJson("/v1/"+endpoint)).items||[];
-        if(["events","rewards","promos"].includes(table))rows=rows.map(x=>({...x,active:true}));
-        if(table==="moments_albums")rows=rows.map(x=>({...x,published:true}));
+      }else if(["events","rewards","promos"].includes(table)){
+        if(isAdmin){
+          rows=(await requestJson("/v1/mirror/admin/catalog/"+table)).items||[];
+        }else{
+          rows=(await requestJson("/v1/"+table)).items||[];
+          rows=rows.map(x=>({...x,active:true}));
+        }
+      }else if(table==="moments_albums"){
+        if(isAdmin){
+          rows=(await requestJson("/v1/mirror/admin/community")).albums||[];
+        }else{
+          rows=(await requestJson("/v1/moments")).items||[];
+          rows=rows.map(x=>({...x,published:true}));
+        }
+      }else if(table==="moments_photos"){
+        if(isAdmin)rows=(await requestJson("/v1/mirror/admin/community")).photos||[];
+        else rows=(await requestJson("/v1/mirror/public/photos")).items||[];
+      }else if(table==="community_suggestions"){
+        if(isAdmin)rows=(await requestJson("/v1/mirror/admin/community")).suggestions||[];
       }else if(table==="site_content"){
         const result=await requestJson("/v1/site");
         rows=[{key:"homepage",...result.site}];
+      }else if(table==="site_drafts"){
+        if(isAdmin)rows=(await requestJson("/v1/mirror/admin/site-drafts")).items||[];
+      }else if(table==="admin_member_changes"){
+        if(isAdmin)rows=(await requestJson("/v1/mirror/admin/changes")).items||[];
+      }else if(table==="redemptions"){
+        if(profile){
+          const path=isStaff?"/v1/mirror/door/redemptions":"/v1/mirror/me/redemptions";
+          rows=(await requestJson(path)).items||[];
+        }
       }else if(table==="activity"){
-        if(profile)rows=(await requestJson("/v1/me/activity")).items||[];
-      }else if(["site_drafts","admin_member_changes","moments_photos",
-        "community_suggestions","redemptions"].includes(table)){
-        rows=[]; // Estas pantallas aún no están migradas: no consultar producción.
+        if(isAdmin)rows=(await requestJson("/v1/mirror/admin/activity")).items||[];
+        else if(profile)rows=(await requestJson("/v1/me/activity")).items||[];
       }
       for(const [field,value] of spec.filters){
         rows=rows.filter(x=>x[field]===value||x[field]===Number(value));
@@ -114,7 +137,14 @@ export function createClient(){
     rpc:readOnly,
     storage:{from(){return{
       upload:readOnly,remove:readOnly,
-      getPublicUrl(){return{data:{publicUrl:""}};}
+      getPublicUrl(key){
+        const source=String(key||"");
+        const match=source.match(/^(public-photo|admin-photo):([0-9a-f-]{36})$/i);
+        const href=match
+          ?(match[1]==="admin-photo"?"/v1/mirror/admin/media/":"/v1/moments/photos/")+match[2]
+          :"";
+        return {data:{publicUrl:href}};
+      }
     };}}
   };
 }
