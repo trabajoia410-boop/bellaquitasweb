@@ -218,7 +218,7 @@ export function createClient(){
     },
     onAuthStateChange(){return{data:{subscription:{unsubscribe(){}}}};},
     async signInWithOAuth(){
-      location.assign("/v1/auth/google/start");
+      location.assign("/v1/auth/google/start?return=mirror");
       return {data:null,error:null};
     },
     async signInWithPassword({email,password}={}){
