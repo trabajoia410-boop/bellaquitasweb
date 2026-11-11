@@ -109,3 +109,13 @@ const media=await fetch(new URL("/espejo/assets/logo-bellaquitas.webp",base),{re
 assert.equal(media.status,302,"Medios originales servidos sin recompresión");
 assert.ok(media.headers.get("location")?.startsWith("https://bellaquitas.fr/assets/"));
 console.log("✓ /espejo — sin escrituras y medios originales en alta calidad");
+const [qrLocal,jsQrLocal]=await Promise.all([
+ fetch(new URL("/espejo/assets/qr-local.js",base),{redirect:"error"}),
+ fetch(new URL("/espejo/assets/jsqr-local.js",base),{redirect:"error"})
+]);
+assert.equal(qrLocal.status,200,"El QR se sirve del mismo origen bajo CSP");
+assert.equal(jsQrLocal.status,200,"El escáner se sirve del mismo origen bajo CSP");
+assert.match(qrLocal.headers.get("content-type")||"",/javascript/);
+assert.match(jsQrLocal.headers.get("content-type")||"",/javascript/);
+console.log("✓ /espejo — generador y lector QR compatibles con CSP");
+console.log("Todas las pruebas no destructivas del Worker han terminado.");
