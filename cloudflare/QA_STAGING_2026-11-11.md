@@ -290,3 +290,40 @@ Se ha creado **solo un candidato de corrección** `cloudflare/qa-candidates/emai
 **No se ha desplegado la corrección.** Sigue pendiente resolver la diferencia de tiempos del registro de correo, evaluar límites de CPU bajo ataque y obtener una revisión criptográfica independiente del esquema personalizado `pbkdf2-chain6-sha256-v1`. No sustituir la implementación existente por un hash incompatible sin plan de actualización de credenciales y pruebas reales.
 
 **Estado fase 5:** auditoría ampliada y corrección candidata probada; pruebas físicas, backups privados y revisión de seguridad completa siguen pendientes.
+
+
+## 13. Pruebas E2E de navegador y comparación original vs staging
+
+### 21/21 comprobaciones de navegador (Chrome) — APROBADAS
+
+Se verificó el espejo REAL `/espejo/` sin usar credenciales, sin enviar formularios ni mutar datos:
+- Escritorio: 5 enlaces de cabecera, selector ES/FR, traducción, persistencia tras recargar y retorno a español.
+- Móvil 390 px: una hamburguesa, 5 secciones principales, 3 opciones de comunidad, navegación a Eventos y Sugerencias, pestaña activa, cierre por enlace y tecla Escape.
+- Francés móvil: navegación, etiquetas/placeholder del formulario de Sugerencias, Bellaquitas Moments y Club; preferencia persistente.
+- Vídeos: portada desktop y móvil correctos, clase de encuadre iOS y segundo vídeo móvil referenciado.
+- Sin sesión, panel admin no expone formularios de socios.
+- `diagnostics.json` del artefacto: `errors: []`, `pass: 21`.
+
+Evidencia: https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43014682930  
+Script reproducible: `cloudflare/test-browser-staging.mjs`. El test utiliza `playwright-core` gratuito con el Chrome ya instalado en GitHub Actions; no requiere plan de pago.
+
+### 13/13 comprobaciones de paridad entre original y Cloudflare — APROBADAS
+
+Se abrió `https://bellaquitas.fr/` y el espejo Cloudflare en Chrome real en dos tamaños (1440×900 y 390×844). Coincidieron:
+- Número y jerarquía de controles, textos de menú ES/FR y formulario de Sugerencias en francés.
+- Tamaño natural de logo, rutas de los vídeos original escritorio/móvil.
+- Estilos computados de cabecera/vídeo y su geometría principal (tolerancia de 2px).
+- Menú hamburguesa móvil: mismos enlaces y apertura.
+
+Evidencia: https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43015001677  
+Script reproducible: `cloudflare/test-browser-parity.mjs`.
+
+### Límites de lo comprobado
+
+**No se valida aún Safari WebKit sobre iPhone físico**, ni la reproducción real de los dos vídeos, la cámara QR, la sesión real Google/correo o el editor publicando sobre datos ficticios. La equivalencia CSS/DOM y rutas de vídeo no garantiza identidad de cada fotograma de vídeos en reproducción.
+
+### Cierre y lista de aceptación
+
+Se ha creado `cloudflare/FASE5_VALIDACION_FINAL.md` con un checklist para pruebas reales iPhone/Android y las salvaguardas de base de datos, seguridad y presupuesto cero.
+
+**Estado:** fase 5 aún abierta; rama de auditoría y PR en borrador; sitio público no cambiado.
