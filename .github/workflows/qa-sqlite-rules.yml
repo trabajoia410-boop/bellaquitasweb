@@ -4,7 +4,7 @@ on:
     branches:
       - auditoria/fase5-2026-11-11
     paths:
-      - cloudflare/test-sqlite-rules.py
+      - cloudflare/test_sqlite_rules.py
       - cloudflare/migrations/0001-schema.sql
       - cloudflare/migrations/0002-auth-and-invariants.sql
       - .github/workflows/qa-sqlite-rules.yml
@@ -18,4 +18,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Comprobar las reglas D1 con socios ficticios en SQLite temporal
-        run: python3 -m unittest discover -s cloudflare -p test-sqlite-rules.py -v
+        run: python3 -m unittest discover -s cloudflare -p test_sqlite_rules.py -v
