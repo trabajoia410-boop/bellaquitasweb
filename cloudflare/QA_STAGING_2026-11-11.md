@@ -170,3 +170,55 @@ Supabase conserva 6 perfiles. Cloudflare D1 conserva esos mismos 6 IDs y una cue
 5. Comparación diferencial final y plan de conmutación/reversión del backend manteniendo Supabase hasta que todo funcione.
 
 **Estado operativo:** la migración NO se ha cortado a Cloudflare; el PR de auditoría permanece en borrador y la web pública no ha sufrido modificaciones.
+
+
+## 10. Autenticación y protección de acceso — ampliación (11 noviembre 2026)
+
+### 10 pruebas de correo, sesión y recuperación — APROBADAS
+
+Se ejecutó el código **actual** del Worker con D1, Resend y Turnstile completamente simulados, sin peticiones externas reales:
+- El sistema desactivado no permite iniciar sesión.
+- Solo acepta métodos y orígenes autorizados; rechaza correos inválidos y contraseñas débiles.
+- Inicio Google construye PKCE S256; callbacks mal formados se rechazan.
+- Registro de correo → enlace de confirmación ficticio → validación de cuenta → login → cookie Secure/HttpOnly/SameSite → sesión persistente entre peticiones → logout → sesión revocada.
+- Recuperación de contraseña invalida sesiones existentes y el token de restablecimiento no se puede reutilizar.
+- Recuperación de correo desconocido conserva respuesta genérica.
+- Turnstile de hostname incorrecto es rechazado.
+- La respuesta pública de configuración no revela secretos de Resend ni de límites de intentos.
+
+Evidencia: https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/42994647166
+
+### 10 pruebas Google OAuth con claves criptográficas de ensayo — APROBADAS
+
+Se crearon dos claves RSA ficticias efímeras; JWKS, el servidor de tokens Google y D1 son mocks **sin internet ni cuentas reales**:
+- PKCE S256, estado y nonce coherentes.
+- JWT RSA firmado válido inicia sesión de identidad ya importada.
+- Estado de OAuth consumible una sola vez.
+- Audiencia, nonce, firma, expiración y email no verificado son rechazados cuando no corresponden.
+- Con `ALLOW_NEW_ACCOUNTS=no`, una identidad nueva no crea un perfil.
+- Un error del proveedor de tokens no crea sesiones.
+
+Evidencia: https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/42995088768
+
+### Batería única de regresión — APROBADA
+
+Todos los controles anteriores se ejecutaron de nuevo **juntos** en GitHub Actions, sin modificar producción:
+- 10 reglas SQL de visitas/puntos/canjes en SQLite efímera.
+- 30 comprobaciones Node de correo, Google y permisos con Worker exacto recuperado.
+- 28 comprobaciones HTTP públicas y negativas frente a staging.
+- 6 verificaciones del streaming original (5 vídeos + soporte HTTP 206).
+
+**Resultado: 68/68 pruebas de lógica/API y 6/6 pruebas de streaming.**
+https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/42995645683
+
+### Reconciliación posterior — SIN DIFERENCIAS
+
+Supabase: 6 perfiles; D1 staging: los mismos 6 + 1 cuenta de correo adicional. Cero diferencias entre los 6 perfiles originales en ID/rol/nombre/código/puntos/puntos históricos/visitas. Suma de puntos **1.999.998** y visitas **0** en ambos. En Cloudflare se verificó la disponibilidad de Time Travel (no representa un backup externo). `STAGING_MUTATIONS=disabled` continúa intacto.
+
+### Respaldo y reversión
+
+Se ha redactado `cloudflare/PLAN_RESPALDO_Y_CORTE_SEGURO.md` con condiciones de copia **privada**, restauración de Supabase/D1/R2, ensayos de solo datos ficticios, prueba de móviles y recuperación tras un cambio reversible.
+
+**Importante:** el plan está preparado, pero no se ha exportado ni restaurado ninguna base de producción. La función de hash de contraseñas personalizada actualmente desplegada requiere revisión criptográfica independiente antes del corte definitivo.
+
+**La fase 5 todavía no se cierra:** faltan pruebas en navegador/iPhone/Android reales y copias privadas restaurables. El Worker, DNS y GitHub Pages de producción no se han alterado.
