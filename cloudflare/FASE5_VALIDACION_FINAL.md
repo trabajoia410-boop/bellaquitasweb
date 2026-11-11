@@ -3,7 +3,7 @@
 **Fecha de actualización:** 11 de noviembre de 2026  
 **Sitio público:** https://bellaquitas.fr/ (se mantiene intacto)  
 **Espejo de lectura:** https://bellaquitas-api-staging.bellaquitas-fest-410.workers.dev/espejo/  
-**Estado:** controles de navegador aprobados; pruebas físicas, respaldos privados y corte **pendientes**.
+**Estado:** controles automáticos aprobados; seguridad, respaldos privados y preparación del corte **pendientes**. Las pruebas con móviles físicos se realizarán **en la fase 6, inmediatamente después de publicar la migración en bellaquitas.fr**.
 
 ## Bloque A — Verificado automáticamente sin usuario ni contraseñas
 
@@ -44,7 +44,9 @@ Los navegadores de CI emulan dimensiones y agente de usuario; **NO son un iPhone
 - **8/8 comprobaciones del recorrido visual del QR en Chrome** con la biblioteca `BellaQR` original, fallback `jsQR`, cámara sintética desde Canvas, sesión ficticia de puerta y SQLite en memoria. Primera lectura +10 puntos / 1 visita; segunda lectura rechazada con HTTP 409, sin duplicación. [Resultado](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43112449913)
 - Sigue **pendiente** el permiso de cámara en Safari de iPhone y Chrome de Samsung físicos. No usar QR ni cuentas reales para pruebas.
 
-## Bloque B — Últimas verificaciones que requieren dispositivos reales
+## Bloque B — Fase 6: pruebas con dispositivos reales tras la publicación oficial
+
+**Decisión del propietario:** no hacer ensayos físicos con iPhone o Samsung antes del cambio de backend. Cuando el nuevo sistema esté publicado en **bellaquitas.fr**, ejecutar esta lista como validación inmediata posterior al despliegue. Mantener posibilidad de reversión y el sistema anterior disponible hasta verificarla.
 
 ### iPhone con Safari
 - [ ] Abrir bellaquitas.fr y el espejo de Cloudflare en pestañas separadas; verificar que portada, dos vídeos, logo, cabecera y banda dorada/animada son iguales
@@ -68,7 +70,7 @@ Los navegadores de CI emulan dimensiones y agente de usuario; **NO son un iPhone
 
 **No activar operaciones de escritura en la base `bellaquitas-staging` que contiene copias de los seis socios originales.** `STAGING_MUTATIONS=disabled` es un bloqueo de seguridad.
 
-## Bloque C — Antes de fase 6
+## Bloque C — Imprescindible antes de publicar en fase 6
 
 - [ ] Revisar esquema de contraseñas personalizado y riesgo de enumeración en registro
 - [ ] Confirmar que hosting, envíos y almacenamiento funcionan dentro de planes gratuitos sin cobro automático (condición explícita del propietario)
@@ -76,4 +78,4 @@ Los navegadores de CI emulan dimensiones y agente de usuario; **NO son un iPhone
 - [ ] Comprobar diferencial final de identidades, eventos, puntos, visitas, QR, medios y contenido
 - [ ] Preparar y aprobar corte **reversible**, con Supabase original conservado como respaldo
 
-**Importante:** 21 + 13 comprobaciones de navegador/paridad aprobadas, además de las 80 pruebas lógicas/API y seis de vídeo anteriores. No se ha migrado el dominio ni se han modificado los datos originales.
+**Importante:** las pruebas físicas son una **validación posterior al lanzamiento de fase 6**, no un bloqueo previo de fase 5. El corte sí exige respaldos restaurables, revisión de seguridad, protección de datos y reversión preparada. No se ha migrado el backend del dominio ni se han modificado los datos originales.
