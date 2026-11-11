@@ -1,0 +1,34 @@
+name: Editor visual navegador sobre Worker 100% aislado
+on:
+  push:
+    branches:
+      - auditoria/fase5-2026-11-11
+    paths:
+      - cloudflare/test_browser_editor_isolated.mjs
+      - .github/workflows/qa-browser-editor-isolated.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  admin-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar Playwright Core libre (Chrome del sistema)
+        run: npm install --no-save --no-package-lock --ignore-scripts playwright-core@1.56.1
+      - name: Recuperar Worker desplegado como código SIN desplegar
+        run: node cloudflare/staging-source-2026-11-11/extract-modules.mjs
+      - name: Probar edición y publicación con SQLite y R2 ficticios, sin red externa
+        run: node --experimental-sqlite --experimental-default-type=module cloudflare/test_browser_editor_isolated.mjs
+      - name: Guardar evidencias sin datos reales (7 días)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bellaquitas-editor-browser-isolated
+          path: browser-editor-evidence/
+          retention-days: 7
+          if-no-files-found: warn
