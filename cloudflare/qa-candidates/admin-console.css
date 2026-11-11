@@ -110,3 +110,5 @@ details textarea{font-family:ui-monospace,monospace}
 @media(max-width:520px){.stats{grid-template-columns:1fr 1fr;gap:10px}.stat{padding:14px}.stat .number{font-size:1.55rem}.workspace-head{display:block}.topbar-actions a{display:none}.card,.panel{padding:16px}.access-brand{display:grid;justify-items:center;text-align:center}.access-brand img{width:110px}.list-item{display:block}.list-item .actions{margin-top:12px}}
 
 .save-actions{margin-top:24px}
+
+.album-item{align-items:flex-start}.album-main{min-width:0;flex:1}.album-main input[type=file]{max-width:275px;min-height:auto;background:transparent}.photo-grid{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}.photo-tile{max-width:140px;display:grid;gap:5px}.photo-tile img{width:125px;height:105px;object-fit:cover;border-radius:9px;border:1px solid var(--line)}.photo-tile button{font-size:.76rem;padding:5px 7px}
