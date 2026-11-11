@@ -157,4 +157,21 @@ const uploadDenied=await fetch(new URL("/v1/mirror/admin/media/upload",base),{
  body:new Uint8Array([137,80,78,71])});
 assert.equal(uploadDenied.status,401,"No permitir subir archivos sin sesión");
 console.log("✓ /v1/mirror — consultas privadas bloqueadas a anónimos; escrituras sin sesión rechazadas");
+// Envío de Sugerencias limitado a staging: sin CAPTCHA válido no se puede escribir.
+const {payload:suggestionStatus}=await check("/v1/mirror/public/suggestions/status");
+assert.equal(typeof suggestionStatus.enabled,"boolean");
+if(suggestionStatus.enabled)
+ assert.ok(suggestionStatus.turnstileSiteKey,"El buzón requiere Turnstile");
+const suggestionsJs=await fetch(new URL("/espejo/suggestions-ui.js",base),{redirect:"error"});
+assert.equal(suggestionsJs.status,200);
+assert.match(suggestionsJs.headers.get("content-type")||"",/javascript/);
+const suggestionsSource=await suggestionsJs.text();
+assert.match(suggestionsSource,/\/v1\/mirror\/public\/suggestions/);
+await check("/v1/mirror/public/suggestions",405);
+await check("/v1/mirror/public/suggestions",403,{
+ method:"POST",headers:{"Content-Type":"application/json"},
+ body:JSON.stringify({name:"Test",message:"Nunca debe llegar a D1"})
+});
+console.log("✓ Sugerencias — Turnstile, ruta integrada y POST sin Origin bloqueado");
+
 console.log("Todas las pruebas no destructivas del Worker han terminado.");
