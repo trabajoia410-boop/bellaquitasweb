@@ -163,6 +163,11 @@ export async function adminConsoleRoute(request,env){
     return wrap(READS[suffix].startsWith("/v1/admin/")?
       await protectedRoute(req,env):await mirrorDataRoute(req,env));
   }
+  const photoRead=suffix.match(/^\/photos\/([0-9a-f-]{36})$/i);
+  if(request.method==="GET"&&photoRead){
+    const req=authRequest(request,"/v1/mirror/admin/media/"+photoRead[1],authenticated.token);
+    return wrap(await mirrorDataRoute(req,env));
+  }
   if(request.method==="POST"&&WRITES[suffix]){
     if(!checkOrigin(request,env))return json({error:"Origen no autorizado"},403);
     const req=translated(request,WRITES[suffix],authenticated.token);
