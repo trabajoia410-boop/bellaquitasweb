@@ -119,7 +119,7 @@ function siteForm(){
   "<button type=\"button\" data-site-lang=\"fr\" class=\""+(state.language==="fr"?"active":"")+"\">Français FR</button></div>"+
   "<form id=\"site-form\" class=\"editor-form\"><div class=\"row-form\">"+
   (fieldHtml||"<p class=\"muted\">No hay campos de texto en esta sección.</p>")+"</div>"+extra+
-  "<div class=\"actions\" style=\"margin-top:24px\"><button class=\"secondary\" type=\"button\" data-action=\"save-draft\">Guardar borrador</button>"+
+  "<div class=\"actions save-actions\"><button class=\"secondary\" type=\"button\" data-action=\"save-draft\">Guardar borrador</button>"+
   "<button class=\"primary\" type=\"button\" data-action=\"publish\">Publicar cambios en la web</button></div></form></div>";
 }
 async function renderSite(){
@@ -371,7 +371,6 @@ document.addEventListener("submit",async e=>{
  }catch(err){feedback(err.message,true);}
  finally{if(button?.isConnected)button.disabled=false;}
 });
-$("#login-form").addEventListener("submit",login);
 $("#admin-password").value="";
 if(sessionStorage.getItem("bf_admin_unlocked")==="yes"){
  api("/me").then(data=>{
