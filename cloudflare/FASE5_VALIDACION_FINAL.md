@@ -31,6 +31,13 @@
 
 Los navegadores de CI emulan dimensiones y agente de usuario; **NO son un iPhone físico ni Safari WebKit**. No se verificó la reproducción fluida de los vídeos ni el escáner de cámara en dispositivos reales.
 
+### Novedades: reproducción y editor en pruebas automatizadas
+
+- **Segundo vídeo decodificado en WebKit**, a 1080 × 1920 tanto en original como en Cloudflare, `video.play()` exitoso; no sustituye Safari de iPhone físico. [Evidencia](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43019648645)
+- **15/15 pruebas del Worker completo** con datos ficticios en SQLite y R2 en memoria; creación de evento real a través del enrutador principal, sin datos de producción. [Evidencia](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43020117830)
+- **11/11 comprobaciones del editor en navegador** usando el Worker real en localhost y sesión admin ficticia: borrador, publicación, idiomas ES/FR y vista previa móvil. [Evidencia](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43021180171)
+- Queda **pendiente** el ensayo de estos flujos con autenticación real sobre una instancia de backend de pruebas totalmente aislada y el reconocimiento/validación QR en iPhone/Samsung físicos.
+
 ## Bloque B — Últimas verificaciones que requieren dispositivos reales
 
 ### iPhone con Safari
