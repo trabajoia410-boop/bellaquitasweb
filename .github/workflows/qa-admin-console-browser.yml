@@ -1,0 +1,37 @@
+name: Panel nuevo — interfaz tipo WordPress en Chrome
+on:
+  push:
+    branches:
+      - auditoria/fase5-2026-11-11
+    paths:
+      - cloudflare/test_admin_console_browser.mjs
+      - cloudflare/qa-candidates/admin-console*
+      - .github/workflows/qa-admin-console-browser.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  visual-admin:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar Playwright Core gratuito, Chrome del runner
+        run: npm install --no-save --no-package-lock --ignore-scripts playwright-core@1.56.1
+      - name: Recuperar fuentes sin desplegar Worker
+        run: |
+          node cloudflare/staging-source-2026-11-11/extract-modules.mjs
+          cp cloudflare/qa-candidates/admin-console-ui.js cloudflare/staging-source-2026-11-11/recovered-src/admin-console-ui.js
+      - name: Probar diseño escritorio/móvil, login, borradores, eventos y socios ficticios
+        run: node --experimental-default-type=module cloudflare/test_admin_console_browser.mjs
+      - name: Guardar capturas del panel temporalmente
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bellaquitas-admin-nueva-pestana
+          path: browser-admin-console-evidence/
+          retention-days: 7
+          if-no-files-found: warn
