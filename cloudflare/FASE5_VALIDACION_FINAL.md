@@ -26,6 +26,9 @@
   - Menú móvil idéntico.
   - Evidencia: https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43015001677
 
+- **19/19 pruebas WebKit estilo Safari, con iPhone emulado (390 × 844)**: tanto bellaquitas.fr como el espejo decodificaron el MP4 móvil (464 × 832; readyState=4), presentaron la misma geometría de vídeo y cabecera, atributos autoplay/playsInline, fuentes móviles para el segundo vídeo y ausencia de desbordamiento horizontal. Son controles del motor WebKit en Linux, **no una prueba en un iPhone físico**.
+  - Evidencia: https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43015971325
+
 Los navegadores de CI emulan dimensiones y agente de usuario; **NO son un iPhone físico ni Safari WebKit**. No se verificó la reproducción fluida de los vídeos ni el escáner de cámara en dispositivos reales.
 
 ## Bloque B — Últimas verificaciones que requieren dispositivos reales
