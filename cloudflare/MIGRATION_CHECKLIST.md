@@ -112,3 +112,9 @@
 - [x] Prueba sintética QR generado/decodificado correcta y controles de acceso conservados.
 - [x] Despliegue controlado sin modificar totales: 7 perfiles, 1.999.998 puntos y 0 visitas.
 - [ ] Verificación cámara real iPhone/Android, escaneando código `MBR-` desde otro dispositivo y confirmando coincidencia de socio.
+
+## Confirmación del lector en móvil Android — 11/11/2026
+- [x] Captura facilitada por usuario del móvil Android muestra «Código reconocido» y nombre/código del socio identificados correctamente mediante interfaz `/preview`.
+- [x] Se mantiene aviso «Modo pruebas: registrar visitas está desactivado»; reconocimiento y consulta no equivalen a marcar asistencia.
+- [ ] Determinar si la prueba fue con cámara en directo o foto/captura (ambas opciones disponibles); verificar específicamente cámara en directo si todavía no se hizo.
+- [ ] Validar también Safari/iPhone y perfiles de puerta distintos de administrador, sin registrar visitas ni puntos reales.
