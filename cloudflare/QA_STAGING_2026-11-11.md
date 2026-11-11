@@ -327,3 +327,26 @@ Script reproducible: `cloudflare/test-browser-parity.mjs`.
 Se ha creado `cloudflare/FASE5_VALIDACION_FINAL.md` con un checklist para pruebas reales iPhone/Android y las salvaguardas de base de datos, seguridad y presupuesto cero.
 
 **Estado:** fase 5 aún abierta; rama de auditoría y PR en borrador; sitio público no cambiado.
+
+
+## 14. Paridad WebKit estilo Safari — 19/19 APROBADO
+
+Se instalaron el navegador **WebKit de código abierto** de Playwright y sus dependencias en un runner GitHub Actions Ubuntu 24.04, sin contratar ningún servicio ni adquirir suscripción. Se abrió la web original y el espejo Cloudflare con viewport 390 × 844 y User-Agent de iPhone.
+
+**19/19 comprobaciones aprobadas:**
+- Los dos sitios aplican la clase de ajuste de vídeo iOS.
+- Ambos seleccionan el MP4 de portada original para móviles y conservan `autoplay`, `muted`, `loop` y `playsInline`.
+- **WebKit decodificó realmente el MP4** de portada en los dos sitios: `readyState=4`, `videoWidth=464`, `videoHeight=832`. Esto supera una simple comprobación de rutas o atributos.
+- Los dos incluyen la fuente móvil del segundo vídeo, la cabecera y el logo; solo hay una hamburguesa.
+- Sin desbordamiento horizontal (viewport 390, scrollWidth 390).
+- Los estilos y geometría del encabezado, contenedor de vídeo y elemento MP4 coinciden con tolerancia `<=3px`.
+- Los tamaños de logo, enlaces de menú y rutas de vídeos coinciden.
+- Capturas del original y del espejo y reporte JSON guardados como artefacto temporal de GitHub Actions.
+
+Evidencia: https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43015971325
+
+**Limitación:** WebKit en Linux se aproxima a Safari en su motor, pero **no es Safari instalado en un iPhone físico**, ni demuestra compatibilidad perfecta con todos los modelos/versiones iOS. La prueba del segundo vídeo verifica su fuente original, no la decodificación ni reproducción completa de ese segundo MP4.
+
+La fase 5 sigue abierta hasta completar las pruebas finales físicas de móvil/QR, las verificaciones de autenticación con cuentas ficticias, las copias privadas restaurables y la revisión de seguridad de contraseñas.
+
+**Estado acumulado de esta auditoría:** 80 verificaciones lógicas/API, 6 verificaciones HTTP de medios, 21 controles de interfaz Chrome, 13 comparaciones Chrome con sitio original y 19 pruebas WebKit, todos aprobados en sus últimas ejecuciones. Estas cifras son de suites diferentes y pueden solaparse; no representan 139 funcionalidades independientes.
