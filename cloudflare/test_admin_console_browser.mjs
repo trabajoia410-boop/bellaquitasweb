@@ -27,6 +27,11 @@ function respond(res,data,status=200,extra={}){
 }
 const server=createServer(async(req,res)=>{
  const url=new URL(req.url,"http://localhost"),pathname=url.pathname;
+ if(pathname==="/espejo/assets/logo-navbar.png"){
+  const image=fs.readFileSync(path.join(HERE,"..","assets","logo-navbar.png"));
+  res.writeHead(200,{"Content-Type":"image/png"});res.end(image);return;
+ }
+ if(pathname==="/favicon.ico"){res.writeHead(204);res.end();return;}
  if(pathname==="/administracion/"||pathname==="/administracion/styles.css"||pathname==="/administracion/app.js"){
   res.writeHead(200,{"Content-Type":pathname.endsWith(".css")?"text/css":pathname.endsWith(".js")?"text/javascript":"text/html"});
   res.end(pathname.endsWith(".css")?ADMIN_CSS:pathname.endsWith(".js")?ADMIN_JS:ADMIN_HTML);
