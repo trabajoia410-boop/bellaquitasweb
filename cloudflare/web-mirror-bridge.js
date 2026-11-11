@@ -119,7 +119,7 @@ async function removeFromR2(paths){
    {kind:"media",action:"remove",keys:mediaKeys});
   // Las fotos moments ya se eliminan del R2 de forma atómica con su registro
   // mediante la operación de administración del servidor.
-  if(files.some(x=>!x.startsWith("moments/")&&!mediaKeys.includes(x)))
+  if(files.some(x=>!x.startsWith("moments/")&&!/^(?:public-photo|admin-photo):[0-9a-f-]{36}$/i.test(x)&&!mediaKeys.includes(x)))
    throw Error("Ruta no autorizada");
   return {data:null,error:null};
  }catch(error){return asError(error);}
