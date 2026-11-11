@@ -9,6 +9,7 @@ on:
       - cloudflare/qa-candidates/admin-console.css
       - cloudflare/qa-candidates/bellaquitas-api-staging-admin.js
       - cloudflare/test_admin_console.mjs
+      - app.js
       - .github/workflows/qa-admin-console.yml
   workflow_dispatch:
 permissions:
@@ -29,6 +30,8 @@ jobs:
           cp cloudflare/qa-candidates/admin-console-routes.js cloudflare/staging-source-2026-11-11/recovered-src/admin-console-routes.js
           cp cloudflare/qa-candidates/admin-console-ui.js cloudflare/staging-source-2026-11-11/recovered-src/admin-console-ui.js
           cp cloudflare/qa-candidates/bellaquitas-api-staging-admin.js cloudflare/staging-source-2026-11-11/recovered-src/bellaquitas-api-staging.js
+      - name: Comprobar sintaxis de navegación pública sin cambiar el diseño
+        run: node --check app.js
       - name: Verificar sintaxis y control de acceso admin sobre SQLite ficticia
         run: |
           node --check cloudflare/staging-source-2026-11-11/recovered-src/admin-console-routes.js
