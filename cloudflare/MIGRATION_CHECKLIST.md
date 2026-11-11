@@ -152,3 +152,16 @@
 - [ ] Auditoría independiente del esquema KDF, permisos y datos de migración antes de publicar.
 - [ ] Comparación visual extensa de todas las páginas/idiomas y pruebas iPhone **más adelante**, como acordado.
 - [ ] Corte de DNS y hosting con backup + rollback; **no ejecutar** sin completar los puntos anteriores.
+
+## Fase 5 — Sugerencias del diseño original conectadas a Cloudflare (11/11/2026)
+- [x] Nuevo endpoint `POST /v1/mirror/public/suggestions`, habilitado **solo en Worker staging** mediante `SUGGESTIONS_ENABLED=yes`.
+- [x] `GET .../suggestions/status` responde `enabled=true` y la clave pública de Turnstile; no se publican secretos.
+- [x] Interfaz `#/sugerencias` del HTML/renderer original conserva el formulario y muestra Turnstile; mensajes ES/FR.
+- [x] Servidor valida `Origin`, longitud y tipo de datos, honeypot, Turnstile con hostname, HMAC-IP y cuota de 5 envíos/hora.
+- [x] Prueba simulada: flag deshabilitado 423, Origin externo 403, CAPTCHA inválido 403, primeras 5 inserciones 201 y sexto envío 429.
+- [x] D1 real pasó EXPLAIN de INSERT/SELECT, sin datos ficticios insertados; contador de sugerencias en staging sigue 0.
+- [x] Se conservan `STAGING_MUTATIONS=disabled`, `ALLOW_NEW_ACCOUNTS=no`, seis identidades originales y una cuenta nueva de pruebas.
+- [x] Comparados SHA Git de index.html, app.js, styles.css, locale-fr.js, logos y vídeos: rama y main idénticos; diseño no modificado.
+- [x] Navegador de pruebas móvil 390px: navbar, botón hamburguesa, portada de vídeo y selector FR presentes, sin error de arranque.
+- [ ] Probar un envío auténtico a Sugerencias con Turnstile y comprobar acceso desde admin.
+- [ ] Auditoría integral, editor completo con cambios ficticios aislados, comparativas visuales desktop/Android; iPhone diferido.
