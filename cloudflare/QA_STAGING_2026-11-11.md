@@ -222,3 +222,54 @@ Se ha redactado `cloudflare/PLAN_RESPALDO_Y_CORTE_SEGURO.md` con condiciones de 
 **Importante:** el plan está preparado, pero no se ha exportado ni restaurado ninguna base de producción. La función de hash de contraseñas personalizada actualmente desplegada requiere revisión criptográfica independiente antes del corte definitivo.
 
 **La fase 5 todavía no se cierra:** faltan pruebas en navegador/iPhone/Android reales y copias privadas restaurables. El Worker, DNS y GitHub Pages de producción no se han alterado.
+
+
+## 11. Editor integrado con SQL real aislado — APROBADO
+
+Se añadió `cloudflare/test_staging_editor.mjs`, que ejecuta los **módulos de edición realmente desplegados** contra una base SQLite `:memory:` creada con las migraciones 0001/0002/0003 y un simulador local de objetos R2. El test **NO se conecta a la D1 de Cloudflare ni a cuentas reales**. `STAGING_MUTATIONS=enabled` solo existe en la variable del entorno simulado de este test; el Worker desplegado mantiene `STAGING_MUTATIONS=disabled`.
+
+**12/12 verificaciones aprobadas:**
+1. Administrador crea un evento y lo ve en el catálogo, mientras el socio no puede leer el catálogo privado.
+2. Administrador edita, desactiva y borra un evento ficticio.
+3. Inserta premio y promoción ficticios sin modificar puntos.
+4. Guarda borrador, publica configuración y mantiene traducciones ES/FR.
+5. Edita textos sin eliminar los ajustes visuales.
+6. Socio y personal de puerta no pueden guardar ni publicar.
+7. Origen ajeno y bloqueo de staging impiden modificaciones.
+8. Tablas, fechas, precios y URL de imágenes inválidos son rechazados.
+9. No es posible eliminar los archivos de vídeo originales desde el editor.
+10. Subida y descarga de PNG ficticio en almacenamiento de ensayo, con borrado posterior.
+11. Rechazo de subida de PNG de firma falsa.
+12. Puntos, visitas e identidades ficticias permanecen iguales durante las ediciones.
+
+Evidencia: https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/42996569703
+
+### Regresión conjunta de fase 5 — 80/80 y vídeo 6/6
+
+Se incorporaron las 12 pruebas del editor al flujo conjunto `qa-phase5-full.yml`. Nueva ejecución aprobada:
+- 10 SQL QR/fidelidad
+- 30 acceso/correo/Google/permisos
+- 12 editor/catálogos/medios con SQLite aislada
+- 28 API HTTP de staging
+- 6 verificaciones de vídeo (cinco MP4 y HTTP Range 206)
+
+**Resultado: 80/80 casos lógicos/API superados, más 6/6 pruebas de streaming.**
+
+Evidencia: https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/42996698265
+
+### Control posterior de datos productivos
+
+Una comparación de solo lectura confirmó:
+- Supabase: 6 perfiles, 1.999.998 puntos, 0 visitas, 1 evento y 2 movimientos históricos.
+- D1 staging: 7 perfiles (6 originales + 1 email de staging), 1.999.998 puntos, 0 visitas, 1 evento y 2 movimientos.
+- Worker de staging: `ALLOW_NEW_ACCOUNTS=no`, `STAGING_MUTATIONS=disabled` sin cambios.
+
+### Qué NO prueba aún
+
+- El clic real y la visualización del editor en Safari iPhone o Chrome Samsung.
+- La cámara QR y registro de puerta en un móvil físico contra una base de ensayo independiente.
+- Login en navegador real con Google/Resend (las pruebas automáticas usan proveedores simulados).
+- Respaldos privados de Supabase/D1/R2 verificados mediante restauración.
+- Revisión independiente del esquema de contraseñas personalizado.
+
+La fase 5 sigue abierta hasta completar esos puntos; no se cambió producción, DNS ni el diseño público.
