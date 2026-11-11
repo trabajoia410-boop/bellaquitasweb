@@ -19,6 +19,7 @@ const HERE=path.dirname(fileURLToPath(import.meta.url));
 const recovered=path.join(HERE,"staging-source-2026-11-11","recovered-src");
 const {default:worker}=await import(pathToFileURL(path.join(recovered,"bellaquitas-api-staging.js")).href);
 const {createAuthSession}=await import(pathToFileURL(path.join(recovered,"auth-routes.js")).href);
+const {SITE_MEDIA}=await import(pathToFileURL(path.join(recovered,"site-media-manifest.js")).href);
 const ADMIN="00000000-0000-4000-8000-000000000111";
 const USER="00000000-0000-4000-8000-000000000112";
 const OUT="browser-editor-evidence";mkdirSync(OUT,{recursive:true});
@@ -50,7 +51,26 @@ const D1={
   async batch(stmts){const rows=[];for(const s of stmts)rows.push(await s.run());return rows;}
 };
 const R2={
-  async get(){return null;},
+  async get(key,options={}){
+    if(!key.startsWith("site-original/"))return null;
+    const name=key.slice("site-original/".length);
+    const expected=SITE_MEDIA.find(f=>f.path===name);
+    if(!expected)return null;
+    const disk=path.join(HERE,"..","assets",name);
+    if(!existsSync(disk))return null;
+    const bytes=readFileSync(disk);
+    if(bytes.length!==expected.bytes)throw Error("Archivo Git inesperado: "+name);
+    const requested=options.range?.get?.("Range")||"";
+    const range=/^bytes=(\d+)-(\d*)$/.exec(requested);
+    let offset=0,length=bytes.length;
+    if(range){offset=Number(range[1]);length=Math.min(bytes.length-offset,range[2]?Number(range[2])-offset+1:bytes.length-offset);}
+    return {
+      size:bytes.length,customMetadata:{gitSha1:expected.gitSha1},httpEtag:'"'+expected.gitSha1+'"',
+      range:range?{offset,length}:null,body:bytes.subarray(offset,offset+length),
+      writeHttpMetadata(headers){headers.set("Content-Type",expected.type);}
+    };
+  },
+  async head(key){const object=await this.get(key);if(!object)return null;return {...object,body:null};},
   async put(){throw Error("No se suben archivos en la prueba del editor");},
   async delete(){throw Error("No se borran archivos en la prueba del editor");}
 };
