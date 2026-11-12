@@ -114,6 +114,15 @@ def validate(evidence: object, now: datetime | None = None) -> list[str]:
         errors.append("Autenticación: aún hay administradores existentes sin contraseña verificada")
     required(authentication,"no_new_duplicate_admin_accounts","Autenticación")
 
+    costs=part("costs")
+    required(costs,"cloudflare_workers_and_d1_free_confirmed","Costes")
+    required(costs,"r2_no_uncapped_billing_or_nonbillable_storage_verified","Costes")
+    required(costs,"resend_email_free_limit_protected","Costes")
+    required(costs,"all_other_meters_and_autopay_reviewed","Costes")
+    required(costs,"budget_alert_not_considered_hard_cap","Costes")
+    if not recent(costs.get("checked_at"),MAX_PRICING_AGE,now):
+        errors.append("Costes: revisar facturación y límites dentro de 14 días")
+
     rollback=part("rollback")
     required(rollback,"procedure_rehearsed","Reversión")
     required(rollback,"previous_backend_retained","Reversión")
@@ -174,6 +183,13 @@ def make_synthetic(now: datetime) -> dict:
         "no_paid_upgrade_or_automatic_billing":True,
         "free_plan_checked_at":stamp,
         "no_new_duplicate_admin_accounts":True},
+      "costs":{
+        "cloudflare_workers_and_d1_free_confirmed":True,
+        "r2_no_uncapped_billing_or_nonbillable_storage_verified":True,
+        "resend_email_free_limit_protected":True,
+        "all_other_meters_and_autopay_reviewed":True,
+        "budget_alert_not_considered_hard_cap":True,
+        "checked_at":stamp},
       "rollback":{
         "procedure_rehearsed":True,
         "previous_backend_retained":True,
@@ -201,6 +217,10 @@ def self_test() -> None:
       ("Rechazo si el hash excede Workers Free",{"authentication":{"free_cpu_or_external_auth_verified":False}},"Autenticación"),
       ("Rechazo de administradores sin contraseña",{"authentication":{"admins_with_verified_login":0}},"administradores"),
       ("Rechazo de cambio a plan facturable",{"authentication":{"no_paid_upgrade_or_automatic_billing":False}},"no_paid_upgrade_or_automatic_billing"),
+      ("Rechazo de R2 sin límite de facturación",{"costs":{"r2_no_uncapped_billing_or_nonbillable_storage_verified":False}},"r2_no_uncapped_billing"),
+      ("Rechazo si solo existen alertas de presupuesto",{"costs":{"budget_alert_not_considered_hard_cap":False}},"budget_alert"),
+      ("Rechazo si no se controla el correo gratuito",{"costs":{"resend_email_free_limit_protected":False}},"resend_email"),
+      ("Rechazo si no se conocen los demás cargos",{"costs":{"all_other_meters_and_autopay_reviewed":False}},"all_other_meters"),
       ("Rechazo sin plan de reversión",{"rollback":{"procedure_rehearsed":False}},"Reversión"),
       ("Rechazo por evidencia antigua",{"reconciliation":{"checked_at":"2026-01-01T00:00:00Z"}},"antiguos"),
     ]
