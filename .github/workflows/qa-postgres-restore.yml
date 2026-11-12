@@ -37,12 +37,14 @@ jobs:
       PGPASSWORD: only_fictitious_test_password
     steps:
       - uses: actions/checkout@v4
-      - name: Instalar cliente libre PostgreSQL si falta
+      - name: Seleccionar cliente PostgreSQL 16, igual que el contenedor
         run: |
-          if ! command -v psql >/dev/null || ! command -v pg_dump >/dev/null || ! command -v pg_restore >/dev/null; then
+          if [ ! -x /usr/lib/postgresql/16/bin/pg_dump ]; then
             sudo apt-get update -qq
-            sudo apt-get install -y postgresql-client
+            sudo apt-get install -y postgresql-client-16
           fi
-          pg_dump --version
+          echo '/usr/lib/postgresql/16/bin' >> "$GITHUB_PATH"
+          /usr/lib/postgresql/16/bin/pg_dump --version
+          /usr/lib/postgresql/16/bin/pg_restore --version
       - name: Restaurar respaldo binario en Postgres aislado, conservar identidades y saldos FICTICIOS
         run: python3 cloudflare/test_pg_restore_isolated.py
