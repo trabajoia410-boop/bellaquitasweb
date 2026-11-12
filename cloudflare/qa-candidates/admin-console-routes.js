@@ -81,6 +81,8 @@ function secureStatic(text,type){
 }
 async function signIn(request,env){
   if(request.method!=="POST")return json({error:"Método no permitido"},405);
+  // No consumir CPU del plan Free hasta verificar el algoritmo en Workers real.
+  if(env.ADMIN_PASSWORD_RUNTIME_APPROVED!=="yes")return json({error:"Contraseña administrativa pendiente de validación de seguridad"},503);
   if(!checkOrigin(request,env))return json({error:"Origen no autorizado"},403);
   const res=await emailAuthRoute(translated(request,"/v1/auth/email/login"),env);
   if(!res||!res.ok)return invalid();
