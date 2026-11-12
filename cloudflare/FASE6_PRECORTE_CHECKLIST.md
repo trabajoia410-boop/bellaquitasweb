@@ -17,6 +17,7 @@ La web `bellaquitas.fr` continúa en su sistema oficial. El nuevo panel de admin
 | Respaldo | Archivo privado cifrado, hash SHA-256, restauración Postgres **en entorno aislado**, restauración D1 de prueba, verificaciones de archivos Supabase Storage/R2, segunda copia comprobada, menos de 48 horas |
 | Integridad | Perfiles reales en origen = perfiles en destino; **la cuenta ficticia de staging debe retirarse/excluirse**; totales de puntos y visitas iguales; idioma ES/FR y vídeos intactos |
 | Autenticación | Correo+contraseña y Google probados, admins originales vinculados sin duplicados, sesión/logout correctos, viabilidad de CPU o proveedor externo aprobada **sin cargos automáticos**, comprobada en los últimos 14 días |
+| Costes y facturación | Verificar **Workers/D1 Free**, límites de correo, todos los servicios medidos y que **R2 no tenga cargos sin un límite efectivo o se sustituya por almacenamiento no facturable**. Las alertas de presupuesto NO detienen el consumo. |
 | Reversión | Procedimiento ensayado, backend anterior disponible, protocolo para evitar pérdidas si se generan escrituras durante una reversión, dominio/DNS preparados y diseño conservado |
 | Consentimiento | Autorización **expresa y reciente** del propietario para este corte concreto; no se infiere de «continúa», «hazlo» ni de la aprobación de pruebas |
 
@@ -30,7 +31,7 @@ python3 cloudflare/phase6_readiness.py --self-test
 
 El ensayo usa solamente perfiles, cantidades y fechas inventados. Verifica que no se puede considerar preparado el corte si faltan copias, coinciden mal los perfiles o puntos, el login exige un plan de pago, las contraseñas admin no están listas, falla la reversión o no hay autorización del propietario.
 
-La prueba aprobada en CI: https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43207324961
+La prueba aprobada en CI: https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43207847292
 
 ### Uso en el momento apropiado
 
@@ -40,9 +41,18 @@ Con los respaldos reales ya creados y **restaurados en un entorno aislado**, se 
 python3 cloudflare/phase6_readiness.py --check /carpeta-privada/evidencias.json
 ```
 
-Se exige completar de forma verídica cada apartado: `backup`, `reconciliation`, `authentication`, `rollback`, `authorization`. El código de comprobación ofrece los nombres de los campos pendientes.
+Se exige completar de forma verídica cada apartado: `backup`, `reconciliation`, `authentication`, `costs`, `rollback`, `authorization`. El código de comprobación ofrece los nombres de los campos pendientes.
 
 **Que el programa dé resultado correcto no certifica por sí solo las evidencias, ni autoriza un despliegue sin supervisión.** Todo dato de evidencia requiere revisión humana. No se permite crear un fichero ficticio para esquivar el bloqueo.
+
+
+### Aviso importante sobre Cloudflare R2
+
+Cloudflare R2 Standard ofrece una franquicia mensual (actualmente **10 GB-mes, 1 millón de operaciones clase A y 10 millones clase B**), pero **no es un servicio de coste fijo cero** si se supera esa franquicia. Las alertas de facturación **solo notifican**; según la documentación de Cloudflare, no detienen ni limitan el consumo. Por eso `costs.r2_no_uncapped_billing_or_nonbillable_storage_verified` debe seguir **falso** hasta disponer de una protección de facturación comprobada o una opción alternativa sin cargos por exceso. No se debe señalar `true` solo porque actualmente haya pocos archivos o por haber configurado una alerta.
+
+Fuentes oficiales:
+- https://developers.cloudflare.com/r2/pricing/
+- https://developers.cloudflare.com/billing/manage/budget-alerts/
 
 ## Estado de hoy
 
