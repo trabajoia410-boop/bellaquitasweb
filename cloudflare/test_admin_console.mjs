@@ -30,10 +30,14 @@ db.exec("CREATE TABLE auth_email_rate_limits(key_hash TEXT PRIMARY KEY,attempts 
 const D1={
  prepare(sql){
   const s=db.prepare(sql);
-  return {bind(...a){return {async first(){return s.get(...a)??null;},async all(){return {results:s.all(...a)};},async run(){return {success:true,meta:s.run(...a)};}};},
+  return {_query:sql,bind(...a){return {async first(){return s.get(...a)??null;},async all(){return {results:s.all(...a)};},async run(){return {success:true,meta:s.run(...a)};}};},
    async first(){return s.get()??null;},async all(){return {results:s.all()};},async run(){return {success:true,meta:s.run()};}};
  },
- async batch(stmts){const r=[];for(const stmt of stmts)r.push(await stmt.run());return r;}
+ async batch(stmts){
+  const r=[];for(const stmt of stmts){
+   r.push(/^\s*(select|with)\b/i.test(stmt._query)?await stmt.all():await stmt.run());
+  }return r;
+ }
 };
 const mediaObjects=new Map();
 const MEDIA={
