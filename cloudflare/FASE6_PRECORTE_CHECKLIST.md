@@ -79,3 +79,10 @@ Fuentes oficiales:
 En el Supabase real, la versión comprobada por consulta **solo de lectura** es PostgreSQL **17.11**. Se añadieron bloqueos de cliente distinto de 17: [5 pruebas aprobadas](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43248681515).
 
 **El campo `backup.postgres_restore_tested` debe seguir `false` para el corte real.** Los ensayos de CI utilizan tablas/usuarios/puntos ficticios; **no se ha restaurado un volcado REAL de Supabase** y la comprobación no autoriza el cambio de dominio. [Detalle](./ENSAYO_RESTAURACION_POSTGRES_2026-11-12.md).
+
+
+### Ensayo adicional con PostgreSQL 17 (12/11/2026)
+
+La prueba de restauración ya se ejecuta **tanto en PostgreSQL 16 como en 17**, con herramientas `pg_dump` y `pg_restore` coincidentes en versión. **Ambas restauraciones han aprobado** la comparación de 18 tablas y la recuperación de sesiones, identidades, eventos, canjes y saldos exclusivamente ficticios. [Ejecución conjunta](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43249197005).
+
+Aunque PostgreSQL 17 corresponde a la versión del Supabase de Bellaquitas, **aún NO hay una restauración real de la base Supabase**. El control `backup.postgres_restore_tested` debe seguir sin marcarse como completado para la producción.
