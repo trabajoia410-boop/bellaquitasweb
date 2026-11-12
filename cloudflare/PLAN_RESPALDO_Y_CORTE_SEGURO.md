@@ -151,3 +151,12 @@ El nuevo panel se abrirá en otra pestaña del **mismo dominio**, en `/administr
 Detalles: `cloudflare/PANEL_ADMIN_SEPARADO_FASE5.md`. Este cambio **no sustituye** el respaldo privado restaurable, la revisión de Workers Free ni el plan de reversión.
 
 ---
+
+
+## Bloqueo actualizado del panel administrativo (12/11/2026)
+
+Se implementó y probó la activación de contraseña a una identidad **Google admin ya existente**, con sesión Google renovada, email confirmado mediante enlace único, expiración, cadencia y sin crear perfil nuevo. **62/62 pruebas aisladas** pasaron: https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43195543967.
+
+El algoritmo PBKDF2 actual tiene un coste aproximado de **94 ms CPU en Node**, contra el límite documentado de **10 ms CPU por solicitud en Workers Free**. No se ha medido el runtime real de Workers, así que no es correcto afirmar compatibilidad. **El candidato no debe activarse** hasta resolver ese riesgo sin cobrar cuotas. Para ello exige `ADMIN_PASSWORD_RUNTIME_APPROVED=yes`, bandera aún no configurada en Cloudflare remoto.
+
+Se mantienen todos los demás bloqueos: copia real cifrada y restauración de Postgres/Storage/D1/R2, conciliación, revisión de seguridad, reversión y pruebas de dispositivos físicos solo después de la publicación. Más información en `cloudflare/SEGURIDAD_PASSWORD_WORKERS_FREE_2026-11-12.md`.
