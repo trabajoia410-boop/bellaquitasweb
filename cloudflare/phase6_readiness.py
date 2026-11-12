@@ -130,7 +130,10 @@ def validate(evidence: object, now: datetime | None = None) -> list[str]:
     return errors
 
 def safe_load_file(filename: str) -> dict:
-    file = Path(filename).expanduser().resolve()
+    original = Path(filename).expanduser()
+    if original.is_symlink():
+        raise RuntimeError("No se admiten evidencias privadas mediante enlaces simbólicos")
+    file = original.resolve()
     if file == REPO or REPO in file.parents:
         raise RuntimeError("Las pruebas reales, fechas y evidencias deben quedar FUERA del repositorio público")
     if not file.is_file() or file.is_symlink():
@@ -187,8 +190,9 @@ def self_test() -> None:
     now=datetime(2026,11,12,11,0,tzinfo=UTC)
     good=make_synthetic(now)
     assert not validate(good,now),validate(good,now)
+    assert any("Falta sección" in x for x in validate({},now))
+    print("OK: rechazo sin ninguna evidencia")
     mutations=[
-      ("Rechazo sin ninguna evidencia",{}, "Falta sección"),
       ("Rechazo sin autorización",{"authorization":{"explicit_permission":False}},"Autorización"),
       ("Rechazo si falta restaurar PostgreSQL",{"backup":{"postgres_restore_tested":False}},"Respaldo"),
       ("Rechazo si falta Supabase Storage",{"backup":{"supabase_storage_objects":2}},"Supabase Storage"),
@@ -213,7 +217,7 @@ def self_test() -> None:
         file=Path(temp)/"synthetic-evidence.json"
         file.write_text(json.dumps(good),encoding="utf8")
         assert not validate(safe_load_file(str(file)),now)
-    print(f"OK: {passed} comprobaciones de rechazo y 2 controles positivos, solo con datos ficticios.")
+    print(f"OK: {passed+1} comprobaciones de rechazo y 2 controles positivos, solo con datos ficticios.")
     print("AVISO: pasar un fixture de ensayo NO es autorización para publicar.")
 
 def main():
