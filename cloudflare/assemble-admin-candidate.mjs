@@ -20,6 +20,7 @@ const bundled=props.map((name,i)=>"export const "+name+" = "+JSON.stringify(part
 const current=await readFile(path.join(qa,"admin-console-ui.js"),"utf8");
 assert.strictEqual(bundled,current,"Cambios en el panel sin empaquetar: regenerar admin-console-ui.js antes de validar");
 for(const [dest,src] of [
+ ["auth-routes.js","auth-routes-admin-proof.js"],
  ["admin-activation-routes.js","admin-activation-routes.js"],
  ["admin-console-routes.js","admin-console-routes.js"],
  ["admin-console-ui.js","admin-console-ui.js"],
