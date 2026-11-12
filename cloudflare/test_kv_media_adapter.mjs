@@ -72,6 +72,36 @@ test("rechaza imágenes vacías, excesivas y datos que no sean binarios",async()
  await assert.rejects(store.put(PHOTO,"not-a-file",mime),/binaria/);
  assert.equal(kv.writes,0);
 });
+test("no acepta cabeceras falsificadas ni archivos truncados en PUT",async()=>{
+ const kv=new FakeKV(),store=createKvMediaAdapter(kv,{allowWrites:true});
+ const mime={httpMetadata:{contentType:"image/png"}};
+ await assert.rejects(store.put(PHOTO,new Uint8Array([1,2,3,4,5,6,7,8]),mime),/Firma/);
+ await assert.rejects(store.put(PHOTO,new Uint8Array([137,80,78,71]),mime),/Firma/);
+ await assert.rejects(store.put(EVENT,new Uint8Array([255,216,0,1]),{
+   httpMetadata:{contentType:"image/jpeg"}}),/Firma/);
+ assert.equal(kv.writes,0);
+});
+test("JPEG y WebP válidos mantienen bytes y MIME correctos",async()=>{
+ const kv=new FakeKV(),store=createKvMediaAdapter(kv,{allowWrites:true});
+ const jpeg=new Uint8Array([255,216,255,217]);
+ const webp=new Uint8Array([82,73,70,70,4,0,0,0,87,69,66,80,0,0]);
+ const other="media/rewards/"+A+".webp";
+ await store.put(EVENT,jpeg,{httpMetadata:{contentType:"image/jpeg"}});
+ await store.put(other,webp,{httpMetadata:{contentType:"image/webp"}});
+ assert.deepEqual(new Uint8Array((await store.get(EVENT)).body),jpeg);
+ assert.deepEqual(new Uint8Array((await store.get(other)).body),webp);
+ assert.equal((await store.get(EVENT)).httpMetadata.contentType,"image/jpeg");
+ assert.equal((await store.get(other)).httpMetadata.contentType,"image/webp");
+});
+test("GET rechaza valores KV corruptos aunque declaren MIME correcto",async()=>{
+ const kv=new FakeKV(),store=createKvMediaAdapter(kv,{allowWrites:true});
+ kv.objects.set(PHOTO,{bytes:new Uint8Array([60,104,116,109,108,62]),metadata:{contentType:"image/png"}});
+ assert.equal(await store.get(PHOTO),null);
+ kv.objects.set(PHOTO,{bytes:new Uint8Array(MAX_IMAGE_BYTES+1),metadata:{contentType:"image/png"}});
+ assert.equal(await store.get(PHOTO),null);
+ kv.objects.set(PHOTO,{bytes,metadata:{contentType:"image/jpeg"}});
+ assert.equal(await store.get(PHOTO),null);
+});
 test("cuota agotada rechaza operación sin almacenar un archivo parcial",async()=>{
  const kv=new FakeKV(8),store=createKvMediaAdapter(kv,{allowWrites:true});
  await assert.rejects(store.put(PHOTO,bytes,{httpMetadata:{contentType:"image/png"}}),/quota exceeded/);
