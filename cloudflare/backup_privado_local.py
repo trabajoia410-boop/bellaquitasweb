@@ -340,7 +340,7 @@ def verify_postgres_versions(env: dict) -> None:
     tools={}
     for name in ("pg_dump","pg_restore","psql"):
         result=subprocess.run([name,"--version"],capture_output=True,text=True,check=True)
-        match=re.search(r"PostgreSQL\\)?\\s+(\\d+)\\.",result.stdout)
+        match=re.search(r"PostgreSQL\)?\s+(\d+)\.",result.stdout)
         if not match:
             raise RuntimeError("No se puede verificar la versión de "+name)
         tools[name]=int(match.group(1))
