@@ -208,3 +208,16 @@ Se comprobaron **17/17 recursos del repositorio, 5/5 MP4** (54.846.317 bytes tot
 Evidencia: https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43208418447 · [estudio y decisiones pendientes](./VIABILIDAD_STATIC_ASSETS_FREE.md).
 
 No se han modificado vídeos, el Worker ni DNS. Esta opción reduce **posiblemente** la dependencia de R2, pero **no equivale aún a una garantía de coste cero** para todo el proyecto.
+
+
+## Copias de seguridad: ensayo de restauración PostgreSQL aprobado — 12/11/2026
+
+Se examinó el esquema real de Supabase en **solo lectura**. Se confirmaron **18 tablas esenciales** en `public` (12), `auth` (4) y `storage` (2). El verificador `cloudflare/backup_privado_local.py` ahora comprueba exactamente esas tablas en `pg_restore --list`, impidiendo considerar válida una copia que carezca de sesiones, canjes o perfiles.
+
+**Prueba de restauración PostgreSQL completa con datos ficticios aprobada:** en contenedores PostgreSQL 16 aislados, `pg_dump -Fc` y `pg_restore` restauraron las 18 tablas con sus registros inventados; coincidieron los recuentos de **18/18 tablas**, **62 puntos de ensayo y 3 visitas de ensayo**, usuarios, identidades y sesiones. [GitHub Actions](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43248681239).
+
+El ensayo detectó incompatibilidad entre herramientas PG18 y un servidor PG16. Se corrigió usando herramientas del **mismo major**. La versión del servidor **Supabase real es PostgreSQL 17.11**, por lo que el script de copia **rechazará clientes `pg_dump`/`pg_restore`/`psql` distintos de la versión 17 antes de exportar**. La prueba negativa/positiva de cinco escenarios también está [aprobada](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43248681515).
+
+[Informe de recuperación y límites del ensayo](./ENSAYO_RESTAURACION_POSTGRES_2026-11-12.md).
+
+**Advertencia crítica:** restaurar un esquema ficticio no demuestra que el backup Supabase real sea restaurable: roles, permisos, extensiones, cifrado de Auth y archivos binarios necesitan verificación aislada. **No se ha creado ni restaurado una copia privada real de Bellaquitas Fest.** Siguen vigentes los bloqueos de la fase 6 y el presupuesto cero.
