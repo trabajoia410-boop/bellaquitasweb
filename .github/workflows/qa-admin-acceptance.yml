@@ -36,7 +36,7 @@ jobs:
           node --check cloudflare/staging-source-2026-11-11/recovered-src/admin-console-ui.js
       - name: Comprobar Worker real, permisos, imágenes y roles con SQLite ficticia
         run: node --experimental-sqlite --experimental-default-type=module --test cloudflare/test_admin_console.mjs cloudflare/test_worker_full_stack.mjs
-      - name: Comprobar Chrome móvil/escritorio: login, editor, eventos, socios y galerías
+      - name: "Comprobar Chrome móvil/escritorio: login, editor, eventos, socios y galerías"
         run: node --experimental-default-type=module cloudflare/test_admin_console_browser.mjs
       - name: Conservar solo capturas sintéticas durante siete días
         if: always()
