@@ -184,3 +184,16 @@ Se añadió `cloudflare/phase6_readiness.py` para **rechazar una declaración de
 - Instrucciones: `cloudflare/FASE6_PRECORTE_CHECKLIST.md`.
 
 **Estado actual sigue siendo NO LISTO para la fase 6**: no tenemos copia real restaurada, acceso email+contraseña gratuito aprobado ni autorización concreta para el corte. Se conservan las pruebas físicas de iPhone/Samsung para después de la publicación.
+
+
+## Riesgo de cargos en R2 y nuevo bloqueo prepublicación — 12/11/2026
+
+La documentación oficial de Cloudflare confirma que R2 Standard ofrece una franquicia gratuita de **10 GB-mes**, **1 millón de operaciones Clase A** y **10 millones Clase B** al mes, pero los excesos tienen tarifas por consumo: https://developers.cloudflare.com/r2/pricing/.
+
+El sistema de alertas presupuestarias **no establece límites estrictos ni detiene facturación**: https://developers.cloudflare.com/billing/manage/budget-alerts/. Por ello, para cumplir el requisito del propietario de *ninguna cuota ni cargos automáticos*, **no basta** con usar R2 dentro de la franquicia durante las pruebas, ni con configurar alertas.
+
+El nuevo candado `cloudflare/phase6_readiness.py` requiere ahora una sección privada `costs`: Workers y D1 gratis, límite del correo, revisión de los demás servicios medidos, reconocimiento de que alertas ≠ límite real, y **un mecanismo comprobado que impida cargos no limitados de R2 o una alternativa no facturable**. Hasta resolverlo, `costs.r2_no_uncapped_billing_or_nonbillable_storage_verified` debe permanecer falso y el corte de backend **NO ESTÁ AUTORIZADO**.
+
+El candado final ha superado **15 pruebas de rechazo y 2 controles positivos sintéticos**, incluyendo cuatro pruebas nuevas de coste cero. Evidencia: https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43207847292.
+
+No se ha alterado la suscripción R2 ni aceptado facturación. La consulta previa del panel de facturación devolvió 403 por permisos del conector, de modo que **no podemos afirmar que no exista una tarjeta asociada ni que no haya cobros potenciales**.
