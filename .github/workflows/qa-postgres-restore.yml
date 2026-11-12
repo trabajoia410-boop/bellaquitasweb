@@ -1,0 +1,48 @@
+name: Recuperación Postgres privada — ensayo con 18 tablas ficticias
+on:
+  push:
+    branches:
+      - auditoria/fase5-2026-11-11
+    paths:
+      - cloudflare/backup_privado_local.py
+      - cloudflare/test_pg_restore_isolated.py
+      - .github/workflows/qa-postgres-restore.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  offline-postgres-restore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: bellaquitas_fake
+          POSTGRES_PASSWORD: only_fictitious_test_password
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U bellaquitas_fake -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      BELLAQUITAS_FAKE_RESTORE: "yes"
+      PGHOST: 127.0.0.1
+      PGPORT: "5432"
+      PGUSER: bellaquitas_fake
+      PGDATABASE: postgres
+      PGPASSWORD: only_fictitious_test_password
+    steps:
+      - uses: actions/checkout@v4
+      - name: Instalar cliente libre PostgreSQL si falta
+        run: |
+          if ! command -v psql >/dev/null || ! command -v pg_dump >/dev/null || ! command -v pg_restore >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y postgresql-client
+          fi
+          pg_dump --version
+      - name: Restaurar respaldo binario en Postgres aislado, conservar identidades y saldos FICTICIOS
+        run: python3 cloudflare/test_pg_restore_isolated.py
