@@ -140,3 +140,14 @@ Las pruebas automáticas anteriores **no sustituyen** el comportamiento de Safar
 **Nota de seguridad:** el código de correo emplea actualmente un esquema de hash personalizado `pbkdf2-chain6-sha256-v1`, descrito en su propio código como pendiente de revisión independiente. Antes del corte, someterlo a revisión criptográfica y planificar una actualización segura si procede, **sin invalidar contraseñas ya verificadas ni provocar una pérdida de acceso**.
 
 **Estado:** fase 5 en curso. No autoriza el paso a producción.
+
+
+## Requisito nuevo: acceso privado tipo WordPress para administradores
+
+El nuevo panel se abrirá en otra pestaña del **mismo dominio**, en `/administracion/`, y **pedirá email y contraseña**. El editor ya no se muestra dentro del área normal de socios. El plan para Fase 6 deberá desplegar la ruta de administración y conservar el aspecto de la web pública. Se ha construido y probado sin despliegue mediante `cloudflare/assemble-admin-candidate.mjs`.
+
+**Bloqueo de autenticación previo a la migración:** existen 2 administradores en la D1 de staging, pero ninguno tiene una contraseña de correo verificada. Antes de publicar es imprescindible que cada administrador active su propia contraseña mediante un enlace de verificación seguro, vinculado a su perfil ya existente, sin crear una cuenta adicional. No pedir contraseñas por chat o GitHub y no modificar roles automáticamente. La prueba automatizada usa cuentas exclusivamente ficticias: [51/51 aprobado](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43147872789).
+
+Detalles: `cloudflare/PANEL_ADMIN_SEPARADO_FASE5.md`. Este cambio **no sustituye** el respaldo privado restaurable, la revisión de Workers Free ni el plan de reversión.
+
+---
