@@ -70,3 +70,12 @@ Fuentes oficiales:
 - [Panel independiente de administración](./PANEL_ADMIN_SEPARADO_FASE5.md)
 - [Seguridad del hash de contraseñas](./SEGURIDAD_PASSWORD_WORKERS_FREE_2026-11-12.md)
 - [Comparativa de alternativas gratuitas](./ALTERNATIVAS_LOGIN_GRATIS_FASE5.md)
+
+
+## Prueba adicional del mecanismo de recuperación
+
+**12/11/2026:** completado el ensayo de **`pg_dump` + `pg_restore` en PostgreSQL aislado** con datos inventados y 18 tablas esenciales verificadas (incluidas `auth.users`, `auth.identities`, `auth.sessions` y `storage.objects`). La prueba regresiva rechaza un listado incompleto y utiliza clientes de la versión del servidor. [Ejecución aprobada](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43248681239).
+
+En el Supabase real, la versión comprobada por consulta **solo de lectura** es PostgreSQL **17.11**. Se añadieron bloqueos de cliente distinto de 17: [5 pruebas aprobadas](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43248681515).
+
+**El campo `backup.postgres_restore_tested` debe seguir `false` para el corte real.** Los ensayos de CI utilizan tablas/usuarios/puntos ficticios; **no se ha restaurado un volcado REAL de Supabase** y la comprobación no autoriza el cambio de dominio. [Detalle](./ENSAYO_RESTAURACION_POSTGRES_2026-11-12.md).
