@@ -99,6 +99,7 @@ def validate(evidence: object, now: datetime | None = None) -> list[str]:
         errors.append("Conciliación: visitas diferentes")
     required(reconciliation,"no_real_test_mutations","Conciliación")
     required(reconciliation,"translation_and_media_parity_verified","Conciliación")
+    required(reconciliation,"profiles_row_parity_verified","Conciliación")
 
     authentication=part("authentication")
     required(authentication,"email_password_works","Autenticación")
@@ -172,7 +173,8 @@ def make_synthetic(now: datetime) -> dict:
         "source_points":40,"target_points":40,
         "source_visits":1,"target_visits":1,
         "no_real_test_mutations":True,
-        "translation_and_media_parity_verified":True},
+        "translation_and_media_parity_verified":True,
+        "profiles_row_parity_verified":True},
       "authentication":{
         "existing_admin_accounts":1,
         "admins_with_verified_login":1,
@@ -214,6 +216,7 @@ def self_test() -> None:
       ("Rechazo si falta Supabase Storage",{"backup":{"supabase_storage_objects":2}},"Supabase Storage"),
       ("Rechazo de la cuenta ficticia sin retirar",{"reconciliation":{"target_profiles":4}},"perfiles"),
       ("Rechazo de puntos diferentes",{"reconciliation":{"target_points":41}},"puntos"),
+      ("Rechazo si no se han comparado los seis campos por perfil",{"reconciliation":{"profiles_row_parity_verified":False}},"profiles_row_parity_verified"),
       ("Rechazo si el hash excede Workers Free",{"authentication":{"free_cpu_or_external_auth_verified":False}},"Autenticación"),
       ("Rechazo de administradores sin contraseña",{"authentication":{"admins_with_verified_login":0}},"administradores"),
       ("Rechazo de cambio a plan facturable",{"authentication":{"no_paid_upgrade_or_automatic_billing":False}},"no_paid_upgrade_or_automatic_billing"),
