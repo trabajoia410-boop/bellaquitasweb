@@ -145,6 +145,29 @@ def test_archive_integrity() -> None:
         except RuntimeError:
             pass
 
+        unexpected=dict(values)
+        unexpected["r2/objeto-no-declarado.txt"]=b"nunca incluido"
+        pack(base/"unexpected.tar.gz",unexpected)
+        try:
+            verify_archive_contents(base/"unexpected.tar.gz")
+            raise AssertionError("Se aceptó un archivo extra sin inventario")
+        except RuntimeError:
+            pass
+        with tarfile.open(base/"symlink.tar.gz","w:gz") as tar:
+            for name,data in values.items():
+                info=tarfile.TarInfo(name)
+                info.size=len(data)
+                tar.addfile(info,io.BytesIO(data))
+            link=tarfile.TarInfo("r2/enlace-peligroso")
+            link.type=tarfile.SYMTYPE
+            link.linkname="../supabase-full.dump"
+            tar.addfile(link)
+        try:
+            verify_archive_contents(base/"symlink.tar.gz")
+            raise AssertionError("Se aceptó un enlace simbólico")
+        except RuntimeError:
+            pass
+
 def synthetic_self_test() -> None:
     with tempfile.TemporaryDirectory() as d:
         temp = Path(d)
