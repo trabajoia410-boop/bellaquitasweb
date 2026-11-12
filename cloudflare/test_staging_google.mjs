@@ -79,7 +79,8 @@ class FakeDB{
           return {success:true};
         }
         if(sql.includes("INSERT INTO auth_sessions(")){
-          db.sessions.set(a[0],{profile_id:a[1],expires_at:NOW()+a[2]});return {success:true};
+          db.sessions.set(a[0],{profile_id:a[1],expires_at:NOW()+a[2],
+            auth_method:sql.includes("'google'")?"google":"unknown"});return {success:true};
         }
         throw new Error("Mutación SQL no simulada: "+sql.slice(0,130));
       }
@@ -158,6 +159,9 @@ test("firma Google simulada válida: sesión de cuenta existente, sin duplicados
   assert.equal(data.profile.id,EXISTING);
   assert.equal(e.DB.newProfiles,0);
   assert.equal(e.DB.sessions.size,1);
+  if(process.env.REQUIRE_ADMIN_GOOGLE_MARK==="1")
+    assert.equal([...e.DB.sessions.values()][0].auth_method,"google",
+      "Solo el callback Google verificado puede emitir sesiones marcadas Google");
 });
 test("state se consume una sola vez tras callback válido",async()=>{
   const e=env();
