@@ -503,3 +503,18 @@ El coste de PBKDF2 600k en Node WebCrypto fue ~94 ms CPU, frente a 10 ms permiti
 Detalle: `cloudflare/SEGURIDAD_PASSWORD_WORKERS_FREE_2026-11-12.md`.
 
 No hay correos reales enviados, contraseñas reales usadas, cambios en admin existentes, ni pagos contratados. La fase 5 sigue abierta hasta resolver autenticación CPU, respaldos privados restaurables y corte seguro. Dispositivos físicos después de publicación.
+
+
+## Actualización de seguridad 12/11/2026 — sesión Google autenticada, no solo reciente
+
+La auditoría encontró una vulnerabilidad **en el candidato, aún no desplegado**: comprobar que un administrador tuviera una identidad Google asociada y una sesión de menos de cinco minutos **no demostraba que esa sesión se hubiera iniciado mediante Google**. Una sesión reciente creada por otro proveedor para el mismo perfil podía cumplir la condición.
+
+Se ha preparado una corrección que separa y atribuye el origen real de la sesión:
+- `cloudflare/migrations/0005-auth-session-method.sql` añade `auth_sessions.auth_method` con valor por defecto **`unknown`** para sesiones antiguas. Nadie con una sesión preexistente obtiene automáticamente la condición de Google.
+- `cloudflare/qa-candidates/auth-routes-admin-proof.js` etiqueta **`google` solo cuando el callback OAuth ha verificado ID token firmado, audiencia, nonce y subject**, y emite la sesión después de esa comprobación.
+- `cloudflare/qa-candidates/admin-activation-routes.js` exige ahora **`auth_method='google'`**, sesión vigente y creada durante los últimos 300 segundos, además de perfil admin e identidad Google vinculada.
+- Los ensayos prueban que sesiones `unknown`, `email` y sesiones Google caducadas **no pueden solicitar activación**. La migración nueva y el Worker modificado solo existen en la rama de auditoría.
+- [Pruebas de aceptación: 73/73](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43198945838): 10 casos OAuth con JWT firmado ficticio y comprobación de método, 45 casos Worker completo y 18 comprobaciones Chrome.
+- [Pruebas separadas de seguridad: 35/35](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43198959200): 10 casos Google y 25 casos de administración.
+
+**Permanece bloqueada** la activación real por el coste CPU del hash frente a Workers Free, además de faltar respaldos reales restaurables. No se ha activado nada en producción ni enviado emails reales.
