@@ -30,6 +30,7 @@ for(const file of ["0001-schema.sql","0002-auth-and-invariants.sql","0003-oauth-
  db.exec(fs.readFileSync(path.join(here,"migrations",file),"utf8"));
 }
 db.exec(fs.readFileSync(path.join(here,"migrations","0004-admin-activation.sql"),"utf8"));
+db.exec(fs.readFileSync(path.join(here,"migrations","0005-auth-session-method.sql"),"utf8"));
 db.exec("CREATE TABLE auth_email_credentials (email TEXT PRIMARY KEY COLLATE NOCASE,profile_id TEXT NOT NULL UNIQUE REFERENCES profiles(id),password_hash TEXT NOT NULL,password_salt TEXT NOT NULL,password_iterations INTEGER NOT NULL,verified_at INTEGER NOT NULL,created_at INTEGER NOT NULL DEFAULT (unixepoch()),updated_at INTEGER NOT NULL DEFAULT (unixepoch()));");
 db.exec("CREATE TABLE auth_email_rate_limits(key_hash TEXT PRIMARY KEY,attempts INTEGER NOT NULL DEFAULT 0,expires_at INTEGER NOT NULL);");
 const D1={
@@ -56,6 +57,17 @@ const env={DB:D1,MEDIA,STAGING_MUTATIONS:"disabled",ALLOW_NEW_ACCOUNTS:"no",
  PUBLIC_ORIGIN:BASE,EMAIL_AUTH_ENABLED:"yes",EMAIL_RATE_KEY:"FAKE-KEY-WITH-AT-LEAST-32-BYTES-000000",
  ADMIN_PASSWORD_RUNTIME_APPROVED:"yes"};
 const enc=x=>Buffer.from(x).toString("base64url");
+async function issueVerifiedGoogleSession(){
+ // ENSAYO: representa exclusivamente la emisión de sesión por el callback
+ // que ya ha validado ID token firmado, audiencia, nonce y Google sub.
+ const cookie=(await createAuthSession(GOOGLE_ADMIN,env)).split(";")[0];
+ const raw=cookie.split("=")[1];
+ const digest=enc(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(raw)));
+ const result=db.prepare("UPDATE auth_sessions SET auth_method='google' WHERE token_hash=?").run(digest);
+ assert.equal(result.changes,1);
+ return cookie;
+}
+
 async function hashPassword(password,salt){
  const b=Buffer.from(salt,"base64url");
  let material=new TextEncoder().encode(password);
@@ -80,7 +92,7 @@ before(async()=>{
   .run(GOOGLE_ADMIN,"Administrador Google ficticio","admin","MBR-TEST-GOOGLE");
  db.prepare("INSERT INTO auth_identity_links(id,provider,provider_subject,profile_id) VALUES (?,?,?,?)")
   .run(crypto.randomUUID(),"google","123456789123456789",GOOGLE_ADMIN);
- freshGoogleCookie=(await createAuthSession(GOOGLE_ADMIN,env)).split(";")[0];
+ freshGoogleCookie=await issueVerifiedGoogleSession();
  publicCookie=(await createAuthSession(ADMIN,env)).split(";")[0];
 });
 after(()=>db.close());
@@ -272,7 +284,30 @@ test("activación admin exige sesión reciente Google y no acepta cookies admin 
  db.prepare("UPDATE auth_sessions SET created_at=unixepoch()-1000 WHERE profile_id=?").run(GOOGLE_ADMIN);
  assert.equal((await call("/administracion/api/activar/solicitar",{
   method:"POST",cookie:freshGoogleCookie,body})).status,403);
- freshGoogleCookie=(await createAuthSession(GOOGLE_ADMIN,env)).split(";")[0];
+ freshGoogleCookie=await issueVerifiedGoogleSession();
+ assert.equal(db.prepare("SELECT COUNT(*) AS n FROM auth_admin_activation_tokens").get().n,0);
+});
+test("rechaza email o sesión antigua incluso si el administrador tiene identidad Google vinculada",async()=>{
+ // Primera comprobación después de habilitar flags (solo D1 ficticia).
+ const rawUnknown=(await createAuthSession(GOOGLE_ADMIN,env)).split(";")[0];
+ const request={email:ACTIVATION_EMAIL};
+ let result=await call("/administracion/api/activar/solicitar",{
+  method:"POST",cookie:rawUnknown,body:request});
+ assert.equal(result.status,403);
+ // Simular login por contraseña en el MISMO perfil Google-administrador.
+ const raw=rawUnknown.split("=")[1];
+ const digest=enc(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(raw)));
+ db.prepare("UPDATE auth_sessions SET auth_method='email' WHERE token_hash=?").run(digest);
+ result=await call("/administracion/api/activar/solicitar",{
+  method:"POST",cookie:rawUnknown,body:request});
+ assert.equal(result.status,403);
+ // Una sesión Google de más de cinco minutos también se rechaza.
+ const expired=(await createAuthSession(GOOGLE_ADMIN,env)).split(";")[0];
+ const expiredRaw=expired.split("=")[1];
+ const expiredDigest=enc(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(expiredRaw)));
+ db.prepare("UPDATE auth_sessions SET auth_method='google',created_at=unixepoch()-301 WHERE token_hash=?").run(expiredDigest);
+ assert.equal((await call("/administracion/api/activar/solicitar",{
+  method:"POST",cookie:expired,body:request})).status,403);
  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM auth_admin_activation_tokens").get().n,0);
 });
 test("un Google-admin existente recibe un enlace de un solo uso sin nuevo perfil",async()=>{
