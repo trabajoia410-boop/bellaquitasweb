@@ -37,14 +37,22 @@ jobs:
       PGPASSWORD: only_fictitious_test_password
     steps:
       - uses: actions/checkout@v4
-      - name: Seleccionar cliente PostgreSQL 16, igual que el contenedor
+      - name: Usar cliente Postgres 16 oficial con Docker, sin paquetes externos
         run: |
-          if [ ! -x /usr/lib/postgresql/16/bin/pg_dump ]; then
-            sudo apt-get update -qq
-            sudo apt-get install -y postgresql-client-16
-          fi
-          echo '/usr/lib/postgresql/16/bin' >> "$GITHUB_PATH"
-          /usr/lib/postgresql/16/bin/pg_dump --version
-          /usr/lib/postgresql/16/bin/pg_restore --version
+          mkdir -p "$RUNNER_TEMP/bellaquitas-pg16-bin"
+          for command in psql pg_dump pg_restore; do
+            cat > "$RUNNER_TEMP/bellaquitas-pg16-bin/$command" <<'SH'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          exec docker run --rm -i --network host --user "$(id -u):$(id -g)" \
+            --volume /tmp:/tmp \
+            --env PGHOST --env PGPORT --env PGUSER --env PGDATABASE --env PGPASSWORD \
+            postgres:16 "$(basename "$0")" "$@"
+          SH
+            chmod +x "$RUNNER_TEMP/bellaquitas-pg16-bin/$command"
+          done
+          echo "$RUNNER_TEMP/bellaquitas-pg16-bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/bellaquitas-pg16-bin/pg_dump" --version
+          "$RUNNER_TEMP/bellaquitas-pg16-bin/pg_restore" --version
       - name: Restaurar respaldo binario en Postgres aislado, conservar identidades y saldos FICTICIOS
         run: python3 cloudflare/test_pg_restore_isolated.py
