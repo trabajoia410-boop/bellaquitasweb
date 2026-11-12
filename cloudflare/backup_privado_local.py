@@ -16,6 +16,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import sqlite3
@@ -30,9 +31,17 @@ ACCOUNT = "7698bb24db010350ba4b02c36c0fbeb5"
 BUCKET = "bellaquitas-media-staging"
 DATABASE = "bellaquitas-staging"
 TOOLS = ("pg_dump", "pg_restore", "wrangler", "aws", "gpg")
-REQUIRED_PG = ("TABLE DATA public profiles", "TABLE DATA public activity",
-               "TABLE DATA auth users", "TABLE DATA auth identities",
-               "TABLE DATA storage objects")
+# Tablas críticas confirmadas en el esquema real de Supabase, 12/11/2026.
+# Los datos binarios de Storage se exportan aparte; estas son sus referencias.
+REQUIRED_PG = {
+    "public": (
+        "activity", "admin_member_changes", "community_suggestions", "events",
+        "moments_albums", "moments_photos", "profiles", "promos", "redemptions",
+        "rewards", "site_content", "site_drafts",
+    ),
+    "auth": ("users", "identities", "sessions", "refresh_tokens"),
+    "storage": ("buckets", "objects"),
+}
 REQUIRED_D1 = {"profiles", "events", "activity", "auth_email_credentials",
                "auth_sessions", "site_content", "redemptions"}
 FILES = ("supabase-full.dump", "cloudflare-d1-staging.sql",
@@ -47,9 +56,24 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 def verify_pg(listing: str) -> None:
-    for item in REQUIRED_PG:
-        if item not in listing:
-            raise RuntimeError("La copia Postgres no contiene " + item)
+    # Parsear nombres exactos del listado de pg_restore para evitar falsos
+    # positivos como "public profiles_backup" o "auth users_staging".
+    tables=set()
+    for line in listing.splitlines():
+        match=re.search(
+            r"\bTABLE DATA\s+([a-z_][a-z_0-9]*)\s+([a-z_][a-z_0-9]*)\s+",
+            line,
+        )
+        if match:
+            tables.add((match.group(1),match.group(2)))
+    missing=[
+        schema+"."+table
+        for schema,names in REQUIRED_PG.items()
+        for table in names
+        if (schema,table) not in tables
+    ]
+    if missing:
+        raise RuntimeError("Copia PostgreSQL incompleta; faltan datos de tablas: "+", ".join(missing))
 
 def verify_d1(sql: str) -> tuple[int, int, int]:
     """Restauración de ensayo SOLO en SQLite en memoria; no toca D1 remoto."""
@@ -178,7 +202,10 @@ def synthetic_self_test() -> None:
         contents += [{"Key": "file" + str(i), "Size": 0} for i in range(19)]
         for i in range(19):
             (target / ("file" + str(i))).touch()
-        listing = "\n".join(REQUIRED_PG)
+        listing = "\n".join(
+            f"100; 1259 123456 TABLE DATA {schema} {name} qa"
+            for schema,names in REQUIRED_PG.items() for name in names
+        )
         schema = "\n".join("CREATE TABLE " + name + (
             "(id TEXT,points INTEGER DEFAULT 0,visits INTEGER DEFAULT 0);"
             if name == "profiles" else "(id TEXT);"
