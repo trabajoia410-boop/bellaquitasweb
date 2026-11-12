@@ -236,7 +236,10 @@ def run(command: list[str], *, env=None, stdout=None):
 def verify_archive_contents(archive: Path) -> dict:
     """Comprueba SHA-256 de TODOS los ficheros sin extraerlos a disco."""
     with tarfile.open(archive,"r:gz") as tar:
-        members = [x for x in tar.getmembers() if x.isfile()]
+        entries=tar.getmembers()
+        if any(not (entry.isfile() or entry.isdir()) for entry in entries):
+            raise RuntimeError("El archivo contiene enlaces simbólicos u otros tipos no permitidos")
+        members = [x for x in entries if x.isfile()]
         actual = {x.name for x in members}
         if len(actual) != len(members):
             raise RuntimeError("El archivo contiene nombres duplicados")
@@ -408,7 +411,7 @@ def main():
         encrypted=Path(sys.argv[2]).expanduser().resolve()
         if not encrypted.is_file() or not encrypted.name.endswith(".tar.gz.gpg"):
             raise RuntimeError("No se encontró un respaldo cifrado válido")
-        with tempfile.TemporaryDirectory(prefix="bellaquitas-verify-") as folder:
+        with tempfile.TemporaryDirectory(dir=encrypted.parent,prefix=".bellaquitas-verify-") as folder:
             dest=Path(folder)/"verify.tar.gz"
             run(["gpg","--quiet","--decrypt","--output",str(dest),str(encrypted)])
             details=verify_archive_contents(dest)
