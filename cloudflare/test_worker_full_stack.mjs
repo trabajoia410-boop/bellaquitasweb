@@ -69,7 +69,8 @@ class R2Memory{
 }
 
 const DB=new DBMemory(),MEDIA=new R2Memory();
-const env={DB,MEDIA,PUBLIC_ORIGIN:BASE,STAGING_MUTATIONS:"enabled",ALLOW_NEW_ACCOUNTS:"no"};
+const env={DB,MEDIA,PUBLIC_ORIGIN:BASE,STAGING_MUTATIONS:"enabled",ALLOW_NEW_ACCOUNTS:"no",
+ R2_MUTATIONS_APPROVED:"yes"}; // Solo R2 simulado: nunca se ejecuta contra almacenamiento real.
 const cookies={};
 before(async()=>{
   for(const [role,id] of [["admin",ADMIN],["member",MEMBER],["door",DOOR]]){
