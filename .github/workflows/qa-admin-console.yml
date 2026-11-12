@@ -5,6 +5,8 @@ on:
       - auditoria/fase5-2026-11-11
     paths:
       - cloudflare/qa-candidates/admin-console*.js
+      - cloudflare/qa-candidates/admin-activation-routes.js
+      - cloudflare/migrations/0004-admin-activation.sql
       - cloudflare/qa-candidates/admin-console.html
       - cloudflare/qa-candidates/admin-console.css
       - cloudflare/qa-candidates/bellaquitas-api-staging-admin.js
@@ -28,6 +30,7 @@ jobs:
       - name: Integrar SOLO en el runner los módulos candidatos del nuevo panel
         run: |
           cp cloudflare/qa-candidates/admin-console-routes.js cloudflare/staging-source-2026-11-11/recovered-src/admin-console-routes.js
+          cp cloudflare/qa-candidates/admin-activation-routes.js cloudflare/staging-source-2026-11-11/recovered-src/admin-activation-routes.js
           cp cloudflare/qa-candidates/admin-console-ui.js cloudflare/staging-source-2026-11-11/recovered-src/admin-console-ui.js
           cp cloudflare/qa-candidates/bellaquitas-api-staging-admin.js cloudflare/staging-source-2026-11-11/recovered-src/bellaquitas-api-staging.js
       - name: Comprobar sintaxis de navegación pública sin cambiar el diseño
