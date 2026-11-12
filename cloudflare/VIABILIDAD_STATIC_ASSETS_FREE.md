@@ -46,3 +46,14 @@ No se ha modificado `main`, el Worker remoto, el DNS, los recursos originales ni
 - https://developers.cloudflare.com/workers/platform/limits/
 - https://developers.cloudflare.com/r2/pricing/
 - https://developers.cloudflare.com/billing/manage/budget-alerts/
+
+
+## Actualización verificada — 12/11/2026: no mover los MP4 sin comprobar el coste
+
+- **5/5 vídeos originales del dominio público `bellaquitas.fr`** han respondido **HTTP 206 Partial Content** con `Content-Range` correcto y 1024 bytes idénticos al repositorio. [Evidencia](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43257146762).
+- **12/12 pruebas** del manejador Streaming Range con `env.ASSETS.fetch()` simulado aprobaron, conservando todos los bytes de los cinco MP4. [Evidencia](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43256800513).
+- Sin embargo, el experimento Node consumió **hasta ~97 ms CPU** leyendo un vídeo de 24,26 MiB, frente al límite **10 ms CPU por petición** de Workers Free. **No es una medición de Cloudflare**, por lo que el candidato sigue **NO APTO SIN VALIDACIÓN REAL** y **NO DESPLEGADO**.
+- **Alternativa más favorable a conservar la calidad sin gastos inesperados:** mantener los vídeos en GitHub Pages, que ya entrega 206, y migrar solo rutas privadas `/v1/*` y `/administracion/*` a Cloudflare Worker. Requiere primero una **zona activa Cloudflare y DNS proxied** para `bellaquitas.fr`; **la consulta de solo lectura encontró cero zonas de ese nombre** en la cuenta conectada. La galería dinámica sigue pendiente.
+- Plan completo: `cloudflare/OPCION_HIBRIDA_GITHUB_PAGES_WORKERS_FREE.md`.
+
+**No se han cambiado DNS, GitHub Pages, vídeos, contenido, puntos ni visitas.**
