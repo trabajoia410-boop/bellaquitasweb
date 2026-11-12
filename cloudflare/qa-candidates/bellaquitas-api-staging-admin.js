@@ -40,6 +40,53 @@ function jsonResponse(request, body, status = 200) {
   const headers = responseHeaders(request, {"Content-Type": "application/json; charset=utf-8"});
   return new Response(JSON.stringify(body), {status, headers});
 }
+/**
+ * Bloqueo de facturación de medios (solo candidato, fail-closed).
+ * Independiente de STAGING_MUTATIONS: editar textos y socios no habilita R2.
+ * No confundir esta bandera con un tope de facturación de Cloudflare R2.
+ */
+async function guardR2Mutations(request, env) {
+  if (env.R2_MUTATIONS_APPROVED === "yes") return null;
+  const pathname = new URL(request.url).pathname;
+  const method = request.method;
+  const upload = method === "PUT" && (
+    pathname === "/v1/mirror/admin/media/upload" ||
+    pathname === "/administracion/api/upload"
+  );
+  const photo = method === "POST" && (
+    /^\/v1\/admin\/moments\/[0-9a-f-]{36}\/photo$/i.test(pathname) ||
+    /^\/administracion\/api\/moments\/[0-9a-f-]{36}\/photo$/i.test(pathname)
+  );
+  if (upload || photo) {
+    return jsonResponse(request, {error:"Almacenamiento bloqueado hasta revisar costes y respaldos"}, 423);
+  }
+  const write = method === "POST" && (
+    pathname === "/v1/mirror/admin/write" ||
+    pathname === "/administracion/api/write"
+  );
+  if (!write) return null;
+  try {
+    // Solo leer una copia. El handler real conserva intacta la solicitud.
+    const length = Number(request.headers.get("Content-Length") || 0);
+    if (!Number.isFinite(length) || length > 200000) {
+      return jsonResponse(request, {error:"Solicitud demasiado grande"}, 413);
+    }
+    const raw = await request.clone().text();
+    if (raw.length > 200000) return jsonResponse(request, {error:"Solicitud demasiado grande"}, 413);
+    const body = JSON.parse(raw);
+    const mediaRemoval = body && (
+      (body.kind === "media" && body.action === "remove") ||
+      (body.kind === "moments_photos" && body.action === "delete") ||
+      (body.kind === "moments_albums" && body.action === "delete")
+    );
+    if (mediaRemoval) {
+      return jsonResponse(request, {error:"Borrado de archivos bloqueado hasta revisar costes y respaldos"}, 423);
+    }
+  } catch (_) {
+    // El endpoint original ya rechaza los cuerpos JSON inválidos.
+  }
+  return null;
+}
 function withJsonFields(rows) {
   return rows.map(record => {
     const item = {...record};
@@ -61,6 +108,8 @@ export default {
       return new Response(null, {status: 204, headers: responseHeaders(request)});
     }
     try {
+      const storageGuard = await guardR2Mutations(request, env);
+      if (storageGuard) return storageGuard;
       const adminConsoleResponse = await adminConsoleRoute(request, env);
       if (adminConsoleResponse) return adminConsoleResponse;
       const mirrorResponse = await mirrorRoute(request, env);
