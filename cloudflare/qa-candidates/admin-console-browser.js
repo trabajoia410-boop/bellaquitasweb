@@ -2,6 +2,13 @@
 (function(){
 "use strict";
 const ROOT="/administracion/api";
+const activateQuery=new URLSearchParams(location.search);
+let activationToken=activateQuery.get("activar");
+if(activationToken){
+ if(!/^[A-Za-z0-9_-]{43}$/.test(activationToken))activationToken=null;
+ history.replaceState(null,"",location.pathname);
+}
+
 const initialSection=new URLSearchParams(location.search).get("seccion")==="web"?"web":"inicio";
 const $=selector=>document.querySelector(selector);
 const H=value=>String(value==null?"":value).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
@@ -385,6 +392,42 @@ document.addEventListener("click",async e=>{
 document.addEventListener("submit",async e=>{
  const form=e.target;
  if(form.id==="login-form")return login(e);
+ if(form.id==="activate-request-form"){
+  e.preventDefault();
+  const button=form.querySelector("[type='submit']");
+  button.disabled=true;
+  const status=$("#activate-request-status");
+  status.textContent="";
+  try{
+   const data=await api("/activar/solicitar",{method:"POST",
+    body:{email:$("#activate-email").value.trim()}});
+   status.textContent=data.message||"Consulta tu correo electrónico.";
+  }catch(err){status.textContent=err.message;}
+  finally{button.disabled=false;}
+  return;
+ }
+ if(form.id==="activate-confirm-form"){
+  e.preventDefault();
+  const button=form.querySelector("[type='submit']");
+  button.disabled=true;
+  const status=$("#activate-confirm-status");status.textContent="";
+  try{
+   const password=$("#activate-new-password").value;
+   if(password!==$("#activate-repeat-password").value)
+    throw new Error("Las contraseñas no coinciden.");
+   if(!activationToken)throw new Error("El enlace no es válido; solicita uno nuevo.");
+   const result=await api("/activar/confirmar",{method:"POST",body:{token:activationToken,password}});
+   activationToken=null;
+   form.reset();
+   showLogin();
+   $("#login-form").hidden=false;$("#activate-help").hidden=false;
+   $("#activate-confirmation").hidden=true;
+   loginFeedback(result.message||"Contraseña activada. Ya puedes entrar.");
+  }catch(err){status.textContent=err.message;}
+  finally{if(button.isConnected)button.disabled=false;}
+  return;
+ }
+
  if(!["catalog-form","member-form","album-form"].includes(form.id))return;
  e.preventDefault();
  const button=form.querySelector("[type='submit']");
@@ -401,7 +444,12 @@ document.addEventListener("submit",async e=>{
  finally{if(button?.isConnected)button.disabled=false;}
 });
 $("#admin-password").value="";
-if(sessionStorage.getItem("bf_admin_unlocked")==="yes"){
+if(activationToken){
+ showLogin();
+ $("#login-form").hidden=true;
+ $("#activate-help").hidden=true;
+ $("#activate-confirmation").hidden=false;
+}else if(sessionStorage.getItem("bf_admin_unlocked")==="yes"){
  api("/me").then(data=>{
   if(data.profile?.role==="admin"){showPortal(data.profile);switchTab(initialSection);}
   else showLogin();
