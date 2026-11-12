@@ -64,6 +64,8 @@ Fuentes oficiales:
 
 **Conciliación individual adicional (12/11/2026):** consulta de solo lectura de Supabase y D1: 6 perfiles originales coincidieron individualmente en los 6 campos indicados, sin diferencias; en D1 existe 1 perfil extra de staging. Se incorporó la condición obligatoria `reconciliation.profiles_row_parity_verified` al candado de fase 6. El resultado debe repetirse dentro de las 24 horas anteriores al corte definitivo. [Informe agregado sin identificadores personales](./CONCILIACION_PERFILES_2026-11-12.md).
 
+**Auditoría adicional de KV Free (12/11/2026):** el candidato de fotografías se ha endurecido con comprobación de firma binaria y MIME, y ha superado pruebas ficticias de lectura, escritura, borrado y cuota agotada. **La cuenta conectada tiene cero namespaces KV y las consultas de suscripciones/facturación devuelven 403**, por lo que NO se ha acreditado la protección de costes ni se ha activado una alternativa a R2. KV puede tener lecturas temporalmente obsoletas; antes de permitir fotos reales deben verificarse D1 como fuente de permisos, borrado y propagación. Véase [viabilidad de KV Free](./VIABILIDAD_KV_FREE_MOMENTS_2026-11-12.md). La condición `costs.r2_no_uncapped_billing_or_nonbillable_storage_verified` **sigue pendiente** y no puede marcarse por esta prueba aislada.
+
 **No se ha tocado `main`, el DNS, el Worker desplegado, las cuentas, los puntos ni las visitas.**
 
 ## Enlaces
