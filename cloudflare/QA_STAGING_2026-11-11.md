@@ -471,3 +471,22 @@ La consola incluye su propio formulario de login y **cookie independiente de adm
 Instrucciones completas: `cloudflare/PANEL_ADMIN_INDEPENDIENTE.md`.
 
 **NO DESPLEGADO:** la ruta `/administracion/` todavía no existe en el Worker ni en bellaquitas.fr. El dominio, DNS, código main y socios/puntos/visitas siguen igual.
+
+
+## 18. Panel WordPress-like independiente — seguridad, edición y galerías
+
+Se ha preparado un panel privado **separado de la SPA pública**, como solicitó el propietario: `/administracion/` se abrirá en nueva pestaña (`target=_blank`, `rel=noopener noreferrer`), con pantalla de **correo/contraseña** obligatoria, acceso limitado al rol admin, cookie separada `__Host-bf_admin`, duración 1 hora y cierre de sesión independiente.
+
+El panel incluye escritorio, editor ES/FR con borrador/publicación, eventos, premios, gestión de socios y roles, sugerencias, galería Moments con upload y borrado de fotografías, y actividad. También tiene menú móvil.
+
+**Pruebas de aceptación integradas:** 36/36 verificaciones del Worker real sobre SQLite/R2 ficticios y 15/15 comprobaciones visuales Chrome de escritorio y móvil, incluidos imágenes, galería, roles, cierre de sesión, contraseña, privacidad y protección CSRF. **51/51 superadas**.
+
+Evidencia: https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43147872789
+
+El script `cloudflare/assemble-admin-candidate.mjs` genera un Worker de pruebas que incorpora el panel sin cambiar los recursos de diseño de la web pública: conserva HTML, CSS, idiomas y multimedia del snapshot y modifica **solo app.js** para los enlaces de nueva pestaña. La prueba no modificó Cloudflare en remoto ni el sitio oficial.
+
+**Bloqueo pendiente:** la consulta D1 de solo lectura confirma 2 perfiles administradores, pero **0 con credenciales de correo/contraseña verificadas**. Se debe preparar vinculación segura para que establezcan su contraseña sin crear perfiles duplicados ni elevar roles por coincidencia de email. El panel no puede darse por listo para administradores reales hasta entonces.
+
+**Otros bloqueos:** respaldo real privado cifrado y restaurado, CPU del hash en Workers Free, auditoría de autenticación, conciliación de datos y corte reversible. Las pruebas físicas iPhone/Samsung van después de publicar.
+
+Documento de aceptación y requisitos: `cloudflare/PANEL_ADMIN_SEPARADO_FASE5.md`.
