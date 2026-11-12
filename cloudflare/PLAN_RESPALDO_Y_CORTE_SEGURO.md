@@ -171,3 +171,16 @@ La nueva prueba `cloudflare/test_backup_encryption_local.py` ha verificado en Gi
 Se investigaron las opciones para mantener correo+contraseña con **cero cuotas**. Cloudflare Workers Free sigue limitado a 10 ms de CPU; el hash propio de 600k iteraciones no está validado. **Clerk Hobby es candidato gratuito sin tarjeta y con email/password+Google**, sujeto a límites y a aceptación expresa del propietario antes de integrar un servicio externo. La vinculación futura a D1 **debe usar una identidad verificada y enlace explícito**, nunca email coincidente. Comparativa: `cloudflare/ALTERNATIVAS_LOGIN_GRATIS_FASE5.md`.
 
 Estas pruebas y estudios **no autorizan** la fase 6: siguen pendientes respaldo real restaurado, método de autenticación viable y aprobado, conciliación y corte reversible.
+
+
+## Candado de preparación para la fase 6 (12/11/2026)
+
+Se añadió `cloudflare/phase6_readiness.py` para **rechazar una declaración de preparación** si no hay respaldos privados recientes y restaurados, coincidencia exacta de perfiles/puntos/visitas, login administrativo sin cargos, controles de reversión y **autorización expresa para el corte de backend**.
+
+- No despliega ni modifica ningún sistema; trabaja con una declaración de evidencias **privada, fuera de Git**, que necesita revisión humana. No es una restricción automática sobre cambios manuales de DNS o GitHub; cualquier futuro flujo de despliegue deberá invocar este control antes del corte.
+- Su `--self-test` comprueba **11 casos de rechazo** (sin evidencia, sin autorización, falta de Postgres/Supabase Storage, perfil ficticio, saldos desiguales, CPU Free pendiente, contraseñas admin sin activar, opción con cargos, sin reversión, evidencia antigua) y dos controles positivos con datos sintéticos.
+- También se comprueba que `--check` **falla** sin fichero privado real.
+- **Resultado de GitHub Actions: aprobado** https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43207324961
+- Instrucciones: `cloudflare/FASE6_PRECORTE_CHECKLIST.md`.
+
+**Estado actual sigue siendo NO LISTO para la fase 6**: no tenemos copia real restaurada, acceso email+contraseña gratuito aprobado ni autorización concreta para el corte. Se conservan las pruebas físicas de iPhone/Samsung para después de la publicación.
