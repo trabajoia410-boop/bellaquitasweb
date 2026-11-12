@@ -31,6 +31,8 @@ def require_local() -> None:
         raise RuntimeError("Solo se admite la base administrativa ficticia postgres")
     if os.getenv("GITHUB_ACTIONS")!="true":
         raise RuntimeError("Este ensayo solo se permite en GitHub Actions aislado")
+    if os.getenv("POSTGRES_MAJOR_TEST") not in ("16","17"):
+        raise RuntimeError("Solo se prueban Postgres 16 o 17 en un contenedor ficticio")
 
 def command(args: list[str],*,query: str|None=None) -> str:
     result=subprocess.run(args,input=query,text=True,capture_output=True,check=True)
@@ -118,7 +120,7 @@ def main():
         assert restored["storage.objects"]==1
         assert restored["public.events"]==1
         assert restored["loyalty"]=="2:62:3"
-        print("OK: pg_restore de PostgreSQL 16 completo en una base nueva y aislada")
+        print("OK: pg_restore de PostgreSQL "+os.environ["POSTGRES_MAJOR_TEST"]+" completo en una base nueva y aislada")
         print("OK: 18/18 recuentos de tablas y 62 puntos / 3 visitas FICTICIOS coinciden")
         print("OK: Auth, sesiones, canjes, eventos y Storage ficticios recuperados")
         print("No se ha conectado a Supabase ni leído una cuenta de Bellaquitas Fest.")
