@@ -19,6 +19,7 @@ const OUT="browser-admin-console-evidence";fs.mkdirSync(OUT,{recursive:true});
 const events=[{id:"00000000-0000-4000-8000-000000000301",name:"Fiesta ficticia",date_label:"2027-01-20",start_time:"21:00",location:"Sala inventada",description:"Solo QA",active:true,localized_content:{fr:{name:"Soirée fictive"}}}];
 const members=[{id:"00000000-0000-4000-8000-000000000302",name:"Socio inventado",member_code:"MBR-FAKE-QA",role:"socio",points:0,lifetime_points:0,visits:0}];
 const payloads=[];
+const albums=[],photos=[],photoBytes=new Map();
 let current={hero_text:"Bellaquitas Fest",announcement:"Vive el momento",hero_title_a:"Bellaquitas",events_title:"Eventos",faq_1_q:"¿Cómo funciona?",logo_url:"",translations:{fr:{hero_text:"Bellaquitas en français"}}};
 let draft=null,authenticated=false;
 function respond(res,data,status=200,extra={}){
@@ -38,10 +39,11 @@ const server=createServer(async(req,res)=>{
   return;
  }
  if(!pathname.startsWith("/administracion/api/")){respond(res,{error:"not found"},404);return;}
- let body={};
+ let body={},rawBuffers=[];
  if(req.method!=="GET"){
-  const buffers=[];for await(const b of req)buffers.push(b);
-  if(buffers.length)try{body=JSON.parse(Buffer.concat(buffers).toString("utf8"));}catch{}
+  for await(const b of req)rawBuffers.push(b);
+  if(rawBuffers.length&&String(req.headers["content-type"]||"").includes("application/json"))
+   try{body=JSON.parse(Buffer.concat(rawBuffers).toString("utf8"));}catch{}
  }
  const suffix=pathname.slice("/administracion/api".length);
  if(suffix==="/login"){
@@ -55,7 +57,7 @@ const server=createServer(async(req,res)=>{
  if(suffix==="/rewards")return respond(res,{items:[]});
  if(suffix==="/promos")return respond(res,{items:[]});
  if(suffix==="/members")return respond(res,{items:members});
- if(suffix==="/community")return respond(res,{suggestions:[{id:"00000000-0000-4000-8000-000000000303",name:"Persona ficticia",message:"Buena idea",status:"nuevo"}],albums:[],photos:[]});
+ if(suffix==="/community")return respond(res,{suggestions:[{id:"00000000-0000-4000-8000-000000000303",name:"Persona ficticia",message:"Buena idea",status:"nuevo"}],albums,photos});
  if(suffix==="/site")return respond(res,{site:{hero_text:current.hero_text,announcement:current.announcement,settings:current}});
  if(suffix==="/site-drafts")return respond(res,{items:draft?[{key:"homepage",settings:draft}]:[]});
  if(suffix==="/activity"||suffix==="/changes")return respond(res,{items:[]});
@@ -63,7 +65,30 @@ const server=createServer(async(req,res)=>{
   payloads.push({path:suffix,body});Object.assign(members[0],body);
   return respond(res,{ok:true});
  }
- if(suffix==="/moments/create"){payloads.push({path:suffix,body});return respond(res,{ok:true,id:crypto.randomUUID()});}
+ if(suffix==="/moments/create"){
+  const id=crypto.randomUUID();albums.push({id,title:body.title,event_date:body.event_date,published:false});
+  payloads.push({path:suffix,body});return respond(res,{ok:true,id});
+ }
+ if(suffix==="/moments/publish"){
+  const x=albums.find(a=>a.id===body.album_id);
+  if(x)x.published=!!body.published;
+  payloads.push({path:suffix,body});return respond(res,{ok:true});
+ }
+ const photoUpload=suffix.match(/^\/moments\/([0-9a-f-]{36})\/photo$/);
+ if(photoUpload&&req.method==="POST"){
+  const id=crypto.randomUUID(),album_id=photoUpload[1],chunks=[];
+  // body is raw bytes, not JSON.
+  for(const b of rawBuffers)chunks.push(b);
+  photoBytes.set(id,Buffer.concat(chunks));
+  photos.push({id,album_id,caption:""});
+  payloads.push({path:suffix,id});return respond(res,{ok:true,id});
+ }
+ const photoGet=suffix.match(/^\/photos\/([0-9a-f-]{36})$/);
+ if(photoGet&&req.method==="GET"){
+  const file=photoBytes.get(photoGet[1]);
+  if(!file){res.writeHead(404);res.end();return;}
+  res.writeHead(200,{"Content-Type":"image/png"});res.end(file);return;
+ }
  if(suffix==="/write"){
   payloads.push({path:suffix,body});
   if(body.kind==="site_drafts")draft=JSON.parse(JSON.stringify(body.settings));
@@ -74,6 +99,17 @@ const server=createServer(async(req,res)=>{
   if(body.kind==="catalog"&&body.action==="toggle"){
    const item=events.find(x=>x.id===body.id);
    if(item)item.active=body.active;
+  }
+  if(body.kind==="moments_photos"&&body.action==="delete"){
+   const index=photos.findIndex(p=>p.id===body.id);
+   if(index>=0)photos.splice(index,1);photoBytes.delete(body.id);
+  }
+  if(body.kind==="moments_albums"&&body.action==="delete"){
+   const index=albums.findIndex(a=>a.id===body.id);
+   if(index>=0)albums.splice(index,1);
+   for(let i=photos.length-1;i>=0;i--)if(photos[i].album_id===body.id){
+    photoBytes.delete(photos[i].id);photos.splice(i,1);
+   }
   }
   return respond(res,{ok:true});
  }
@@ -157,6 +193,31 @@ try{
  await page.locator("#album-form").waitFor();
  assert.ok((await page.locator("#work-content").textContent()).includes("Sugerencias recibidas"));
  pass("Comunidad muestra sugerencias y gestión de galerías");
+
+ await page.locator("#f-title").fill("Galería ficticia del evento");
+ await page.locator("#f-event_date").fill("2027-08-21");
+ await page.locator("#album-form button[type='submit']").click();
+ await page.locator("[data-upload-album]").waitFor({state:"visible",timeout:12000});
+ assert.equal(albums.length,1);
+ pass("Crear galería ficticia desde el panel");
+
+ const fakePng=Buffer.from([137,80,78,71,13,10,26,10,0,0,0,0,1,2,3,4]);
+ await page.locator("[data-file-album]").setInputFiles({name:"foto-ficticia.png",mimeType:"image/png",buffer:fakePng});
+ await page.locator("[data-upload-album]").click();
+ await page.locator(".photo-tile img").first().waitFor({state:"visible",timeout:12000});
+ assert.equal(photos.length,1);
+ assert.equal(photoBytes.size,1);
+ pass("Subir PNG ficticio y visualizar miniatura de Moments");
+
+ await page.locator("[data-delete-photo]").first().click();
+ await page.waitForFunction(()=>document.querySelectorAll(".photo-tile").length===0);
+ assert.equal(photos.length,0);assert.equal(photoBytes.size,0);
+ pass("Borrar fotografía elimina el archivo de ensayo");
+
+ await page.locator("[data-album-id]").first().click();
+ await page.waitForFunction(()=>document.querySelector("[data-album-id]")?.textContent?.includes("Ocultar"));
+ assert.equal(albums[0].published,true);
+ pass("Publicar álbum de Moments desde el panel");
 
  await page.screenshot({path:OUT+"/panel-comunidad.png",animations:"disabled"});
  await page.locator("#logout-top").click();
