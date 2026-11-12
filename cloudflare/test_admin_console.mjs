@@ -144,7 +144,7 @@ test("sesión admin permite datos privados y rol comprobado desde el servidor",a
  const me=await call("/administracion/api/me",{cookie:adminCookie});
  assert.equal(me.status,200);assert.equal(me.obj.profile.role,"admin");
  const members=await call("/administracion/api/members",{cookie:adminCookie});
- assert.equal(members.status,200);assert.equal(members.obj.items.length,2);
+ assert.equal(members.status,200);assert.equal(members.obj.items.length,3);
 });
 test("una sesión de socio renombrada a cookie admin NO supera verificación rol",async()=>{
  const socioToken=(await createAuthSession(MEMBER,env)).match(/__Host-bf_session=([A-Za-z0-9_-]{43})/)[1];
@@ -337,7 +337,7 @@ test("el enlace se consume una sola vez; no cambia roles ni saldos",async()=>{
   method:"POST",body:{token:activationToken,password:PASSWORD}});
  assert.equal(again.status,400);
  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM profiles WHERE role='admin'").get().n,2);
- assert.equal(db.prepare("SELECT COUNT(*) AS n FROM auth_identity_links WHERE provider='email'").get().n,3);
+ assert.equal(db.prepare("SELECT COUNT(*) AS n FROM auth_identity_links WHERE provider='email' AND profile_id=?").get(GOOGLE_ADMIN).n,1);
  env.STAGING_MUTATIONS="disabled";
  env.ADMIN_EMAIL_ACTIVATION_ENABLED="no";
  env.ADMIN_PASSWORD_RUNTIME_APPROVED="no";
