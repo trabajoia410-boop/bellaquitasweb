@@ -112,3 +112,12 @@ details textarea{font-family:ui-monospace,monospace}
 .save-actions{margin-top:24px}
 
 .album-item{align-items:flex-start}.album-main{min-width:0;flex:1}.album-main input[type=file]{max-width:275px;min-height:auto;background:transparent}.photo-grid{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}.photo-tile{max-width:140px;display:grid;gap:5px}.photo-tile img{width:125px;height:105px;object-fit:cover;border-radius:9px;border:1px solid var(--line)}.photo-tile button{font-size:.76rem;padding:5px 7px}
+
+
+.activate-panel{margin:19px 0 4px;background:#e8bb680a;border:1px solid #745a384e;padding:18px;border-radius:14px}
+.activate-panel summary{font-weight:700;color:var(--gold);cursor:pointer}
+.activate-panel p{font-size:.85rem;color:var(--muted);margin:12px 0}
+.activate-google{display:inline-flex;align-items:center;justify-content:center;margin:7px 0 5px}
+.activate-panel .full{margin-top:14px}
+.activate-confirmation{border-top:1px solid var(--line);margin-top:22px;padding-top:19px}
+.activate-confirmation h2{color:var(--gold)}
