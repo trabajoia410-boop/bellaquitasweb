@@ -35,7 +35,14 @@ const D1={
  },
  async batch(stmts){const r=[];for(const stmt of stmts)r.push(await stmt.run());return r;}
 };
-const MEDIA={async get(){return null;},async put(){throw Error("R2 no accesible");},async delete(){throw Error("R2 no accesible");}};
+const mediaObjects=new Map();
+const MEDIA={
+ async get(key){const v=mediaObjects.get(key);return v?{body:v.bytes,httpMetadata:v.meta}:null;},
+ async put(key,bytes,options={}){
+  mediaObjects.set(key,{bytes:new Uint8Array(bytes),meta:options.httpMetadata||{}});
+ },
+ async delete(key){mediaObjects.delete(key);}
+};
 const env={DB:D1,MEDIA,STAGING_MUTATIONS:"disabled",ALLOW_NEW_ACCOUNTS:"no",
  PUBLIC_ORIGIN:BASE,EMAIL_AUTH_ENABLED:"yes",EMAIL_RATE_KEY:"FAKE-KEY-WITH-AT-LEAST-32-BYTES-000000"};
 const enc=x=>Buffer.from(x).toString("base64url");
@@ -155,6 +162,71 @@ test("escritura real en SQLite aislada, sin tocar socios",async()=>{
  assert.equal((await call("/administracion/api/events",{cookie:adminCookie})).obj.items.length,1);
  assert.equal(db.prepare("SELECT COALESCE(SUM(points),0) AS n FROM profiles").get().n,0);
  env.STAGING_MUTATIONS="disabled";
+});
+test("galerías Moments: admin crea álbum y socio no puede subir fotografías",async()=>{
+ env.STAGING_MUTATIONS="enabled";
+ const res=await call("/administracion/api/moments/create",{method:"POST",cookie:adminCookie,
+  body:{title:"Álbum totalmente ficticio",event_date:"2027-07-01"}});
+ assert.equal(res.status,200,JSON.stringify(res.obj));
+ assert.match(res.obj.id,/^[0-9a-f-]{36}$/);
+ globalThis.__fakeAlbumId=res.obj.id;
+ const data=await call("/administracion/api/community",{cookie:adminCookie});
+ assert.ok(data.obj.albums.find(x=>x.id===res.obj.id));
+ // La sesión de socio, aun renombrando la cookie, no accede al album privado.
+ const socioToken=(await createAuthSession(MEMBER,env)).match(/__Host-bf_session=([A-Za-z0-9_-]{43})/)[1];
+ const response=await call("/administracion/api/community",{cookie:"__Host-bf_admin="+socioToken});
+ assert.equal(response.status,401);
+});
+test("foto real PNG ficticia: upload, imagen privada y borrado R2 por la consola",async()=>{
+ env.STAGING_MUTATIONS="enabled";
+ const png=new Uint8Array([137,80,78,71,13,10,26,10,0,0,0,1,2,3,4,5]);
+ const uploadRoute="/administracion/api/moments/"+globalThis.__fakeAlbumId+"/photo";
+ const request=new Request(BASE+uploadRoute,{method:"POST",headers:{
+  Origin:BASE,"Sec-Fetch-Site":"same-origin","Cookie":adminCookie,"Content-Type":"image/png"
+ },body:png});
+ const response=await worker.fetch(request,env);
+ assert.equal(response.status,200,await response.clone().text());
+ const payload=await response.json();
+ assert.match(payload.id,/^[0-9a-f-]{36}$/);
+ const result=await call("/administracion/api/community",{cookie:adminCookie});
+ assert.equal(result.status,200);
+ assert.ok(result.obj.photos.some(x=>x.id===payload.id));
+ const saved=db.prepare("SELECT storage_path FROM moments_photos WHERE id=?").get(payload.id);
+ assert.ok(saved.storage_path.startsWith("moments/"));
+ assert.equal(mediaObjects.get(saved.storage_path).bytes.length,png.length);
+ // El archivo no se entrega anónimamente ni usando la cookie pública.
+ assert.equal((await call("/administracion/api/photos/"+payload.id)).status,401);
+ assert.equal((await call("/administracion/api/photos/"+payload.id,{cookie:publicCookie})).status,401);
+ const image=await worker.fetch(req("/administracion/api/photos/"+payload.id,{cookie:adminCookie}),env);
+ assert.equal(image.status,200);
+ assert.equal(image.headers.get("content-type"),"image/png");
+ assert.deepEqual(new Uint8Array(await image.arrayBuffer()),png);
+ // El panel elimina también el objeto R2 de prueba.
+ const deleted=await call("/administracion/api/write",{cookie:adminCookie,method:"POST",
+  body:{kind:"moments_photos",action:"delete",id:payload.id}});
+ assert.equal(deleted.status,200);
+ assert.equal(mediaObjects.has(saved.storage_path),false);
+ assert.equal(db.prepare("SELECT COUNT(*) AS n FROM moments_photos WHERE id=?").get(payload.id).n,0);
+ env.STAGING_MUTATIONS="disabled";
+});
+test("archivos falsos, intentos externos y bloqueo de staging no pueden alterar galerías",async()=>{
+ env.STAGING_MUTATIONS="enabled";
+ const uploadRoute="/administracion/api/moments/"+globalThis.__fakeAlbumId+"/photo";
+ const fake=new Uint8Array([1,2,3,4,5]);
+ const external=new Request(BASE+uploadRoute,{method:"POST",headers:{
+  Origin:"https://malicioso.invalid","Sec-Fetch-Site":"cross-site",Cookie:adminCookie,"Content-Type":"image/png"
+ },body:fake});
+ assert.equal((await worker.fetch(external,env)).status,403);
+ const invalid=new Request(BASE+uploadRoute,{method:"POST",headers:{
+  Origin:BASE,"Sec-Fetch-Site":"same-origin",Cookie:adminCookie,"Content-Type":"image/png"
+ },body:fake});
+ assert.equal((await worker.fetch(invalid,env)).status,415);
+ env.STAGING_MUTATIONS="disabled";
+ const blocked=new Request(BASE+uploadRoute,{method:"POST",headers:{
+  Origin:BASE,"Sec-Fetch-Site":"same-origin",Cookie:adminCookie,"Content-Type":"image/png"
+ },body:new Uint8Array([137,80,78,71,1,2,3,4])});
+ assert.equal((await worker.fetch(blocked,env)).status,423);
+ assert.equal(mediaObjects.size,0);
 });
 test("CSRF bloquea modificaciones desde sitios ajenos",async()=>{
  const r=await call("/administracion/api/write",{method:"POST",cookie:adminCookie,
