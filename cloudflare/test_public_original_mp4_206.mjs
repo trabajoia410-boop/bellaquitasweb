@@ -17,21 +17,35 @@ const videos=SITE_MEDIA.filter(x=>x.type==="video/mp4");
 assert.equal(videos.length,5);
 const host=process.env.VIDEO_PUBLIC_ORIGIN||"https://bellaquitas.fr";
 for(const item of videos){
- test("MP4 público: Range HTTP 206 y mismos 1024 bytes: "+item.path,async()=>{
-  const url=host+"/assets/"+encodeURIComponent(item.path);
-  const response=await fetch(url,{headers:{"Range":"bytes=0-1023","Accept-Encoding":"identity"},
-   redirect:"follow",signal:AbortSignal.timeout(30000)});
-  console.log("ORIGEN "+JSON.stringify({
-    filename:item.path,url:response.url,status:response.status,
-    range:response.headers.get("Content-Range"),
-    length:response.headers.get("Content-Length"),
-    contentType:response.headers.get("Content-Type")
-  }));
-  assert.equal(response.status,206,"El servidor actual NO cumple HTTP 206 para "+item.path);
-  assert.equal(response.headers.get("Content-Range"),"bytes 0-1023/"+item.bytes);
-  const actual=Buffer.from(await response.arrayBuffer());
-  assert.equal(actual.length,1024);
-  const original=readFileSync(path.join(dir,"..","assets",item.path));
-  assert.deepEqual(actual,original.subarray(0,1024),"El vídeo público no coincide con GitHub");
- });
+ const original=readFileSync(path.join(dir,"..","assets",item.path));
+ assert.equal(original.length,item.bytes,"El archivo original cambió");
+ const ranges=[
+  {label:"inicio",start:0},
+  {label:"mitad",start:Math.floor(item.bytes/2)},
+  {label:"final",start:item.bytes-1024}
+ ];
+ for(const part of ranges){
+  test("MP4 público: HTTP 206 "+part.label+" y bytes idénticos: "+item.path,async()=>{
+   const end=part.start+1023;
+   const expected="bytes "+part.start+"-"+end+"/"+item.bytes;
+   const url=host+"/assets/"+encodeURIComponent(item.path);
+   const response=await fetch(url,{headers:{
+     "Range":"bytes="+part.start+"-"+end,
+     "Accept-Encoding":"identity"
+   },redirect:"follow",signal:AbortSignal.timeout(30000)});
+   console.log("ORIGEN "+JSON.stringify({
+     filename:item.path,segment:part.label,status:response.status,
+     range:response.headers.get("Content-Range"),
+     length:response.headers.get("Content-Length"),
+     contentType:response.headers.get("Content-Type")
+   }));
+   assert.equal(response.status,206,"No hay HTTP 206: "+item.path+" "+part.label);
+   assert.equal(response.headers.get("Content-Range"),expected);
+   assert.ok(response.headers.get("Content-Type")?.startsWith("video/mp4"));
+   const bytes=Buffer.from(await response.arrayBuffer());
+   assert.equal(bytes.length,1024);
+   assert.deepEqual(bytes,original.subarray(part.start,end+1),
+     "El vídeo del dominio público no coincide con GitHub");
+  });
+ }
 }
