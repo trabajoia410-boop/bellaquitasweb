@@ -52,13 +52,17 @@ function getPublicSession(request){
 }
 async function existingAdminWithRecentGoogle(request,env){
  const token=getPublicSession(request);if(!token)return null;
- // Importante: no confiar en la cookie admin ni en un correo proporcionado.
+ // La sesión DEBE haberse emitido tras completar Google OAuth firmado.
+ // No basta con que el perfil tenga una identidad Google vinculada y la
+ // sesión sea reciente (podría ser un acceso por contraseña o sesión vieja).
+ // Las sesiones anteriores a la migración tienen auth_method='unknown'.
  const actor=await env.DB.prepare(
   "SELECT p.id FROM auth_sessions s "+
   "JOIN profiles p ON p.id=s.profile_id "+
   "JOIN auth_identity_links link ON link.profile_id=p.id AND link.provider='google' "+
   "WHERE s.token_hash=? AND s.expires_at>unixepoch() "+
-  "AND s.created_at>=unixepoch()-300 AND p.role='admin' LIMIT 1"
+  "AND s.auth_method='google' AND s.created_at>=unixepoch()-300 "+
+  "AND p.role='admin' LIMIT 1"
  ).bind(await sha(token)).first();
  return actor?.id||null;
 }
