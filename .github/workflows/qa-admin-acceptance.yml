@@ -1,0 +1,48 @@
+name: Aceptación del panel separado — 51 pruebas con datos ficticios
+on:
+  push:
+    branches:
+      - auditoria/fase5-2026-11-11
+    paths:
+      - app.js
+      - cloudflare/assemble-admin-candidate.mjs
+      - cloudflare/qa-candidates/admin-console*
+      - cloudflare/qa-candidates/bellaquitas-api-staging-admin.js
+      - cloudflare/test_admin_console.mjs
+      - cloudflare/test_admin_console_browser.mjs
+      - .github/workflows/qa-admin-acceptance.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  admin-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar herramienta gratuita de pruebas del navegador
+        run: npm install --no-save --no-package-lock --ignore-scripts playwright-core@1.56.1
+      - name: Recuperar Worker actual sin desplegar
+        run: node cloudflare/staging-source-2026-11-11/extract-modules.mjs
+      - name: Ensamblar panel independiente; verificar recursos originales intactos
+        run: node --experimental-default-type=module cloudflare/assemble-admin-candidate.mjs
+      - name: Comprobar JS de la web y panel sin ejecutar cambios externos
+        run: |
+          node --check app.js
+          node --check cloudflare/staging-source-2026-11-11/recovered-src/admin-console-routes.js
+          node --check cloudflare/staging-source-2026-11-11/recovered-src/admin-console-ui.js
+      - name: Comprobar Worker real, permisos, imágenes y roles con SQLite ficticia
+        run: node --experimental-sqlite --experimental-default-type=module --test cloudflare/test_admin_console.mjs cloudflare/test_worker_full_stack.mjs
+      - name: Comprobar Chrome móvil/escritorio: login, editor, eventos, socios y galerías
+        run: node --experimental-default-type=module cloudflare/test_admin_console_browser.mjs
+      - name: Conservar solo capturas sintéticas durante siete días
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bellaquitas-admin-acceptance-candidates
+          path: browser-admin-console-evidence/
+          retention-days: 7
+          if-no-files-found: warn
