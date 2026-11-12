@@ -1,4 +1,4 @@
-name: Aceptación del panel separado — 51 pruebas con datos ficticios
+name: Aceptación del panel separado — 62 pruebas con datos ficticios
 on:
   push:
     branches:
