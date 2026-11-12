@@ -15,7 +15,7 @@ La web `bellaquitas.fr` continúa en su sistema oficial. El nuevo panel de admin
 | Área | Antes de publicar debe estar confirmado |
 |---|---|
 | Respaldo | Archivo privado cifrado, hash SHA-256, restauración Postgres **en entorno aislado**, restauración D1 de prueba, verificaciones de archivos Supabase Storage/R2, segunda copia comprobada, menos de 48 horas |
-| Integridad | Perfiles reales en origen = perfiles en destino; **la cuenta ficticia de staging debe retirarse/excluirse**; totales de puntos y visitas iguales; idioma ES/FR y vídeos intactos |
+| Integridad | Perfiles reales en origen = perfiles en destino; **la cuenta ficticia de staging debe retirarse/excluirse**; totales de puntos y visitas iguales; **cada perfil coincidente debe conservar su ID, rol, código de socio, puntos disponibles, puntos históricos y visitas**; idioma ES/FR y vídeos intactos |
 | Autenticación | Correo+contraseña y Google probados, admins originales vinculados sin duplicados, sesión/logout correctos, viabilidad de CPU o proveedor externo aprobada **sin cargos automáticos**, comprobada en los últimos 14 días |
 | Costes y facturación | Verificar **Workers/D1 Free**, límites de correo, todos los servicios medidos y que **R2 no tenga cargos sin un límite efectivo o se sustituya por almacenamiento no facturable**. Las alertas de presupuesto NO detienen el consumo. |
 | Reversión | Procedimiento ensayado, backend anterior disponible, protocolo para evitar pérdidas si se generan escrituras durante una reversión, dominio/DNS preparados y diseño conservado |
@@ -61,6 +61,8 @@ Fuentes oficiales:
 - **Pendiente:** alternativa para correo+contraseña que respete el límite de Workers Free de 10 ms CPU y cero cobros automáticos, sin cambiar roles ni duplicar cuentas. Clerk Hobby es solo candidato de investigación, no conectado.
 - **Pendiente:** quitar/excluir definitivamente el perfil ficticio de staging del conjunto final antes de cumplir la igualdad de perfiles, sin tocar perfiles de socios reales.
 - **Pendiente:** ensayo documentado de reversión y aprobación explícita para pasar a fase 6.
+
+**Conciliación individual adicional (12/11/2026):** consulta de solo lectura de Supabase y D1: 6 perfiles originales coincidieron individualmente en los 6 campos indicados, sin diferencias; en D1 existe 1 perfil extra de staging. Se incorporó la condición obligatoria `reconciliation.profiles_row_parity_verified` al candado de fase 6. El resultado debe repetirse dentro de las 24 horas anteriores al corte definitivo. [Informe agregado sin identificadores personales](./CONCILIACION_PERFILES_2026-11-12.md).
 
 **No se ha tocado `main`, el DNS, el Worker desplegado, las cuentas, los puntos ni las visitas.**
 
