@@ -32,6 +32,16 @@ function validImage(key,bytes,mime){
     throw new Error("Extensión o MIME no válido");
   if(bytes.byteLength===0||bytes.byteLength>MAX_IMAGE_BYTES)
     throw new Error("Archivo fuera del límite permitido");
+  // El Content-Type y la extensión son datos del usuario: exigir cabecera binaria.
+  const jpeg=mime==="image/jpeg"&&bytes.length>=3&&
+    bytes[0]===0xff&&bytes[1]===0xd8&&bytes[2]===0xff;
+  const png=mime==="image/png"&&bytes.length>=8&&
+    bytes[0]===137&&bytes[1]===80&&bytes[2]===78&&bytes[3]===71&&
+    bytes[4]===13&&bytes[5]===10&&bytes[6]===26&&bytes[7]===10;
+  const webp=mime==="image/webp"&&bytes.length>=12&&
+    bytes[0]===82&&bytes[1]===73&&bytes[2]===70&&bytes[3]===70&&
+    bytes[8]===87&&bytes[9]===69&&bytes[10]===66&&bytes[11]===80;
+  if(!jpeg&&!png&&!webp)throw new Error("Firma de imagen incorrecta");
 }
 /**
  * Interfaz compatible con el subconjunto R2 usado por el candidato:
@@ -53,15 +63,23 @@ export function createKvMediaAdapter(kv,{allowWrites=false}={}){
       const contentType=result.metadata?.contentType;
       if(!Object.hasOwn(MIME_EXT,contentType)||!key.toLowerCase().endsWith("."+MIME_EXT[contentType]))
         return null;
-      const bytes=toBytes(result.value);
-      return {body:bytes,httpMetadata:{contentType},size:bytes.byteLength};
+      // Revalidar cada lectura: nunca servir HTML u otros bytes disfrazados
+      // de foto, aunque metadata o contenido KV se haya alterado.
+      try {
+        const bytes=toBytes(result.value);
+        validImage(key,bytes,contentType);
+        return {body:bytes,httpMetadata:{contentType},size:bytes.byteLength};
+      } catch (_) {
+        return null;
+      }
     },
     async put(key,body,options={}){
       demandWrite();
       const bytes=toBytes(body),contentType=options?.httpMetadata?.contentType;
       validImage(key,bytes,contentType);
-      // UUIDs únicos, sin reescribir una clave antigua. D1 decide publicación.
-      await kv.put(key,bytes,{metadata:{contentType}});
+      // KV no garantiza unicidad/compare-and-swap: los UUID deben crearse en
+      // el servidor y una referencia privada de D1 decide la publicación.
+      await kv.put(key,bytes.slice(),{metadata:{contentType}});
     },
     async delete(key){
       demandWrite();
