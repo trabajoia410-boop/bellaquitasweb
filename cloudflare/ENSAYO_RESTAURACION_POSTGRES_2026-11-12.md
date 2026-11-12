@@ -18,7 +18,7 @@ Esta es una **lista mínima**, no un filtro de exportación. El respaldo ejecuta
 
 Archivo: `cloudflare/test_pg_restore_isolated.py`.
 
-En GitHub Actions se inicia un contenedor **PostgreSQL 16 efímero**, se crean dos bases exclusivamente ficticias y se utilizan herramientas oficiales **de la misma versión mayor** (`pg_dump 16`, `pg_restore 16`). El proceso:
+En GitHub Actions se ejecuta una **matriz de dos contenedores aislados: PostgreSQL 16 y PostgreSQL 17**. En cada versión se crean dos bases exclusivamente ficticias y se utilizan `pg_dump` y `pg_restore` oficiales **de la misma versión mayor que su servidor**. El proceso:
 
 1. Crea 18 tablas mínimas de `public`, `auth` y `storage` con cuentas inventadas.
 2. Registra **dos perfiles inventados, 62 puntos y 3 visitas**; también crea eventos, canjes, sesiones y objetos inventados.
@@ -28,11 +28,11 @@ En GitHub Actions se inicia un contenedor **PostgreSQL 16 efímero**, se crean d
 6. Restaura el volcado con `pg_restore --exit-on-error` en la segunda base ficticia recién creada.
 7. Compara los recuentos de **18/18 tablas**, así como los puntos, visitas, usuarios, identidades y sesiones: **todos coinciden**.
 
-**Resultado aprobado:** https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43248178379
+**Resultado aprobado en PostgreSQL 16 y 17:** https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43249197005
 
 ### Fallo detectado y corregido
 
-La primera versión del ensayo utilizó herramientas PostgreSQL 18 del runner contra un servidor PostgreSQL 16. La restauración falló al recibir la opción `transaction_timeout`, incompatible con el servidor 16. Después se cambió el entorno de ensayo para utilizar herramientas `psql`/`pg_dump`/`pg_restore` de PostgreSQL 16 desde su contenedor oficial, **sin instalar servicios de pago**. La prueba completa pasó.
+La primera versión del ensayo utilizó herramientas PostgreSQL 18 del runner contra un servidor PostgreSQL 16. La restauración falló al recibir la opción `transaction_timeout`, incompatible con el servidor 16. Después se cambió el entorno para obtener `psql`/`pg_dump`/`pg_restore` directamente de los contenedores oficiales PostgreSQL **16 y 17**, sin servicios de pago. **Ambas restauraciones pasaron**.
 
 Como el **Supabase original es PostgreSQL 17.11**, el respaldo **privado real** deberá usar herramientas de **PostgreSQL 17**. Se incorporó `verify_postgres_versions()` en `cloudflare/backup_privado_local.py`, que identifica la versión mayor del servidor y rechaza herramientas de otras versiones **antes de exportar datos personales**. Pruebas negativas ficticias en `cloudflare/test_pg_backup_versions.py` validan 16/17/18 y diferencias entre `pg_dump`, `pg_restore` y `psql`.
 
