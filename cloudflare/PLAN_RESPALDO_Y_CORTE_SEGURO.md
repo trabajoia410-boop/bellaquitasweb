@@ -197,3 +197,14 @@ El nuevo candado `cloudflare/phase6_readiness.py` requiere ahora una sección pr
 El candado final ha superado **15 pruebas de rechazo y 2 controles positivos sintéticos**, incluyendo cuatro pruebas nuevas de coste cero. Evidencia: https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43207847292.
 
 No se ha alterado la suscripción R2 ni aceptado facturación. La consulta previa del panel de facturación devolvió 403 por permisos del conector, de modo que **no podemos afirmar que no exista una tarjeta asociada ni que no haya cobros potenciales**.
+
+
+## Ruta alternativa para no consumir R2 en medios originales (12/11/2026)
+
+Se comprobaron **17/17 recursos del repositorio, 5/5 MP4** (54.846.317 bytes totales, mayor archivo 24,26 MiB), todos dentro del límite individual **25 MiB** de Workers Static Assets Free. Los assets estáticos directos no tienen cargos por almacenamiento ni solicitudes: https://developers.cloudflare.com/workers/static-assets/billing-and-limitations/.
+
+**Caveat que impide desplegar la alternativa sin más pruebas:** Cloudflare Static Assets devuelve `200` incluso cuando el reproductor solicita un `Range`; Safari puede necesitar `206`. Un Worker que implemente los `Range` podría resolverlo pero estaría sujeto al límite Free de CPU/peticiones, que debe verificarse. Las fotografías dinámicas de Moments no se convierten automáticamente en assets.
+
+Evidencia: https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43208418447 · [estudio y decisiones pendientes](./VIABILIDAD_STATIC_ASSETS_FREE.md).
+
+No se han modificado vídeos, el Worker ni DNS. Esta opción reduce **posiblemente** la dependencia de R2, pero **no equivale aún a una garantía de coste cero** para todo el proyecto.
