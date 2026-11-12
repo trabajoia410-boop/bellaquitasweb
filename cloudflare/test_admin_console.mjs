@@ -53,7 +53,8 @@ const MEDIA={
  async delete(key){mediaObjects.delete(key);}
 };
 const env={DB:D1,MEDIA,STAGING_MUTATIONS:"disabled",ALLOW_NEW_ACCOUNTS:"no",
- PUBLIC_ORIGIN:BASE,EMAIL_AUTH_ENABLED:"yes",EMAIL_RATE_KEY:"FAKE-KEY-WITH-AT-LEAST-32-BYTES-000000"};
+ PUBLIC_ORIGIN:BASE,EMAIL_AUTH_ENABLED:"yes",EMAIL_RATE_KEY:"FAKE-KEY-WITH-AT-LEAST-32-BYTES-000000",
+ ADMIN_PASSWORD_RUNTIME_APPROVED:"yes"};
 const enc=x=>Buffer.from(x).toString("base64url");
 async function hashPassword(password,salt){
  const b=Buffer.from(salt,"base64url");
@@ -123,6 +124,11 @@ test("no permite a un socio abrir la consola aunque conozca su contraseña",asyn
  assert.equal(out.status,401);assert.equal(out.cookie,null);
  const count=db.prepare("SELECT COUNT(*) AS n FROM auth_sessions WHERE profile_id=?").get(MEMBER).n;
  assert.equal(count,0,"Una sesión de socio fallida no queda abierta");
+});
+test("login administrativo bloqueado si no se valida CPU en Workers Free",async()=>{
+ env.ADMIN_PASSWORD_RUNTIME_APPROVED="no";
+ assert.equal((await sign("admin@example.test")).status,503);
+ env.ADMIN_PASSWORD_RUNTIME_APPROVED="yes";
 });
 test("contraseña incorrecta de administrador rechazada",async()=>{
  const out=await sign("admin@example.test","ContraseñaFicticiaIncorrecta!");
