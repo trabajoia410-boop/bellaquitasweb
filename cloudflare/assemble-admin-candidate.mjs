@@ -16,7 +16,7 @@ for(const filename of ["bellaquitas-api-staging.js","mirror-snapshot.js"])await 
 const names=["admin-console.html","admin-console.css","admin-console-browser.js"];
 const props=["ADMIN_HTML","ADMIN_CSS","ADMIN_JS"];
 const parts=await Promise.all(names.map(name=>readFile(path.join(qa,name),"utf8")));
-const bundled="export const "+props.map((name,i)=>name+" = "+JSON.stringify(parts[i])+";").join("\nexport const ")+";\n";
+const bundled=props.map((name,i)=>"export const "+name+" = "+JSON.stringify(parts[i])+";").join("\n")+"\n";
 const current=await readFile(path.join(qa,"admin-console-ui.js"),"utf8");
 assert.strictEqual(bundled,current,"Cambios en el panel sin empaquetar: regenerar admin-console-ui.js antes de validar");
 for(const [dest,src] of [
