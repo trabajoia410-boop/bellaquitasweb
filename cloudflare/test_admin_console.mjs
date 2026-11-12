@@ -18,6 +18,10 @@ const {ADMIN_JS}=await import(pathToFileURL(path.join(root,"admin-console-ui.js"
 const BASE="https://bellaquitas-api-staging.bellaquitas-fest-410.workers.dev";
 const ADMIN="00000000-0000-4000-8000-000000000201";
 const MEMBER="00000000-0000-4000-8000-000000000202";
+const GOOGLE_ADMIN="00000000-0000-4000-8000-000000000203";
+const ACTIVATION_EMAIL="new-admin-verified@example.test";
+let freshGoogleCookie,activationToken;
+
 const PASSWORD="ContraseñaAdminFicticia#2026";
 const FAKES=[["admin@example.test",ADMIN,"admin"],["socio@example.test",MEMBER,"socio"]];
 const db=new DatabaseSync(":memory:");
@@ -25,6 +29,7 @@ db.exec("PRAGMA foreign_keys=ON");
 for(const file of ["0001-schema.sql","0002-auth-and-invariants.sql","0003-oauth-sessions.sql"]){
  db.exec(fs.readFileSync(path.join(here,"migrations",file),"utf8"));
 }
+db.exec(fs.readFileSync(path.join(here,"migrations","0004-admin-activation.sql"),"utf8"));
 db.exec("CREATE TABLE auth_email_credentials (email TEXT PRIMARY KEY COLLATE NOCASE,profile_id TEXT NOT NULL UNIQUE REFERENCES profiles(id),password_hash TEXT NOT NULL,password_salt TEXT NOT NULL,password_iterations INTEGER NOT NULL,verified_at INTEGER NOT NULL,created_at INTEGER NOT NULL DEFAULT (unixepoch()),updated_at INTEGER NOT NULL DEFAULT (unixepoch()));");
 db.exec("CREATE TABLE auth_email_rate_limits(key_hash TEXT PRIMARY KEY,attempts INTEGER NOT NULL DEFAULT 0,expires_at INTEGER NOT NULL);");
 const D1={
@@ -70,6 +75,11 @@ before(async()=>{
   db.prepare("INSERT INTO auth_email_credentials(email,profile_id,password_hash,password_salt,password_iterations,verified_at) VALUES (?,?,?,?,600000,unixepoch())")
     .run(mail,id,hash,salt);
  }
+ db.prepare("INSERT INTO profiles(id,name,role,member_code) VALUES (?,?,?,?)")
+  .run(GOOGLE_ADMIN,"Administrador Google ficticio","admin","MBR-TEST-GOOGLE");
+ db.prepare("INSERT INTO auth_identity_links(id,provider,provider_subject,profile_id) VALUES (?,?,?,?)")
+  .run(crypto.randomUUID(),"google","123456789123456789",GOOGLE_ADMIN);
+ freshGoogleCookie=(await createAuthSession(GOOGLE_ADMIN,env)).split(";")[0];
  publicCookie=(await createAuthSession(ADMIN,env)).split(";")[0];
 });
 after(()=>db.close());
@@ -231,6 +241,106 @@ test("archivos falsos, intentos externos y bloqueo de staging no pueden alterar 
  },body:new Uint8Array([137,80,78,71,1,2,3,4])});
  assert.equal((await worker.fetch(blocked,env)).status,423);
  assert.equal(mediaObjects.size,0);
+});
+test("activación admin falla cerrada sin permiso explícito o con staging bloqueado",async()=>{
+ const body={email:ACTIVATION_EMAIL};
+ env.STAGING_MUTATIONS="disabled";
+ assert.equal((await call("/administracion/api/activar/solicitar",{
+  method:"POST",cookie:freshGoogleCookie,body})).status,423);
+ env.STAGING_MUTATIONS="enabled";
+ assert.equal((await call("/administracion/api/activar/solicitar",{
+  method:"POST",cookie:freshGoogleCookie,body})).status,503);
+ env.STAGING_MUTATIONS="disabled";
+ assert.equal(db.prepare("SELECT COUNT(*) AS n FROM auth_admin_activation_tokens").get().n,0);
+});
+test("activación admin exige sesión reciente Google y no acepta cookies admin ni socio",async()=>{
+ env.STAGING_MUTATIONS="enabled";env.ADMIN_EMAIL_ACTIVATION_ENABLED="yes";
+ env.ADMIN_PASSWORD_RUNTIME_APPROVED="yes";env.RESEND_API_KEY="fake-example-api-key";
+ env.RESEND_FROM="notificaciones@example.test";
+ const body={email:ACTIVATION_EMAIL};
+ // La cookie privada admin NO sustituye a la sesión pública Google.
+ assert.equal((await call("/administracion/api/activar/solicitar",{
+  method:"POST",cookie:adminCookie,body})).status,403);
+ assert.equal((await call("/administracion/api/activar/solicitar",{
+  method:"POST",cookie:publicCookie,body})).status,403);
+ db.prepare("UPDATE auth_sessions SET created_at=unixepoch()-1000 WHERE profile_id=?").run(GOOGLE_ADMIN);
+ assert.equal((await call("/administracion/api/activar/solicitar",{
+  method:"POST",cookie:freshGoogleCookie,body})).status,403);
+ freshGoogleCookie=(await createAuthSession(GOOGLE_ADMIN,env)).split(";")[0];
+ assert.equal(db.prepare("SELECT COUNT(*) AS n FROM auth_admin_activation_tokens").get().n,0);
+});
+test("un Google-admin existente recibe un enlace de un solo uso sin nuevo perfil",async()=>{
+ const oldFetch=globalThis.fetch;
+ let mail=null;
+ globalThis.fetch=async(url,opts)=>{
+  assert.equal(String(url),"https://api.resend.com/emails");
+  mail=JSON.parse(opts.body);
+  return new Response('{"id":"mail-ficticio"}',{status:200});
+ };
+ try{
+  const r=await call("/administracion/api/activar/solicitar",{
+   method:"POST",cookie:freshGoogleCookie,body:{email:ACTIVATION_EMAIL}});
+  assert.equal(r.status,200,JSON.stringify(r.obj));
+ }finally{globalThis.fetch=oldFetch;}
+ assert.ok(mail);
+ assert.deepEqual(mail.to,[ACTIVATION_EMAIL]);
+ const match=mail.text.match(/\/administracion\/\?activar=([A-Za-z0-9_-]{43})/);
+ assert.ok(match,"Correo de verificación sin token");
+ activationToken=match[1];
+ const pending=db.prepare("SELECT profile_id,email,expires_at-unixepoch() AS remaining FROM auth_admin_activation_tokens").get();
+ assert.equal(pending.profile_id,GOOGLE_ADMIN);
+ assert.equal(pending.email,ACTIVATION_EMAIL);
+ assert.ok(pending.remaining>0&&pending.remaining<=900);
+ assert.equal(db.prepare("SELECT COUNT(*) AS n FROM profiles").get().n,3);
+ assert.equal(db.prepare("SELECT COUNT(*) AS n FROM auth_email_credentials").get().n,2);
+});
+test("activación: cooldown, correo ocupado y origen externo rechazados",async()=>{
+ assert.equal((await call("/administracion/api/activar/solicitar",{
+  method:"POST",cookie:freshGoogleCookie,body:{email:ACTIVATION_EMAIL}})).status,429);
+ assert.equal((await call("/administracion/api/activar/solicitar",{
+  method:"POST",cookie:freshGoogleCookie,body:{email:"admin@example.test"}})).status,409);
+ assert.equal((await call("/administracion/api/activar/confirmar",{
+  method:"POST",origin:"https://externo.invalid",body:{token:activationToken,password:PASSWORD}})).status,403);
+});
+test("activación admin rechaza claves débiles, token falso y conserva puntos",async()=>{
+ for(const body of [
+  {token:activationToken,password:"123"},
+  {token:"x".repeat(43),password:PASSWORD}
+ ]){
+  assert.equal((await call("/administracion/api/activar/confirmar",{
+   method:"POST",body})).status,400);
+ }
+ assert.equal(db.prepare("SELECT SUM(points) AS total FROM profiles").get().total,0);
+ assert.equal(db.prepare("SELECT COUNT(*) AS n FROM auth_email_credentials").get().n,2);
+});
+test("el administrador establece su contraseña y se vincula al MISMO ID Google",async()=>{
+ const r=await call("/administracion/api/activar/confirmar",{
+  method:"POST",body:{token:activationToken,password:PASSWORD}});
+ assert.equal(r.status,200,JSON.stringify(r.obj));
+ const linked=db.prepare("SELECT c.profile_id,c.verified_at,c.password_hash,l.provider "+
+  "FROM auth_email_credentials c JOIN auth_identity_links l "+
+  "ON l.profile_id=c.profile_id AND l.provider='email' WHERE c.email=?").get(ACTIVATION_EMAIL);
+ assert.equal(linked.profile_id,GOOGLE_ADMIN);
+ assert.equal(linked.provider,"email");
+ assert.match(linked.password_hash,/^pbkdf2-chain6-sha256-v1\$/);
+ assert.ok(linked.verified_at>0);
+ assert.equal(db.prepare("SELECT COUNT(*) AS n FROM profiles").get().n,3);
+ const login=await sign(ACTIVATION_EMAIL);
+ assert.equal(login.status,200,JSON.stringify(login.obj));
+ assert.equal(login.obj.profile.role,"admin");
+ // Nunca duplicar visitas/puntos al vincular otra forma de acceso.
+ assert.equal(db.prepare("SELECT COUNT(*) AS n FROM activity").get().n,0);
+ assert.equal(db.prepare("SELECT COALESCE(SUM(points),0) AS n FROM profiles").get().n,0);
+});
+test("el enlace se consume una sola vez; no cambia roles ni saldos",async()=>{
+ const again=await call("/administracion/api/activar/confirmar",{
+  method:"POST",body:{token:activationToken,password:PASSWORD}});
+ assert.equal(again.status,400);
+ assert.equal(db.prepare("SELECT COUNT(*) AS n FROM profiles WHERE role='admin'").get().n,2);
+ assert.equal(db.prepare("SELECT COUNT(*) AS n FROM auth_identity_links WHERE provider='email'").get().n,3);
+ env.STAGING_MUTATIONS="disabled";
+ env.ADMIN_EMAIL_ACTIVATION_ENABLED="no";
+ env.ADMIN_PASSWORD_RUNTIME_APPROVED="no";
 });
 test("CSRF bloquea modificaciones desde sitios ajenos",async()=>{
  const r=await call("/administracion/api/write",{method:"POST",cookie:adminCookie,
