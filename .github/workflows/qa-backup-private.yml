@@ -6,6 +6,7 @@ on:
       - auditoria/fase5-2026-11-11
     paths:
       - cloudflare/backup_privado_local.py
+      - cloudflare/test_backup_encryption_local.py
       - .github/workflows/qa-backup-private.yml
   workflow_dispatch:
 
@@ -22,6 +23,8 @@ jobs:
         run: python3 -m py_compile cloudflare/backup_privado_local.py
       - name: Restaurar SQL sintético en SQLite y detectar datos incompletos
         run: python3 cloudflare/backup_privado_local.py --self-test
+      - name: Verificar AES256 GPG y todos los hashes SHA256 en copia ficticia
+        run: python3 cloudflare/test_backup_encryption_local.py
       - name: Verificar que --run está bloqueado en GitHub Actions
         run: |
           if python3 cloudflare/backup_privado_local.py --run; then
