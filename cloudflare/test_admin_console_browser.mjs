@@ -19,6 +19,8 @@ const OUT="browser-admin-console-evidence";fs.mkdirSync(OUT,{recursive:true});
 const events=[{id:"00000000-0000-4000-8000-000000000301",name:"Fiesta ficticia",date_label:"2027-01-20",start_time:"21:00",location:"Sala inventada",description:"Solo QA",active:true,localized_content:{fr:{name:"Soirée fictive"}}}];
 const members=[{id:"00000000-0000-4000-8000-000000000302",name:"Socio inventado",member_code:"MBR-FAKE-QA",role:"socio",points:0,lifetime_points:0,visits:0}];
 const payloads=[];
+const FAKE_ACTIVATION_TOKEN="x".repeat(43);
+
 const albums=[],photos=[],photoBytes=new Map();
 let current={hero_text:"Bellaquitas Fest",announcement:"Vive el momento",hero_title_a:"Bellaquitas",events_title:"Eventos",faq_1_q:"¿Cómo funciona?",logo_url:"",translations:{fr:{hero_text:"Bellaquitas en français"}}};
 let draft=null,authenticated=false;
@@ -46,6 +48,15 @@ const server=createServer(async(req,res)=>{
    try{body=JSON.parse(Buffer.concat(rawBuffers).toString("utf8"));}catch{}
  }
  const suffix=pathname.slice("/administracion/api".length);
+ if(suffix==="/activar/solicitar"){
+  payloads.push({path:suffix});
+  return respond(res,{ok:true,message:"Mensaje ficticio enviado a administrador"});
+ }
+ if(suffix==="/activar/confirmar"){
+  const ok=body.token===FAKE_ACTIVATION_TOKEN&&typeof body.password==="string"&&body.password.length>=12;
+  payloads.push({path:suffix});
+  return respond(res,ok?{ok:true,message:"Contraseña activada en simulación"}:{error:"Enlace inválido"},ok?200:400);
+ }
  if(suffix==="/login"){
   authenticated=body.email==="admin@example.test"&&body.password==="ContraseñaAdminFicticia#2026";
   return respond(res,authenticated?{ok:true,profile:{role:"admin",name:"Admin de ensayo"}}:{error:"Credenciales incorrectas"},authenticated?200:401);
@@ -144,6 +155,12 @@ try{
  pass("La nueva pestaña muestra primero email y contraseña, no el panel");
  await page.screenshot({path:OUT+"/login-admin-desktop.png",animations:"disabled"});
 
+ await page.locator("#activate-help summary").click();
+ await page.locator("#activate-email").fill("admin-de-ensayo@example.test");
+ await page.locator("#activate-request-form button[type='submit']").click();
+ await page.waitForFunction(()=>document.querySelector("#activate-request-status")?.textContent?.includes("Mensaje ficticio enviado"));
+ pass("Solicitud de activación de correo inicia sin exponer contraseñas ni crear cuentas");
+
  await enter(page);
  assert.equal(await page.locator("#admin-nav button[data-tab]").count(),7);
  assert.equal(await page.locator("#section-title").textContent(),"Escritorio");
@@ -239,6 +256,25 @@ try{
   pass("Editar web abre pestaña con login y llega al editor, incluso en móvil");
   await mobile.screenshot({path:OUT+"/editor-mobile.png",animations:"disabled"});
  }finally{await separate.close();}
+ // El enlace se elimina de la URL al abrir la página; no queda en historial.
+ const tokenPage=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,serviceWorkers:"block"});
+ try{
+  const auth=await tokenPage.newPage();
+  auth.on("pageerror",e=>issues.push(e.message));
+  await auth.goto(BASE+"/administracion/?activar="+FAKE_ACTIVATION_TOKEN,{waitUntil:"domcontentloaded"});
+  await auth.locator("#activate-confirmation").waitFor({state:"visible"});
+  assert.equal(await auth.locator("#login-form").isVisible(),false);
+  assert.ok(!auth.url().includes(FAKE_ACTIVATION_TOKEN));
+  pass("Enlace de activación abre formulario propio y elimina token de URL");
+
+  await auth.locator("#activate-new-password").fill("Clave-Ficticia-Segura-2026");
+  await auth.locator("#activate-repeat-password").fill("Clave-Ficticia-Segura-2026");
+  await auth.locator("#activate-confirm-form button[type='submit']").click();
+  await auth.locator("#login-form").waitFor({state:"visible"});
+  assert.ok((await auth.locator("#login-feedback").innerText()).includes("Contraseña activada"));
+  pass("Confirmar enlace ficticio devuelve al acceso por correo y contraseña");
+  await auth.screenshot({path:OUT+"/activacion-admin-movil.png",animations:"disabled"});
+ }finally{await tokenPage.close();}
  assert.deepEqual(issues,[]);
  pass("No hay errores JavaScript en los recorridos de escritorio y móvil");
  console.log("RESULTADO ADMIN UI: "+tests.length+" controles superados.");
