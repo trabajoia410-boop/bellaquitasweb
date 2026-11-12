@@ -15,6 +15,7 @@ import {mirrorDataRoute} from "./mirror-data-routes.js";
 import {mirrorWriteRoute} from "./mirror-write-routes.js";
 import {protectedRoute} from "./protected-routes.js";
 import {ADMIN_HTML,ADMIN_CSS,ADMIN_JS} from "./admin-console-ui.js";
+import {adminActivationRoute} from "./admin-activation-routes.js";
 
 const PREFIX="/administracion";
 const COOKIE="__Host-bf_admin";
@@ -135,6 +136,8 @@ export async function adminConsoleRoute(request,env){
     return secureStatic(ADMIN_JS,"text/javascript; charset=utf-8");
   }
   if(!path.startsWith(PREFIX+"/api/"))return null;
+  const activation=await adminActivationRoute(request,env);
+  if(activation)return activation;
   if(path===PREFIX+"/api/login")return signIn(request,env);
   const authenticated=await identify(request,env);
   if(path===PREFIX+"/api/me"&&request.method==="GET"){
