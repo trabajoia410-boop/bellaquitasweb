@@ -1,0 +1,24 @@
+name: Recursos originales — viabilidad Static Assets sin R2
+on:
+  push:
+    branches:
+      - auditoria/fase5-2026-11-11
+    paths:
+      - cloudflare/audit_static_assets_free.mjs
+      - .github/workflows/qa-static-assets-free.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  immutable-assets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Recuperar manifiesto original con tamaños y hash Git
+        run: node cloudflare/staging-source-2026-11-11/extract-modules.mjs
+      - name: Comprobar 17 archivos originales y límite 25 MiB de Workers Free
+        run: node --experimental-default-type=module cloudflare/audit_static_assets_free.mjs
