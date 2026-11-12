@@ -6,9 +6,9 @@
 
 Se ejecutó una prueba **GET pública de solo lectura** con `Range: bytes=0-1023` a los cinco vídeos originales bajo `https://bellaquitas.fr/assets/`. Se compararon los primeros 1024 bytes de cada respuesta con los archivos exactos del repositorio GitHub.
 
-**Resultado: 5/5 APROBADO.** Todos devolvieron `206 Partial Content`, `Content-Range` correcto, MIME `video/mp4`, `Content-Length: 1024` y bytes idénticos a los originales. Ninguna prueba alteró vídeos, HTML, usuarios o DNS.
+**Resultado ampliado: 15/15 APROBADO.** Cada uno de los cinco vídeos se comprobó en **inicio, mitad y final** (1.024 bytes por posición). Los 15 intervalos devolvieron `206 Partial Content`, `Content-Range` correcto, MIME `video/mp4` y fragmentos idénticos a GitHub. Ninguna prueba alteró vídeos, HTML, usuarios o DNS.
 
-Evidencia: https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43257146762
+Evidencia: https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43258004146
 
 ## Por qué NO conviene mover los vídeos originales a Workers Static Assets sin más
 
@@ -62,8 +62,11 @@ Riesgo adicional: incluso manteniendo la ruta estática en GitHub Pages, pasar p
 
 ## Qué se ha hecho realmente y qué no
 
-- **HECHO:** auditoría de 17 archivos originales (5 vídeos), prueba 206 del dominio público (5/5), streaming Range experimental (12/12), documentación de ruta híbrida.
+- **HECHO:** auditoría de 17 archivos originales (5 vídeos), prueba 206 del dominio público en 15 rangos (15/15), streaming Range experimental (12/12), documentación de ruta híbrida.
 - **NO HECHO:** cambio de DNS, activación de zona Cloudflare, publicación de rutas en bellaquitas.fr, migración real de socios, contratación de servicios, sustitución del origen de vídeos, comprobación física iPhone/Samsung ni autorización de fase 6.
+
+
+**Condición de DNS comprobada:** la cuenta Cloudflare actual no tiene zona `bellaquitas.fr`, por lo que las rutas de mismo origen no se pueden configurar aún. Cualquier cambio de autoridad DNS exige autorización, copia completa de registros Hostinger, mantenimiento de Search Console y pruebas de reversión. Ni el estudio ni la prueba 206 autorizan ese cambio.
 
 ## Requisitos para autorizar fase 6
 
