@@ -160,3 +160,14 @@ Se implementó y probó la activación de contraseña a una identidad **Google a
 El algoritmo PBKDF2 actual tiene un coste aproximado de **94 ms CPU en Node**, contra el límite documentado de **10 ms CPU por solicitud en Workers Free**. No se ha medido el runtime real de Workers, así que no es correcto afirmar compatibilidad. **El candidato no debe activarse** hasta resolver ese riesgo sin cobrar cuotas. Para ello exige `ADMIN_PASSWORD_RUNTIME_APPROVED=yes`, bandera aún no configurada en Cloudflare remoto.
 
 Se mantienen todos los demás bloqueos: copia real cifrada y restauración de Postgres/Storage/D1/R2, conciliación, revisión de seguridad, reversión y pruebas de dispositivos físicos solo después de la publicación. Más información en `cloudflare/SEGURIDAD_PASSWORD_WORKERS_FREE_2026-11-12.md`.
+
+
+## Verificación de respaldo cifrado y compatibilidad con presupuesto cero — 12/11/2026
+
+Se reforzó `cloudflare/backup_privado_local.py` con **verificación SHA-256 de todos los ficheros** de un archivo GPG descifrado, no solo de su lista de nombres. Rechaza objetos faltantes, objetos adicionales, archivos alterados y enlaces simbólicos, para que ninguna copia parcial se marque como válida. Añadido `--verify /ruta/privada/archivo.tar.gz.gpg`: prueba una copia existente sin conectar con Supabase/Cloudflare ni modificar datos, y realiza la comprobación en una **carpeta privada junto al propio archivo**, no en `/tmp`.
+
+La nueva prueba `cloudflare/test_backup_encryption_local.py` ha verificado en GitHub Actions con archivos totalmente ficticios: **GPG AES256, descifrado íntegro, seis SHA-256 de recursos de ejemplo, contraseña errónea rechazada**, además de que el comando `--run` está bloqueado en CI. [Resultado](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43197482026). **NO se han exportado datos reales** ni se ha realizado una restauración Postgres aislada.
+
+Se investigaron las opciones para mantener correo+contraseña con **cero cuotas**. Cloudflare Workers Free sigue limitado a 10 ms de CPU; el hash propio de 600k iteraciones no está validado. **Clerk Hobby es candidato gratuito sin tarjeta y con email/password+Google**, sujeto a límites y a aceptación expresa del propietario antes de integrar un servicio externo. La vinculación futura a D1 **debe usar una identidad verificada y enlace explícito**, nunca email coincidente. Comparativa: `cloudflare/ALTERNATIVAS_LOGIN_GRATIS_FASE5.md`.
+
+Estas pruebas y estudios **no autorizan** la fase 6: siguen pendientes respaldo real restaurado, método de autenticación viable y aprobado, conciliación y corte reversible.
