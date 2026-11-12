@@ -221,3 +221,10 @@ El ensayo detectó incompatibilidad entre herramientas PG18 y un servidor PG16. 
 [Informe de recuperación y límites del ensayo](./ENSAYO_RESTAURACION_POSTGRES_2026-11-12.md).
 
 **Advertencia crítica:** restaurar un esquema ficticio no demuestra que el backup Supabase real sea restaurable: roles, permisos, extensiones, cifrado de Auth y archivos binarios necesitan verificación aislada. **No se ha creado ni restaurado una copia privada real de Bellaquitas Fest.** Siguen vigentes los bloqueos de la fase 6 y el presupuesto cero.
+
+
+### Ensayo adicional con PostgreSQL 17 (12/11/2026)
+
+La prueba de restauración ya se ejecuta **tanto en PostgreSQL 16 como en 17**, con herramientas `pg_dump` y `pg_restore` coincidentes en versión. **Ambas restauraciones han aprobado** la comparación de 18 tablas y la recuperación de sesiones, identidades, eventos, canjes y saldos exclusivamente ficticios. [Ejecución conjunta](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43249197005).
+
+Aunque PostgreSQL 17 corresponde a la versión del Supabase de Bellaquitas, **aún NO hay una restauración real de la base Supabase**. El control `backup.postgres_restore_tested` debe seguir sin marcarse como completado para la producción.
