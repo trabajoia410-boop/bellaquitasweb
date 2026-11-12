@@ -80,3 +80,21 @@ No solicitar la contraseña real del administrador por chat, GitHub, capturas ni
 - Pruebas en iPhone Safari y Samsung **inmediatamente después de publicar**, según la decisión del propietario.
 
 **En ningún momento se deben alterar las cuentas, los puntos y las visitas reales para ensayos.**
+
+
+## Actualización 12/11/2026 — Activación de las cuentas existentes
+
+Se creó un procedimiento **candidato, aún inactivo** para permitir al administrador Google existente activar su contraseña sin crear usuarios duplicados:
+1. Iniciar sesión de nuevo en Google como administrador.
+2. En menos de 5 minutos pedir un enlace a un email que controla.
+3. Recibir enlace de un solo uso, válido 15 minutos, con cuota máxima de 3 solicitudes por hora.
+4. Elegir contraseña de 12 caracteres o más; el servidor vincula la credencial al **mismo ID de perfil Google** después de comprobar el token y rol.
+5. Volver al panel de login independiente.
+
+La URL elimina el token del historial al abrirla, y las cookies de socios no autorizan la operación. La primera petición exige Google reciente, el correo se comprueba con Resend, y el enlace no permite cambiar ningún rol.
+
+**Pruebas realizadas: 44/44 integraciones y 18/18 pruebas de Chrome = 62/62** [ejecución](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43195543967).
+
+**Bloqueo de seguridad/coste:** el hash PBKDF2 actual cuesta ~94 ms de CPU en laboratorio Node, frente a **10 ms de CPU** del plan Workers Free. El resultado no mide el Worker real pero no permite considerarlo apto para producción. Se exige `ADMIN_PASSWORD_RUNTIME_APPROVED=yes` para iniciar sesión admin, además de `ADMIN_EMAIL_ACTIVATION_ENABLED=yes` y `STAGING_MUTATIONS=enabled` para activar credenciales. **Ninguna de estas habilitaciones se ha aplicado al servicio desplegado.** No debilitar contraseñas ni cambiar de plan sin autorización.
+
+Más detalles: `cloudflare/SEGURIDAD_PASSWORD_WORKERS_FREE_2026-11-12.md`.
