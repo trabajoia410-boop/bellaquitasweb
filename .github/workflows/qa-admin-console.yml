@@ -11,6 +11,9 @@ on:
       - cloudflare/qa-candidates/admin-console.css
       - cloudflare/qa-candidates/bellaquitas-api-staging-admin.js
       - cloudflare/test_admin_console.mjs
+      - cloudflare/test_staging_google.mjs
+      - cloudflare/migrations/0005-auth-session-method.sql
+      - cloudflare/qa-candidates/auth-routes-admin-proof.js
       - app.js
       - .github/workflows/qa-admin-console.yml
   workflow_dispatch:
@@ -30,11 +33,14 @@ jobs:
       - name: Integrar SOLO en el runner los módulos candidatos del nuevo panel
         run: |
           cp cloudflare/qa-candidates/admin-console-routes.js cloudflare/staging-source-2026-11-11/recovered-src/admin-console-routes.js
+          cp cloudflare/qa-candidates/auth-routes-admin-proof.js cloudflare/staging-source-2026-11-11/recovered-src/auth-routes.js
           cp cloudflare/qa-candidates/admin-activation-routes.js cloudflare/staging-source-2026-11-11/recovered-src/admin-activation-routes.js
           cp cloudflare/qa-candidates/admin-console-ui.js cloudflare/staging-source-2026-11-11/recovered-src/admin-console-ui.js
           cp cloudflare/qa-candidates/bellaquitas-api-staging-admin.js cloudflare/staging-source-2026-11-11/recovered-src/bellaquitas-api-staging.js
       - name: Comprobar sintaxis de navegación pública sin cambiar el diseño
         run: node --check app.js
+      - name: Verificar marca Google real en callback OAuth con JWT firmado ficticio
+        run: REQUIRE_ADMIN_GOOGLE_MARK=1 node --experimental-default-type=module --test cloudflare/test_staging_google.mjs
       - name: Verificar sintaxis y control de acceso admin sobre SQLite ficticia
         run: |
           node --check cloudflare/staging-source-2026-11-11/recovered-src/admin-console-routes.js
