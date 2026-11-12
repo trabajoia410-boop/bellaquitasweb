@@ -209,8 +209,50 @@ test("galerías Moments: admin crea álbum y socio no puede subir fotografías",
  const response=await call("/administracion/api/community",{cookie:"__Host-bf_admin="+socioToken});
  assert.equal(response.status,401);
 });
+test("R2 cerrado: editar eventos sigue permitido, pero no subir ni borrar archivos",async()=>{
+ env.STAGING_MUTATIONS="enabled";
+ env.R2_MUTATIONS_APPROVED="no";
+ const event={kind:"catalog",table:"events",action:"insert",item:{
+  name:"Otro evento ficticio",date_label:"2027-08-02",location:"Club inventado",
+  description:"Prueba segura sin R2",start_time:"22:00",active:true
+ }};
+ const writing=await call("/administracion/api/write",{cookie:adminCookie,method:"POST",body:event});
+ assert.equal(writing.status,200,JSON.stringify(writing.obj));
+ const photo=new Request(BASE+"/administracion/api/moments/"+globalThis.__fakeAlbumId+"/photo",{
+  method:"POST",headers:{Origin:BASE,"Sec-Fetch-Site":"same-origin",Cookie:adminCookie,
+   "Content-Type":"image/png"},body:new Uint8Array([137,80,78,71,13,10,26,10])
+ });
+ assert.equal((await worker.fetch(photo,env)).status,423);
+ const mediaPut=new Request(BASE+"/administracion/api/upload?category=events",{
+  method:"PUT",headers:{Origin:BASE,"Sec-Fetch-Site":"same-origin",Cookie:adminCookie,
+   "Content-Type":"image/png"},body:new Uint8Array([137,80,78,71,13,10,26,10])
+ });
+ assert.equal((await worker.fetch(mediaPut,env)).status,423);
+ const directPut=new Request(BASE+"/v1/mirror/admin/media/upload?category=events",{
+  method:"PUT",headers:{Origin:BASE,"Sec-Fetch-Site":"same-origin",Cookie:publicCookie,
+   "Content-Type":"image/png"},body:new Uint8Array([137,80,78,71,13,10,26,10])
+ });
+ assert.equal((await worker.fetch(directPut,env)).status,423);
+ const r2Delete=await call("/administracion/api/write",{cookie:adminCookie,method:"POST",
+  body:{kind:"media",action:"remove",keys:[]}});
+ assert.equal(r2Delete.status,423);
+ const photoDelete=await call("/administracion/api/write",{cookie:adminCookie,method:"POST",
+  body:{kind:"moments_photos",action:"delete",id:crypto.randomUUID()}});
+ assert.equal(photoDelete.status,423);
+ const albumDelete=await call("/administracion/api/write",{cookie:adminCookie,method:"POST",
+  body:{kind:"moments_albums",action:"delete",id:globalThis.__fakeAlbumId}});
+ assert.equal(albumDelete.status,423);
+ assert.equal(mediaObjects.size,0,"No se escribió un objeto R2");
+ assert.equal(db.prepare("SELECT COUNT(*) AS n FROM moments_albums WHERE id=?").get(globalThis.__fakeAlbumId).n,1);
+ env.R2_MUTATIONS_APPROVED=undefined; // Ausencia de bandera también cierra.
+ const absent=await call("/administracion/api/write",{cookie:adminCookie,method:"POST",
+  body:{kind:"media",action:"remove",keys:[]}});
+ assert.equal(absent.status,423);
+ env.STAGING_MUTATIONS="disabled";
+});
 test("foto real PNG ficticia: upload, imagen privada y borrado R2 por la consola",async()=>{
  env.STAGING_MUTATIONS="enabled";
+ env.R2_MUTATIONS_APPROVED="yes"; // Solo datos y archivos ficticios en SQLite/R2 de memoria.
  const png=new Uint8Array([137,80,78,71,13,10,26,10,0,0,0,1,2,3,4,5]);
  const uploadRoute="/administracion/api/moments/"+globalThis.__fakeAlbumId+"/photo";
  const request=new Request(BASE+uploadRoute,{method:"POST",headers:{
@@ -234,6 +276,13 @@ test("foto real PNG ficticia: upload, imagen privada y borrado R2 por la consola
  assert.equal(image.headers.get("content-type"),"image/png");
  assert.deepEqual(new Uint8Array(await image.arrayBuffer()),png);
  // El panel elimina también el objeto R2 de prueba.
+ env.R2_MUTATIONS_APPROVED="no";
+ const denied=await call("/administracion/api/write",{cookie:adminCookie,method:"POST",
+  body:{kind:"moments_photos",action:"delete",id:payload.id}});
+ assert.equal(denied.status,423);
+ assert.equal(mediaObjects.has(saved.storage_path),true);
+ assert.equal(db.prepare("SELECT COUNT(*) AS n FROM moments_photos WHERE id=?").get(payload.id).n,1);
+ env.R2_MUTATIONS_APPROVED="yes";
  const deleted=await call("/administracion/api/write",{cookie:adminCookie,method:"POST",
   body:{kind:"moments_photos",action:"delete",id:payload.id}});
  assert.equal(deleted.status,200);
