@@ -30,7 +30,7 @@ PROJECT = "vlsipvngvxcgnwrhpjgg"
 ACCOUNT = "7698bb24db010350ba4b02c36c0fbeb5"
 BUCKET = "bellaquitas-media-staging"
 DATABASE = "bellaquitas-staging"
-TOOLS = ("pg_dump", "pg_restore", "wrangler", "aws", "gpg")
+TOOLS = ("pg_dump", "pg_restore", "psql", "wrangler", "aws", "gpg")
 # Tablas críticas confirmadas en el esquema real de Supabase, 12/11/2026.
 # Los datos binarios de Storage se exportan aparte; estas son sus referencias.
 REQUIRED_PG = {
@@ -335,6 +335,31 @@ def verify_archive_contents(archive: Path) -> dict:
                 "objects_supabase":len(manifest["supabase-storage"]),
                 "files_checked":len(checks)}
 
+def verify_postgres_versions(env: dict) -> None:
+    """Rechazar herramientas de otro major antes de generar backup privado."""
+    tools={}
+    for name in ("pg_dump","pg_restore","psql"):
+        result=subprocess.run([name,"--version"],capture_output=True,text=True,check=True)
+        match=re.search(r"PostgreSQL\\)?\\s+(\\d+)\\.",result.stdout)
+        if not match:
+            raise RuntimeError("No se puede verificar la versión de "+name)
+        tools[name]=int(match.group(1))
+    result=subprocess.run(["psql","-X","--no-psqlrc","--tuples-only","--no-align",
+                           "--set=ON_ERROR_STOP=1","--command","SHOW server_version_num;"],
+                          env=env,capture_output=True,text=True,check=True)
+    version=result.stdout.strip()
+    if not version.isdigit():
+        raise RuntimeError("No se puede leer la versión del PostgreSQL de origen")
+    server_major=int(version)//10000
+    bad=[name for name,major in tools.items() if major!=server_major]
+    if bad:
+        raise RuntimeError(
+            "Incompatibilidad PostgreSQL: el servidor usa versión "+
+            str(server_major)+"; instalar cliente de esa misma versión "+
+            "(pg_dump, pg_restore y psql). Herramientas distintas: "+", ".join(bad)
+        )
+    print("OK: pg_dump/pg_restore/psql coinciden con PostgreSQL de origen (major "+str(server_major)+").")
+
 def make_archive(work: Path, out: Path) -> None:
     with tarfile.open(work / "payload.tar.gz","w:gz") as tar:
         for name in FILES:
@@ -375,6 +400,7 @@ def perform() -> None:
     work=Path(tempfile.mkdtemp(dir=location,prefix=".provisional-"))
     try:
         pg_env=dict(os.environ,PGSSLMODE="require")
+        verify_postgres_versions(pg_env)
         print("[1/5] Exportando base Postgres completa (incluyendo Auth)...")
         run(["pg_dump","--format=custom","--no-owner","--no-privileges",
              "--file",str(work/"supabase-full.dump")],env=pg_env)
