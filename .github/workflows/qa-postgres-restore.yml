@@ -14,9 +14,13 @@ jobs:
   offline-postgres-restore:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        pg_major: [16, 17]
     services:
       postgres:
-        image: postgres:16
+        image: postgres:${{ matrix.pg_major }}
         env:
           POSTGRES_USER: bellaquitas_fake
           POSTGRES_PASSWORD: only_fictitious_test_password
@@ -30,6 +34,7 @@ jobs:
           --health-retries 10
     env:
       BELLAQUITAS_FAKE_RESTORE: "yes"
+      POSTGRES_MAJOR_TEST: ${{ matrix.pg_major }}
       PGHOST: 127.0.0.1
       PGPORT: "5432"
       PGUSER: bellaquitas_fake
@@ -37,7 +42,7 @@ jobs:
       PGPASSWORD: only_fictitious_test_password
     steps:
       - uses: actions/checkout@v4
-      - name: Usar cliente Postgres 16 oficial con Docker, sin paquetes externos
+      - name: Usar cliente Postgres oficial del mismo major con Docker
         run: |
           mkdir -p "$RUNNER_TEMP/bellaquitas-pg16-bin"
           for command in psql pg_dump pg_restore; do
@@ -47,7 +52,7 @@ jobs:
           exec docker run --rm -i --network host --user "$(id -u):$(id -g)" \
             --volume /tmp:/tmp \
             --env PGHOST --env PGPORT --env PGUSER --env PGDATABASE --env PGPASSWORD \
-            postgres:16 "$(basename "$0")" "$@"
+            postgres:"$POSTGRES_MAJOR_TEST" "$(basename "$0")" "$@"
           SH
             chmod +x "$RUNNER_TEMP/bellaquitas-pg16-bin/$command"
           done
