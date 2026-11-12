@@ -490,3 +490,16 @@ El script `cloudflare/assemble-admin-candidate.mjs` genera un Worker de pruebas 
 **Otros bloqueos:** respaldo real privado cifrado y restaurado, CPU del hash en Workers Free, auditoría de autenticación, conciliación de datos y corte reversible. Las pruebas físicas iPhone/Samsung van después de publicar.
 
 Documento de aceptación y requisitos: `cloudflare/PANEL_ADMIN_SEPARADO_FASE5.md`.
+
+
+## 19. Activación de contraseñas admin y presupuesto cero — 12/11/2026
+
+**62/62 casos del nuevo panel aprobados:** 44 de Worker/D1 y 18 en Chrome con cuentas ficticias. Se comprobó que una cuenta Google ya autorizada como admin puede vincular una contraseña después de reautenticarse, demostrar acceso al correo, consumir un token de un solo uso y continuar con su mismo perfil/saldo. Se bloquearon suplantación con cookies de socio, token falsos, CSRF, emails ocupados, doble activación, intentos excesivos y accesos sin permisos.
+
+Evidencia: https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43195543967
+
+El coste de PBKDF2 600k en Node WebCrypto fue ~94 ms CPU, frente a 10 ms permitidos para Workers Free. **No prueba el rendimiento exacto en Cloudflare**, pero impide dar por validado el inicio de sesión con contraseña en el plan gratuito. El candidato ahora exige flag **`ADMIN_PASSWORD_RUNTIME_APPROVED=yes`**, NO activado en el servicio remoto.
+
+Detalle: `cloudflare/SEGURIDAD_PASSWORD_WORKERS_FREE_2026-11-12.md`.
+
+No hay correos reales enviados, contraseñas reales usadas, cambios en admin existentes, ni pagos contratados. La fase 5 sigue abierta hasta resolver autenticación CPU, respaldos privados restaurables y corte seguro. Dispositivos físicos después de publicación.
