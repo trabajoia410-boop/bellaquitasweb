@@ -203,12 +203,30 @@ def synthetic_self_test() -> None:
         items=[{"Key":"logo"+str(i)+".png","Size":3} for i in range(3)]
         for x in items:
             (storage/x["Key"]).write_bytes(b"ABC")
-        result=verify_backup(listing,schema,{"Contents":items},storage)
+        result=verify_backup(listing,schema,{"Contents":items,"IsTruncated":False},storage)
         assert result=={"d1_profiles":6,"d1_points":60,"d1_visits":6,
                         "r2_objects":0,"supabase_storage_objects":3}
         try:
-            verify_supabase_storage({"Contents":items[:-1]},storage)
+            verify_supabase_storage({"Contents":items[:-1],"IsTruncated":False},storage)
             raise AssertionError("No se detectaron archivos Supabase faltantes")
+        except RuntimeError:
+            pass
+        # No aceptar como backup total tres entradas con solo dos claves
+        # únicas; ni un listado que AWS indica como incompleto.
+        for bad_inventory in (
+            {"Contents":[items[0],items[1],items[0]],"IsTruncated":False},
+            {"Contents":items,"IsTruncated":True},
+            {"Contents":items},
+        ):
+            try:
+                verify_supabase_storage(bad_inventory,storage)
+                raise AssertionError("Se aceptó Storage truncado o duplicado")
+            except RuntimeError:
+                pass
+        try:
+            verify_supabase_storage({"Contents":items+[
+                {"Key":"../escape.png","Size":3}],"IsTruncated":False},storage)
+            raise AssertionError("Se aceptó ruta fuera de carpeta privada")
         except RuntimeError:
             pass
         try:
