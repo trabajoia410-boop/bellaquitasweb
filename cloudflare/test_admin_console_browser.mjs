@@ -19,11 +19,10 @@ const OUT="browser-admin-console-evidence";fs.mkdirSync(OUT,{recursive:true});
 const events=[{id:"00000000-0000-4000-8000-000000000301",name:"Fiesta ficticia",date_label:"2027-01-20",start_time:"21:00",location:"Sala inventada",description:"Solo QA",active:true,localized_content:{fr:{name:"Soirée fictive"}}}];
 const members=[{id:"00000000-0000-4000-8000-000000000302",name:"Socio inventado",member_code:"MBR-FAKE-QA",role:"socio",points:0,lifetime_points:0,visits:0}];
 const payloads=[];
-const FAKE_ACTIVATION_TOKEN="x".repeat(43);
 
 const albums=[],photos=[],photoBytes=new Map();
 let current={hero_text:"Bellaquitas Fest",announcement:"Vive el momento",hero_title_a:"Bellaquitas",events_title:"Eventos",faq_1_q:"¿Cómo funciona?",logo_url:"",translations:{fr:{hero_text:"Bellaquitas en français"}}};
-let draft=null,authenticated=false;
+let draft=null;
 function respond(res,data,status=200,extra={}){
  res.writeHead(status,{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store",...extra});
  res.end(JSON.stringify(data));
@@ -48,21 +47,20 @@ const server=createServer(async(req,res)=>{
    try{body=JSON.parse(Buffer.concat(rawBuffers).toString("utf8"));}catch{}
  }
  const suffix=pathname.slice("/administracion/api".length);
- if(suffix==="/activar/solicitar"){
-  payloads.push({path:suffix});
-  return respond(res,{ok:true,message:"Mensaje ficticio enviado a administrador"});
+ // Prueba offline: la cookie de sesión PÚBLICA ya fue verificada fuera
+ // del panel; en el Worker real la firma se comprueba contra D1.
+ if(suffix==="/sso"){
+  const siteLoggedIn=(req.headers.cookie||"").includes("qa_public_session=admin");
+  return respond(res,siteLoggedIn?{ok:true,profile:{role:"admin",name:"Admin de ensayo"}}:
+   {error:"No tienes una sesión administradora en la web"},siteLoggedIn?200:403,
+   siteLoggedIn?{"Set-Cookie":"qa_admin=yes; HttpOnly; SameSite=Strict; Path=/"}:{});
  }
- if(suffix==="/activar/confirmar"){
-  const ok=body.token===FAKE_ACTIVATION_TOKEN&&typeof body.password==="string"&&body.password.length>=12;
-  payloads.push({path:suffix});
-  return respond(res,ok?{ok:true,message:"Contraseña activada en simulación"}:{error:"Enlace inválido"},ok?200:400);
- }
- if(suffix==="/login"){
-  authenticated=body.email==="admin@example.test"&&body.password==="ContraseñaAdminFicticia#2026";
-  return respond(res,authenticated?{ok:true,profile:{role:"admin",name:"Admin de ensayo"}}:{error:"Credenciales incorrectas"},authenticated?200:401);
- }
- if(suffix==="/logout"){authenticated=false;return respond(res,{ok:true});}
- if(!authenticated){respond(res,{error:"Sesión ficticia requerida"},401);return;}
+ if(suffix==="/login")return respond(res,{error:"No se solicita otra contraseña"},410);
+ if(suffix==="/logout")return respond(res,{ok:true},200,
+  {"Set-Cookie":"qa_admin=; Max-Age=0; HttpOnly; SameSite=Strict; Path=/"});
+ const authenticated=(req.headers.cookie||"").includes("qa_admin=yes")&&
+  (req.headers.cookie||"").includes("qa_public_session=admin");
+ if(!authenticated){respond(res,{error:"Sesión administrativa no autorizada"},401);return;}
  if(suffix==="/me")return respond(res,{authenticated:true,profile:{role:"admin",name:"Admin de ensayo"}});
  if(suffix==="/events")return respond(res,{items:events});
  if(suffix==="/rewards")return respond(res,{items:[]});
@@ -137,31 +135,24 @@ const issues=[],tests=[];
 page.on("pageerror",e=>issues.push(e.message));
 page.on("console",msg=>{if(msg.type()==="error")issues.push(msg.text());});
 function pass(text){tests.push(text);console.log("OK: "+text);}
-async function enter(p){
- await p.locator("#admin-email").fill("admin@example.test");
- await p.locator("#admin-password").fill("ContraseñaAdminFicticia#2026");
- await p.locator("#login-submit").click();
- await p.locator("#portal").waitFor({state:"visible",timeout:15000});
-}
 try{
  assert.ok(PUBLIC_JS.includes('href="/administracion/" target="_blank" rel="noopener noreferrer"'));
  assert.ok(PUBLIC_JS.includes('href="/administracion/?seccion=web" target="_blank" rel="noopener noreferrer"'));
  pass("Los botones públicos apuntan a administración en otra pestaña con noopener");
 
+ // Sin una sesión pública autorizada el formulario no aparece y no entra.
  await page.goto(BASE+"/administracion/",{waitUntil:"domcontentloaded"});
- await page.locator("#login-submit").waitFor();
+ await page.locator("#retry-sso").waitFor();
  assert.equal(await page.locator("#access").isVisible(),true);
  assert.equal(await page.locator("#portal").isVisible(),false);
- pass("La nueva pestaña muestra primero email y contraseña, no el panel");
- await page.screenshot({path:OUT+"/login-admin-desktop.png",animations:"disabled"});
-
- await page.locator("#activate-help summary").click();
- await page.locator("#activate-email").fill("admin-de-ensayo@example.test");
- await page.locator("#activate-request-form button[type='submit']").click();
- await page.waitForFunction(()=>document.querySelector("#activate-request-status")?.textContent?.includes("Mensaje ficticio enviado"));
- pass("Solicitud de activación de correo inicia sin exponer contraseñas ni crear cuentas");
-
- await enter(page);
+ assert.equal(await page.locator("input[type='email'], input[type='password']").count(),0);
+ pass("Sin sesión pública no hay panel ni formulario de email/contraseña");
+ await page.screenshot({path:OUT+"/acceso-admin-sin-sesion.png",animations:"disabled"});
+ // Simular login ya efectuado en la web principal, sin contraseña nueva.
+ await context.addCookies([{name:"qa_public_session",value:"admin",url:BASE}]);
+ await page.reload({waitUntil:"domcontentloaded"});
+ await page.locator("#portal").waitFor({state:"visible",timeout:15000});
+ pass("El administrador entra automáticamente al panel desde su sesión pública");
  assert.equal(await page.locator("#admin-nav button[data-tab]").count(),7);
  assert.equal(await page.locator("#section-title").textContent(),"Escritorio");
  pass("Login ficticio abre escritorio privado con 7 secciones");
@@ -239,42 +230,34 @@ try{
  await page.screenshot({path:OUT+"/panel-comunidad.png",animations:"disabled"});
  await page.locator("#logout-top").click();
  await page.locator("#access").waitFor({state:"visible"});
- assert.equal(await page.locator("#admin-password").inputValue(),"");
  assert.equal(await page.locator("#portal").isVisible(),false);
- pass("Cerrar sesión vuelve a formulario sin guardar contraseña");
-
+ assert.equal(await page.locator("input[type='password'],input[type='email']").count(),0);
+ pass("Salir del panel no pide credenciales ni cierra la sesión principal");
  // Un enlace nuevo abierto en otra pestaña lleva directamente al editor tras login.
  const separate=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,serviceWorkers:"block"});
  try{
+  await separate.addCookies([{name:"qa_public_session",value:"admin",url:BASE}]);
   const mobile=await separate.newPage();
   mobile.on("pageerror",e=>issues.push(e.message));
   await mobile.goto(BASE+"/administracion/?seccion=web",{waitUntil:"domcontentloaded"});
-  assert.equal(await mobile.locator("#access").isVisible(),true);
-  await enter(mobile);
   await mobile.locator("[data-site-key='hero_text']").waitFor();
   assert.equal(await mobile.locator("#section-title").textContent(),"Editor de la web");
-  pass("Editar web abre pestaña con login y llega al editor, incluso en móvil");
+  pass("Editar web abre una nueva pestaña y llega directamente al editor en móvil");
   await mobile.screenshot({path:OUT+"/editor-mobile.png",animations:"disabled"});
  }finally{await separate.close();}
- // El enlace se elimina de la URL al abrir la página; no queda en historial.
- const tokenPage=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,serviceWorkers:"block"});
+ // Un socio, aunque tenga sesión propia, NO ve el panel de administrador.
+ const notAdmin=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,serviceWorkers:"block"});
  try{
-  const auth=await tokenPage.newPage();
-  auth.on("pageerror",e=>issues.push(e.message));
-  await auth.goto(BASE+"/administracion/?activar="+FAKE_ACTIVATION_TOKEN,{waitUntil:"domcontentloaded"});
-  await auth.locator("#activate-confirmation").waitFor({state:"visible"});
-  assert.equal(await auth.locator("#login-form").isVisible(),false);
-  assert.ok(!auth.url().includes(FAKE_ACTIVATION_TOKEN));
-  pass("Enlace de activación abre formulario propio y elimina token de URL");
-
-  await auth.locator("#activate-new-password").fill("Clave-Ficticia-Segura-2026");
-  await auth.locator("#activate-repeat-password").fill("Clave-Ficticia-Segura-2026");
-  await auth.locator("#activate-confirm-form button[type='submit']").click();
-  await auth.locator("#login-form").waitFor({state:"visible"});
-  assert.ok((await auth.locator("#login-feedback").innerText()).includes("Contraseña activada"));
-  pass("Confirmar enlace ficticio devuelve al acceso por correo y contraseña");
-  await auth.screenshot({path:OUT+"/activacion-admin-movil.png",animations:"disabled"});
- }finally{await tokenPage.close();}
+  await notAdmin.addCookies([{name:"qa_public_session",value:"socio",url:BASE}]);
+  const memberPage=await notAdmin.newPage();
+  memberPage.on("pageerror",e=>issues.push(e.message));
+  await memberPage.goto(BASE+"/administracion/",{waitUntil:"domcontentloaded"});
+  await memberPage.locator("#retry-sso").waitFor();
+  await memberPage.waitForFunction(()=>document.querySelector("#login-feedback")?.textContent?.length>0);
+  assert.equal(await memberPage.locator("#access").isVisible(),true);
+  assert.equal(await memberPage.locator("#portal").isVisible(),false);
+  pass("Un socio no recibe el panel; no existe contraseña de administrador");
+ }finally{await notAdmin.close();}
  assert.deepEqual(issues,[]);
  pass("No hay errores JavaScript en los recorridos de escritorio y móvil");
  console.log("RESULTADO ADMIN UI: "+tests.length+" controles superados.");
