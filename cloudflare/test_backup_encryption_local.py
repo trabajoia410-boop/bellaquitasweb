@@ -25,6 +25,11 @@ with tempfile.TemporaryDirectory(prefix="bellaquitas-qa-gpg-") as temp:
         "cloudflare-d1-staging.sql":hashes["cloudflare-d1-staging.sql"],
         "supabase-storage-inventory.json":hashes["supabase-storage-inventory.json"],
         "r2_mode":"removed",
+        "postgres_expected":{
+            "profiles":2,"points":23,"lifetime_points":40,"visits":1,
+            "admins":1,"auth_users":2,"auth_identities":2,
+            "auth_sessions":1,"storage_objects":1
+        },
         "supabase-storage":{"logo.png":hashes["supabase-storage/logo.png"]},
     }
     files["checksum-manifest.json"]=json.dumps(manifest).encode()
