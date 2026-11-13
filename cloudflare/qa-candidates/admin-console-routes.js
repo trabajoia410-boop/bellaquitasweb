@@ -64,6 +64,9 @@ function translated(request,path,token){
   target.search=path==="/v1/mirror/admin/media/upload"?target.search:"";
   const headers=new Headers(request.headers);
   headers.delete("Cookie");
+  // El JWT privado de Supabase SOLO se utiliza para verificar identidad
+  // en el puente y no se pasa a handlers D1 heredados ni a sus logs.
+  headers.delete("Authorization");
   if(token)headers.set("Cookie",PUBLIC_COOKIE+"="+token);
   return new Request(target.toString(),{method:request.method,headers,
     ...(request.method==="GET"||request.method==="HEAD"?{}:{body:request.body,duplex:"half"})});
@@ -72,6 +75,9 @@ const authRequest=(request,path,token)=>{
   const url=new URL(request.url);url.pathname=path;url.search="";
   const headers=new Headers(request.headers);
   headers.delete("Cookie");
+  // El JWT privado de Supabase SOLO se utiliza para verificar identidad
+  // en el puente y no se pasa a handlers D1 heredados ni a sus logs.
+  headers.delete("Authorization");
   if(token)headers.set("Cookie",PUBLIC_COOKIE+"="+token);
   return new Request(url.toString(),{headers,method:"GET"});
 };
