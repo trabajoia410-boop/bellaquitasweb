@@ -2,9 +2,10 @@
  * Bellaquitas Fest — administración independiente, candidato sin desplegar.
  *
  * /administracion/ abre una aplicación distinta de la web pública.
- * Login SOLO correo + contraseña verificados y rol admin; se intercambia una
- * sesión normal por una cookie SEPARADA __Host-bf_admin (1 hora).
- * Nunca acepta la cookie de socio ni el login público como autorización.
+ * SSO candidato: un admin YA autenticado en la web accede SIN introducir
+ * otra vez su correo ni contraseña. Sesión separada __Host-bf_admin (1 hora)
+ * ligada a la sesión pública Google/email verificada y al rol admin actual.
+ * La cookie pública sola nunca abre el panel, ni la cookie admin sola.
  * Escrituras reutilizan todas las reglas y STAGING_MUTATIONS del Worker real.
  *
  * Esta fuente es propuesta de fase 5, no configuración activa de producción.
@@ -41,6 +42,16 @@ const tokenFrom=(request,name)=>{
   const value=found?found.slice(name.length+1):"";
   return /^[A-Za-z0-9_-]{43}$/.test(value)?value:"";
 };
+const shaToken=async raw=>{
+  const digest=new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(raw)));
+  return btoa(String.fromCharCode(...digest)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+};
+const randomToken=()=>{
+  const b=new Uint8Array(32);
+  crypto.getRandomValues(b);
+  return btoa(String.fromCharCode(...b)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+};
+const profile=actor=>({id:actor.id,name:actor.name,role:"admin"});
 function translated(request,path,token){
   const target=new URL(request.url);
   target.pathname=path;
@@ -68,8 +79,49 @@ async function endSession(request,env,token){
 async function identify(request,env){
   const token=tokenFrom(request,COOKIE);
   if(!token)return null;
+  if(env.ADMIN_SSO_ENABLED==="yes"){
+    // Ambas cookies son necesarias. El padre puede ser revocado por logout
+    // en la web pública; las sesiones antiguas auth_method='unknown' fallan.
+    const parent=tokenFrom(request,PUBLIC_COOKIE);
+    if(!parent)return null;
+    const [tokenHash,parentHash]=await Promise.all([shaToken(token),shaToken(parent)]);
+    const actor=await env.DB.prepare(
+      "SELECT p.id,p.name,p.role FROM admin_sso_sessions a "+
+      "JOIN auth_sessions s ON s.token_hash=a.parent_token_hash "+
+      "JOIN profiles p ON p.id=a.profile_id AND p.id=s.profile_id "+
+      "WHERE a.token_hash=? AND a.parent_token_hash=? "+
+      "AND a.expires_at>unixepoch() AND s.expires_at>unixepoch() "+
+      "AND s.auth_method IN ('google','email') AND p.role='admin' LIMIT 1"
+    ).bind(tokenHash,parentHash).first();
+    return actor?{token:parent,adminToken:token,actor}:null;
+  }
+  // Antigua vía email/contraseña: solo se conserva para pruebas aisladas;
+  // queda bloqueada cuando se activa la nueva opción SSO.
   const actor=await authenticatedProfile(authRequest(request,"/v1/auth/me",token),env);
   return actor?.role==="admin"?{token,actor}:null;
+}
+async function ssoSignIn(request,env){
+  if(request.method!=="POST")return json({error:"Método no permitido"},405);
+  if(env.ADMIN_SSO_ENABLED!=="yes")return json({error:"Acceso SSO todavía no habilitado"},503);
+  if(!checkOrigin(request,env))return json({error:"Origen no autorizado"},403);
+  const parent=tokenFrom(request,PUBLIC_COOKIE);
+  if(!parent)return json({error:"Inicia sesión primero en la web de Bellaquitas Fest"},401);
+  const parentHash=await shaToken(parent);
+  const actor=await env.DB.prepare(
+    "SELECT p.id,p.name,p.role FROM auth_sessions s "+
+    "JOIN profiles p ON p.id=s.profile_id "+
+    "WHERE s.token_hash=? AND s.expires_at>unixepoch() "+
+    "AND s.auth_method IN ('google','email') AND p.role='admin' LIMIT 1"
+  ).bind(parentHash).first();
+  if(!actor)return json({error:"Solo pueden entrar administradores con sesión verificada"},403);
+  const raw=randomToken();
+  // Limpiar sesiones expiradas; nunca modificar saldos ni perfiles.
+  await env.DB.prepare("DELETE FROM admin_sso_sessions WHERE expires_at<=unixepoch()").run();
+  await env.DB.prepare(
+    "INSERT INTO admin_sso_sessions(token_hash,parent_token_hash,profile_id,expires_at) "+
+    "VALUES (?,?,?,unixepoch()+?)"
+  ).bind(await shaToken(raw),parentHash,actor.id,TTL).run();
+  return json({ok:true,profile:profile(actor)},200,{"Set-Cookie":sessionCookie(raw)});
 }
 function secureStatic(text,type){
   const csp="default-src 'none'; script-src 'self'; style-src 'self'; "+
@@ -81,6 +133,7 @@ function secureStatic(text,type){
 }
 async function signIn(request,env){
   if(request.method!=="POST")return json({error:"Método no permitido"},405);
+  if(env.ADMIN_SSO_ENABLED==="yes")return json({error:"Este panel utiliza la sesión de la web; no admite otra contraseña"},410);
   // No consumir CPU del plan Free hasta verificar el algoritmo en Workers real.
   if(env.ADMIN_PASSWORD_RUNTIME_APPROVED!=="yes")return json({error:"Contraseña administrativa pendiente de validación de seguridad"},503);
   if(!checkOrigin(request,env))return json({error:"Origen no autorizado"},403);
@@ -95,8 +148,7 @@ async function signIn(request,env){
     return invalid();
   }
   // Reduce la caducidad en la base, no solo en la cookie del navegador.
-  const digest=new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(token)));
-  const hash=btoa(String.fromCharCode(...digest)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+  const hash=await shaToken(token);
   await env.DB.prepare("UPDATE auth_sessions SET expires_at=unixepoch()+? WHERE token_hash=?")
     .bind(TTL,hash).run();
   return json({ok:true,profile:{id:actor.id,name:actor.name,role:"admin"}},200,{"Set-Cookie":sessionCookie(token)});
@@ -138,8 +190,12 @@ export async function adminConsoleRoute(request,env){
     return secureStatic(ADMIN_JS,"text/javascript; charset=utf-8");
   }
   if(!path.startsWith(PREFIX+"/api/"))return null;
-  const activation=await adminActivationRoute(request,env);
+  // Sin formulario de contraseña ni enlaces de activación en el modo SSO.
+  if(env.ADMIN_SSO_ENABLED==="yes"&&path.startsWith(PREFIX+"/api/activar/"))
+    return json({error:"Activación de contraseña no disponible en el panel"},404);
+  const activation=env.ADMIN_SSO_ENABLED==="yes"?null:await adminActivationRoute(request,env);
   if(activation)return activation;
+  if(path===PREFIX+"/api/sso")return ssoSignIn(request,env);
   if(path===PREFIX+"/api/login")return signIn(request,env);
   const authenticated=await identify(request,env);
   if(path===PREFIX+"/api/me"&&request.method==="GET"){
@@ -150,7 +206,15 @@ export async function adminConsoleRoute(request,env){
   if(path===PREFIX+"/api/logout"){
     if(request.method!=="POST")return json({error:"Método no permitido"},405);
     if(!checkOrigin(request,env))return json({error:"Origen no autorizado"},403);
-    if(authenticated)await endSession(request,env,authenticated.token);
+    if(authenticated){
+      if(env.ADMIN_SSO_ENABLED==="yes"){
+        await env.DB.prepare("DELETE FROM admin_sso_sessions WHERE token_hash=?")
+          .bind(await shaToken(authenticated.adminToken)).run();
+      }else{
+        await endSession(request,env,authenticated.token);
+      }
+    }
+    // En modo SSO salir del panel NO cierra la sesión pública.
     return json({ok:true},200,{"Set-Cookie":cookieExpire()});
   }
   if(!authenticated)return json({error:"Inicia sesión de administrador"},401);
