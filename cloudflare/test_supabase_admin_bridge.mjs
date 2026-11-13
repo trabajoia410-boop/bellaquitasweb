@@ -12,7 +12,9 @@ import {fileURLToPath,pathToFileURL} from "node:url";
 const dir=path.dirname(fileURLToPath(import.meta.url));
 const built=path.join(dir,"staging-source-2026-11-11","recovered-src");
 const {default:worker}=await import(pathToFileURL(path.join(built,"bellaquitas-api-staging.js")).href);
-const BASE="https://bellaquitas-api-staging.bellaquitas-fest-410.workers.dev";
+// Identidad Supabase en navegador solo se comparte en el dominio OFICIAL.
+// Este Request y todos los tokens son ficticios; NO hay despliegue real.
+const BASE="https://bellaquitas.fr";
 const AUTH="https://vlsipvngvxcgnwrhpjgg.supabase.co";
 const ADMIN="00000000-0000-4000-8000-000000000301";
 const MEMBER="00000000-0000-4000-8000-000000000302";
@@ -99,6 +101,38 @@ test("origen web cruzado no puede intercambiar tokens",async()=>{
   origin:"https://atacante.example"});
  assert.equal(r.status,403);
 });
+test("workers.dev NO puede reutilizar sesión oficial aunque Origin diga bellaquitas.fr",async()=>{
+ const headers={
+  Origin:BASE,
+  "Sec-Fetch-Site":"same-origin",
+  Authorization:"Bearer "+goodToken
+ };
+ const fake=new Request(
+  "https://bellaquitas-api-staging.bellaquitas-fest-410.workers.dev/administracion/api/supabase-bridge",
+  {method:"POST",headers}
+ );
+ const oldSessions=db.prepare("SELECT count(*) AS n FROM auth_sessions").get().n;
+ const response=await worker.fetch(fake,env);
+ assert.equal(response.status,403,"SSO de dominio externo no debe emitir cookies");
+ assert.equal(db.prepare("SELECT count(*) AS n FROM auth_sessions").get().n,oldSessions);
+ assert.equal(response.headers.getSetCookie().length,0);
+});
+test("www.bellaquitas.fr tampoco comparte sesión con bellaquitas.fr",async()=>{
+ const req=new Request("https://www.bellaquitas.fr/administracion/api/supabase-bridge",{
+  method:"POST",headers:{Origin:"https://www.bellaquitas.fr",
+   "Sec-Fetch-Site":"same-origin",Authorization:"Bearer "+goodToken}
+ });
+ const response=await worker.fetch(req,env);
+ assert.equal(response.status,403);
+});
+test("la URL canónica debe ser exacta y no configurable a dominio ajeno",async()=>{
+ const previous=env.PUBLIC_ORIGIN;
+ env.PUBLIC_ORIGIN="https://site-malicioso.example";
+ const response=await call("/supabase-bridge",{method:"POST",token:goodToken});
+ assert.equal(response.status,503);
+ env.PUBLIC_ORIGIN=previous;
+});
+
 let cookies="";
 test("administrador REALMENTE verificado en Auth y RLS recibe dos cookies HttpOnly",async()=>{
  const r=await call("/supabase-bridge",{method:"POST",token:goodToken});
