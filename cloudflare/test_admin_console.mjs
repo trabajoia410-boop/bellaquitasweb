@@ -31,6 +31,7 @@ for(const file of ["0001-schema.sql","0002-auth-and-invariants.sql","0003-oauth-
 }
 db.exec(fs.readFileSync(path.join(here,"migrations","0004-admin-activation.sql"),"utf8"));
 db.exec(fs.readFileSync(path.join(here,"migrations","0005-auth-session-method.sql"),"utf8"));
+db.exec(fs.readFileSync(path.join(here,"migrations","0007-admin-sso-sessions.sql"),"utf8"));
 db.exec("CREATE TABLE auth_email_credentials (email TEXT PRIMARY KEY COLLATE NOCASE,profile_id TEXT NOT NULL UNIQUE REFERENCES profiles(id),password_hash TEXT NOT NULL,password_salt TEXT NOT NULL,password_iterations INTEGER NOT NULL,verified_at INTEGER NOT NULL,created_at INTEGER NOT NULL DEFAULT (unixepoch()),updated_at INTEGER NOT NULL DEFAULT (unixepoch()));");
 db.exec("CREATE TABLE auth_email_rate_limits(key_hash TEXT PRIMARY KEY,attempts INTEGER NOT NULL DEFAULT 0,expires_at INTEGER NOT NULL);");
 const D1={
@@ -443,4 +444,68 @@ test("cerrar sesión admin revoca credencial y deja la cookie pública intacta",
  assert.equal((await call("/administracion/api/me",{cookie:adminCookie})).status,401);
  const check=await call("/v1/auth/me",{cookie:publicCookie});
  assert.equal(check.obj.authenticated,true);
+});
+
+test("SSO: no exige otra contraseña ni permite socio o sesión sin verificar",async()=>{
+ env.ADMIN_SSO_ENABLED="yes";
+ const blank=await call("/administracion/api/sso",{method:"POST",body:{}});
+ assert.equal(blank.status,401);
+ const unknown=await call("/administracion/api/sso",{method:"POST",cookie:publicCookie,body:{}});
+ assert.equal(unknown.status,403);
+ const memberSession=(await createAuthSession(MEMBER,env)).split(";")[0];
+ assert.equal((await call("/administracion/api/sso",{method:"POST",cookie:memberSession,body:{}})).status,403);
+ assert.equal((await call("/administracion/api/sso",{method:"POST",cookie:freshGoogleCookie,
+   origin:"https://externo.invalid",body:{}})).status,403);
+ assert.equal((await call("/administracion/api/login",{method:"POST",cookie:freshGoogleCookie,
+   body:{email:"admin@example.test",password:PASSWORD}})).status,410);
+ assert.equal((await call("/administracion/api/activar/solicitar",{method:"POST",
+   cookie:freshGoogleCookie,body:{email:ACTIVATION_EMAIL}})).status,404);
+ assert.equal(db.prepare("SELECT COUNT(*) AS n FROM admin_sso_sessions").get().n,0);
+});
+let ssoCookie,ssoBoth;
+test("SSO: admin con Google verificado entra directamente, sin alterar puntos o perfiles",async()=>{
+ const totalBefore=db.prepare("SELECT COUNT(*) AS n,COALESCE(SUM(points),0) AS points,COALESCE(SUM(visits),0) AS visits FROM profiles").get();
+ const sso=await call("/administracion/api/sso",{method:"POST",cookie:freshGoogleCookie,body:{}});
+ assert.equal(sso.status,200,JSON.stringify(sso.obj));
+ assert.equal(sso.obj.profile.id,GOOGLE_ADMIN);
+ assert.equal(sso.obj.profile.role,"admin");
+ assert.match(sso.cookie,/__Host-bf_admin=[A-Za-z0-9_-]{43}/);
+ assert.match(sso.cookie,/HttpOnly; SameSite=Strict/);
+ assert.match(sso.cookie,/Max-Age=3600/);
+ ssoCookie=sso.cookie.split(";")[0];
+ ssoBoth=freshGoogleCookie+"; "+ssoCookie;
+ const data=db.prepare("SELECT expires_at-unixepoch() AS ttl FROM admin_sso_sessions LIMIT 1").get();
+ assert.ok(data.ttl>0&&data.ttl<=3600);
+ assert.equal((await call("/administracion/api/me",{cookie:freshGoogleCookie})).status,401);
+ assert.equal((await call("/administracion/api/me",{cookie:ssoCookie})).status,401);
+ assert.equal((await call("/administracion/api/me",{cookie:ssoBoth})).status,200);
+ assert.equal((await call("/administracion/api/members",{cookie:ssoBoth})).status,200);
+ assert.deepEqual(db.prepare("SELECT COUNT(*) AS n,COALESCE(SUM(points),0) AS points,COALESCE(SUM(visits),0) AS visits FROM profiles").get(),totalBefore);
+});
+test("SSO: comprobación de rol real, cookie ajena y padre revocado",async()=>{
+ const forged=(await createAuthSession(MEMBER,env)).split(";")[0];
+ assert.equal((await call("/administracion/api/me",{cookie:forged+"; "+ssoCookie})).status,401);
+ db.prepare("UPDATE profiles SET role='socio' WHERE id=?").run(GOOGLE_ADMIN);
+ try{
+   assert.equal((await call("/administracion/api/me",{cookie:ssoBoth})).status,401);
+   assert.equal((await call("/administracion/api/members",{cookie:ssoBoth})).status,401);
+ }finally{db.prepare("UPDATE profiles SET role='admin' WHERE id=?").run(GOOGLE_ADMIN);}
+ assert.equal((await call("/administracion/api/me",{cookie:ssoBoth})).status,200);
+});
+test("SSO: cerrar solo el panel revoca admin y conserva login público",async()=>{
+ const loggedOut=await call("/administracion/api/logout",{method:"POST",cookie:ssoBoth,body:{}});
+ assert.equal(loggedOut.status,200);
+ assert.match(loggedOut.cookie,/__Host-bf_admin=; Path=\/; Max-Age=0/);
+ assert.equal((await call("/administracion/api/me",{cookie:ssoBoth})).status,401);
+ assert.equal((await call("/v1/auth/me",{cookie:freshGoogleCookie})).obj.authenticated,true);
+ const back=await call("/administracion/api/sso",{method:"POST",cookie:freshGoogleCookie,body:{}});
+ assert.equal(back.status,200);
+ const cookies=freshGoogleCookie+"; "+back.cookie.split(";")[0];
+ assert.equal((await call("/administracion/api/me",{cookie:cookies})).status,200);
+ // El cierre de sesión en la WEB revoca también el panel (FK ON DELETE CASCADE).
+ const webLogout=await call("/v1/auth/logout",{method:"POST",cookie:freshGoogleCookie,body:{}});
+ assert.equal(webLogout.status,200);
+ assert.equal((await call("/administracion/api/me",{cookie:cookies})).status,401);
+ assert.equal(db.prepare("SELECT COUNT(*) AS n FROM admin_sso_sessions").get().n,0);
+ env.ADMIN_SSO_ENABLED="no";
 });
