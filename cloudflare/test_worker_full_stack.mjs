@@ -15,6 +15,7 @@ import {fileURLToPath,pathToFileURL} from "node:url";
 const dir=path.dirname(fileURLToPath(import.meta.url));
 const recovered=path.join(dir,"staging-source-2026-11-11","recovered-src");
 const {default:worker}=await import(pathToFileURL(path.join(recovered,"bellaquitas-api-staging.js")).href);
+const {allowSyntheticCostServicesForTests}=await import(pathToFileURL(path.join(recovered,"free-only-cost-policy.js")).href);
 const {createAuthSession}=await import(pathToFileURL(path.join(recovered,"auth-routes.js")).href);
 const BASE="https://bellaquitas-api-staging.bellaquitas-fest-410.workers.dev";
 const ADMIN="00000000-0000-4000-8000-000000000101";
@@ -71,6 +72,9 @@ class R2Memory{
 const DB=new DBMemory(),MEDIA=new R2Memory();
 const env={DB,MEDIA,PUBLIC_ORIGIN:BASE,STAGING_MUTATIONS:"enabled",ALLOW_NEW_ACCOUNTS:"no",
  R2_MUTATIONS_APPROVED:"yes"}; // Solo R2 simulado: nunca se ejecuta contra almacenamiento real.
+// Solo una referencia local de tests Node autoriza servicios simulados en memoria.
+env.__syntheticMemoryOnly=true;
+allowSyntheticCostServicesForTests(env);
 const cookies={};
 before(async()=>{
   for(const [role,id] of [["admin",ADMIN],["member",MEMBER],["door",DOOR]]){
