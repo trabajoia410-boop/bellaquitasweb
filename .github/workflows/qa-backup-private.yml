@@ -6,6 +6,8 @@ on:
       - auditoria/fase5-2026-11-11
     paths:
       - cloudflare/backup_privado_local.py
+      - cloudflare/restore_privado_aislado.py
+      - cloudflare/test_restore_privado_local.py
       - cloudflare/test_backup_encryption_local.py
       - cloudflare/test_pg_backup_versions.py
       - .github/workflows/qa-backup-private.yml
@@ -24,10 +26,21 @@ jobs:
         run: python3 -m py_compile cloudflare/backup_privado_local.py
       - name: Restaurar SQL sintético en SQLite y detectar datos incompletos
         run: python3 cloudflare/backup_privado_local.py --self-test
+      - name: Verificar que el restaurador solo acepta base vacía y local
+        run: |
+          python3 -m py_compile cloudflare/restore_privado_aislado.py
+          python3 cloudflare/test_restore_privado_local.py
       - name: Verificar AES256 GPG y todos los hashes SHA256 en copia ficticia
         run: python3 cloudflare/test_backup_encryption_local.py
       - name: Validar versión PostgreSQL 17 compatible con respaldo y restauración
         run: python3 cloudflare/test_pg_backup_versions.py
+      - name: Verificar que un restaurador real no puede correr en CI
+        run: |
+          if BELLAQUITAS_RESTORE_LOCAL_ONLY=yes PGHOST=127.0.0.1 PGPORT=5432 PGUSER=bellaquitas_restore PGPASSWORD=only-fake PGDATABASE=bellaquitas_restore_fixt python3 cloudflare/restore_privado_aislado.py --check; then
+            echo "ERROR: el restaurador aceptó GitHub Actions" >&2
+            exit 1
+          fi
+          echo "OK: el restaurador bloquea CI."
       - name: Verificar que --run está bloqueado en GitHub Actions
         run: |
           if python3 cloudflare/backup_privado_local.py --run; then
