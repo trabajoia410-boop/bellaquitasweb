@@ -118,6 +118,9 @@ def validate(evidence: object, now: datetime | None = None) -> list[str]:
     required(reconciliation,"no_real_test_mutations","Conciliación")
     required(reconciliation,"translation_and_media_parity_verified","Conciliación")
     required(reconciliation,"profiles_row_parity_verified","Conciliación")
+    required(reconciliation,"original_public_files_sha_verified","Conciliación")
+    required(reconciliation,"admin_ui_diff_explicitly_reviewed","Conciliación")
+    required(reconciliation,"audit_workflows_no_publish_verified","Conciliación")
 
     authentication=part("authentication")
     login_method=authentication.get("admin_login_method")
@@ -208,7 +211,8 @@ ALLOWED_EVIDENCE_FIELDS = {
         "checked_at", "source_profiles", "target_profiles",
         "source_points", "target_points", "source_visits", "target_visits",
         "no_real_test_mutations", "translation_and_media_parity_verified",
-        "profiles_row_parity_verified",
+        "profiles_row_parity_verified", "original_public_files_sha_verified",
+        "admin_ui_diff_explicitly_reviewed", "audit_workflows_no_publish_verified",
     },
     "authentication": {
         "email_password_works", "google_and_admin_link_verified",
@@ -323,7 +327,10 @@ def make_synthetic(now: datetime) -> dict:
         "source_visits":1,"target_visits":1,
         "no_real_test_mutations":True,
         "translation_and_media_parity_verified":True,
-        "profiles_row_parity_verified":True},
+        "profiles_row_parity_verified":True,
+        "original_public_files_sha_verified":True,
+        "admin_ui_diff_explicitly_reviewed":True,
+        "audit_workflows_no_publish_verified":True},
       "authentication":{
         "existing_admin_accounts":1,
         "admin_login_method":"sso_existing_account",
@@ -393,6 +400,9 @@ def self_test() -> None:
       ("Rechazo de la cuenta ficticia sin retirar",{"reconciliation":{"target_profiles":4}},"perfiles"),
       ("Rechazo de puntos diferentes",{"reconciliation":{"target_points":41}},"puntos"),
       ("Rechazo si no se han comparado los seis campos por perfil",{"reconciliation":{"profiles_row_parity_verified":False}},"profiles_row_parity_verified"),
+      ("Rechazo si cambian vídeos o estilo original",{"reconciliation":{"original_public_files_sha_verified":False}},"original_public_files_sha_verified"),
+      ("Rechazo si cambió app.js sin revisión",{"reconciliation":{"admin_ui_diff_explicitly_reviewed":False}},"admin_ui_diff_explicitly_reviewed"),
+      ("Rechazo publicación desde QA",{"reconciliation":{"audit_workflows_no_publish_verified":False}},"audit_workflows_no_publish_verified"),
       ("Rechazo si SSO no cumple Free",{"authentication":{"free_cpu_or_external_auth_verified":False}},"Autenticación"),
       ("Rechazo si falta administrador SSO",{"authentication":{"admins_with_verified_sso":0}},"SSO"),
       ("Rechazo si no comprueba el rol admin",{"authentication":{"sso_admin_role_verified":False}},"sso_admin_role_verified"),
