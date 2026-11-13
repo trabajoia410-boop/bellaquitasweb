@@ -103,7 +103,7 @@ def validate(evidence: object, now: datetime | None = None) -> list[str]:
     required(reconciliation,"profiles_row_parity_verified","Conciliación")
 
     authentication=part("authentication")
-    required(authentication,"email_password_works","Autenticación")
+    login_method=authentication.get("admin_login_method")
     required(authentication,"google_and_admin_link_verified","Autenticación")
     required(authentication,"session_and_logout_verified","Autenticación")
     required(authentication,"free_cpu_or_external_auth_verified","Autenticación")
@@ -111,9 +111,22 @@ def validate(evidence: object, now: datetime | None = None) -> list[str]:
     if not recent(authentication.get("free_plan_checked_at"),MAX_PRICING_AGE,now):
         errors.append("Autenticación: comprobar los límites gratuitos en los últimos 14 días")
     admin_count=authentication.get("existing_admin_accounts")
-    active=authentication.get("admins_with_verified_login")
-    if type(admin_count) is not int or admin_count < 1 or type(active) is not int or active != admin_count:
-        errors.append("Autenticación: aún hay administradores existentes sin contraseña verificada")
+    if login_method=="sso_existing_account":
+        # Nuevo requisito del propietario: acceso directo para el rol admin
+        # autenticado en la web, sin otra contraseña o email.
+        required(authentication,"sso_admin_role_verified","Autenticación")
+        required(authentication,"sso_parent_session_revocation_verified","Autenticación")
+        active=authentication.get("admins_with_verified_sso")
+        if type(admin_count) is not int or admin_count < 1 or type(active) is not int or active != admin_count:
+            errors.append("Autenticación: faltan administradores con acceso SSO verificado")
+    elif login_method=="email_password":
+        # Mantener comprobación del modo antiguo, sin habilitarlo por accidente.
+        required(authentication,"email_password_works","Autenticación")
+        active=authentication.get("admins_with_verified_login")
+        if type(admin_count) is not int or admin_count < 1 or type(active) is not int or active != admin_count:
+            errors.append("Autenticación: aún hay administradores sin contraseña verificada")
+    else:
+        errors.append("Autenticación: el método del acceso administrativo no está aprobado")
     required(authentication,"no_new_duplicate_admin_accounts","Autenticación")
 
     costs=part("costs")
@@ -161,7 +174,9 @@ ALLOWED_EVIDENCE_FIELDS = {
         "session_and_logout_verified", "free_cpu_or_external_auth_verified",
         "no_paid_upgrade_or_automatic_billing", "free_plan_checked_at",
         "existing_admin_accounts", "admins_with_verified_login",
-        "no_new_duplicate_admin_accounts",
+        "no_new_duplicate_admin_accounts", "admin_login_method",
+        "admins_with_verified_sso", "sso_admin_role_verified",
+        "sso_parent_session_revocation_verified",
     },
     "costs": {
         "cloudflare_workers_and_d1_free_confirmed",
@@ -249,8 +264,10 @@ def make_synthetic(now: datetime) -> dict:
         "profiles_row_parity_verified":True},
       "authentication":{
         "existing_admin_accounts":1,
-        "admins_with_verified_login":1,
-        "email_password_works":True,
+        "admin_login_method":"sso_existing_account",
+        "admins_with_verified_sso":1,
+        "sso_admin_role_verified":True,
+        "sso_parent_session_revocation_verified":True,
         "google_and_admin_link_verified":True,
         "session_and_logout_verified":True,
         "free_cpu_or_external_auth_verified":True,
@@ -289,8 +306,11 @@ def self_test() -> None:
       ("Rechazo de la cuenta ficticia sin retirar",{"reconciliation":{"target_profiles":4}},"perfiles"),
       ("Rechazo de puntos diferentes",{"reconciliation":{"target_points":41}},"puntos"),
       ("Rechazo si no se han comparado los seis campos por perfil",{"reconciliation":{"profiles_row_parity_verified":False}},"profiles_row_parity_verified"),
-      ("Rechazo si el hash excede Workers Free",{"authentication":{"free_cpu_or_external_auth_verified":False}},"Autenticación"),
-      ("Rechazo de administradores sin contraseña",{"authentication":{"admins_with_verified_login":0}},"administradores"),
+      ("Rechazo si SSO no cumple Free",{"authentication":{"free_cpu_or_external_auth_verified":False}},"Autenticación"),
+      ("Rechazo si falta administrador SSO",{"authentication":{"admins_with_verified_sso":0}},"SSO"),
+      ("Rechazo si no comprueba el rol admin",{"authentication":{"sso_admin_role_verified":False}},"sso_admin_role_verified"),
+      ("Rechazo sin revocación de la sesión principal",{"authentication":{"sso_parent_session_revocation_verified":False}},"sso_parent_session_revocation_verified"),
+      ("Rechazo de método admin no aprobado",{"authentication":{"admin_login_method":"none"}},"método"),
       ("Rechazo de cambio a plan facturable",{"authentication":{"no_paid_upgrade_or_automatic_billing":False}},"no_paid_upgrade_or_automatic_billing"),
       ("Rechazo de R2 sin límite de facturación",{"costs":{"r2_no_uncapped_billing_or_nonbillable_storage_verified":False}},"r2_no_uncapped_billing"),
       ("Rechazo si solo existen alertas de presupuesto",{"costs":{"budget_alert_not_considered_hard_cap":False}},"budget_alert"),
@@ -308,6 +328,17 @@ def self_test() -> None:
         assert problems and any(match.casefold() in p.casefold() for p in problems),(title,problems)
         print("OK:",title)
         passed+=1
+    # La vía anterior sigue aceptándose SOLO con todas sus pruebas propias,
+    # nunca se considera una contraseña en SSO ni se suponen equivalentes.
+    legacy=copy.deepcopy(good)
+    legacy["authentication"].update({
+        "admin_login_method":"email_password",
+        "email_password_works":True,
+        "admins_with_verified_login":1,
+    })
+    assert not validate(legacy,now),validate(legacy,now)
+    legacy["authentication"]["email_password_works"]=False
+    assert any("email_password_works" in x for x in validate(legacy,now))
     with tempfile.TemporaryDirectory() as temp:
         file=Path(temp)/"synthetic-evidence.json"
         file.write_text(json.dumps(good),encoding="utf8")
