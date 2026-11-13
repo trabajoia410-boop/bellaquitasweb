@@ -70,7 +70,6 @@ def validate(evidence: object, now: datetime | None = None) -> list[str]:
     required(backup,"encrypted_and_private","Respaldo")
     required(backup,"postgres_restore_tested","Respaldo")
     required(backup,"d1_restore_tested","Respaldo")
-    required(backup,"r2_bytes_verified","Respaldo")
     required(backup,"supabase_storage_bytes_verified","Respaldo")
     required(backup,"second_copy_verified","Respaldo")
     checksum=backup.get("archive_sha256")
@@ -78,8 +77,21 @@ def validate(evidence: object, now: datetime | None = None) -> list[str]:
         errors.append("Respaldo: falta SHA-256 del archivo cifrado")
     if not recent(backup.get("created_at"),MAX_BACKUP_AGE,now):
         errors.append("Respaldo: falta una copia reciente (máximo 48 horas)")
-    if type(backup.get("r2_objects")) is not int or backup["r2_objects"] < 20:
-        errors.append("Respaldo: inventario R2 incompleto (al menos 20 objetos)")
+    # R2 se vació y eliminó el 13/11/2026 por petición del propietario.
+    # Los originales NO están ahí: 17 permanecen en GitHub y 3 en
+    # Supabase Storage. La copia privada de DB/Storage sigue siendo obligatoria.
+    mode=backup.get("r2_mode")
+    if mode=="removed":
+        required(backup,"r2_bucket_absent_verified","Respaldo")
+        required(backup,"r2_originals_source_verified","Respaldo")
+        if type(backup.get("r2_objects")) is not int or backup["r2_objects"]!=0:
+            errors.append("Respaldo: R2 eliminado debe contener cero objetos")
+    elif mode=="present":
+        required(backup,"r2_bytes_verified","Respaldo")
+        if type(backup.get("r2_objects")) is not int or backup["r2_objects"]<20:
+            errors.append("Respaldo: inventario R2 incompleto (al menos 20 objetos)")
+    else:
+        errors.append("Respaldo: estado R2 no reconocido; confirmar retirada segura")
     if type(backup.get("supabase_storage_objects")) is not int or backup["supabase_storage_objects"] < 3:
         errors.append("Respaldo: inventario Supabase Storage incompleto (al menos 3 objetos)")
 
@@ -168,7 +180,8 @@ ALLOWED_EVIDENCE_FIELDS = {
         "d1_restore_tested", "r2_bytes_verified",
         "supabase_storage_bytes_verified", "second_copy_verified",
         "archive_sha256", "r2_objects", "supabase_storage_objects",
-        "created_at",
+        "created_at", "r2_mode", "r2_bucket_absent_verified",
+        "r2_originals_source_verified",
     },
     "reconciliation": {
         "checked_at", "source_profiles", "target_profiles",
@@ -258,11 +271,13 @@ def make_synthetic(now: datetime) -> dict:
         "encrypted_and_private":True,
         "postgres_restore_tested":True,
         "d1_restore_tested":True,
-        "r2_bytes_verified":True,
+        "r2_mode":"removed",
+        "r2_bucket_absent_verified":True,
+        "r2_originals_source_verified":True,
         "supabase_storage_bytes_verified":True,
         "second_copy_verified":True,
         "archive_sha256":"a"*64,
-        "r2_objects":20,
+        "r2_objects":0,
         "supabase_storage_objects":3,
         "created_at":stamp},
       "reconciliation":{
@@ -320,6 +335,10 @@ def self_test() -> None:
       ("Rechazo sin autorización",{"authorization":{"explicit_permission":False}},"Autorización"),
       ("Rechazo si falta restaurar PostgreSQL",{"backup":{"postgres_restore_tested":False}},"Respaldo"),
       ("Rechazo si falta Supabase Storage",{"backup":{"supabase_storage_objects":2}},"Supabase Storage"),
+      ("Rechazo R2 eliminado pero contiene objetos",{"backup":{"r2_objects":3}},"cero objetos"),
+      ("Rechazo R2 sin comprobación de bucket ausente",{"backup":{"r2_bucket_absent_verified":False}},"r2_bucket_absent_verified"),
+      ("Rechazo originales no comprobados",{"backup":{"r2_originals_source_verified":False}},"r2_originals_source_verified"),
+      ("Rechazo modo R2 inesperado",{"backup":{"r2_mode":"unknown"}},"estado R2"),
       ("Rechazo de la cuenta ficticia sin retirar",{"reconciliation":{"target_profiles":4}},"perfiles"),
       ("Rechazo de puntos diferentes",{"reconciliation":{"target_points":41}},"puntos"),
       ("Rechazo si no se han comparado los seis campos por perfil",{"reconciliation":{"profiles_row_parity_verified":False}},"profiles_row_parity_verified"),
@@ -351,6 +370,14 @@ def self_test() -> None:
         assert problems and any(match.casefold() in p.casefold() for p in problems),(title,problems)
         print("OK:",title)
         passed+=1
+    # Una copia R2 todavía existente también necesita un respaldo completo.
+    legacy_r2=copy.deepcopy(good)
+    legacy_r2["backup"].update({
+        "r2_mode":"present", "r2_objects":20, "r2_bytes_verified":True
+    })
+    assert not validate(legacy_r2,now),validate(legacy_r2,now)
+    legacy_r2["backup"]["r2_bytes_verified"]=False
+    assert any("r2_bytes_verified" in x for x in validate(legacy_r2,now))
     # La vía anterior sigue aceptándose SOLO con todas sus pruebas propias,
     # nunca se considera una contraseña en SSO ni se suponen equivalentes.
     legacy=copy.deepcopy(good)
