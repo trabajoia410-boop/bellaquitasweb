@@ -25,6 +25,7 @@ with tempfile.TemporaryDirectory(prefix="bellaquitas-qa-gpg-") as temp:
         "cloudflare-d1-staging.sql":hashes["cloudflare-d1-staging.sql"],
         "supabase-storage-inventory.json":hashes["supabase-storage-inventory.json"],
         "r2_mode":"removed",
+        "profile_rows_sha256":"c"*64,
         "postgres_expected":{
             "profiles":2,"points":23,"lifetime_points":40,"visits":1,
             "admins":1,"auth_users":2,"auth_identities":2,
