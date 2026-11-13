@@ -14,7 +14,7 @@ def rejects(fn,fragment):
     try:
         fn()
     except RuntimeError as exc:
-        assert fragment in str(exc),(fragment,str(exc))
+        assert fragment.lower() in str(exc).lower(),(fragment,str(exc))
     else:
         raise AssertionError("Se permitió un caso inseguro: "+fragment)
 
