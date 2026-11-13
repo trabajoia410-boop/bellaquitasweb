@@ -74,3 +74,21 @@ La séptima cuenta es una **fixture aislada con cero puntos y visitas**, debe re
 5. Requiere **autorización expresa nueva** del propietario para el corte final, tras comprobar todo lo anterior. No hay permiso para modificar `main`, el Worker remoto productivo ni DNS.
 
 **Conclusión:** 5 frentes avanzados, buena paridad de datos y tests automatizados; **fase 5 sigue en curso**. No confundir implementación de candidato con funcionamiento en cuentas reales/publicación, ni copias sintéticas con respaldo real.
+
+## Actualización posterior — misma sesión exclusivamente en `bellaquitas.fr`
+
+En la revisión posterior de la fase 5 se confirmó que la sesión guardada por el navegador en el sitio principal **no puede compartirse con `workers.dev` ni con `www.bellaquitas.fr`**. El puente ahora falla cerrado en los tres controles: URL solicitada, `PUBLIC_ORIGIN` configurado y `Origin`/Fetch Metadata, además del control de rol Supabase y D1. El navegador no envía el JWT a otro origen; el Worker tampoco acepta un `Origin` falsificado mientras se ejecuta en workers.dev. Ningún DNS ni `main` se ha modificado.
+
+- [Pruebas de SSO y origin correctos](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43478153316) — **aprobadas**, con identidades y respuestas Supabase ficticias.
+- [Regresión general de fase 5](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43478153209) — **aprobada**, sin mutar datos reales.
+- [Plan de rutas, mismo dominio y opciones sin gasto](./FASE5_PLAN_DOMINIO_PANEL_CERO_EUROS.md) — **pendiente validar infraestructura y autorización**, no se puede afirmar que el acceso al panel ya esté operativo desde la web oficial.
+
+### Nuevas comprobaciones del respaldo privado
+
+El programa local `backup_privado_local.py` ahora **rechaza** inventarios Supabase Storage truncados (`IsTruncated` ausente/verdadero), claves repetidas, archivos con tamaño distinto, rutas peligrosas y enlaces simbólicos. Si una copia aparenta tres archivos pero repite uno, falla en lugar de darla por segura. Se verificó sin claves reales:
+
+- [Integridad, cifrado AES256, detección de corrupción y rechazo de inventario incompleto](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43478590179) — **aprobado**.
+- [`pg_dump` / `pg_restore` en PostgreSQL aislado y 18 tablas ficticias](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43478589891) — **aprobado**.
+- [Candado de fase 6 actualizado con requisitos de ruta real](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43478926937) — **aprobado**.
+
+**Estas pruebas NO respaldan datos reales ni certifican una recuperación real.** Una copia auténtica cifrada y un restore aislado con las cuentas privadas del propietario siguen pendientes. La fase 6 no puede autorizarse basándose solo en simulaciones. No se ha vuelto a utilizar ni recreado R2.
