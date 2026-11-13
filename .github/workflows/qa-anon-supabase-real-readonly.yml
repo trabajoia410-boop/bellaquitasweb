@@ -1,4 +1,4 @@
-name: Fase 5 — Supabase real: accesos anónimos privados denegados (solo GET)
+name: "Fase 5 — Supabase real: accesos anónimos privados denegados (solo GET)"
 on:
   push:
     branches:
