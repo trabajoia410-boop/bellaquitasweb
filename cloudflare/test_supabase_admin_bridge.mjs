@@ -128,7 +128,8 @@ test("el SSO Cloudflare anterior queda desactivado en modo puente Supabase",asyn
 test("no se puede acceder a /v1/admin directamente con cookie administrativa",async()=>{
  const onlyAdminCookie=cookies.split("; ").filter(x=>x.startsWith("__Host-bf_admin=")).join("; ");
  const direct=await worker.fetch(req("/v1/admin/members",{cookies:onlyAdminCookie}),env);
- assert.equal(direct.status,401);
+ assert.equal(direct.status,403,
+  "El modo puente deshabilita TODOS los endpoints admin heredados");
 });
 test("cookies D1 sin sesión pública vigente no dan acceso",async()=>{
  assert.equal((await call("/me",{cookies})).status,401);
