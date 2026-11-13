@@ -17,7 +17,7 @@ import {mirrorWriteRoute} from "./mirror-write-routes.js";
 import {protectedRoute} from "./protected-routes.js";
 import {ADMIN_HTML,ADMIN_CSS,ADMIN_JS} from "./admin-console-ui.js";
 import {adminActivationRoute} from "./admin-activation-routes.js";
-import {verifiedSupabaseAdmin,bridgeEnabled} from "./supabase-admin-bridge.js";
+import {verifiedSupabaseAdmin,bridgeEnabled,bridgeOriginAllowed} from "./supabase-admin-bridge.js";
 
 const PREFIX="/administracion";
 const COOKIE="__Host-bf_admin";
@@ -157,6 +157,9 @@ async function ssoSignIn(request,env){
 async function supabaseBridgeSignIn(request,env){
   if(request.method!=="POST")return json({error:"Método no permitido"},405);
   if(!bridgeEnabled(env))return json({error:"Puente Supabase desactivado"},503);
+  if(!bridgeOriginAllowed(request,env))return json({
+    error:"La administración solo funciona en bellaquitas.fr/administracion"
+  },403);
   if(!checkOrigin(request,env))return json({error:"Origen no autorizado"},403);
   const verified=await verifiedSupabaseAdmin(request,env);
   if(!verified)return json({error:"Inicia sesión en Bellaquitas Fest como administrador"},401);
