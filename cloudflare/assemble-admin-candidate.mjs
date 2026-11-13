@@ -25,6 +25,7 @@ for(const [dest,src] of [
  ["admin-console-routes.js","admin-console-routes.js"],
  ["admin-console-ui.js","admin-console-ui.js"],
  ["free-only-cost-policy.js","free-only-cost-policy.js"],
+ ["supabase-admin-bridge.js","supabase-admin-bridge.js"],
  ["bellaquitas-api-staging.js","bellaquitas-api-staging-admin.js"]
 ]){
  await writeFile(path.join(built,dest),await readFile(path.join(qa,src),"utf8"));
