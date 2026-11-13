@@ -41,7 +41,9 @@ def local_target(env: dict,require_tty: bool=True) -> str:
     if env.get("BELLAQUITAS_RESTORE_LOCAL_ONLY")!="yes":
         raise RuntimeError("Restauración bloqueada: requiere confirmación local")
     if env.get("PGHOST") not in LOCAL_HOSTS or env.get("PGPORT")!="5432":
-        raise RuntimeError("Solo PostgreSQL de localhost:5432 (sin túneles SSH)")
+        raise RuntimeError("Solo PostgreSQL de localhost:5432")
+    # El programa no puede detectar túneles SSH ni redirecciones de red:
+    # el usuario debe comprobar que localhost es un PostgreSQL propio.
     if env.get("PGUSER")!=SAFE_USER or not env.get("PGPASSWORD"):
         raise RuntimeError("Utilizar el usuario local exclusivo bellaquitas_restore")
     if env.get("PGSSLMODE") not in (None,"disable"):
@@ -74,6 +76,13 @@ WHERE n.nspname NOT IN ('pg_catalog','information_schema')
     count=sql(query,env)
     if not count.isdigit() or int(count)!=0:
         raise RuntimeError("Destino NO vacío: crear otra DB local aislada; no borrar nada")
+    # Evitar que el restaurador se ejecute con un usuario PostgreSQL superuser,
+    # capaz de modificar otras bases, roles o recursos del servidor local.
+    privileges=sql(
+        "SELECT (rolsuper OR rolcreatedb OR rolcreaterole)::int "
+        "FROM pg_catalog.pg_roles WHERE rolname=current_user",env)
+    if privileges!="0":
+        raise RuntimeError("Usar un rol PostgreSQL local sin privilegios globales")
 
 def compare_restored(expected: dict,env: dict) -> None:
     actual=validate_metrics(json.loads(sql(SOURCE_METRICS_SQL,env)))
@@ -139,7 +148,10 @@ def main() -> None:
         print("Configuración local aceptada:",db,
               "| ningún dato descargado, restaurado o modificado.")
     elif len(sys.argv)==3 and sys.argv[1]=="--run":
-        run_restore(Path(sys.argv[2]).expanduser().resolve(),os.environ)
+        source=Path(sys.argv[2]).expanduser()
+        if source.is_symlink():
+            raise RuntimeError("No abrir copias enlazadas simbólicamente")
+        run_restore(source.resolve(),os.environ)
     else:
         raise RuntimeError("Uso: --check | --run /ruta/privada/archivo.tar.gz.gpg")
 
