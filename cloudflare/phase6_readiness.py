@@ -92,9 +92,9 @@ def validate(evidence: object, now: datetime | None = None) -> list[str]:
         if type(backup.get("r2_objects")) is not int or backup["r2_objects"]!=0:
             errors.append("Respaldo: R2 eliminado debe contener cero objetos")
     elif mode=="present":
-        required(backup,"r2_bytes_verified","Respaldo")
-        if type(backup.get("r2_objects")) is not int or backup["r2_objects"]<20:
-            errors.append("Respaldo: inventario R2 incompleto (al menos 20 objetos)")
+        # La suscripción R2 se canceló y el propietario exige cero gastos.
+        # Aunque existieran 20 respaldos válidos, JAMÁS aceptar recrear R2.
+        errors.append("Respaldo: R2 fue eliminado; no se permite volver a activarlo")
     else:
         errors.append("Respaldo: estado R2 no reconocido; confirmar retirada segura")
     if type(backup.get("supabase_storage_objects")) is not int or backup["supabase_storage_objects"] < 3:
@@ -452,14 +452,15 @@ def self_test() -> None:
         assert problems and any(match.casefold() in p.casefold() for p in problems),(title,problems)
         print("OK:",title)
         passed+=1
-    # Una copia R2 todavía existente también necesita un respaldo completo.
+    # Bloqueo obligatorio: R2 fue retirado por el propietario, y su
+    # reactivación NUNCA será aceptada por la preparación de fase 6.
     legacy_r2=copy.deepcopy(good)
     legacy_r2["backup"].update({
         "r2_mode":"present", "r2_objects":20, "r2_bytes_verified":True
     })
-    assert not validate(legacy_r2,now),validate(legacy_r2,now)
+    assert any("no se permite volver" in x for x in validate(legacy_r2,now))
     legacy_r2["backup"]["r2_bytes_verified"]=False
-    assert any("r2_bytes_verified" in x for x in validate(legacy_r2,now))
+    assert any("no se permite volver" in x for x in validate(legacy_r2,now))
     # La vía anterior sigue aceptándose SOLO con todas sus pruebas propias,
     # nunca se considera una contraseña en SSO ni se suponen equivalentes.
     legacy=copy.deepcopy(good)
