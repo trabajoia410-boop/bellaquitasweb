@@ -6,6 +6,7 @@ on:
     paths:
       - cloudflare/verify_immutable_public.py
       - .github/workflows/qa-immutable-public.yml
+      - .github/workflows/import-bellaquitas-logo.yml
       - index.html
       - app.js
       - styles.css
