@@ -140,3 +140,15 @@ Se auditó en modo **solo lectura** la seguridad real de `profiles`, las políti
 Se eliminó la emisión de cookie pública `__Host-bf_session` en el puente SSO, que podría dar acceso a endpoints D1 fuera del panel; ahora la cookie padre `__Secure-bf_admin_parent` solo se envía en `/administracion`, se revoca al salir aunque Supabase ya no entregue bearer y las rutas D1 privadas/antiguo login están bloqueadas en modo puente. Ver pruebas de identidad y coste cero en el acta.
 
 El candado de publicación exige ahora además: `admin_parent_cookie_scoped_to_panel_verified`, `legacy_d1_private_routes_closed_verified` y `supabase_rls_role_policy_audited`, junto a pruebas con cuentas reales, backup/restore auténtico y autorización. Se mantiene fase 5; **no se ha activado el panel**, ni cambiado producción.
+
+## 13/11/2026 — Cotejo privado de recuperación: controles reforzados (sin corte)
+
+Se añadió un **manifiesto GPG cifrado con nueve métricas agregadas** de la base Supabase original: total de perfiles, administradores, puntos disponibles e históricos, visitas, usuarios Auth, identidades Auth, sesiones Auth y objetos Storage. No se incluye ningún correo, nombre, código o UUID en esas métricas.
+
+El nuevo [restaurador privado de PostgreSQL](./restore_privado_aislado.py) comprueba la integridad GPG, exige base local **vacía** y rol sin superusuario, restaura el archivo sin borrar tablas y compara esas métricas en la base recuperada. Nunca conecta intencionalmente a Supabase real y el modo operativo está prohibido en CI. La protección no puede detectar túneles SSH configurados por el propietario: **no usar túneles hacia bases reales**. Puede necesitar un entorno local compatible con extensiones/roles Supabase; los fallos no se deben saltar concediendo superuser.
+
+En PostgreSQL 16 y 17 **ficticios**, las pruebas automatizadas restauraron 18 tablas y detectaron una diferencia deliberada de 1 punto, sin tocar datos reales. [Pruebas restauración aprobadas](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43491725740), [seguridad del respaldo aprobada](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43491767183).
+
+El candado de fase 6 exige ahora `postgres_profiles_points_auth_match_verified`, `isolated_local_restore_non_superuser_verified` y `storage_inventory_complete_verified`. [Suite del candado aprobada](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43491889337).
+
+[Guía privada de Windows](./GUIA_COPIA_PRIVADA_Y_RESTAURACION_WINDOWS.md). **La copia real y restauración privada REAL siguen pendientes**. No autorizar fase 6 por las pruebas ficticias.
