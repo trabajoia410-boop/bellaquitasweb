@@ -120,6 +120,9 @@ export default {
       if (storageGuard) return storageGuard;
       const adminConsoleResponse = await adminConsoleRoute(request, env);
       if (adminConsoleResponse) return adminConsoleResponse;
+      // Redirección exacta a originales en GitHub: nunca utilizar R2.
+      const originalMedia = staticMediaFallback(request);
+      if (originalMedia) return originalMedia;
       const mirrorResponse = await mirrorRoute(request, env);
       if (mirrorResponse) return mirrorResponse;
       const previewResponse = previewRoute(request);
