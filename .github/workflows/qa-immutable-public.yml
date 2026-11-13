@@ -1,0 +1,28 @@
+name: Fase 5 — diseño y vídeos inmutables frente a main
+on:
+  push:
+    branches:
+      - auditoria/fase5-2026-11-11
+    paths:
+      - cloudflare/verify_immutable_public.py
+      - .github/workflows/qa-immutable-public.yml
+      - index.html
+      - app.js
+      - styles.css
+      - config.js
+      - locale-fr.js
+      - assets/**
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  frozen-website:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verificar que la web pública conservará exactamente sus archivos
+        run: python3 cloudflare/verify_immutable_public.py
