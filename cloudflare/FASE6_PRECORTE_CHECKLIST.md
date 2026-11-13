@@ -112,3 +112,11 @@ El propietario exige **0 € y ningún cargo automático** en Cloudflare. El can
 **Condición imprescindible:** el guardia NO bloquea por sí mismo cargos del bucket R2 ya existente (almacenamiento), ni otros recursos/suscripciones de la cuenta, ni un posible plan Workers Paid. El acceso conectado a facturación sigue siendo **403**. La fase 6 no se puede aprobar hasta comprobar de verdad la cuenta y dejar sin acceso los servicios facturables.
 
 El candado exige además `workers_free_plan_verified`, `d1_and_kv_free_plan_verified`, `zero_cost_runtime_guard_verified`, `r2_binding_removed_or_inaccessible`, `no_metered_subscriptions_or_autopay_verified` y `workers_route_fail_closed_verified`. No confundir alertas con límites duros. [Ver la política completa de coste cero](./COSTE_CERO_CLOUDFLARE_2026-11-13.md).
+
+## 13/11/2026 — R2 retirado realmente de Cloudflare
+
+**Actualización que prevalece sobre los párrafos históricos anteriores:** por solicitud directa del propietario se **eliminaron los 20 objetos (56.785.619 bytes) y después el bucket `bellaquitas-media-staging`**. Se verificó que quedaban **0 objetos** antes de borrarlo y que el listado final de R2 tenía **0 buckets**. Los 17 originales de `assets/` siguen verificados contra los blobs SHA-1 de GitHub `main`; los tres logos originales siguen presentes en `storage.objects` de Supabase, con tamaños coincidentes. Ver [acta de retirada real](./RETIRO_REAL_R2_2026-11-13.md).
+
+**No volver a crear R2** ni conectar su binding. El Worker de staging desplegado puede seguir apuntando a rutas R2 que ya no existen: corregir referencias en D1/Worker al implementar el almacenamiento Free, sin alterar la web pública. El archivo `cloudflare/backup_privado_local.py` aún contiene instrucciones históricas de 20 objetos R2 y debe adaptarse antes de ejecutar un backup real.
+
+El candado actualizado acepta la alternativa `backup.r2_mode = "removed"` con `r2_objects = 0`, `r2_bucket_absent_verified = true` y `r2_originals_source_verified = true` **solo después de aportar pruebas verídicas**. Siguen siendo obligatorias las copias privadas cifradas y restauración real de Postgres, D1 y Supabase Storage, la conciliación de perfiles, el control de gastos de toda Cloudflare y la autorización final. No marcar la facturación como verificada porque el conector devolvía **403**.
