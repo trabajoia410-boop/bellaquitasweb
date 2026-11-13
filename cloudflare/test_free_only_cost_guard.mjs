@@ -103,3 +103,33 @@ test("R2 ficticio en memoria solo se habilita al entregarle una referencia de pr
  assert.equal(r.synthetic,true);
 });
 console.log("Barrera Free-only: no se ha enviado ningún request externo ni consumido R2.");
+
+test("en SSO Supabase solo /administracion/api es vía privada: se cierran accesos D1 heredados",()=>{
+ const env={...fake(),ADMIN_SUPABASE_BRIDGE:"yes",ADMIN_SSO_ENABLED:"yes"};
+ const privatePaths=[
+  ["/v1/admin/members","GET"],
+  ["/v1/admin/member","POST"],
+  ["/v1/door/checkin","POST"],
+  ["/v1/me/activity","GET"],
+  ["/v1/mirror/admin/catalog/events","GET"],
+  ["/v1/mirror/admin/write","POST"],
+  ["/v1/mirror/door/redemptions","GET"],
+  ["/v1/mirror/me/redemptions","GET"],
+  ["/v1/auth/email/login","POST"],
+  ["/v1/auth/google/start","GET"],
+  ["/v1/auth/logout","POST"],
+  ["/v1/rewards/request","POST"]
+ ];
+ for(const [path,method] of privatePaths){
+  const r=check(env,path,method);
+  assert.equal(r.blocked?.status,403,method+" "+path);
+ }
+ for(const [method,path] of [
+  ["GET","/health"],["GET","/v1/events"],
+  ["GET","/v1/site"],["POST","/administracion/api/supabase-bridge"],
+  ["GET","/administracion/api/me"],["POST","/administracion/api/logout"]
+ ]){
+  const r=check(env,path,method);
+  assert.equal(r.blocked,null,method+" "+path);
+ }
+});
