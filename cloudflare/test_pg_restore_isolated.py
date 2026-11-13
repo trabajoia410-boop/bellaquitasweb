@@ -15,7 +15,8 @@ import tempfile
 
 HERE=Path(__file__).resolve().parent
 sys.path.insert(0,str(HERE))
-from backup_privado_local import REQUIRED_PG,verify_pg
+from backup_privado_local import REQUIRED_PG,verify_pg,source_postgres_metrics
+from restore_privado_aislado import compare_restored
 
 SRC="bellaquitas_fake_source"
 DST="bellaquitas_fake_restore"
@@ -48,14 +49,16 @@ def build_schema() -> str:
         for name in tables:
             if schema=="public" and name=="profiles":
                 statement=("CREATE TABLE public.profiles (id text PRIMARY KEY, role text NOT NULL,"
-                           " points integer NOT NULL DEFAULT 0, visits integer NOT NULL DEFAULT 0);")
+                           " points integer NOT NULL DEFAULT 0,"
+                           " lifetime_points integer NOT NULL DEFAULT 0,"
+                           " visits integer NOT NULL DEFAULT 0);")
             else:
                 statement=f"CREATE TABLE {schema}.{name} (id text PRIMARY KEY, note text);"
             statements.append(statement)
     # Datos de prueba deliberadamente falsos; no hay emails ni tokens reales.
     statements += [
-        "INSERT INTO public.profiles(id,role,points,visits) VALUES ('fake-admin','admin',43,2);",
-        "INSERT INTO public.profiles(id,role,points,visits) VALUES ('fake-socio','socio',19,1);",
+        "INSERT INTO public.profiles(id,role,points,lifetime_points,visits) VALUES ('fake-admin','admin',43,50,2);",
+        "INSERT INTO public.profiles(id,role,points,lifetime_points,visits) VALUES ('fake-socio','socio',19,27,1);",
         "INSERT INTO public.events(id,note) VALUES ('fake-event','Solo ensayo sin datos reales');",
         "INSERT INTO public.activity(id,note) VALUES ('fake-activity','Ensayo de visitas');",
         "INSERT INTO public.redemptions(id,note) VALUES ('fake-redemption','Canje ficticio');",
@@ -92,6 +95,11 @@ def main():
         directory=Path(temp)
         sql(SRC,build_schema())
         original=summary(SRC)
+        source_counts=source_postgres_metrics({**os.environ,"PGDATABASE":SRC})
+        assert source_counts["profiles"]==2
+        assert source_counts["points"]==62
+        assert source_counts["lifetime_points"]==77
+        assert source_counts["admins"]==1
         assert original["loyalty"]=="2:62:3",original
         dump=directory/"source-only-fake.dump"
         command(["pg_dump","--format=custom","--no-owner","--no-privileges",
@@ -114,6 +122,18 @@ def main():
                  "--dbname",DST,str(dump)])
         restored=summary(DST)
         assert restored==original,{"before":original,"after":restored}
+        # Conexión REAL a un PostgreSQL LOCAL ficticio: el restaurador
+        # coteja 9 métricas tras pg_restore, sin ver ningún dato real.
+        compare_restored(source_counts,{**os.environ,"PGDATABASE":DST})
+        # Prueba NEGATIVA: si alguien altera un saldo en el destino ficticio,
+        # el cotejo debe fallar. Este UPDATE nunca sale del contenedor CI.
+        sql(DST,"UPDATE public.profiles SET points=points+1 WHERE id='fake-socio';")
+        try:
+            compare_restored(source_counts,{**os.environ,"PGDATABASE":DST})
+            raise AssertionError("No se detectó cambio de puntos restaurados")
+        except RuntimeError as exc:
+            assert "points" in str(exc),str(exc)
+        print("OK: una diferencia de puntos en Postgres RESTAURADO se detecta y bloquea")
         assert restored["auth.users"]==1
         assert restored["auth.identities"]==1
         assert restored["auth.sessions"]==1
