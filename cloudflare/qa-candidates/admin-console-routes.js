@@ -22,6 +22,11 @@ import {verifiedSupabaseAdmin,bridgeEnabled} from "./supabase-admin-bridge.js";
 const PREFIX="/administracion";
 const COOKIE="__Host-bf_admin";
 const PUBLIC_COOKIE="__Host-bf_session";
+const BRIDGE_PARENT_COOKIE="__Secure-bf_admin_parent";
+const bridgeParentCookie=(token,ttl)=>BRIDGE_PARENT_COOKIE+"="+token+
+  "; Path=/administracion; Max-Age="+ttl+"; Secure; HttpOnly; SameSite=Strict";
+const bridgeParentExpire=()=>BRIDGE_PARENT_COOKIE+
+  "=; Path=/administracion; Max-Age=0; Secure; HttpOnly; SameSite=Strict";
 const TTL=60*60;
 const HEAD={
   "Cache-Control":"private, no-store",
@@ -83,7 +88,11 @@ async function identify(request,env){
   if(env.ADMIN_SSO_ENABLED==="yes"){
     // Ambas cookies son necesarias. El padre puede ser revocado por logout
     // en la web pública; las sesiones antiguas auth_method='unknown' fallan.
-    const parent=tokenFrom(request,PUBLIC_COOKIE);
+    // El puente Supabase no emite __Host-bf_session a la web pública.
+    // Una cookie de padre restringida a /administracion impide usarla
+    // directamente en /v1/admin/* fuera del panel.
+    const parent=tokenFrom(request,env.ADMIN_SUPABASE_BRIDGE==="yes"?
+      BRIDGE_PARENT_COOKIE:PUBLIC_COOKIE);
     if(!parent)return null;
     const [tokenHash,parentHash]=await Promise.all([shaToken(token),shaToken(parent)]);
     const actor=await env.DB.prepare(
@@ -109,6 +118,8 @@ async function identify(request,env){
 async function ssoSignIn(request,env){
   if(request.method!=="POST")return json({error:"Método no permitido"},405);
   if(env.ADMIN_SSO_ENABLED!=="yes")return json({error:"Acceso SSO todavía no habilitado"},503);
+  if(env.ADMIN_SUPABASE_BRIDGE==="yes")
+    return json({error:"Usa la sesión oficial de Bellaquitas Fest"},410);
   if(!checkOrigin(request,env))return json({error:"Origen no autorizado"},403);
   const parent=tokenFrom(request,PUBLIC_COOKIE);
   if(!parent)return json({error:"Inicia sesión primero en la web de Bellaquitas Fest"},401);
@@ -161,8 +172,10 @@ async function supabaseBridgeSignIn(request,env){
   ]);
   const headers=new Headers(HEAD);
   headers.set("Content-Type","application/json; charset=utf-8");
-  headers.append("Set-Cookie",PUBLIC_COOKIE+"="+parent+
-    "; Path=/; Max-Age="+ttl+"; Secure; HttpOnly; SameSite=Lax");
+  // CRÍTICO: no emitir el token D1 de administrador como cookie pública
+  // de Path=/. Un cierre de sesión en Supabase debe quitar acceso a
+  // /v1/admin/* aunque todavía existan cookies limitadas al panel.
+  headers.append("Set-Cookie",bridgeParentCookie(parent,ttl));
   headers.append("Set-Cookie",COOKIE+"="+admin+
     "; Path=/; Max-Age="+ttl+"; Secure; HttpOnly; SameSite=Strict");
   return new Response(JSON.stringify({ok:true,profile:profile(actor)}),{
@@ -253,7 +266,21 @@ export async function adminConsoleRoute(request,env){
   if(path===PREFIX+"/api/logout"){
     if(request.method!=="POST")return json({error:"Método no permitido"},405);
     if(!checkOrigin(request,env))return json({error:"Origen no autorizado"},403);
-    if(authenticated){
+    if(env.ADMIN_SUPABASE_BRIDGE==="yes"){
+      // Logout funciona incluso si el navegador ya eliminó el bearer de
+      // Supabase (se cierra sesión primero en la web principal).
+      // El par de cookies solo puede revocar SU PROPIA sesión D1.
+      const admin=tokenFrom(request,COOKIE);
+      const parent=tokenFrom(request,BRIDGE_PARENT_COOKIE);
+      if(admin&&parent){
+        const adminHash=await shaToken(admin),parentHash=await shaToken(parent);
+        await env.DB.prepare(
+          "DELETE FROM auth_sessions WHERE token_hash=? "+
+          "AND EXISTS (SELECT 1 FROM admin_sso_sessions "+
+          "WHERE token_hash=? AND parent_token_hash=?)"
+        ).bind(parentHash,adminHash,parentHash).run();
+      }
+    }else if(authenticated){
       if(env.ADMIN_SSO_ENABLED==="yes"){
         await env.DB.prepare("DELETE FROM admin_sso_sessions WHERE token_hash=?")
           .bind(await shaToken(authenticated.adminToken)).run();
@@ -261,8 +288,13 @@ export async function adminConsoleRoute(request,env){
         await endSession(request,env,authenticated.token);
       }
     }
-    // En modo SSO salir del panel NO cierra la sesión pública.
-    return json({ok:true},200,{"Set-Cookie":cookieExpire()});
+    // Al salir del panel el usuario SIGUE conectado a Supabase.
+    const headers=new Headers(HEAD);
+    headers.set("Content-Type","application/json; charset=utf-8");
+    headers.append("Set-Cookie",cookieExpire());
+    if(env.ADMIN_SUPABASE_BRIDGE==="yes")
+      headers.append("Set-Cookie",bridgeParentExpire());
+    return new Response(JSON.stringify({ok:true}),{status:200,headers});
   }
   if(!authenticated)return json({error:"Inicia sesión de administrador"},401);
   const suffix=path.slice((PREFIX+"/api").length);
