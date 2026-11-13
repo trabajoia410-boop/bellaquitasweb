@@ -120,3 +120,15 @@ El candado exige además `workers_free_plan_verified`, `d1_and_kv_free_plan_veri
 **No volver a crear R2** ni conectar su binding. El Worker de staging desplegado puede seguir apuntando a rutas R2 que ya no existen: corregir referencias en D1/Worker al implementar el almacenamiento Free, sin alterar la web pública. El archivo `cloudflare/backup_privado_local.py` aún contiene instrucciones históricas de 20 objetos R2 y debe adaptarse antes de ejecutar un backup real.
 
 El candado actualizado acepta la alternativa `backup.r2_mode = "removed"` con `r2_objects = 0`, `r2_bucket_absent_verified = true` y `r2_originals_source_verified = true` **solo después de aportar pruebas verídicas**. Siguen siendo obligatorias las copias privadas cifradas y restauración real de Postgres, D1 y Supabase Storage, la conciliación de perfiles, el control de gastos de toda Cloudflare y la autorización final. No marcar la facturación como verificada porque el conector devolvía **403**.
+
+## 13/11/2026 — Avance comprobado de fase 5, sin autorizar publicación
+
+Consultar el [informe con resultados de autenticación, R2, paridad de perfiles, copias privadas, cuotas gratis y pruebas](./FASE5_AVANCE_REAL_2026-11-13.md).
+
+- **Nuevo puente SSO a Supabase Auth:** preparado y probado con simulaciones, pero **NO** probado con administradores reales, **NO** desplegado. El candado exige evidencia independiente de `real_supabase_admin_session_tested`, `real_supabase_role_denial_tested`, `real_admin_same_origin_verified` y `real_admin_logout_revocation_tested`; ninguna está acreditada por los tests ficticios.
+- **D1 staging:** verificadas seis cuentas reales contra Supabase, 0 diferencias en rol, código, puntos, puntos históricos y visitas; existe **una fixture adicional** con puntos 0, que requiere exclusión al corte. Las URLs de portada y borrador que usaban R2 eliminado volvieron a sus originales públicos de Supabase, sin alteración de socios.
+- **Medios:** está preparado en candidato (sin despliegue) el uso de los 5 MP4 y logos originales de GitHub Pages. **El viejo Worker de staging aún devuelve 503** al pedir vídeos que antes servía desde el R2 retirado. No confundir prueba de respuesta segura con prueba de reproducción real desde el Worker nuevo.
+- **Respaldo:** script local privado adaptado a `r2_mode=removed`, pruebas sintéticas de GPG y PostgreSQL aprobadas; **NO existe una copia cifrada real y restaurada de la base oficial** demostrada en estas evidencias. Sigue siendo requisito obligatorio.
+- **Coste:** captura muestra Workers Free y sin gastos observados; 0 buckets R2. Deben comprobarse consumos/CPU, pagos futuros y ruta fail closed antes de autorizar despliegue. Sin servicios adicionales de pago.
+
+**Queda bloqueada fase 6.** El código permanece en rama de auditoría; ningún test equivale a permiso de cambiar dominio, registros DNS, backend de producción, puntos o usuarios.
