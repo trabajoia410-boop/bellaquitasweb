@@ -133,6 +133,9 @@ def validate(evidence: object, now: datetime | None = None) -> list[str]:
         required(authentication,"real_supabase_role_denial_tested","Autenticación")
         required(authentication,"real_admin_same_origin_verified","Autenticación")
         required(authentication,"real_admin_logout_revocation_tested","Autenticación")
+        required(authentication,"admin_parent_cookie_scoped_to_panel_verified","Autenticación")
+        required(authentication,"legacy_d1_private_routes_closed_verified","Autenticación")
+        required(authentication,"supabase_rls_role_policy_audited","Autenticación")
         active=authentication.get("admins_with_verified_sso")
         if type(admin_count) is not int or admin_count < 1 or type(active) is not int or active != admin_count:
             errors.append("Autenticación: faltan administradores con acceso SSO verificado")
@@ -206,6 +209,9 @@ ALLOWED_EVIDENCE_FIELDS = {
         "real_supabase_role_denial_tested",
         "real_admin_same_origin_verified",
         "real_admin_logout_revocation_tested",
+        "admin_parent_cookie_scoped_to_panel_verified",
+        "legacy_d1_private_routes_closed_verified",
+        "supabase_rls_role_policy_audited",
     },
     "costs": {
         "cloudflare_workers_and_d1_free_confirmed",
@@ -307,6 +313,9 @@ def make_synthetic(now: datetime) -> dict:
         "real_supabase_role_denial_tested":True,
         "real_admin_same_origin_verified":True,
         "real_admin_logout_revocation_tested":True,
+        "admin_parent_cookie_scoped_to_panel_verified":True,
+        "legacy_d1_private_routes_closed_verified":True,
+        "supabase_rls_role_policy_audited":True,
         "google_and_admin_link_verified":True,
         "session_and_logout_verified":True,
         "free_cpu_or_external_auth_verified":True,
@@ -363,6 +372,9 @@ def self_test() -> None:
       ("Rechazo si no se prueba pérdida del rol Supabase real",{"authentication":{"real_supabase_role_denial_tested":False}},"real_supabase_role_denial_tested"),
       ("Rechazo si no se probó mismo dominio",{"authentication":{"real_admin_same_origin_verified":False}},"real_admin_same_origin_verified"),
       ("Rechazo sin comprobación de logout real",{"authentication":{"real_admin_logout_revocation_tested":False}},"real_admin_logout_revocation_tested"),
+      ("Rechazo sin cookie admin limitada",{"authentication":{"admin_parent_cookie_scoped_to_panel_verified":False}},"admin_parent_cookie_scoped_to_panel_verified"),
+      ("Rechazo login D1 heredado",{"authentication":{"legacy_d1_private_routes_closed_verified":False}},"legacy_d1_private_routes_closed_verified"),
+      ("Rechazo RLS no auditado",{"authentication":{"supabase_rls_role_policy_audited":False}},"supabase_rls_role_policy_audited"),
       ("Rechazo de método admin no aprobado",{"authentication":{"admin_login_method":"none"}},"método"),
       ("Rechazo de cambio a plan facturable",{"authentication":{"no_paid_upgrade_or_automatic_billing":False}},"no_paid_upgrade_or_automatic_billing"),
       ("Rechazo de R2 sin límite de facturación",{"costs":{"r2_no_uncapped_billing_or_nonbillable_storage_verified":False}},"r2_no_uncapped_billing"),
