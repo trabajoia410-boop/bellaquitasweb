@@ -82,6 +82,21 @@ def check() -> None:
     ref=os.environ.get("GITHUB_REF_NAME") or git("branch","--show-current")
     if ref!="auditoria/fase5-2026-11-11":
         raise RuntimeError("Solo es válido para la rama de auditoría, no main")
+    # Único workflow con permiso write en el proyecto: importador de logo
+    # antiguo. No puede ejecutarse ni por push ni manualmente en auditoría.
+    importer=Path(".github/workflows/import-bellaquitas-logo.yml").read_text(
+        encoding="utf-8"
+    )
+    if ("    branches:\n      - main\n" not in importer or
+        "if: github.ref == 'refs/heads/main'" not in importer):
+        raise RuntimeError(
+            "El importador write podría modificar assets de la rama de auditoría"
+        )
+    for workflow in Path(".github/workflows").glob("qa-*.yml"):
+        code=workflow.read_text(encoding="utf-8")
+        if "contents: write" in code or "git push" in code:
+            raise RuntimeError("QA no puede escribir o publicar: "+str(workflow))
+    print("OK: auditoría sin workflows QA que escriban; importador solo main.")
     print("OK: diseño/HTML/estilos/traducciones intactos.")
     print("OK: 19 recursos originales idénticos, incluidos 5 vídeos MP4.")
     print("OK: app.js coincide con el cambio SSO explícitamente revisado.")
