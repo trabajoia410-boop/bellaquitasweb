@@ -46,6 +46,10 @@ async function officialToken(){
  const cfg=window.BELLAQUITAS_CONFIG;
  if(!cfg?.supabaseUrl||!cfg?.supabaseAnonKey||
     cfg.supabaseUrl!=="https://vlsipvngvxcgnwrhpjgg.supabase.co")return null;
+ // La sesión de Supabase vive en el almacenamiento de bellaquitas.fr;
+ // nunca enviar su bearer a workers.dev ni otro dominio.
+ if(location.origin!=="https://bellaquitas.fr")
+  throw new Error("Abre el panel desde bellaquitas.fr/administracion para reutilizar tu sesión.");
  if(!officialInit){
   officialInit=(async()=>{
    const mod=await import("https://esm.sh/@supabase/supabase-js@2.118.0");
