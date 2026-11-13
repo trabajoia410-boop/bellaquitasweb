@@ -69,7 +69,10 @@ def check() -> None:
         if essential not in orig:
             raise RuntimeError("Falta archivo original imprescindible: "+essential)
     # No aprobar una rama equivocada ni la propia producción por error.
-    ref=git("symbolic-ref","--quiet","--short","HEAD")
+    # GitHub Actions checkout puede dejar HEAD detached aunque el evento
+    # sea un push a auditoría. GITHUB_REF_NAME refleja la rama del evento.
+    import os
+    ref=os.environ.get("GITHUB_REF_NAME") or git("branch","--show-current")
     if ref!="auditoria/fase5-2026-11-11":
         raise RuntimeError("Solo es válido para la rama de auditoría, no main")
     print("OK: diseño/HTML/estilos/traducciones intactos.")
