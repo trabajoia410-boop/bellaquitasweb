@@ -132,3 +132,11 @@ Consultar el [informe con resultados de autenticación, R2, paridad de perfiles,
 - **Coste:** captura muestra Workers Free y sin gastos observados; 0 buckets R2. Deben comprobarse consumos/CPU, pagos futuros y ruta fail closed antes de autorizar despliegue. Sin servicios adicionales de pago.
 
 **Queda bloqueada fase 6.** El código permanece en rama de auditoría; ningún test equivale a permiso de cambiar dominio, registros DNS, backend de producción, puntos o usuarios.
+
+## 13/11/2026 — Segunda revisión del SSO (sin despliegue)
+
+Se auditó en modo **solo lectura** la seguridad real de `profiles`, las políticas RLS, las funciones `SECURITY DEFINER` y los avisos Security Advisor de Supabase. El rol `authenticated` no tiene permisos directos para cambiar `profiles`, y las funciones elevadas comprueban `auth.uid()`; se registran avisos de funciones expuestas intencionalmente y protección de contraseña filtrada desactivada para revisión sin pago. [Acta de seguridad](./FASE5_AUDITORIA_SEGURIDAD_2026-11-13.md).
+
+Se eliminó la emisión de cookie pública `__Host-bf_session` en el puente SSO, que podría dar acceso a endpoints D1 fuera del panel; ahora la cookie padre `__Secure-bf_admin_parent` solo se envía en `/administracion`, se revoca al salir aunque Supabase ya no entregue bearer y las rutas D1 privadas/antiguo login están bloqueadas en modo puente. Ver pruebas de identidad y coste cero en el acta.
+
+El candado de publicación exige ahora además: `admin_parent_cookie_scoped_to_panel_verified`, `legacy_d1_private_routes_closed_verified` y `supabase_rls_role_policy_audited`, junto a pruebas con cuentas reales, backup/restore auténtico y autorización. Se mantiene fase 5; **no se ha activado el panel**, ni cambiado producción.
