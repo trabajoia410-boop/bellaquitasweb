@@ -16,8 +16,8 @@ Antes de publicar el panel nuevo, comprobar que podemos recuperar sin pérdidas:
 ## Estado actual
 
 **Programas preparados en rama de auditoría, NO ejecutados sobre los datos reales:**
-- `cloudflare/backup_privado_local.py`: exporta Supabase PG, Cloudflare D1 staging y Supabase Storage al **equipo privado**, cifra con GPG AES256, verifica hashes de cada archivo y calcula **9 métricas agregadas PostgreSQL**.
-- `cloudflare/restore_privado_aislado.py`: descifra en el equipo privado, comprueba integridad, restaura en **una DB PostgreSQL local PREEXISTENTE Y VACÍA** y vuelve a calcular 9 métricas para detectar cuentas, puntos, visitas o datos de autenticación perdidos/alterados.
+- `cloudflare/backup_privado_local.py`: exporta Supabase PG, Cloudflare D1 staging y Supabase Storage al **equipo privado**, cifra con GPG AES256, verifica hashes de cada archivo, calcula **9 métricas agregadas PostgreSQL** y una huella SHA-256 por cuenta (id/rol/tarjeta/puntos/visitas) sin publicar sus datos. Compara el estado inicial y final durante la exportación para rechazar cambios detectados.
+- `cloudflare/restore_privado_aislado.py`: descifra en el equipo privado, comprueba integridad, restaura en **una DB PostgreSQL local PREEXISTENTE Y VACÍA** y vuelve a calcular 9 métricas **y el SHA-256 por cuenta**, para detectar incluso dos saldos alterados que se compensen en el total.
 - `cloudflare/phase6_readiness.py`: no aprobará publicación sin evidencia del respaldo real, restauración aislada, coincidencia de saldos/Auth, inventario completo de Storage y autorización explícita.
 
 No se exportarán datos reales a GitHub, Cloudflare Workers, ChatGPT ni archivos adjuntos. **Nunca facilitar credenciales, contraseñas, archivos .dump o .gpg por este chat.**
@@ -57,3 +57,10 @@ No se exportarán datos reales a GitHub, Cloudflare Workers, ChatGPT ni archivos
 - [Restauración PostgreSQL ficticia (18 tablas, versiones 16 y 17) y detección de un punto alterado](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43491556194)
 
 **No equivalen a una copia ni restauración auténtica.** Por ello, la migración sigue en **fase 5 de 6**, sin cambios de DNS, `main`, saldo/visitas o contratación de planes.
+
+
+## Protección adicional contra copias inconsistentes
+
+El archivo GPG incorpora las métricas de perfiles/Auth y una huella SHA-256 de **las filas individuales** de `public.profiles`. Durante el respaldo se calculan al inicio y al final; si cambian, el proceso **falla y no entrega una copia aprobada**. Después de restaurar, la huella se vuelve a calcular en el PostgreSQL local y debe coincidir con la original. **Los datos individuales se procesan en memoria local; la huella se guarda dentro del GPG cifrado, no en GitHub.**
+
+**Límite importante:** dos lecturas antes y después no forman una transacción común con `pg_dump`, la exportación de D1 y la descarga de S3. Un cambio que ocurra y luego se revierta entre lecturas podría escapar a la detección. Esto es un refuerzo, **no una garantía de instantánea atómica**. La restauración aislada real, comprobación de integridad y procedimiento de corte sin escrituras conflictivas siguen siendo imprescindibles. Nunca suspender el sitio ni bloquear los puntos reales sin autorización.
