@@ -162,3 +162,14 @@ El restaurador local privado comprueba **las nueve métricas agregadas y la mism
 **Limitación:** la comprobación antes y después no garantiza que el dump SQL y el listado S3 provengan de una única transacción atómica. Sigue siendo obligatorio validar una **restauración real** y planificar cómo evitar escrituras conflictivas durante el corte, sin modificar usuarios ni suspender puntos sin autorización. `phase6_readiness.py` ahora exige `source_stable_during_export_verified` y `per_profile_sha256_restore_verified` como evidencia auténtica, no simulada. [Guía actualizada](./GUIA_COPIA_PRIVADA_Y_RESTAURACION_WINDOWS.md).
 
 Continúa la **fase 5/6**. No se ha creado una copia real, no se ha restaurado el sistema oficial ni desplegado al dominio.
+
+## 13/11/2026 — Garantía automática de inmutabilidad del sitio y ausencia de publicación desde QA
+
+Se creó `cloudflare/verify_immutable_public.py` y su workflow `.github/workflows/qa-immutable-public.yml`, **solo en la rama de auditoría y con permisos de lectura**. Comparan los blobs de **19/19 assets (cinco MP4 sin recodificación), HTML, CSS, config, francés y demás archivos públicos** con el commit original `aafb4de85a204cdb79b281815df5819417e7d9c6` de `main`. Solo se permite el hash SHA-1 de `app.js` de auditoría ya revisado, que abre administración en otra pestaña. Si cualquiera cambia, la prueba falla. El importador histórico del logo se restringió en la **rama de auditoría** para impedir que sus permisos `contents: write` muten accidentalmente assets de QA; `main` no fue cambiado. Se probó el caso del archivo `móvil.mp4` con acentos a través de Git `-z`.
+
+- [Prueba inmutabilidad aprobada](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43510698131)
+- [Acta de paridad y flujo seguro](./FASE5_PARIDAD_Y_PUBLICACION_SEGURA_2026-11-13.md)
+
+El candado de fase 6 exige ahora `original_public_files_sha_verified`, `admin_ui_diff_explicitly_reviewed` y `audit_workflows_no_publish_verified`, **más** las pruebas reales de backup/restauración, SSO y autorización del propietario. No confundir CI de comparación estática con paridad audiovisual en iPhone/Samsung ni despliegue real comprobado.
+
+**Fase 5 sigue activa.** No alterar `main`, dominio, DNS, vídeos, datos reales ni plan Free antes de todas las evidencias y autorización nueva.
