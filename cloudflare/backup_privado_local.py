@@ -95,19 +95,38 @@ def verify_d1(sql: str) -> tuple[int, int, int]:
         connection.close()
 
 def verify_bucket(inventory: dict, directory: Path, minimum: int, label: str) -> int:
-    if inventory.get("IsTruncated") is True:
-        raise RuntimeError("Inventario truncado de "+label+": requiere paginación")
-    objects = inventory.get("Contents", [])
-    if len(objects) < minimum:
+    """Conciliación estricta: ni duplicados, rutas maliciosas o enlaces locales.
+
+    Un inventario parcial puede parecer correcto si tiene claves repetidas:
+    NO basta con comprobar que len(Contents) >= mínimo.
+    """
+    if not isinstance(inventory,dict) or inventory.get("IsTruncated") is not False:
+        # AWS S3 list-objects-v2 devuelve siempre IsTruncated. Rechazar
+        # inventarios sintéticos/paginaciones que no certifican fin de lista.
+        raise RuntimeError("Inventario no finalizado de "+label+": revisar paginación")
+    objects=inventory.get("Contents",[])
+    if not isinstance(objects,list) or len(objects)<minimum:
         raise RuntimeError("Inventario "+label+" incompleto; faltan objetos")
+    seen=set()
+    root=directory.resolve(strict=True)
     for item in objects:
-        key = str(item["Key"])
-        if key.startswith("/") or ".." in Path(key).parts:
-            raise RuntimeError("Ruta no permitida en "+label)
-        file = directory / key
-        if not file.is_file() or file.stat().st_size != int(item["Size"]):
+        if not isinstance(item,dict) or not isinstance(item.get("Key"),str):
+            raise RuntimeError("Objeto inválido en "+label)
+        key=item["Key"]
+        part=Path(key)
+        if (not key or key in seen or key.startswith("/") or "\\\\" in key or
+            "\\x00" in key or any(ord(ch)<32 for ch in key) or
+            part.is_absolute() or "." in part.parts or ".." in part.parts):
+            raise RuntimeError("Clave duplicada o ruta no permitida en "+label)
+        seen.add(key)
+        if type(item.get("Size")) is not int or item["Size"]<0:
+            raise RuntimeError("Tamaño inválido en "+label)
+        target=directory/key
+        if (target.is_symlink() or not target.is_file() or
+            not target.resolve().is_relative_to(root) or
+            target.stat().st_size!=item["Size"]):
             raise RuntimeError("Archivo ausente o distinto en "+label)
-    return len(objects)
+    return len(seen)
 
 
 
