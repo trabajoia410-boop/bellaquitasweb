@@ -335,8 +335,13 @@ async function autoLogin(){
   let response;
   try{response=await api("/me");}
   catch{
-   try{response=await api("/sso",{method:"POST",body:{}});}
-   catch{response=await api("/supabase-bridge",{method:"POST",body:{}});}
+   // Evitar un intento de login Cloudflare innecesario cuando la sesión
+   // original Supabase está activa: menos solicitudes en Workers Free.
+   // Sin Supabase, únicamente se conserva el acceso SSO clásico de QA.
+   const official=await officialToken();
+   response=official
+    ?await api("/supabase-bridge",{method:"POST",body:{}})
+    :await api("/sso",{method:"POST",body:{}});
   }
   if(response.profile?.role!=="admin")throw new Error("Acceso reservado a administradores");
   showPortal(response.profile);
