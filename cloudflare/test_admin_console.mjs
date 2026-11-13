@@ -13,6 +13,7 @@ import {fileURLToPath,pathToFileURL} from "node:url";
 const here=path.dirname(fileURLToPath(import.meta.url));
 const root=path.join(here,"staging-source-2026-11-11","recovered-src");
 const {default:worker}=await import(pathToFileURL(path.join(root,"bellaquitas-api-staging.js")).href);
+const {allowSyntheticCostServicesForTests}=await import(pathToFileURL(path.join(root,"free-only-cost-policy.js")).href);
 const {createAuthSession}=await import(pathToFileURL(path.join(root,"auth-routes.js")).href);
 const {ADMIN_JS}=await import(pathToFileURL(path.join(root,"admin-console-ui.js")).href);
 const BASE="https://bellaquitas-api-staging.bellaquitas-fest-410.workers.dev";
@@ -57,6 +58,9 @@ const MEDIA={
 const env={DB:D1,MEDIA,STAGING_MUTATIONS:"disabled",ALLOW_NEW_ACCOUNTS:"no",
  PUBLIC_ORIGIN:BASE,EMAIL_AUTH_ENABLED:"yes",EMAIL_RATE_KEY:"FAKE-KEY-WITH-AT-LEAST-32-BYTES-000000",
  ADMIN_PASSWORD_RUNTIME_APPROVED:"yes"};
+// Solo una referencia local de tests Node autoriza servicios simulados en memoria.
+env.__syntheticMemoryOnly=true;
+allowSyntheticCostServicesForTests(env);
 const enc=x=>Buffer.from(x).toString("base64url");
 async function issueVerifiedGoogleSession(){
  // ENSAYO: representa exclusivamente la emisión de sesión por el callback
