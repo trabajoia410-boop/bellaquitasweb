@@ -19,6 +19,7 @@ import json
 import os
 from pathlib import Path
 import re
+import stat
 import sys
 import tempfile
 
@@ -139,6 +140,60 @@ def validate(evidence: object, now: datetime | None = None) -> list[str]:
 
     return errors
 
+# Prohibido incluir PII, tokens, contraseñas o exportaciones en las evidencias.
+# El comprobador solo consume indicadores estrictamente definidos.
+ALLOWED_EVIDENCE_FIELDS = {
+    "backup": {
+        "encrypted_and_private", "postgres_restore_tested",
+        "d1_restore_tested", "r2_bytes_verified",
+        "supabase_storage_bytes_verified", "second_copy_verified",
+        "archive_sha256", "r2_objects", "supabase_storage_objects",
+        "created_at",
+    },
+    "reconciliation": {
+        "checked_at", "source_profiles", "target_profiles",
+        "source_points", "target_points", "source_visits", "target_visits",
+        "no_real_test_mutations", "translation_and_media_parity_verified",
+        "profiles_row_parity_verified",
+    },
+    "authentication": {
+        "email_password_works", "google_and_admin_link_verified",
+        "session_and_logout_verified", "free_cpu_or_external_auth_verified",
+        "no_paid_upgrade_or_automatic_billing", "free_plan_checked_at",
+        "existing_admin_accounts", "admins_with_verified_login",
+        "no_new_duplicate_admin_accounts",
+    },
+    "costs": {
+        "cloudflare_workers_and_d1_free_confirmed",
+        "r2_no_uncapped_billing_or_nonbillable_storage_verified",
+        "resend_email_free_limit_protected",
+        "all_other_meters_and_autopay_reviewed",
+        "budget_alert_not_considered_hard_cap", "checked_at",
+    },
+    "rollback": {
+        "procedure_rehearsed", "previous_backend_retained",
+        "write_conflicts_plan_checked", "dns_and_domain_ready",
+        "design_unchanged",
+    },
+    "authorization": {
+        "scope", "explicit_permission", "authorized_at",
+    },
+}
+
+def reject_unexpected_evidence_fields(evidence: object) -> None:
+    """Rechazar claves inesperadas sin reflejar nunca sus nombres ni valores."""
+    if not isinstance(evidence, dict):
+        raise RuntimeError("Las evidencias deben ser un objeto")
+    if set(evidence) - set(ALLOWED_EVIDENCE_FIELDS):
+        raise RuntimeError("Sección de evidencia no permitida; no incluir datos personales")
+    for area, allowed in ALLOWED_EVIDENCE_FIELDS.items():
+        section = evidence.get(area)
+        if isinstance(section, dict) and set(section) - allowed:
+            raise RuntimeError(
+                "Se detectaron campos no permitidos en " + area +
+                "; no incluir contraseñas, emails, identificadores ni tokens"
+            )
+
 def safe_load_file(filename: str) -> dict:
     original = Path(filename).expanduser()
     if original.is_symlink():
@@ -146,12 +201,29 @@ def safe_load_file(filename: str) -> dict:
     file = original.resolve()
     if file == REPO or REPO in file.parents:
         raise RuntimeError("Las pruebas reales, fechas y evidencias deben quedar FUERA del repositorio público")
-    if not file.is_file() or file.is_symlink():
-        raise RuntimeError("Falta archivo de evidencia privado o es un enlace simbólico")
-    if file.stat().st_size > 100_000:
-        raise RuntimeError("Archivo de evidencia excesivamente grande; no incluir datos personales")
-    with file.open("r",encoding="utf8") as handle:
-        return json.load(handle)
+    # Abrir sin seguir enlaces simbólicos (si el sistema admite O_NOFOLLOW) y
+    # comprobar permisos sobre el descriptor YA abierto, evitando carreras stat/open.
+    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+    fd = os.open(file, flags)
+    try:
+        info = os.fstat(fd)
+        if not stat.S_ISREG(info.st_mode):
+            raise RuntimeError("Las evidencias deben ser un archivo privado normal")
+        if info.st_size > 100_000:
+            raise RuntimeError("Archivo de evidencia demasiado grande; no incluir datos personales")
+        if os.name == "posix":
+            if info.st_uid != os.getuid() or info.st_mode & 0o077:
+                raise RuntimeError(
+                    "Archivo de evidencias no privado: debe pertenecer al usuario y tener permisos 0600"
+                )
+        with os.fdopen(fd, "r", encoding="utf8") as handle:
+            fd = -1
+            evidence = json.load(handle)
+    finally:
+        if fd >= 0:
+            os.close(fd)
+    reject_unexpected_evidence_fields(evidence)
+    return evidence
 
 def make_synthetic(now: datetime) -> dict:
     stamp=now.isoformat()
@@ -239,8 +311,43 @@ def self_test() -> None:
     with tempfile.TemporaryDirectory() as temp:
         file=Path(temp)/"synthetic-evidence.json"
         file.write_text(json.dumps(good),encoding="utf8")
+        file.chmod(0o600)
         assert not validate(safe_load_file(str(file)),now)
-    print(f"OK: {passed+1} comprobaciones de rechazo y 2 controles positivos, solo con datos ficticios.")
+        # Un archivo compartido no cuenta como evidencia privada.
+        if os.name == "posix":
+            file.chmod(0o644)
+            try:
+                safe_load_file(str(file))
+                raise AssertionError("Se aceptó un fichero legible por terceros")
+            except RuntimeError as exc:
+                assert "0600" in str(exc)
+            file.chmod(0o600)
+        alias=Path(temp)/"alias-evidence.json"
+        alias.symlink_to(file)
+        try:
+            safe_load_file(str(alias))
+            raise AssertionError("Se aceptó enlace simbólico")
+        except RuntimeError:
+            pass
+        private_with_secret=copy.deepcopy(good)
+        private_with_secret["authentication"]["password_forbidden"]="SOLO-DATO-FICTICIO"
+        file.write_text(json.dumps(private_with_secret),encoding="utf8")
+        file.chmod(0o600)
+        try:
+            safe_load_file(str(file))
+            raise AssertionError("Se aceptaron credenciales en evidencia")
+        except RuntimeError as exc:
+            assert "campos no permitidos" in str(exc)
+        private_with_secret=copy.deepcopy(good)
+        private_with_secret["secret_access_token"]="SOLO-DATO-FICTICIO"
+        file.write_text(json.dumps(private_with_secret),encoding="utf8")
+        file.chmod(0o600)
+        try:
+            safe_load_file(str(file))
+            raise AssertionError("Se aceptó sección con secretos")
+        except RuntimeError as exc:
+            assert "Sección de evidencia no permitida" in str(exc)
+    print(f"OK: {passed+1} comprobaciones de rechazo y controles de privacidad, solo con datos ficticios.")
     print("AVISO: pasar un fixture de ensayo NO es autorización para publicar.")
 
 def main():
