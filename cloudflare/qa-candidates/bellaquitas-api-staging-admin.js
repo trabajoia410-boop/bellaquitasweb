@@ -7,6 +7,7 @@ import {mirrorWriteRoute} from "./mirror-write-routes.js";
 import {suggestionRoute} from "./suggestion-routes.js";
 import {protectedRoute} from "./protected-routes.js";
 import {emailAuthRoute} from "./email-auth-routes.js";
+import {freeOnlyRequestBoundary} from "./free-only-cost-policy.js";
 /**
  * Bellaquitas Fest — API de lectura para entorno de pruebas en Cloudflare.
  * No usar para gestionar usuarios, puntos, visitas ni permisos.
@@ -104,6 +105,12 @@ function withJsonFields(rows) {
 }
 export default {
   async fetch(request, env) {
+    // Defensa contra cargos: rechazar si falta la política Free-only.
+    // En pruebas Node se permite R2 simulado mediante referencia local;
+    // ninguna configuración textual de Cloudflare puede conceder ese permiso.
+    const costBoundary = freeOnlyRequestBoundary(request, env);
+    if (costBoundary.blocked) return costBoundary.blocked;
+    env = costBoundary.env;
     if (request.method === "OPTIONS") {
       return new Response(null, {status: 204, headers: responseHeaders(request)});
     }
