@@ -104,3 +104,11 @@ Aunque PostgreSQL 17 corresponde a la versión del Supabase de Bellaquitas, **a�
 `cloudflare/phase6_readiness.py` reconoce ahora el método **`authentication.admin_login_method = "sso_existing_account"`**, pero solo cuando se aporten evidencias privadas y verídicas de `admins_with_verified_sso`, `sso_admin_role_verified`, `sso_parent_session_revocation_verified`, `google_and_admin_link_verified`, sesiones/logout y viabilidad gratuita. El modo antiguo de contraseña conserva sus propias comprobaciones como alternativa, no se acepta una casilla como prueba del otro.
 
 **Esto NO autoriza el corte ni prueba acceso real**: falta adaptar la autenticación de la web pública a cookies Worker, aplicar el esquema únicamente tras respaldos verificados, probar SSO en un entorno controlado con cuentas autorizadas y cerrar costes, almacenamiento y plan de reversión. Los ensayos de CI son ficticios.
+
+## 13/11/2026 — Bloqueo expreso de servicios facturables (COSTE CERO)
+
+El propietario exige **0 € y ningún cargo automático** en Cloudflare. El candidato aplica antes de enrutar `COST_POLICY=free-only` y suprime el binding R2 y las credenciales de envío de correo externo en **todas** las rutas; las lecturas y subidas R2 devuelven **423**. Sin la política, el Worker devuelve **503**. Los tests in-memory del guardia y de la integración pasaron: [ver ejecución](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43358166429).
+
+**Condición imprescindible:** el guardia NO bloquea por sí mismo cargos del bucket R2 ya existente (almacenamiento), ni otros recursos/suscripciones de la cuenta, ni un posible plan Workers Paid. El acceso conectado a facturación sigue siendo **403**. La fase 6 no se puede aprobar hasta comprobar de verdad la cuenta y dejar sin acceso los servicios facturables.
+
+El candado exige además `workers_free_plan_verified`, `d1_and_kv_free_plan_verified`, `zero_cost_runtime_guard_verified`, `r2_binding_removed_or_inaccessible`, `no_metered_subscriptions_or_autopay_verified` y `workers_route_fail_closed_verified`. No confundir alertas con límites duros. [Ver la política completa de coste cero](./COSTE_CERO_CLOUDFLARE_2026-11-13.md).
