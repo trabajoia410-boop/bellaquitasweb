@@ -171,6 +171,11 @@ def validate(evidence: object, now: datetime | None = None) -> list[str]:
     required(costs,"d1_and_kv_free_plan_verified","Costes")
     required(costs,"zero_cost_runtime_guard_verified","Costes")
     required(costs,"r2_binding_removed_or_inaccessible","Costes")
+    # En modo R2 retirado no basta un binding inaccesible. El Worker
+    # PUBLICADO debe no declarar R2 en absoluto antes de abrir rutas reales.
+    if mode=="removed":
+        required(costs,"deployed_worker_r2_binding_absent_verified","Costes")
+    required(costs,"deployed_worker_bindings_audited","Costes")
     required(costs,"no_metered_subscriptions_or_autopay_verified","Costes")
     required(costs,"workers_route_fail_closed_verified","Costes")
     if not recent(costs.get("checked_at"),MAX_PRICING_AGE,now):
@@ -241,6 +246,8 @@ ALLOWED_EVIDENCE_FIELDS = {
         "budget_alert_not_considered_hard_cap", "checked_at",
         "workers_free_plan_verified", "d1_and_kv_free_plan_verified",
         "zero_cost_runtime_guard_verified", "r2_binding_removed_or_inaccessible",
+        "deployed_worker_r2_binding_absent_verified",
+        "deployed_worker_bindings_audited",
         "no_metered_subscriptions_or_autopay_verified",
         "workers_route_fail_closed_verified",
     },
@@ -363,6 +370,8 @@ def make_synthetic(now: datetime) -> dict:
         "d1_and_kv_free_plan_verified":True,
         "zero_cost_runtime_guard_verified":True,
         "r2_binding_removed_or_inaccessible":True,
+        "deployed_worker_r2_binding_absent_verified":True,
+        "deployed_worker_bindings_audited":True,
         "no_metered_subscriptions_or_autopay_verified":True,
         "workers_route_fail_closed_verified":True,
         "checked_at":stamp},
@@ -423,6 +432,8 @@ def self_test() -> None:
       ("Rechazo si solo existen alertas de presupuesto",{"costs":{"budget_alert_not_considered_hard_cap":False}},"budget_alert"),
       ("Rechazo si no se controla el correo gratuito",{"costs":{"resend_email_free_limit_protected":False}},"resend_email"),
       ("Rechazo si no se conocen los demás cargos",{"costs":{"all_other_meters_and_autopay_reviewed":False}},"all_other_meters"),
+      ("Rechazo R2 eliminado pero aún vinculado al Worker",{"costs":{"deployed_worker_r2_binding_absent_verified":False}},"deployed_worker_r2_binding_absent_verified"),
+      ("Rechazo sin auditoría de bindings desplegados",{"costs":{"deployed_worker_bindings_audited":False}},"deployed_worker_bindings_audited"),
       ("Rechazo Worker no confirmado Free",{"costs":{"workers_free_plan_verified":False}},"workers_free_plan_verified"),
       ("Rechazo D1 KV fuera de Free",{"costs":{"d1_and_kv_free_plan_verified":False}},"d1_and_kv_free_plan_verified"),
       ("Rechazo guardia de gasto inactiva",{"costs":{"zero_cost_runtime_guard_verified":False}},"zero_cost_runtime_guard_verified"),
