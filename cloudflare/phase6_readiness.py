@@ -135,6 +135,13 @@ def validate(evidence: object, now: datetime | None = None) -> list[str]:
     required(costs,"resend_email_free_limit_protected","Costes")
     required(costs,"all_other_meters_and_autopay_reviewed","Costes")
     required(costs,"budget_alert_not_considered_hard_cap","Costes")
+    # Cero euros: sin esto, ni siquiera se puede declarar preparado el corte.
+    required(costs,"workers_free_plan_verified","Costes")
+    required(costs,"d1_and_kv_free_plan_verified","Costes")
+    required(costs,"zero_cost_runtime_guard_verified","Costes")
+    required(costs,"r2_binding_removed_or_inaccessible","Costes")
+    required(costs,"no_metered_subscriptions_or_autopay_verified","Costes")
+    required(costs,"workers_route_fail_closed_verified","Costes")
     if not recent(costs.get("checked_at"),MAX_PRICING_AGE,now):
         errors.append("Costes: revisar facturación y límites dentro de 14 días")
 
@@ -184,6 +191,10 @@ ALLOWED_EVIDENCE_FIELDS = {
         "resend_email_free_limit_protected",
         "all_other_meters_and_autopay_reviewed",
         "budget_alert_not_considered_hard_cap", "checked_at",
+        "workers_free_plan_verified", "d1_and_kv_free_plan_verified",
+        "zero_cost_runtime_guard_verified", "r2_binding_removed_or_inaccessible",
+        "no_metered_subscriptions_or_autopay_verified",
+        "workers_route_fail_closed_verified",
     },
     "rollback": {
         "procedure_rehearsed", "previous_backend_retained",
@@ -280,6 +291,12 @@ def make_synthetic(now: datetime) -> dict:
         "resend_email_free_limit_protected":True,
         "all_other_meters_and_autopay_reviewed":True,
         "budget_alert_not_considered_hard_cap":True,
+        "workers_free_plan_verified":True,
+        "d1_and_kv_free_plan_verified":True,
+        "zero_cost_runtime_guard_verified":True,
+        "r2_binding_removed_or_inaccessible":True,
+        "no_metered_subscriptions_or_autopay_verified":True,
+        "workers_route_fail_closed_verified":True,
         "checked_at":stamp},
       "rollback":{
         "procedure_rehearsed":True,
@@ -316,6 +333,12 @@ def self_test() -> None:
       ("Rechazo si solo existen alertas de presupuesto",{"costs":{"budget_alert_not_considered_hard_cap":False}},"budget_alert"),
       ("Rechazo si no se controla el correo gratuito",{"costs":{"resend_email_free_limit_protected":False}},"resend_email"),
       ("Rechazo si no se conocen los demás cargos",{"costs":{"all_other_meters_and_autopay_reviewed":False}},"all_other_meters"),
+      ("Rechazo Worker no confirmado Free",{"costs":{"workers_free_plan_verified":False}},"workers_free_plan_verified"),
+      ("Rechazo D1 KV fuera de Free",{"costs":{"d1_and_kv_free_plan_verified":False}},"d1_and_kv_free_plan_verified"),
+      ("Rechazo guardia de gasto inactiva",{"costs":{"zero_cost_runtime_guard_verified":False}},"zero_cost_runtime_guard_verified"),
+      ("Rechazo binding R2 todavía accesible",{"costs":{"r2_binding_removed_or_inaccessible":False}},"r2_binding_removed_or_inaccessible"),
+      ("Rechazo suscripción de gasto automático",{"costs":{"no_metered_subscriptions_or_autopay_verified":False}},"no_metered_subscriptions_or_autopay_verified"),
+      ("Rechazo fail-open del Worker",{"costs":{"workers_route_fail_closed_verified":False}},"workers_route_fail_closed_verified"),
       ("Rechazo sin plan de reversión",{"rollback":{"procedure_rehearsed":False}},"Reversión"),
       ("Rechazo por evidencia antigua",{"reconciliation":{"checked_at":"2026-01-01T00:00:00Z"}},"antiguos"),
     ]
