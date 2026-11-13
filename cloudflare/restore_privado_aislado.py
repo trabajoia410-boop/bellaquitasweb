@@ -26,8 +26,8 @@ import tarfile
 import tempfile
 
 from backup_privado_local import (
-    SOURCE_METRICS_SQL, validate_metrics, verify_archive_contents,
-    verify_pg, verify_postgres_versions
+    SOURCE_METRICS_SQL, source_profile_fingerprint, validate_metrics,
+    verify_archive_contents, verify_pg, verify_postgres_versions
 )
 
 DB_PATTERN=re.compile(r"^bellaquitas_restore_[a-z0-9_]{4,36}$")
@@ -84,13 +84,22 @@ WHERE n.nspname NOT IN ('pg_catalog','information_schema')
     if privileges!="0":
         raise RuntimeError("Usar un rol PostgreSQL local sin privilegios globales")
 
-def compare_restored(expected: dict,env: dict) -> None:
+def compare_restored(expected: dict,env: dict,expected_profile_sha256: str|None=None) -> None:
     actual=validate_metrics(json.loads(sql(SOURCE_METRICS_SQL,env)))
     if actual!=expected:
         fields=[k for k in expected if actual[k]!=expected[k]]
         # No mostrar datos identificativos ni volcar la base privada.
         raise RuntimeError("Restauración no coincide en "+", ".join(fields))
+    if expected_profile_sha256 is not None:
+        actual_hash=source_profile_fingerprint(env)
+        if actual_hash!=expected_profile_sha256:
+            raise RuntimeError(
+                "Restauración no coincide en datos individuales de socios "
+                "(rol, tarjeta, puntos o visitas)"
+            )
     print("OK: perfiles, administradores, puntos, visitas, Auth y Storage coinciden.")
+    if expected_profile_sha256 is not None:
+        print("OK: SHA-256 por perfiles restaurados coincide sin mostrar datos personales.")
     print("Recuentos verificados:",len(expected),"campos; sin publicar identidades.")
 
 def run_restore(archive: Path,env: dict) -> None:
@@ -120,6 +129,7 @@ def run_restore(archive: Path,env: dict) -> None:
         with tarfile.open(decrypted,"r:gz") as tar:
             manifest=json.load(tar.extractfile("checksum-manifest.json"))
             expected=validate_metrics(manifest.get("postgres_expected"))
+            expected_rows=manifest["profile_rows_sha256"]
             entry=tar.extractfile("supabase-full.dump")
             if entry is None:
                 raise RuntimeError("Falta la exportación PostgreSQL")
@@ -136,7 +146,7 @@ def run_restore(archive: Path,env: dict) -> None:
             "pg_restore","--exit-on-error","--no-owner","--no-privileges",
             "--dbname",database,str(dump)
         ],env=env,check=True)
-        compare_restored(expected,env)
+        compare_restored(expected,env,expected_rows)
         print("OK: restauración efectuada en entorno LOCAL aislado.")
         print("Los archivos de trabajo se eliminarán al finalizar;")
         print("la BD local de pruebas debe protegerse/borrarse por su propietario.")
