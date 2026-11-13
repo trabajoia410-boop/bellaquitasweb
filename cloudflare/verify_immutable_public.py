@@ -27,9 +27,16 @@ def git(*args: str) -> str:
     return p.stdout.strip()
 
 def tracked_files(rev: str) -> dict[str,str]:
-    listing=git("ls-tree","-r",rev)
+    # -z devuelve rutas UTF-8 literales (sin core.quotePath), necesario
+    # para «móvil.mp4» y nombres con acentos o espacios.
+    listing=subprocess.run(
+        ["git","ls-tree","-r","-z",rev],
+        capture_output=True,check=True
+    ).stdout.decode("utf-8")
     result={}
-    for record in listing.splitlines():
+    for record in listing.split("\0"):
+        if not record:
+            continue
         metadata,filename=record.split("\t",1)
         mode,typ,sha=metadata.split()
         if typ!="blob" or filename.startswith((".github/","cloudflare/")):
