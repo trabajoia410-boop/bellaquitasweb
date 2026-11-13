@@ -70,3 +70,14 @@ No prometer que el Worker se mantendrá disponible tras agotarse las cuotas Free
 El propietario informa que **ya canceló la suscripción de Cloudflare R2**, pero que la vigencia de esa suscripción termina **el 10/12/2026**. Es una declaración del propietario, **no una confirmación desde la API de facturación**, cuyo acceso había devuelto 403. No presentar la cuenta como verificada sin cargos hasta comprobar en Facturación que la suscripción figura como cancelada, que no haya renovación automática ni otros productos facturables y que no existan importes pendientes de facturar por uso anterior.
 
 El bucket R2 de Bellaquitas ya se eliminó con todos sus objetos el 13/11/2026; **no hay que volver a crear uno**. Antes y alrededor del 10/12/2026, revisar el estado de la suscripción y cualquier factura pendiente. Esa fecha por sí sola no constituye una autorización para cambiar planes, cobrar, desplegar ni modificar la web oficial.
+
+## Confirmación visual de suscripciones — 13/11/2026
+
+El propietario compartió una captura de **Cloudflare → Facturación → Suscripciones**, sin subirla al repositorio. En ella aparecen literalmente:
+
+- **Workers Free — Activo**.
+- **R2 Paid — «Caduca el Dec 10, 2026»**.
+
+Esto aporta comprobación visual de que **Workers** está en Free y de que **R2 Paid** tiene fecha de caducidad **10/12/2026**; coincide con la cancelación que el propietario indicó previamente. **No hay constancia en esa imagen del importe de facturas o del consumo anterior**, porque las pestañas «Uso facturable» y «Facturas» no están abiertas. Tampoco confirma si otros servicios pueden facturar. No confundir R2 Paid todavía vigente con un bucket activo: el único bucket R2 de Bellaquitas fue eliminado y verificado como ausente.
+
+**Sin modificar** la suscripción, la web, la configuración o la cuenta; solo se ha registrado la evidencia visual sin datos de pago ni capturas.
