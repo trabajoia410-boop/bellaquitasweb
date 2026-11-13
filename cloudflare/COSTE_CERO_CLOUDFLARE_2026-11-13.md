@@ -81,3 +81,19 @@ El propietario compartió una captura de **Cloudflare → Facturación → Suscr
 Esto aporta comprobación visual de que **Workers** está en Free y de que **R2 Paid** tiene fecha de caducidad **10/12/2026**; coincide con la cancelación que el propietario indicó previamente. **No hay constancia en esa imagen del importe de facturas o del consumo anterior**, porque las pestañas «Uso facturable» y «Facturas» no están abiertas. Tampoco confirma si otros servicios pueden facturar. No confundir R2 Paid todavía vigente con un bucket activo: el único bucket R2 de Bellaquitas fue eliminado y verificado como ausente.
 
 **Sin modificar** la suscripción, la web, la configuración o la cuenta; solo se ha registrado la evidencia visual sin datos de pago ni capturas.
+
+## Verificación visual de uso facturable y facturas — 13/11/2026
+
+El propietario aportó dos capturas **de su panel de Cloudflare** (no se suben imágenes, datos de tarjeta ni capturas al repositorio). De la pestaña **Uso facturable**:
+
+- **Coste total del periodo observado (10–13 noviembre 2026): USD 0.00**.
+- **Coste proyectado del ciclo (10 noviembre–9 diciembre 2026): USD 0.00**, basado en 4 de los 30 días del ciclo; no es una garantía de coste futuro.
+- **Coste medio diario: USD 0.00**.
+- **Desglose: «No hay datos de costes para mostrar. Todo el uso está dentro de los límites del plan incluido».**
+
+De la pestaña **Facturas**, filtro Estado = Todo:
+- **«Sin facturas. Actualmente, tu cuenta no tiene facturas».**
+
+Estas capturas complementan la anterior: **Workers Free activo** y **R2 Paid con vencimiento el 10/12/2026** por cancelación indicada por el propietario. El bucket `bellaquitas-media-staging` y sus 20 objetos ya fueron borrados y se verificó que no quedaban buckets R2 en la jurisdicción predeterminada.
+
+**Alcance:** evidencia visual de que no se muestran cargos observados ni facturas **en esa fecha**, no certificado de ausencia de saldo pendiente por uso no consolidado ni garantía futura. Sigue siendo necesario comprobar las facturas posteriores y que no existan otras suscripciones/servicios facturables antes de afirmar «cero gastos garantizados». El comprobador de corte de la fase 6 permanece bloqueado hasta evidencias suficientes, respaldos y autorización expresa.
