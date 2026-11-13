@@ -133,7 +133,12 @@ const context=await browser.newContext({viewport:{width:1440,height:900},service
 const page=await context.newPage();
 const issues=[],tests=[];
 page.on("pageerror",e=>issues.push(e.message));
-page.on("console",msg=>{if(msg.type()==="error")issues.push(msg.text());});
+page.on("console",msg=>{
+ // Chrome informa HTTP 401/403 como errores de consola incluso cuando
+ // son denegaciones ESPERADAS al visitar el panel sin ser administrador.
+ if(msg.type()==="error"&&!/Failed to load resource: the server responded with a status of (401|403) \(/.test(msg.text()))
+  issues.push(msg.text());
+});
 function pass(text){tests.push(text);console.log("OK: "+text);}
 try{
  assert.ok(PUBLIC_JS.includes('href="/administracion/" target="_blank" rel="noopener noreferrer"'));
