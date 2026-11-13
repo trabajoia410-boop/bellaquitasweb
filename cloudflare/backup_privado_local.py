@@ -5,7 +5,7 @@ Bellaquitas Fest — copia PRIVADA local, nunca desde GitHub Actions.
 --check      Revisa herramientas, sin consultar cuentas.
 --verify     Verifica un archivo GPG existente de forma local y privada.
 --self-test  Prueba verificaciones con datos sintéticos; sin herramientas ni red.
---run        Exporta Supabase (Postgres), D1 staging y R2 a carpeta PRIVADA,
+--run        Exporta Supabase (Postgres), D1 staging y Storage a carpeta PRIVADA,
              comprueba integridad local y produce UN archivo cifrado con GPG.
              NO despliega, NO restaura y NO modifica puntos ni visitas reales.
 
@@ -53,6 +53,42 @@ def sha256_file(path: Path) -> str:
         for part in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(part)
     return digest.hexdigest()
+
+# Datos AGREGADOS y no identificables para comprobar el resultado de una
+# restauración futura. Solo se guardan DENTRO del archivo cifrado GPG.
+EXPECTED_METRICS=("profiles","points","lifetime_points","visits",
+                  "admins","auth_users","auth_identities",
+                  "auth_sessions","storage_objects")
+SOURCE_METRICS_SQL="""
+SELECT json_build_object(
+ 'profiles',(SELECT count(*) FROM public.profiles),
+ 'points',(SELECT coalesce(sum(points),0) FROM public.profiles),
+ 'lifetime_points',(SELECT coalesce(sum(lifetime_points),0) FROM public.profiles),
+ 'visits',(SELECT coalesce(sum(visits),0) FROM public.profiles),
+ 'admins',(SELECT count(*) FROM public.profiles WHERE role='admin'),
+ 'auth_users',(SELECT count(*) FROM auth.users),
+ 'auth_identities',(SELECT count(*) FROM auth.identities),
+ 'auth_sessions',(SELECT count(*) FROM auth.sessions),
+ 'storage_objects',(SELECT count(*) FROM storage.objects)
+)::text
+""".strip()
+
+def validate_metrics(values: object) -> dict:
+    if not isinstance(values,dict) or set(values)!=set(EXPECTED_METRICS):
+        raise RuntimeError("Faltan métricas de integridad PostgreSQL")
+    if any(type(values[k]) is not int or values[k]<0 for k in EXPECTED_METRICS):
+        raise RuntimeError("Métricas de respaldo inválidas")
+    if values["profiles"]<1 or values["admins"]<1 or values["admins"]>values["profiles"]:
+        raise RuntimeError("Recuento de administradores/perfiles inválido")
+    return values
+
+def source_postgres_metrics(env: dict) -> dict:
+    """Consulta agregada SOLO LECTURA, sin extraer emails, IDs ni contraseñas."""
+    process=subprocess.run([
+        "psql","-X","--no-psqlrc","--no-align","--tuples-only",
+        "--set=ON_ERROR_STOP=1","--command",SOURCE_METRICS_SQL
+    ],env=env,check=True,capture_output=True,text=True)
+    return validate_metrics(json.loads(process.stdout.strip()))
 
 def verify_pg(listing: str) -> None:
     # Parsear nombres exactos del listado de pg_restore para evitar falsos
@@ -154,6 +190,10 @@ def test_archive_integrity() -> None:
         digest={k:hashlib.sha256(v).hexdigest() for k,v in payload.items()}
         manifest={k:digest[k] for k in FILES if k!="checksum-manifest.json"}
         manifest["r2_mode"]="removed"
+        manifest["postgres_expected"]={
+            "profiles":2,"points":23,"lifetime_points":40,"visits":1,
+            "admins":1,"auth_users":2,"auth_identities":2,
+            "auth_sessions":1,"storage_objects":1}
         manifest["supabase-storage"]={"logo.png":digest["supabase-storage/logo.png"]}
         payload["checksum-manifest.json"]=json.dumps(manifest).encode("utf8")
         def pack(filename,files,symlink=False):
@@ -306,6 +346,7 @@ def verify_archive_contents(archive: Path) -> dict:
             if not isinstance(digest,str) or len(digest)!=64:
                 raise RuntimeError("Hash inválido para "+name)
             checks[name]=digest
+        validate_metrics(manifest.get("postgres_expected"))
         originals=manifest.get("supabase-storage")
         if not isinstance(originals,dict) or not originals:
             raise RuntimeError("No hay originales de Supabase Storage en manifiesto")
@@ -401,6 +442,10 @@ def perform() -> None:
              "--file",str(work/"supabase-full.dump")],env=pg_env)
         with (work/"pg-objects.txt").open("w",encoding="utf8") as listing:
             run(["pg_restore","--list",str(work/"supabase-full.dump")],stdout=listing)
+        # Snapshot agregado de integridad. Si cambian perfiles/puntos durante
+        # pg_dump, el cotejo del backup futuro fallará cerrado en vez de
+        # dar por verificadas cuentas diferentes.
+        expected_pg=source_postgres_metrics(pg_env)
 
         print("[2/4] Exportando D1 staging (sin modificarla)...")
         run(["wrangler","d1","export",DATABASE,"--remote","--output",
@@ -430,6 +475,7 @@ def perform() -> None:
         manifest={name:sha256_file(work/name) for name in FILES
                   if name!="checksum-manifest.json"}
         manifest["r2_mode"]="removed"
+        manifest["postgres_expected"]=expected_pg
         manifest["supabase-storage"]={
             str(p.relative_to(storage_dir)):sha256_file(p)
             for p in storage_dir.rglob("*") if p.is_file()}
