@@ -133,6 +133,9 @@ def validate(evidence: object, now: datetime | None = None) -> list[str]:
         required(authentication,"real_supabase_role_denial_tested","Autenticación")
         required(authentication,"real_admin_same_origin_verified","Autenticación")
         required(authentication,"real_admin_logout_revocation_tested","Autenticación")
+        required(authentication,"canonical_admin_route_served_on_bellaquitas_fr","Autenticación")
+        required(authentication,"cross_origin_token_transmission_blocked","Autenticación")
+        required(authentication,"www_and_workers_dev_access_tested","Autenticación")
         required(authentication,"admin_parent_cookie_scoped_to_panel_verified","Autenticación")
         required(authentication,"legacy_d1_private_routes_closed_verified","Autenticación")
         required(authentication,"supabase_rls_role_policy_audited","Autenticación")
@@ -209,6 +212,9 @@ ALLOWED_EVIDENCE_FIELDS = {
         "real_supabase_role_denial_tested",
         "real_admin_same_origin_verified",
         "real_admin_logout_revocation_tested",
+        "canonical_admin_route_served_on_bellaquitas_fr",
+        "cross_origin_token_transmission_blocked",
+        "www_and_workers_dev_access_tested",
         "admin_parent_cookie_scoped_to_panel_verified",
         "legacy_d1_private_routes_closed_verified",
         "supabase_rls_role_policy_audited",
@@ -313,6 +319,9 @@ def make_synthetic(now: datetime) -> dict:
         "real_supabase_role_denial_tested":True,
         "real_admin_same_origin_verified":True,
         "real_admin_logout_revocation_tested":True,
+        "canonical_admin_route_served_on_bellaquitas_fr":True,
+        "cross_origin_token_transmission_blocked":True,
+        "www_and_workers_dev_access_tested":True,
         "admin_parent_cookie_scoped_to_panel_verified":True,
         "legacy_d1_private_routes_closed_verified":True,
         "supabase_rls_role_policy_audited":True,
@@ -371,6 +380,9 @@ def self_test() -> None:
       ("Rechazo si solo hay pruebas Supabase ficticias",{"authentication":{"real_supabase_admin_session_tested":False}},"real_supabase_admin_session_tested"),
       ("Rechazo si no se prueba pérdida del rol Supabase real",{"authentication":{"real_supabase_role_denial_tested":False}},"real_supabase_role_denial_tested"),
       ("Rechazo si no se probó mismo dominio",{"authentication":{"real_admin_same_origin_verified":False}},"real_admin_same_origin_verified"),
+      ("Rechazo si no se sirve /administracion en dominio oficial",{"authentication":{"canonical_admin_route_served_on_bellaquitas_fr":False}},"canonical_admin_route_served_on_bellaquitas_fr"),
+      ("Rechazo si bearer puede ir a otro dominio",{"authentication":{"cross_origin_token_transmission_blocked":False}},"cross_origin_token_transmission_blocked"),
+      ("Rechazo sin comprobar workers.dev y www",{"authentication":{"www_and_workers_dev_access_tested":False}},"www_and_workers_dev_access_tested"),
       ("Rechazo sin comprobación de logout real",{"authentication":{"real_admin_logout_revocation_tested":False}},"real_admin_logout_revocation_tested"),
       ("Rechazo sin cookie admin limitada",{"authentication":{"admin_parent_cookie_scoped_to_panel_verified":False}},"admin_parent_cookie_scoped_to_panel_verified"),
       ("Rechazo login D1 heredado",{"authentication":{"legacy_d1_private_routes_closed_verified":False}},"legacy_d1_private_routes_closed_verified"),
