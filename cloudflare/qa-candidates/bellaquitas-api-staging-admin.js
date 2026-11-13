@@ -2,6 +2,7 @@ import {authRoute} from "./auth-routes.js";
 import {adminConsoleRoute} from "./admin-console-routes.js";
 import {previewRoute} from "./preview-page.js";
 import {mirrorRoute} from "./web-mirror.js";
+import {staticMediaFallback} from "./static-media-fallback.js";
 import {mirrorDataRoute} from "./mirror-data-routes.js";
 import {mirrorWriteRoute} from "./mirror-write-routes.js";
 import {suggestionRoute} from "./suggestion-routes.js";
