@@ -15,7 +15,7 @@ import tempfile
 
 HERE=Path(__file__).resolve().parent
 sys.path.insert(0,str(HERE))
-from backup_privado_local import REQUIRED_PG,verify_pg,source_postgres_metrics
+from backup_privado_local import REQUIRED_PG,verify_pg,source_postgres_metrics,source_profile_fingerprint,assert_backup_source_stable
 from restore_privado_aislado import compare_restored
 
 SRC="bellaquitas_fake_source"
@@ -49,6 +49,7 @@ def build_schema() -> str:
         for name in tables:
             if schema=="public" and name=="profiles":
                 statement=("CREATE TABLE public.profiles (id text PRIMARY KEY, role text NOT NULL,"
+                           " member_code text NOT NULL DEFAULT 'BELL-TEST',"
                            " points integer NOT NULL DEFAULT 0,"
                            " lifetime_points integer NOT NULL DEFAULT 0,"
                            " visits integer NOT NULL DEFAULT 0);")
@@ -95,7 +96,10 @@ def main():
         directory=Path(temp)
         sql(SRC,build_schema())
         original=summary(SRC)
-        source_counts=source_postgres_metrics({**os.environ,"PGDATABASE":SRC})
+        source_env={**os.environ,"PGDATABASE":SRC}
+        source_counts=source_postgres_metrics(source_env)
+        source_fingerprint=source_profile_fingerprint(source_env)
+        assert len(source_fingerprint)==64
         assert source_counts["profiles"]==2
         assert source_counts["points"]==62
         assert source_counts["lifetime_points"]==77
@@ -106,6 +110,9 @@ def main():
                  "--file",str(dump),"--dbname",SRC])
         listing=command(["pg_restore","--list",str(dump)])
         verify_pg(listing)
+        assert_backup_source_stable(source_counts,
+            source_postgres_metrics(source_env),
+            source_fingerprint,source_profile_fingerprint(source_env))
         print("OK: pg_dump contiene 18 tablas públicas, de Auth y Storage")
         # Falla si alguien elimina una tabla de Auth del listado de respaldo.
         corrupted="\n".join(
@@ -124,7 +131,21 @@ def main():
         assert restored==original,{"before":original,"after":restored}
         # Conexión REAL a un PostgreSQL LOCAL ficticio: el restaurador
         # coteja 9 métricas tras pg_restore, sin ver ningún dato real.
-        compare_restored(source_counts,{**os.environ,"PGDATABASE":DST})
+        dest_env={**os.environ,"PGDATABASE":DST}
+        compare_restored(source_counts,dest_env,source_fingerprint)
+        # Prueba negativa: dos cambios compensados, SUM(points) idéntica,
+        # no deben pasar la nueva huella individual (solo base local ficticia).
+        sql(DST,"UPDATE public.profiles SET points=points+1 WHERE id='fake-admin';")
+        sql(DST,"UPDATE public.profiles SET points=points-1 WHERE id='fake-socio';")
+        assert source_postgres_metrics(dest_env)==source_counts
+        try:
+            compare_restored(source_counts,dest_env,source_fingerprint)
+            raise AssertionError("No se detectó transferencia de puntos entre socios")
+        except RuntimeError as exc:
+            assert "individuales" in str(exc),str(exc)
+        sql(DST,"UPDATE public.profiles SET points=points-1 WHERE id='fake-admin';")
+        sql(DST,"UPDATE public.profiles SET points=points+1 WHERE id='fake-socio';")
+        compare_restored(source_counts,dest_env,source_fingerprint)
         # Prueba NEGATIVA: si alguien altera un saldo en el destino ficticio,
         # el cotejo debe fallar. Este UPDATE nunca sale del contenedor CI.
         sql(DST,"UPDATE public.profiles SET points=points+1 WHERE id='fake-socio';")
@@ -134,6 +155,7 @@ def main():
         except RuntimeError as exc:
             assert "points" in str(exc),str(exc)
         print("OK: una diferencia de puntos en Postgres RESTAURADO se detecta y bloquea")
+        print("OK: transferencia entre socios con SUM(points) intacta bloqueada por SHA-256")
         assert restored["auth.users"]==1
         assert restored["auth.identities"]==1
         assert restored["auth.sessions"]==1
