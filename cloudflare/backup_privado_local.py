@@ -90,6 +90,42 @@ def source_postgres_metrics(env: dict) -> dict:
     ],env=env,check=True,capture_output=True,text=True)
     return validate_metrics(json.loads(process.stdout.strip()))
 
+# Huella interna: coteja cada perfil y su saldo, no únicamente SUM(points).
+# Los identificadores y códigos aparecen solo en memoria del proceso LOCAL;
+# en el archivo cifrado se conserva exclusivamente la huella SHA-256.
+PROFILE_FINGERPRINT_SQL="""
+SELECT json_build_object(
+ 'id',id,'role',role,'member_code',member_code,
+ 'points',points,'lifetime_points',lifetime_points,'visits',visits
+)::text
+FROM public.profiles
+ORDER BY id
+""".strip()
+
+def source_profile_fingerprint(env: dict) -> str:
+    """Huella determinista de todas las filas reales; cero PII en el manifiesto."""
+    result=subprocess.run([
+        "psql","-X","--no-psqlrc","--no-align","--tuples-only",
+        "--set=ON_ERROR_STOP=1","--command",PROFILE_FINGERPRINT_SQL
+    ],env=env,check=True,capture_output=True,text=True)
+    if not result.stdout.strip():
+        raise RuntimeError("No hay perfiles para calcular una huella privada")
+    return hashlib.sha256(result.stdout.encode("utf-8")).hexdigest()
+
+def assert_backup_source_stable(before: dict, after: dict,
+                                before_rows: str, after_rows: str) -> None:
+    """No marcar fiable un dump si hubo cambios detectables durante su captura."""
+    validate_metrics(before)
+    validate_metrics(after)
+    for digest in (before_rows,after_rows):
+        if not isinstance(digest,str) or not re.fullmatch(r"[a-f0-9]{64}",digest):
+            raise RuntimeError("Huella de cuentas inválida")
+    if before!=after or before_rows!=after_rows:
+        raise RuntimeError(
+            "Origen cambió durante el respaldo: repetir en ventana estable, "+
+            "sin modificar puntos ni bloquear la web"
+        )
+
 def verify_pg(listing: str) -> None:
     # Parsear nombres exactos del listado de pg_restore para evitar falsos
     # positivos como "public profiles_backup" o "auth users_staging".
@@ -194,6 +230,7 @@ def test_archive_integrity() -> None:
             "profiles":2,"points":23,"lifetime_points":40,"visits":1,
             "admins":1,"auth_users":2,"auth_identities":2,
             "auth_sessions":1,"storage_objects":1}
+        manifest["profile_rows_sha256"]="b"*64
         manifest["supabase-storage"]={"logo.png":digest["supabase-storage/logo.png"]}
         payload["checksum-manifest.json"]=json.dumps(manifest).encode("utf8")
         def pack(filename,files,symlink=False):
@@ -274,6 +311,17 @@ def synthetic_self_test() -> None:
             raise AssertionError("No se detectaron tablas de Auth ausentes")
         except RuntimeError:
             pass
+        stable={"profiles":2,"points":23,"lifetime_points":40,"visits":1,
+                "admins":1,"auth_users":2,"auth_identities":2,
+                "auth_sessions":1,"storage_objects":1}
+        assert_backup_source_stable(stable,dict(stable),"a"*64,"a"*64)
+        for changed,digest in (({**stable,"points":24},"a"*64),
+                               (stable,"b"*64)):
+            try:
+                assert_backup_source_stable(stable,changed,"a"*64,digest)
+                raise AssertionError("Se aceptó backup con cambios concurrentes")
+            except RuntimeError:
+                pass
         test_archive_integrity()
     print("OK: backup cifrable con PostgreSQL, D1 y Supabase Storage; R2 retirado; datos ficticios.")
 
@@ -347,6 +395,10 @@ def verify_archive_contents(archive: Path) -> dict:
                 raise RuntimeError("Hash inválido para "+name)
             checks[name]=digest
         validate_metrics(manifest.get("postgres_expected"))
+        if not isinstance(manifest.get("profile_rows_sha256"),str) or not re.fullmatch(
+            r"[a-f0-9]{64}",manifest["profile_rows_sha256"]
+        ):
+            raise RuntimeError("Falta la huella de integridad por perfil")
         originals=manifest.get("supabase-storage")
         if not isinstance(originals,dict) or not originals:
             raise RuntimeError("No hay originales de Supabase Storage en manifiesto")
@@ -438,14 +490,18 @@ def perform() -> None:
         pg_env=dict(os.environ,PGSSLMODE="require")
         verify_postgres_versions(pg_env)
         print("[1/4] Respaldando PostgreSQL con Auth y Storage (solo lectura)...")
+        before_pg=source_postgres_metrics(pg_env)
+        before_rows=source_profile_fingerprint(pg_env)
         run(["pg_dump","--format=custom","--no-owner","--no-privileges",
              "--file",str(work/"supabase-full.dump")],env=pg_env)
         with (work/"pg-objects.txt").open("w",encoding="utf8") as listing:
             run(["pg_restore","--list",str(work/"supabase-full.dump")],stdout=listing)
-        # Snapshot agregado de integridad. Si cambian perfiles/puntos durante
-        # pg_dump, el cotejo del backup futuro fallará cerrado en vez de
-        # dar por verificadas cuentas diferentes.
-        expected_pg=source_postgres_metrics(pg_env)
+        # La instantánea pg_dump no comparte transacción con el listado S3.
+        # Si cambian puntos/perfiles/roles/contadores mientras hacemos la copia,
+        # NO afirmar que se ha capturado un estado coherente.
+        # Un usuario podría cambiar y volver al mismo estado entre lecturas:
+        # además de esta protección se exige restauración real aislada.
+        expected_pg=before_pg
 
         print("[2/4] Exportando D1 staging (sin modificarla)...")
         run(["wrangler","d1","export",DATABASE,"--remote","--output",
@@ -468,6 +524,9 @@ def perform() -> None:
                  "--output","json"],env=supa_env,stdout=listing)
 
         print("[4/4] Restaurando D1 en memoria, verificando ficheros y cifrando...")
+        after_pg=source_postgres_metrics(pg_env)
+        after_rows=source_profile_fingerprint(pg_env)
+        assert_backup_source_stable(before_pg,after_pg,before_rows,after_rows)
         result=verify_backup((work/"pg-objects.txt").read_text(encoding="utf8"),
             (work/"cloudflare-d1-staging.sql").read_text(encoding="utf8"),
             json.loads((work/"supabase-storage-inventory.json").read_text(encoding="utf8")),
@@ -476,6 +535,7 @@ def perform() -> None:
                   if name!="checksum-manifest.json"}
         manifest["r2_mode"]="removed"
         manifest["postgres_expected"]=expected_pg
+        manifest["profile_rows_sha256"]=before_rows
         manifest["supabase-storage"]={
             str(p.relative_to(storage_dir)):sha256_file(p)
             for p in storage_dir.rglob("*") if p.is_file()}
