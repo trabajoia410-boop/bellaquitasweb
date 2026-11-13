@@ -513,3 +513,45 @@ test("SSO: cerrar solo el panel revoca admin y conserva login público",async()=
  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM admin_sso_sessions").get().n,0);
  env.ADMIN_SSO_ENABLED="no";
 });
+
+test("corte de costes: sin política Free-only no atiende peticiones ni consulta D1",async()=>{
+ const locked={DB:D1,MEDIA,ADMIN_SSO_ENABLED:"yes"};
+ const res=await worker.fetch(req("/v1/events"),locked);
+ assert.equal(res.status,503);
+ assert.equal(res.headers.get("Cache-Control"),"no-store");
+});
+test("modo gratuito estricto: no permite una lectura ni una subida R2 aunque se active la bandera vieja",async()=>{
+ let calls=0;
+ const expensiveMedia={
+  async get(){calls++;throw Error("R2 realmente cobrado");},
+  async put(){calls++;throw Error("R2 realmente cobrado");},
+  async delete(){calls++;throw Error("R2 realmente cobrado");}
+ };
+ const strict={...env,MEDIA:expensiveMedia,COST_POLICY:"free-only",
+  R2_MUTATIONS_APPROVED:"yes",R2_READS_APPROVED:"yes",
+  RESEND_API_KEY:"FAKE-KEY-SHOULD-NOT-BE_USED",
+  RESEND_FROM:"test@example.test",EMAIL_REGISTRATION_ENABLED:"yes"};
+ const routes=[
+  ["/v1/assets/logos/705cc152-5de2-407a-a880-1e78ca4b30ea.png","GET"],
+  ["/v1/moments/photos/00000000-0000-4000-8000-000000000120","GET"],
+  ["/v1/mirror/admin/media/00000000-0000-4000-8000-000000000120","GET"],
+  ["/administracion/api/photos/00000000-0000-4000-8000-000000000120","GET"],
+  ["/v1/mirror/admin/media/upload","PUT"],
+  ["/administracion/api/upload","PUT"],
+  ["/v1/admin/moments/00000000-0000-4000-8000-000000000120/photo","POST"],
+  ["/administracion/api/moments/00000000-0000-4000-8000-000000000120/photo","POST"]
+ ];
+ for(const [url,method] of routes){
+  const res=await worker.fetch(req(url,{method}),strict);
+  assert.equal(res.status,423,url);
+ }
+ assert.equal(calls,0,"No puede tocar R2 ni un solo objeto");
+ const events=await worker.fetch(req("/v1/events"),strict);
+ assert.equal(events.status,200,"Lectura gratuita en D1 sigue funcionando");
+ const health=await worker.fetch(req("/health"),strict);
+ assert.equal(health.status,200);
+ assert.equal((await health.json()).storage,"unavailable");
+ const emailStatus=await worker.fetch(req("/v1/auth/email/status"),strict);
+ assert.equal(emailStatus.status,200);
+ assert.equal((await emailStatus.json()).registration,false);
+});
