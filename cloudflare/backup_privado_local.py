@@ -28,7 +28,7 @@ from datetime import datetime, timezone
 
 PROJECT = "vlsipvngvxcgnwrhpjgg"
 ACCOUNT = "7698bb24db010350ba4b02c36c0fbeb5"
-BUCKET = "bellaquitas-media-staging"
+# R2 ha sido eliminado: no crear ni consultar buckets antiguos.
 DATABASE = "bellaquitas-staging"
 TOOLS = ("pg_dump", "pg_restore", "psql", "wrangler", "aws", "gpg")
 # Tablas críticas confirmadas en el esquema real de Supabase, 12/11/2026.
@@ -45,8 +45,7 @@ REQUIRED_PG = {
 REQUIRED_D1 = {"profiles", "events", "activity", "auth_email_credentials",
                "auth_sessions", "site_content", "redemptions"}
 FILES = ("supabase-full.dump", "cloudflare-d1-staging.sql",
-         "r2-inventory.json", "supabase-storage-inventory.json",
-         "checksum-manifest.json")
+         "supabase-storage-inventory.json", "checksum-manifest.json")
 
 def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
@@ -110,137 +109,96 @@ def verify_bucket(inventory: dict, directory: Path, minimum: int, label: str) ->
             raise RuntimeError("Archivo ausente o distinto en "+label)
     return len(objects)
 
-def verify_r2(inventory: dict, directory: Path) -> int:
-    return verify_bucket(inventory, directory, 20, "Cloudflare R2")
+
 
 def verify_supabase_storage(inventory: dict, directory: Path) -> int:
     return verify_bucket(inventory, directory, 3, "Supabase Storage")
 
 def verify_backup(pg_listing: str, d1_sql: str,
-                  r2_inventory: dict, r2_path: Path,
                   storage_inventory: dict, storage_path: Path):
+    """No se respalda R2: se eliminó el único bucket real."""
     verify_pg(pg_listing)
-    counts = verify_d1(d1_sql)
-    r2_objects = verify_r2(r2_inventory, r2_path)
-    storage_objects = verify_supabase_storage(storage_inventory, storage_path)
-    return {"d1_profiles": counts[0], "d1_points": counts[1],
-            "d1_visits": counts[2], "r2_objects": r2_objects,
-            "supabase_storage_objects": storage_objects}
+    counts=verify_d1(d1_sql)
+    storage_objects=verify_supabase_storage(storage_inventory,storage_path)
+    return {"d1_profiles":counts[0],"d1_points":counts[1],
+            "d1_visits":counts[2],"r2_objects":0,
+            "supabase_storage_objects":storage_objects}
 
 def test_archive_integrity() -> None:
-    """Verificación de un TAR de ensayo y detección de manipulación y pérdidas."""
+    """Sin datos reales: archivo correcto, alterado, incompleto y peligroso."""
+    import io
     with tempfile.TemporaryDirectory() as tmp:
-        base = Path(tmp)
-        values = {name:b"ejemplo-"+name.encode("utf8") for name in (
-            "supabase-full.dump","cloudflare-d1-staging.sql",
-            "r2-inventory.json","supabase-storage-inventory.json")}
-        values["r2/imagen.png"] = b"foto inventada"
-        values["supabase-storage/logo.png"] = b"logo ficticio"
-        good = {k:hashlib.sha256(v).hexdigest() for k,v in values.items()}
-        manifest = {k:good[k] for k in FILES if k!="checksum-manifest.json"}
-        manifest["r2"]={"imagen.png":good["r2/imagen.png"]}
-        manifest["supabase-storage"]={"logo.png":good["supabase-storage/logo.png"]}
-        values["checksum-manifest.json"]=json.dumps(manifest).encode("utf8")
-        import io
-        def pack(target,modified):
-            with tarfile.open(target,"w:gz") as tar:
-                for name,data in modified.items():
+        base=Path(tmp)
+        payload={name:b"ficticio-"+name.encode("utf8") for name in FILES
+                 if name!="checksum-manifest.json"}
+        payload["supabase-storage/logo.png"]=b"foto sintetica"
+        digest={k:hashlib.sha256(v).hexdigest() for k,v in payload.items()}
+        manifest={k:digest[k] for k in FILES if k!="checksum-manifest.json"}
+        manifest["r2_mode"]="removed"
+        manifest["supabase-storage"]={"logo.png":digest["supabase-storage/logo.png"]}
+        payload["checksum-manifest.json"]=json.dumps(manifest).encode("utf8")
+        def pack(filename,files,symlink=False):
+            with tarfile.open(base/filename,"w:gz") as tar:
+                for name,data in files.items():
                     info=tarfile.TarInfo(name)
                     info.size=len(data)
                     tar.addfile(info,io.BytesIO(data))
-        archive=base/"valid.tar.gz"
-        pack(archive,values)
-        checks=verify_archive_contents(archive)
-        assert checks["files_checked"]==6
-        bad=dict(values)
-        bad["r2/imagen.png"]=b"foto cambiada"
-        pack(base/"corrupt.tar.gz",bad)
-        try:
-            verify_archive_contents(base/"corrupt.tar.gz")
-            raise AssertionError("Se aceptó un archivo modificado")
-        except RuntimeError:
-            pass
-        incomplete=dict(values)
-        del incomplete["supabase-storage/logo.png"]
-        pack(base/"missing.tar.gz",incomplete)
-        try:
-            verify_archive_contents(base/"missing.tar.gz")
-            raise AssertionError("Se aceptó un archivo sin objetos")
-        except RuntimeError:
-            pass
-
-        unexpected=dict(values)
-        unexpected["r2/objeto-no-declarado.txt"]=b"nunca incluido"
-        pack(base/"unexpected.tar.gz",unexpected)
-        try:
-            verify_archive_contents(base/"unexpected.tar.gz")
-            raise AssertionError("Se aceptó un archivo extra sin inventario")
-        except RuntimeError:
-            pass
-        with tarfile.open(base/"symlink.tar.gz","w:gz") as tar:
-            for name,data in values.items():
-                info=tarfile.TarInfo(name)
-                info.size=len(data)
-                tar.addfile(info,io.BytesIO(data))
-            link=tarfile.TarInfo("r2/enlace-peligroso")
-            link.type=tarfile.SYMTYPE
-            link.linkname="../supabase-full.dump"
-            tar.addfile(link)
-        try:
-            verify_archive_contents(base/"symlink.tar.gz")
-            raise AssertionError("Se aceptó un enlace simbólico")
-        except RuntimeError:
-            pass
+                if symlink:
+                    info=tarfile.TarInfo("un-enlace-peligroso")
+                    info.type=tarfile.SYMTYPE
+                    info.linkname="../supabase-full.dump"
+                    tar.addfile(info)
+        pack("correct.tar.gz",payload)
+        assert verify_archive_contents(base/"correct.tar.gz")=={
+            "objects_r2":0,"objects_supabase":1,"files_checked":4}
+        cases=[
+            ("corrupt.tar.gz",{**payload,"supabase-storage/logo.png":b"alterado"},False),
+            ("missing.tar.gz",{k:v for k,v in payload.items()
+                              if k!="supabase-storage/logo.png"},False),
+            ("extra.tar.gz",{**payload,"r2/no-autorizado.png":b"no existe"},False),
+            ("symlink.tar.gz",payload,True)
+        ]
+        for name,files,symlink in cases:
+            pack(name,files,symlink)
+            try:
+                verify_archive_contents(base/name)
+                raise AssertionError("Se aceptó respaldo inseguro: "+name)
+            except RuntimeError:
+                pass
 
 def synthetic_self_test() -> None:
     with tempfile.TemporaryDirectory() as d:
-        temp = Path(d)
-        target = temp / "r2"
-        target.mkdir()
-        (target / "sample.txt").write_text("ficticio", encoding="utf8")
-        contents = [{"Key": "sample.txt", "Size": 8}]
-        contents += [{"Key": "file" + str(i), "Size": 0} for i in range(19)]
-        for i in range(19):
-            (target / ("file" + str(i))).touch()
-        listing = "\n".join(
-            f"100; 1259 123456 TABLE DATA {schema} {name} qa"
-            for schema,names in REQUIRED_PG.items() for name in names
-        )
-        schema = "\n".join("CREATE TABLE " + name + (
+        base=Path(d)
+        listing="\n".join(
+            f"100; 1259 123456 TABLE DATA {sch} {name} qa"
+            for sch,names in REQUIRED_PG.items() for name in names)
+        schema="\n".join("CREATE TABLE "+name+(
             "(id TEXT,points INTEGER DEFAULT 0,visits INTEGER DEFAULT 0);"
-            if name == "profiles" else "(id TEXT);"
-        ) for name in sorted(REQUIRED_D1))
-        schema += "\n" + "\n".join(
+            if name=="profiles" else "(id TEXT);")
+            for name in sorted(REQUIRED_D1))
+        schema+="\n"+"\n".join(
             "INSERT INTO profiles(id,points,visits) VALUES ('fake"
-            + str(i) + "',10,1);" for i in range(6))
-        storage = temp / "supabase-storage"
+            +str(i)+"',10,1);" for i in range(6))
+        storage=base/"supabase-storage"
         storage.mkdir()
-        storage_items = [{"Key":"logo"+str(i)+".png","Size":3} for i in range(3)]
-        for item in storage_items:
-            (storage / item["Key"]).write_bytes(b"ABC")
-        result = verify_backup(listing, schema,
-            {"Contents": contents}, target, {"Contents": storage_items}, storage)
-        assert result == {"d1_profiles":6,"d1_points":60,"d1_visits":6,
-                          "r2_objects":20,"supabase_storage_objects":3}
+        items=[{"Key":"logo"+str(i)+".png","Size":3} for i in range(3)]
+        for x in items:
+            (storage/x["Key"]).write_bytes(b"ABC")
+        result=verify_backup(listing,schema,{"Contents":items},storage)
+        assert result=={"d1_profiles":6,"d1_points":60,"d1_visits":6,
+                        "r2_objects":0,"supabase_storage_objects":3}
         try:
-            verify_supabase_storage({"Contents":storage_items[:-1]},storage)
+            verify_supabase_storage({"Contents":items[:-1]},storage)
             raise AssertionError("No se detectaron archivos Supabase faltantes")
-        except RuntimeError:
-            pass
-        # Mal inventario: detectar discrepancia sin escribir nada en remoto.
-        bad = {"Contents": contents[:-1]}
-        try:
-            verify_r2(bad,target)
-            raise AssertionError("No se detectó inventario incompleto")
         except RuntimeError:
             pass
         try:
             verify_pg("TABLE DATA public profiles")
-            raise AssertionError("No se detectaron datos auth ausentes")
+            raise AssertionError("No se detectaron tablas de Auth ausentes")
         except RuntimeError:
             pass
-    test_archive_integrity()
-    print("OK: respaldo local y SHA-256 de archivos validados con datos sintéticos, sin acceso remoto.")
+        test_archive_integrity()
+    print("OK: backup cifrable con PostgreSQL, D1 y Supabase Storage; R2 retirado; datos ficticios.")
 
 def backup_dir() -> Path:
     location = Path(os.environ.get(
@@ -262,7 +220,6 @@ def validate_environment() -> None:
     missing = [k for k in (
         "PGHOST","PGPORT","PGUSER","PGPASSWORD","PGDATABASE",
         "CLOUDFLARE_API_TOKEN","CLOUDFLARE_ACCOUNT_ID",
-        "AWS_ACCESS_KEY_ID","AWS_SECRET_ACCESS_KEY",
         "SUPABASE_S3_ACCESS_KEY_ID","SUPABASE_S3_SECRET_ACCESS_KEY"
     ) if not os.environ.get(k)]
     if missing:
@@ -284,55 +241,58 @@ def run(command: list[str], *, env=None, stdout=None):
     subprocess.run(command,check=True,env=env,stdout=stdout)
 
 def verify_archive_contents(archive: Path) -> dict:
-    """Comprueba SHA-256 de TODOS los ficheros sin extraerlos a disco."""
+    """Comprobar integridad total SIN extraer ningún dato al disco."""
     with tarfile.open(archive,"r:gz") as tar:
         entries=tar.getmembers()
-        if any(not (entry.isfile() or entry.isdir()) for entry in entries):
-            raise RuntimeError("El archivo contiene enlaces simbólicos u otros tipos no permitidos")
-        members = [x for x in entries if x.isfile()]
-        actual = {x.name for x in members}
-        if len(actual) != len(members):
-            raise RuntimeError("El archivo contiene nombres duplicados")
-        if not set(FILES).issubset(actual):
-            raise RuntimeError("El archivo cifrado no contiene todas sus fuentes")
-        manifest_file = tar.extractfile("checksum-manifest.json")
-        if manifest_file is None:
-            raise RuntimeError("Falta el manifiesto de integridad")
-        manifest = json.load(manifest_file)
-        expected = {"checksum-manifest.json"} | set(FILES)
-        checks = {}
-        for name in ("supabase-full.dump","cloudflare-d1-staging.sql",
-                     "r2-inventory.json","supabase-storage-inventory.json"):
-            checks[name] = manifest.get(name)
-            if not isinstance(checks[name],str) or len(checks[name]) != 64:
-                raise RuntimeError("Manifiesto sin SHA-256 de "+name)
-        for section in ("r2","supabase-storage"):
-            data = manifest.get(section)
-            if not isinstance(data,dict):
-                raise RuntimeError("Manifiesto sin sección "+section)
-            for relative,digest in data.items():
-                if (not isinstance(relative,str) or not relative or
-                    relative.startswith("/") or ".." in Path(relative).parts or
-                    not isinstance(digest,str) or len(digest)!=64):
-                    raise RuntimeError("Manifiesto contiene ruta o hash incorrecto")
-                name = section+"/"+relative
-                if name in checks:
-                    raise RuntimeError("Manifiesto con duplicados")
-                checks[name] = digest
-                expected.add(name)
-        if actual != expected:
-            raise RuntimeError("Archivo con datos extra o faltantes")
-        for name,digest in checks.items():
-            file = tar.extractfile(name)
-            if file is None:
-                raise RuntimeError("No se puede leer "+name)
-            result = hashlib.sha256()
-            for chunk in iter(lambda:file.read(1024*1024),b""):
-                result.update(chunk)
-            if result.hexdigest() != digest:
-                raise RuntimeError("Corrupción o hash incorrecto en "+name)
-        return {"objects_r2":len(manifest["r2"]),
-                "objects_supabase":len(manifest["supabase-storage"]),
+        if any(not (m.isfile() or m.isdir()) for m in entries):
+            raise RuntimeError("Archivo contiene un enlace, dispositivo o tipo peligroso")
+        members=[m for m in entries if m.isfile()]
+        actual={m.name for m in members}
+        if len(actual)!=len(members) or not set(FILES).issubset(actual):
+            raise RuntimeError("Respaldo incompleto o ficheros duplicados")
+        for name in actual:
+            path=Path(name)
+            if path.is_absolute() or ".." in path.parts:
+                raise RuntimeError("Ruta de archivo no permitida")
+        file=tar.extractfile("checksum-manifest.json")
+        if file is None:
+            raise RuntimeError("Falta manifiesto de integridad")
+        manifest=json.load(file)
+        if manifest.get("r2_mode")!="removed" or "r2" in manifest:
+            raise RuntimeError("No se permite almacenar R2 retirado")
+        expected=set(FILES)
+        checks={}
+        for name in FILES:
+            if name=="checksum-manifest.json":
+                continue
+            digest=manifest.get(name)
+            if not isinstance(digest,str) or len(digest)!=64:
+                raise RuntimeError("Hash inválido para "+name)
+            checks[name]=digest
+        originals=manifest.get("supabase-storage")
+        if not isinstance(originals,dict) or not originals:
+            raise RuntimeError("No hay originales de Supabase Storage en manifiesto")
+        for relative,digest in originals.items():
+            if (not isinstance(relative,str) or not relative or
+                Path(relative).is_absolute() or ".." in Path(relative).parts
+                or not isinstance(digest,str) or len(digest)!=64):
+                raise RuntimeError("Ruta o huella no permitida")
+            name="supabase-storage/"+relative
+            if name in expected:
+                raise RuntimeError("Objeto repetido")
+            expected.add(name);checks[name]=digest
+        if actual!=expected:
+            raise RuntimeError("Objetos no declarados o ausentes en respaldo")
+        for name,sha in checks.items():
+            stream=tar.extractfile(name)
+            if stream is None:
+                raise RuntimeError("Archivo ilegible "+name)
+            actual_sha=hashlib.sha256()
+            for chunk in iter(lambda:stream.read(1024*1024),b""):
+                actual_sha.update(chunk)
+            if actual_sha.hexdigest()!=sha:
+                raise RuntimeError("Archivo corrupto o modificado: "+name)
+        return {"objects_r2":0,"objects_supabase":len(originals),
                 "files_checked":len(checks)}
 
 def verify_postgres_versions(env: dict) -> None:
@@ -361,73 +321,61 @@ def verify_postgres_versions(env: dict) -> None:
     print("OK: pg_dump/pg_restore/psql coinciden con PostgreSQL de origen (major "+str(server_major)+").")
 
 def make_archive(work: Path, out: Path) -> None:
-    with tarfile.open(work / "payload.tar.gz","w:gz") as tar:
+    with tarfile.open(work/"payload.tar.gz","w:gz") as tar:
         for name in FILES:
-            tar.add(work / name,arcname=name,recursive=False)
-        tar.add(work / "r2",arcname="r2")
-        tar.add(work / "supabase-storage",arcname="supabase-storage")
+            tar.add(work/name,arcname=name,recursive=False)
+        tar.add(work/"supabase-storage",arcname="supabase-storage")
+    # GPG pide clave al propietario por terminal: nunca enviarla al chat.
     run(["gpg","--quiet","--symmetric","--cipher-algo","AES256",
          "--output",str(out),str(work/"payload.tar.gz")])
-    if not out.is_file() or out.stat().st_size == 0:
-        raise RuntimeError("No se creó un archivo cifrado")
-    # Una comprobación de lectura NO es una restauración final de producción.
-    checkpath = work / "decrypted-check.tar.gz"
+    if not out.is_file() or out.stat().st_size==0:
+        raise RuntimeError("No se ha generado respaldo cifrado")
+    checkpath=work/"decrypted-check.tar.gz"
     run(["gpg","--quiet","--decrypt","--output",str(checkpath),str(out)])
     validation=verify_archive_contents(checkpath)
-    if validation["objects_r2"]<20 or validation["objects_supabase"]<3:
-        raise RuntimeError("La copia cifrada no incluye todos los objetos esperados")
+    if validation["objects_r2"]!=0 or validation["objects_supabase"]<3:
+        raise RuntimeError("El respaldo no contiene los originales esperados")
     checkpath.unlink()
-    out.with_suffix(out.suffix + ".sha256").write_text(
-        sha256_file(out)+"  "+out.name+"\n",encoding="utf8"
-    )
+    out.with_suffix(out.suffix+".sha256").write_text(
+        sha256_file(out)+"  "+out.name+"\n",encoding="utf8")
 
 def perform() -> None:
+    """Ejecución privada en el EQUIPO del propietario, nunca en GitHub Actions."""
     validate_environment()
     missing=[name for name in TOOLS if shutil.which(name) is None]
     if missing:
         raise RuntimeError("Instalar herramientas gratuitas: "+", ".join(missing))
     location=backup_dir()
-    print("ATENCIÓN: las copias de usuarios se mantendrán temporalmente en tu equipo.")
-    print("Se cifrarán antes de archivarse. No compartir archivos ni claves.")
-    print("D1 puede dejar de responder momentáneamente durante su exportación.")
-    if input("Escribe RESPALDAR para continuar: ").strip() != "RESPALDAR":
+    print("ATENCIÓN: respaldo de usuarios en archivo temporal PRIVADO.")
+    print("El contenido se cifrará antes de conservarlo; NO subir a GitHub.")
+    if input("Escribe RESPALDAR para continuar: ").strip()!="RESPALDAR":
         print("Cancelado sin acceder a datos.")
         return
     timestamp=datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    output=location / ("bellaquitas-"+timestamp+".tar.gz.gpg")
+    output=location/("bellaquitas-"+timestamp+".tar.gz.gpg")
     if output.exists():
         raise RuntimeError("No se sobrescriben copias antiguas")
     work=Path(tempfile.mkdtemp(dir=location,prefix=".provisional-"))
     try:
         pg_env=dict(os.environ,PGSSLMODE="require")
         verify_postgres_versions(pg_env)
-        print("[1/5] Exportando base Postgres completa (incluyendo Auth)...")
+        print("[1/4] Respaldando PostgreSQL con Auth y Storage (solo lectura)...")
         run(["pg_dump","--format=custom","--no-owner","--no-privileges",
              "--file",str(work/"supabase-full.dump")],env=pg_env)
         with (work/"pg-objects.txt").open("w",encoding="utf8") as listing:
             run(["pg_restore","--list",str(work/"supabase-full.dump")],stdout=listing)
 
-        print("[2/5] Exportando D1 staging (sin modificarla)...")
+        print("[2/4] Exportando D1 staging (sin modificarla)...")
         run(["wrangler","d1","export",DATABASE,"--remote","--output",
              str(work/"cloudflare-d1-staging.sql"),"--skip-confirmation"])
 
-        print("[3/5] Descargando archivos de Cloudflare R2 sin eliminarlos...")
-        r2dir=work/"r2"
-        r2dir.mkdir()
-        endpoint="https://"+ACCOUNT+".r2.cloudflarestorage.com"
-        run(["aws","--endpoint-url",endpoint,"s3","sync",
-             "s3://"+BUCKET,str(r2dir),"--no-progress","--only-show-errors"])
-        with (work/"r2-inventory.json").open("w",encoding="utf8") as listing:
-            run(["aws","--endpoint-url",endpoint,"s3api","list-objects-v2",
-                 "--bucket",BUCKET,"--output","json"],stdout=listing)
-
-        print("[4/5] Descargando también los objetos originales de Supabase Storage...")
+        print("[3/4] Descargando originales de Supabase Storage...")
         storage_dir=work/"supabase-storage"
         storage_dir.mkdir()
         supa_env=dict(os.environ,
-          AWS_ACCESS_KEY_ID=os.environ["SUPABASE_S3_ACCESS_KEY_ID"],
-          AWS_SECRET_ACCESS_KEY=os.environ["SUPABASE_S3_SECRET_ACCESS_KEY"],
-          AWS_DEFAULT_REGION="eu-west-3")
+            AWS_ACCESS_KEY_ID=os.environ["SUPABASE_S3_ACCESS_KEY_ID"],
+            AWS_SECRET_ACCESS_KEY=os.environ["SUPABASE_S3_SECRET_ACCESS_KEY"],
+            AWS_DEFAULT_REGION="eu-west-3")
         supa_endpoint="https://"+PROJECT+".storage.supabase.co/storage/v1/s3"
         run(["aws","--endpoint-url",supa_endpoint,"--region","eu-west-3",
              "s3","sync","s3://bellaquitas-media",str(storage_dir),
@@ -437,16 +385,14 @@ def perform() -> None:
                  "s3api","list-objects-v2","--bucket","bellaquitas-media",
                  "--output","json"],env=supa_env,stdout=listing)
 
-        print("[5/5] Restauración D1 en memoria, comprobación de archivos y cifrado...")
+        print("[4/4] Restaurando D1 en memoria, verificando ficheros y cifrando...")
         result=verify_backup((work/"pg-objects.txt").read_text(encoding="utf8"),
-             (work/"cloudflare-d1-staging.sql").read_text(encoding="utf8"),
-             json.loads((work/"r2-inventory.json").read_text(encoding="utf8")),r2dir,
-             json.loads((work/"supabase-storage-inventory.json").read_text(encoding="utf8")),storage_dir)
-        manifest={name:sha256_file(work/name) for name in (
-            "supabase-full.dump","cloudflare-d1-staging.sql","r2-inventory.json",
-            "supabase-storage-inventory.json")}
-        manifest["r2"]={str(p.relative_to(r2dir)):sha256_file(p)
-                        for p in r2dir.rglob("*") if p.is_file()}
+            (work/"cloudflare-d1-staging.sql").read_text(encoding="utf8"),
+            json.loads((work/"supabase-storage-inventory.json").read_text(encoding="utf8")),
+            storage_dir)
+        manifest={name:sha256_file(work/name) for name in FILES
+                  if name!="checksum-manifest.json"}
+        manifest["r2_mode"]="removed"
         manifest["supabase-storage"]={
             str(p.relative_to(storage_dir)):sha256_file(p)
             for p in storage_dir.rglob("*") if p.is_file()}
@@ -454,16 +400,14 @@ def perform() -> None:
             json.dumps(manifest,ensure_ascii=False,indent=2),encoding="utf8")
         make_archive(work,output)
         output.chmod(0o600)
-        print("OK: archivo cifrado en directorio privado.")
-        print("Control local: D1 tiene",result["d1_profiles"],"perfiles,",
-              result["r2_objects"],"objetos R2 y",
-              result["supabase_storage_objects"],"objetos Supabase Storage.")
-        print("IMPORTANTE: falta prueba de restauración Postgres completa en instancia aislada.")
-        print("No se ha cambiado la base original, DNS ni la web pública.")
+        print("OK: archivo cifrado PRIVADO; D1",result["d1_profiles"],
+              "perfiles; Supabase Storage",result["supabase_storage_objects"],
+              "objetos; R2 eliminado (0).")
+        print("Pendiente: restauración real PostgreSQL en instancia aislada.")
+        print("No se ha modificado Supabase, D1, DNS ni la web pública.")
     except BaseException:
-        # No dejar un archivo cifrado parcial marcado por error como respaldo válido.
         output.unlink(missing_ok=True)
-        output.with_suffix(output.suffix + ".sha256").unlink(missing_ok=True)
+        output.with_suffix(output.suffix+".sha256").unlink(missing_ok=True)
         raise
     finally:
         shutil.rmtree(work,ignore_errors=True)
@@ -492,8 +436,8 @@ def main():
             run(["gpg","--quiet","--decrypt","--output",str(dest),str(encrypted)])
             details=verify_archive_contents(dest)
             print("OK: respaldo descifrado y SHA-256 verificados:",details["files_checked"],"ficheros")
-            print("Objetos verificados: R2",details["objects_r2"],
-                "| Supabase Storage",details["objects_supabase"])
+            print("R2 retirado; objetos Supabase Storage verificados:",
+                details["objects_supabase"])
             print("Esto NO sustituye una restauración PostgreSQL aislada.")
     elif mode=="--run":
         perform()
