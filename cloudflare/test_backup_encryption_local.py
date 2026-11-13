@@ -16,18 +16,15 @@ with tempfile.TemporaryDirectory(prefix="bellaquitas-qa-gpg-") as temp:
     files={
         "supabase-full.dump":b"PGDMPdatos sinteticos solamente",
         "cloudflare-d1-staging.sql":b"CREATE TABLE profiles(id TEXT);",
-        "r2-inventory.json":json.dumps({"Contents":[{"Key":"foto.jpg","Size":4}]}).encode(),
         "supabase-storage-inventory.json":json.dumps({"Contents":[{"Key":"logo.png","Size":7}]}).encode(),
-        "r2/foto.jpg":b"FOTO",
         "supabase-storage/logo.png":b"IMAGEN7",
     }
     hashes={key:hashlib.sha256(value).hexdigest() for key,value in files.items()}
     manifest={
         "supabase-full.dump":hashes["supabase-full.dump"],
         "cloudflare-d1-staging.sql":hashes["cloudflare-d1-staging.sql"],
-        "r2-inventory.json":hashes["r2-inventory.json"],
         "supabase-storage-inventory.json":hashes["supabase-storage-inventory.json"],
-        "r2":{"foto.jpg":hashes["r2/foto.jpg"]},
+        "r2_mode":"removed",
         "supabase-storage":{"logo.png":hashes["supabase-storage/logo.png"]},
     }
     files["checksum-manifest.json"]=json.dumps(manifest).encode()
@@ -51,9 +48,9 @@ with tempfile.TemporaryDirectory(prefix="bellaquitas-qa-gpg-") as temp:
                     str(encrypted)],env=env,check=True,capture_output=True)
     assert hashlib.sha256(restored.read_bytes()).digest()==hashlib.sha256(original.read_bytes()).digest()
     details=backup.verify_archive_contents(restored)
-    assert details == {"objects_r2":1,"objects_supabase":1,"files_checked":6},details
+    assert details == {"objects_r2":0,"objects_supabase":1,"files_checked":4},details
     print("OK: cifrado GPG AES256 y descifrado completo con archivo FICTICIO")
-    print("OK: 6 hashes SHA-256 comprobados, incluidos Postgres, D1, R2 y Supabase Storage")
+    print("OK: 4 hashes SHA-256 comprobados; R2 eliminado, originales en Supabase Storage")
     wrong=subprocess.run(["gpg","--quiet","--batch","--yes","--pinentry-mode","loopback",
                     "--passphrase","CLAVE-ERRONEA-DE-CI","--decrypt",
                     "--output",str(root/"wrong.tar.gz"),str(encrypted)],
