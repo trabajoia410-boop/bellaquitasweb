@@ -6,6 +6,7 @@ on:
     paths:
       - cloudflare/backup_privado_local.py
       - cloudflare/test_pg_restore_isolated.py
+      - cloudflare/restore_privado_aislado.py
       - .github/workflows/qa-postgres-restore.yml
   workflow_dispatch:
 permissions:
