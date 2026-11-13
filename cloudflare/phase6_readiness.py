@@ -70,6 +70,8 @@ def validate(evidence: object, now: datetime | None = None) -> list[str]:
     required(backup,"encrypted_and_private","Respaldo")
     required(backup,"postgres_restore_tested","Respaldo")
     required(backup,"postgres_profiles_points_auth_match_verified","Respaldo")
+    required(backup,"source_stable_during_export_verified","Respaldo")
+    required(backup,"per_profile_sha256_restore_verified","Respaldo")
     required(backup,"isolated_local_restore_non_superuser_verified","Respaldo")
     required(backup,"storage_inventory_complete_verified","Respaldo")
     required(backup,"d1_restore_tested","Respaldo")
@@ -192,6 +194,8 @@ ALLOWED_EVIDENCE_FIELDS = {
     "backup": {
         "encrypted_and_private", "postgres_restore_tested",
         "postgres_profiles_points_auth_match_verified",
+        "source_stable_during_export_verified",
+        "per_profile_sha256_restore_verified",
         "isolated_local_restore_non_superuser_verified",
         "storage_inventory_complete_verified",
         "d1_restore_tested", "r2_bytes_verified",
@@ -298,6 +302,8 @@ def make_synthetic(now: datetime) -> dict:
         "encrypted_and_private":True,
         "postgres_restore_tested":True,
         "postgres_profiles_points_auth_match_verified":True,
+        "source_stable_during_export_verified":True,
+        "per_profile_sha256_restore_verified":True,
         "isolated_local_restore_non_superuser_verified":True,
         "storage_inventory_complete_verified":True,
         "d1_restore_tested":True,
@@ -375,6 +381,8 @@ def self_test() -> None:
       ("Rechazo sin autorización",{"authorization":{"explicit_permission":False}},"Autorización"),
       ("Rechazo si falta restaurar PostgreSQL",{"backup":{"postgres_restore_tested":False}},"Respaldo"),
       ("Rechazo si puntos/Auth restaurados no coinciden",{"backup":{"postgres_profiles_points_auth_match_verified":False}},"postgres_profiles_points_auth_match_verified"),
+      ("Rechazo si no se comprobó estabilidad antes/después",{"backup":{"source_stable_during_export_verified":False}},"source_stable_during_export_verified"),
+      ("Rechazo si huella SHA256 de cada socio no coincide",{"backup":{"per_profile_sha256_restore_verified":False}},"per_profile_sha256_restore_verified"),
       ("Rechazo si restore no fue aislado y sin superuser",{"backup":{"isolated_local_restore_non_superuser_verified":False}},"isolated_local_restore_non_superuser_verified"),
       ("Rechazo inventario Storage no completo",{"backup":{"storage_inventory_complete_verified":False}},"storage_inventory_complete_verified"),
       ("Rechazo si falta Supabase Storage",{"backup":{"supabase_storage_objects":2}},"Supabase Storage"),
