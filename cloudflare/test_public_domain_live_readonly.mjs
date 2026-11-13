@@ -36,7 +36,7 @@ async function get(path,{range=false}={}){
   assert.equal(new URL(res.url).origin,HOST,
    "Bellaquitas está redirigiendo a otro origen; rompe sesión SSO sin 2º login");
   assert.equal(res.status,range?206:200,path+" — rango o página no disponible");
-  assert.equal(res.headers.get("x-robots-tag")?.includes("noindex"),false,
+  assert.ok(!res.headers.get("x-robots-tag")?.includes("noindex"),
     path+" está marcado noindex inesperadamente");
   const bytes=Buffer.from(await res.arrayBuffer());
   assert.ok(bytes.length>0);
