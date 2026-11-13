@@ -15,7 +15,12 @@ import {fileURLToPath,pathToFileURL} from "node:url";
 const dir=path.dirname(fileURLToPath(import.meta.url));
 const recovered=path.join(dir,"staging-source-2026-11-11","recovered-src");
 const {default:worker}=await import(pathToFileURL(path.join(recovered,"bellaquitas-api-staging.js")).href);
-const {allowSyntheticCostServicesForTests}=await import(pathToFileURL(path.join(recovered,"free-only-cost-policy.js")).href);
+// El workflow de regresión usa el Worker ORIGINAL; el de aceptación
+// ensambla el candidato Free-only. En ambos casos R2 es solo una Map local.
+const costModule=fs.existsSync(path.join(recovered,"free-only-cost-policy.js"))?
+ path.join(recovered,"free-only-cost-policy.js"):
+ path.join(dir,"qa-candidates","free-only-cost-policy.js");
+const {allowSyntheticCostServicesForTests}=await import(pathToFileURL(costModule).href);
 const {createAuthSession}=await import(pathToFileURL(path.join(recovered,"auth-routes.js")).href);
 const BASE="https://bellaquitas-api-staging.bellaquitas-fest-410.workers.dev";
 const ADMIN="00000000-0000-4000-8000-000000000101";
