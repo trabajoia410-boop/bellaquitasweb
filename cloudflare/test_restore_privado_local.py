@@ -56,7 +56,9 @@ with patch.object(target,"sql",return_value="0"):
 for result in ["1","17",""]:
     with patch.object(target,"sql",return_value=result):
         rejects(lambda:target.require_empty_target(safe),"Destino NO vacío")
-print("OK: no se puede sobrescribir una BD que contenga tablas")
+with patch.object(target,"sql",side_effect=["0","1"]):
+    rejects(lambda:target.require_empty_target(safe),"sin privilegios globales")
+print("OK: no se puede sobrescribir una BD con tablas ni ejecutar como superusuario")
 
 good={
  "profiles":2,"points":62,"lifetime_points":99,"visits":3,
