@@ -173,3 +173,17 @@ Se creó `cloudflare/verify_immutable_public.py` y su workflow `.github/workflow
 El candado de fase 6 exige ahora `original_public_files_sha_verified`, `admin_ui_diff_explicitly_reviewed` y `audit_workflows_no_publish_verified`, **más** las pruebas reales de backup/restauración, SSO y autorización del propietario. No confundir CI de comparación estática con paridad audiovisual en iPhone/Samsung ni despliegue real comprobado.
 
 **Fase 5 sigue activa.** No alterar `main`, dominio, DNS, vídeos, datos reales ni plan Free antes de todas las evidencias y autorización nueva.
+
+
+## 13/11/2026 — Pruebas públicas REALES y bloqueos de infraestructura
+
+Se completaron **sin credenciales y sin mutaciones** dos baterías de prueba sobre servicios REALES (no simulados):
+
+- [Dominio publicado y cinco MP4 originales](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43512593004): aprobado. `bellaquitas.fr` mantiene los SHA-256 originales de HTML/CSS/config/FR/app y sirve cinco MP4 con `HTTP 206` y los primeros 1.024 bytes idénticos a GitHub.
+- [Supabase público, RLS y Auth sin usuario](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43512968403): aprobado. Las cinco rutas de perfiles, cambios admin, actividad, canjes e identidad rechazan acceso anónimo.
+
+Auditoría Cloudflare API **GET**: el usuario conserva cuenta gratuita Supabase, el proyecto sigue saludable en PostgreSQL 17, pero Cloudflare tiene **0 zonas `bellaquitas.fr`**, **0 custom Worker domains**, **1 Worker antiguo `bellaquitas-api-staging`** con binding R2 `MEDIA` aún declarado y una clave de correo externo presente como binding secreto. El bucket R2 sigue borrado; no recrearlo. **Ni la ruta SSO same-origin ni la eliminación del binding R2 están verificadas en Worker publicado**. D1 staging conserva 1 fixture ficticio además de las cuentas originales. Estado completo: [acta de pruebas reales](./FASE5_COMPROBACIONES_REALES_2026-11-13.md).
+
+El candado `phase6_readiness.py` exige **el binding R2 físicamente ausente** de la implementación final, no basta con que apunte a un bucket borrado. Además se eliminó el modo histórico `r2_mode=present`: **reactivar R2, aun con 20 objetos respaldados, debe bloquear el corte** conforme a la cancelación del propietario. Las vías actuales de DNS siguen siendo una decisión de despliegue pendiente; NO cambiar registros de Hostinger ni la web oficial en fase 5.
+
+**Fase 6 BLOQUEADA:** todavía no existe copia cifrada REAL y restaurada, ni SSO con sesiones auténticas de administradores, ni ruta al panel probada bajo el dominio final, ni verificación definitiva de CPU/planes gratuitos/rollback. Las pruebas públicas y sintéticas NO son autorización para publicar.
