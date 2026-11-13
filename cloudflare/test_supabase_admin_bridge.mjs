@@ -109,12 +109,26 @@ test("administrador REALMENTE verificado en Auth y RLS recibe dos cookies HttpOn
  for(const value of issued)assert.match(value,/Secure; HttpOnly; SameSite=/);
  cookies=issued.map(x=>x.split(";")[0]).join("; ");
  assert.match(cookies,/__Host-bf_admin=/);
- assert.match(cookies,/__Host-bf_session=/);
+ assert.match(cookies,/__Secure-bf_admin_parent=/);
+ assert.doesNotMatch(cookies,/__Host-bf_session=/,
+  "La cookie pública Cloudflare de /v1 JAMÁS debe contener token admin");
+ assert.match(issued.find(x=>x.includes("__Secure-bf_admin_parent=")),
+  /Path=\/administracion; Max-Age=/);
+ assert.match(issued.find(x=>x.includes("__Host-bf_admin=")),
+  /Path=\/; Max-Age=/);
  assert.equal(db.prepare("SELECT count(*) AS n FROM auth_sessions WHERE auth_method='google'").get().n,1);
  assert.equal(db.prepare("SELECT count(*) AS n FROM admin_sso_sessions").get().n,1);
  const response=await call("/me",{cookies,token:goodToken});
  assert.equal(response.status,200);
  assert.equal(response.body.profile.role,"admin");
+});
+test("el SSO Cloudflare anterior queda desactivado en modo puente Supabase",async()=>{
+ assert.equal((await call("/sso",{method:"POST",cookies,token:goodToken})).status,410);
+});
+test("no se puede acceder a /v1/admin directamente con cookie administrativa",async()=>{
+ const onlyAdminCookie=cookies.split("; ").filter(x=>x.startsWith("__Host-bf_admin=")).join("; ");
+ const direct=await worker.fetch(req("/v1/admin/members",{cookies:onlyAdminCookie}),env);
+ assert.equal(direct.status,401);
 });
 test("cookies D1 sin sesión pública vigente no dan acceso",async()=>{
  assert.equal((await call("/me",{cookies})).status,401);
@@ -134,10 +148,26 @@ test("si D1 revoca admin, no basta con que Supabase aún diga admin",async()=>{
  assert.equal((await call("/me",{cookies,token:goodToken})).status,401);
  db.prepare("UPDATE profiles SET role='admin' WHERE id=?").run(ADMIN);
 });
-test("salir del panel revoca sesión admin pero conserva sesión pública",async()=>{
- assert.equal((await call("/logout",{method:"POST",cookies,token:goodToken})).status,200);
+test("salir del panel revoca padre Y admin en D1 pero conserva Supabase",async()=>{
+ const result=await call("/logout",{method:"POST",cookies,token:goodToken});
+ assert.equal(result.status,200);
+ const expired=result.headers.getSetCookie();
+ assert.equal(expired.length,2);
+ assert.ok(expired.some(x=>x.includes("__Secure-bf_admin_parent=")&&
+   x.includes("Path=/administracion; Max-Age=0")));
  assert.equal((await call("/me",{cookies,token:goodToken})).status,401);
- assert.equal(db.prepare("SELECT count(*) AS n FROM auth_sessions").get().n,1);
+ assert.equal(db.prepare("SELECT count(*) AS n FROM auth_sessions").get().n,0);
+ assert.equal(db.prepare("SELECT count(*) AS n FROM admin_sso_sessions").get().n,0);
+ // La sesión oficial Supabase y sus contraseñas nunca se tocan.
+ assert.equal(officialRoles.get(ADMIN),"admin");
+});
+test("logout revoca cookies D1 aun si ya se cerró Supabase en otra pestaña",async()=>{
+ const signin=await call("/supabase-bridge",{method:"POST",token:goodToken});
+ assert.equal(signin.status,200);
+ const newCookies=signin.headers.getSetCookie().map(x=>x.split(";")[0]).join("; ");
+ const out=await call("/logout",{method:"POST",cookies:newCookies});
+ assert.equal(out.status,200);
+ assert.equal(db.prepare("SELECT count(*) AS n FROM auth_sessions").get().n,0);
  assert.equal(db.prepare("SELECT count(*) AS n FROM admin_sso_sessions").get().n,0);
 });
 test("invariantes: ningún saldo, visita o código se ha modificado",()=>{
