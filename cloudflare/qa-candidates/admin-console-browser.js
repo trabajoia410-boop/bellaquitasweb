@@ -38,8 +38,32 @@ function showPortal(profile){
  $("#access").hidden=true;$("#portal").hidden=false;
  $("#user-name").textContent=profile?.name||"Administrador";
 }
+// El panel reutiliza la sesión nativa de supabase-js de la web oficial;
+// no copia ni persiste credenciales en una clave adicional.
+let officialSupabase=null;
+let officialInit=null;
+async function officialToken(){
+ const cfg=window.BELLAQUITAS_CONFIG;
+ if(!cfg?.supabaseUrl||!cfg?.supabaseAnonKey||
+    cfg.supabaseUrl!=="https://vlsipvngvxcgnwrhpjgg.supabase.co")return null;
+ if(!officialInit){
+  officialInit=(async()=>{
+   const mod=await import("https://esm.sh/@supabase/supabase-js@2.118.0");
+   officialSupabase=mod.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey,{
+    auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:false,flowType:"pkce"}
+   });
+  })().catch(err=>{officialInit=null;throw err;});
+ }
+ await officialInit;
+ const {data,error}=await officialSupabase.auth.getSession();
+ if(error)throw new Error("No se pudo verificar la sesión de tu web.");
+ return data?.session?.access_token||null;
+}
 async function api(path,opts={}){
  const options={method:opts.method||"GET",credentials:"same-origin",cache:"no-store",headers:{}};
+ // Una cookie D1 antigua no basta para administrar después de cerrar Supabase.
+ const token=await officialToken();
+ if(token)options.headers.Authorization="Bearer "+token;
  if(opts.body!==undefined){
   if(opts.body instanceof Blob){
    options.body=opts.body;
@@ -305,7 +329,10 @@ async function autoLogin(){
  try{
   let response;
   try{response=await api("/me");}
-  catch{response=await api("/sso",{method:"POST",body:{}});}
+  catch{
+   try{response=await api("/sso",{method:"POST",body:{}});}
+   catch{response=await api("/supabase-bridge",{method:"POST",body:{}});}
+  }
   if(response.profile?.role!=="admin")throw new Error("Acceso reservado a administradores");
   showPortal(response.profile);
   switchTab(initialSection);
