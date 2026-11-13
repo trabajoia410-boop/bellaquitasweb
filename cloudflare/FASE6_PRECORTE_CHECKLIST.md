@@ -152,3 +152,13 @@ En PostgreSQL 16 y 17 **ficticios**, las pruebas automatizadas restauraron 18 ta
 El candado de fase 6 exige ahora `postgres_profiles_points_auth_match_verified`, `isolated_local_restore_non_superuser_verified` y `storage_inventory_complete_verified`. [Suite del candado aprobada](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43491889337).
 
 [Guía privada de Windows](./GUIA_COPIA_PRIVADA_Y_RESTAURACION_WINDOWS.md). **La copia real y restauración privada REAL siguen pendientes**. No autorizar fase 6 por las pruebas ficticias.
+
+## 13/11/2026 — Protección del saldo por socio durante copia/restauración (solo QA)
+
+Se añadieron **dos verificaciones en el programa de backup privado**: lectura agregada de PostgreSQL y huella SHA-256 de cada perfil (ID, rol, tarjeta, puntos, puntos históricos y visitas) **antes y después** de exportar PostgreSQL, D1 y Supabase Storage. Si se detectan cambios, **no se valida esa copia**. Solo quedan huellas dentro del archivo GPG, nunca datos personales en GitHub.
+
+El restaurador local privado comprueba **las nueve métricas agregadas y la misma huella SHA-256 por perfil** después de restaurar. En PostgreSQL 16 y 17 ficticios, una transferencia de un punto entre dos socios que conservaba la suma global fue detectada y rechazada. **Test aprobado**: https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43499356307. Pruebas del archivo GPG: https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43499302986.
+
+**Limitación:** la comprobación antes y después no garantiza que el dump SQL y el listado S3 provengan de una única transacción atómica. Sigue siendo obligatorio validar una **restauración real** y planificar cómo evitar escrituras conflictivas durante el corte, sin modificar usuarios ni suspender puntos sin autorización. `phase6_readiness.py` ahora exige `source_stable_during_export_verified` y `per_profile_sha256_restore_verified` como evidencia auténtica, no simulada. [Guía actualizada](./GUIA_COPIA_PRIVADA_Y_RESTAURACION_WINDOWS.md).
+
+Continúa la **fase 5/6**. No se ha creado una copia real, no se ha restaurado el sistema oficial ni desplegado al dominio.
