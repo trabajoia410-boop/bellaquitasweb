@@ -127,8 +127,11 @@ assert.ok((await css.text()).length > 1000, 'No se ha cargado el CSS original');
 const lang = await call('/espejo/locale-fr.js');
 assert.ok((await lang.text()).length > 1000, 'Falta la traducción francesa');
 
-const logo = await call('/v1/assets/logos/705cc152-5de2-407a-a880-1e78ca4b30ea.png');
-assert.match(logo.headers.get('content-type') || '', /image\/png/i);
-assert.ok((await logo.arrayBuffer()).byteLength > 1000, 'Logo no disponible en R2');
+// El propietario eliminó R2 (20 objetos + bucket). El Worker desplegado
+// aún es la versión anterior y falla cerrado; NO debe servir los logos R2.
+const logo = await call('/v1/assets/logos/705cc152-5de2-407a-a880-1e78ca4b30ea.png',503);
+assert.match(logo.headers.get('content-type') || '', /application\/json/i);
+assert.equal(typeof (await logo.json()).error,'string');
+console.log('OK R2 eliminado: logo antiguo no accesible desde el Worker');
 
 console.log('OK: ' + passed + ' comprobaciones no destructivas superadas.');
