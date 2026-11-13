@@ -15,40 +15,11 @@
     <div class="access-card">
       <div class="eyebrow">BELLAQUITAS FEST · ACCESO PRIVADO</div>
       <h1>Bienvenido al panel</h1>
-      <p>Gestiona tu página como en WordPress, desde una pestaña independiente.</p>
-      <form id="login-form" autocomplete="on">
-        <label for="admin-email">Correo del administrador</label>
-        <input id="admin-email" type="email" autocomplete="username" inputmode="email" maxlength="254" placeholder="tu@email.com" required>
-        <label for="admin-password">Contraseña</label>
-        <div class="password-row"><input id="admin-password" type="password" autocomplete="current-password" minlength="12" required><button id="show-password" type="button" aria-label="Mostrar u ocultar contraseña">Ver</button></div>
-        <button class="primary full" type="submit" id="login-submit">Entrar al panel</button>
-        <div id="login-feedback" class="feedback" role="status" aria-live="polite"></div>
-      </form>
-      <details class="activate-panel" id="activate-help">
-        <summary>¿Primera vez en el panel? Activa tu contraseña</summary>
-        <p>Para proteger tu cuenta, primero verifica tu acceso de administrador con Google y después confirma tu correo electrónico.</p>
-        <a class="secondary activate-google" href="/v1/auth/google/start?return=mirror" target="_blank" rel="noopener noreferrer">1. Verificar mi cuenta con Google</a>
-        <form id="activate-request-form" autocomplete="on">
-          <label for="activate-email">2. Correo donde recibirás el enlace privado</label>
-          <input type="email" id="activate-email" autocomplete="email" maxlength="254" required placeholder="tu@email.com">
-          <button type="submit" class="primary full">Enviar enlace de activación</button>
-        </form>
-        <div class="feedback" id="activate-request-status" role="status" aria-live="polite"></div>
-        <p class="access-hint">El enlace caduca a los 15 minutos y solo permite vincular una contraseña a una cuenta administradora existente.</p>
-      </details>
-      <section id="activate-confirmation" class="activate-confirmation" hidden>
-        <h2>Establecer contraseña</h2>
-        <p>El correo ya ha sido confirmado mediante un enlace de un solo uso.</p>
-        <form id="activate-confirm-form" autocomplete="new-password">
-          <label for="activate-new-password">Nueva contraseña (mínimo 12 caracteres)</label>
-          <input type="password" id="activate-new-password" autocomplete="new-password" minlength="12" maxlength="128" required>
-          <label for="activate-repeat-password">Repetir contraseña</label>
-          <input type="password" id="activate-repeat-password" autocomplete="new-password" minlength="12" maxlength="128" required>
-          <button type="submit" class="primary full">Activar mi acceso</button>
-        </form>
-        <div class="feedback" id="activate-confirm-status" role="status" aria-live="polite"></div>
-      </section>
-      <p class="access-hint">Solo pueden entrar las cuentas con permisos de administrador y una contraseña de correo previamente verificada. La sesión pública de socio no abre este panel.</p>
+      <p>Gestiona la web, eventos y socios en una pestaña independiente. No necesitas volver a iniciar sesión.</p>
+      <p id="access-status" class="access-hint">Comprobando tu sesión de Bellaquitas Fest…</p>
+      <div id="login-feedback" class="feedback" role="status" aria-live="polite"></div>
+      <button type="button" class="primary full" id="retry-sso">Comprobar mi acceso de administrador</button>
+      <p class="access-hint">Entra primero en tu cuenta de la web principal. Si tienes el rol de administrador, este panel se abrirá automáticamente sin pedirte otro correo ni contraseña.</p>
       <a class="return-link" href="/" target="_blank" rel="noopener noreferrer">Abrir web pública ↗</a>
     </div>
     <small class="access-footer">Administración protegida · Conexión segura · Bellaquitas Fest</small>
