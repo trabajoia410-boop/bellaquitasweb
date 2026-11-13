@@ -90,3 +90,9 @@ En el Supabase real, la versión comprobada por consulta **solo de lectura** es 
 La prueba de restauración ya se ejecuta **tanto en PostgreSQL 16 como en 17**, con herramientas `pg_dump` y `pg_restore` coincidentes en versión. **Ambas restauraciones han aprobado** la comparación de 18 tablas y la recuperación de sesiones, identidades, eventos, canjes y saldos exclusivamente ficticios. [Ejecución conjunta](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43249197005).
 
 Aunque PostgreSQL 17 corresponde a la versión del Supabase de Bellaquitas, **aún NO hay una restauración real de la base Supabase**. El control `backup.postgres_restore_tested` debe seguir sin marcarse como completado para la producción.
+
+## Revisión de acceso y evidencias privadas — 13/11/2026
+
+- **Evidencias locales más seguras:** `phase6_readiness.py` ahora exige permisos **0600 y propietario actual en POSIX**, rechaza enlaces simbólicos y campos ajenos al esquema aprobado. No guardar ni incluir correos, contraseñas, tokens ni IDs personales. Ensayo sin acceso a usuarios reales: https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43354536720.
+- **Ruta gratuita de autenticación investigada, NO habilitada:** validador de ID token OIDC con firma RS256/issuer/audiencia/nonce y vinculación **solo por sujeto verificado** a un `profile_id` admin preexistente, sin usar correo para otorgar privilegios. Pruebas sintéticas: https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43355074775. Véase [informe OIDC](./AUTH_OIDC_ADMIN_FASE5_2026-11-13.md).
+- **Sigue bloqueado el corte:** falta seleccionar y autorizar proveedor, implementar el flujo real, demostrar el plan gratuito y los límites de CPU, activar sin duplicación a los administradores existentes y realizar una copia REAL restaurada. No convertir el éxito del prototipo en `authentication.free_cpu_or_external_auth_verified=true`.
