@@ -11,12 +11,26 @@
  * cookies D1 antiguas. El frontend nunca guarda copias del token.
  */
 const SUPABASE_HOST="https://vlsipvngvxcgnwrhpjgg.supabase.co";
+const CANONICAL_SITE_ORIGIN="https://bellaquitas.fr";
+function sameSiteOrigin(request,env){
+  // Un worker en workers.dev o un subdominio no comparte localStorage
+  // con la web principal. Nunca aceptar solo una cabecera Origin fingida.
+  let target;
+  try{target=new URL(request.url).origin;}catch{return false;}
+  const origin=request.headers.get("Origin");
+  const site=request.headers.get("Sec-Fetch-Site");
+  return target===CANONICAL_SITE_ORIGIN &&
+    env?.PUBLIC_ORIGIN===CANONICAL_SITE_ORIGIN &&
+    (!origin||origin===CANONICAL_SITE_ORIGIN) &&
+    (!site||site==="same-origin");
+}
 const UUID=/^[a-f\d]{8}-[a-f\d]{4}-[1-8][a-f\d]{3}-[89ab][a-f\d]{3}-[a-f\d]{12}$/i;
 const MAX_TOKEN_LENGTH=8192;
 function settings(env){
   if(env?.ADMIN_SUPABASE_BRIDGE!=="yes"||
      env?.ADMIN_SSO_ENABLED!=="yes"||
-     env?.SUPABASE_URL!==SUPABASE_HOST)return null;
+     env?.SUPABASE_URL!==SUPABASE_HOST||
+     env?.PUBLIC_ORIGIN!==CANONICAL_SITE_ORIGIN)return null;
   const key=env?.SUPABASE_ANON_KEY||env?.SUPABASE_PUBLISHABLE_KEY;
   if(typeof key!=="string"||key.length<20||key.length>2000)return null;
   return {key};
@@ -57,7 +71,7 @@ function jwtExpiration(token){
 }
 export async function verifiedSupabaseAdmin(request,env,expectedProfileId=null){
   const cfg=settings(env),accessToken=rawToken(request);
-  if(!cfg||!accessToken)return null;
+  if(!cfg||!accessToken||!sameSiteOrigin(request,env))return null;
   const now=Math.floor(Date.now()/1000),expiresAt=jwtExpiration(accessToken);
   if(expiresAt<=now+15||expiresAt>now+7200)return null;
   const user=await getJSON(SUPABASE_HOST+"/auth/v1/user",accessToken,cfg.key);
@@ -78,4 +92,7 @@ export async function verifiedSupabaseAdmin(request,env,expectedProfileId=null){
   return {id:user.id,method:provider,expiresAt};
 }
 export function bridgeEnabled(env){return !!settings(env);}
+export function bridgeOriginAllowed(request,env){
+  return !!settings(env)&&sameSiteOrigin(request,env);
+}
 export function bridgeTokenSupplied(request){return !!rawToken(request);}
