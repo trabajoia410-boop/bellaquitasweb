@@ -1,6 +1,8 @@
 name: Importar logo Bellaquitas Fest
 on:
   push:
+    branches:
+      - main
     paths:
       - '.github/workflows/import-bellaquitas-logo.yml'
   workflow_dispatch:
@@ -8,6 +10,9 @@ permissions:
   contents: write
 jobs:
   logo:
+    # Evita escribir nuevos assets en la rama de auditoría mediante
+    # workflow_dispatch o pushes de preparación. main no se modifica aquí.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
