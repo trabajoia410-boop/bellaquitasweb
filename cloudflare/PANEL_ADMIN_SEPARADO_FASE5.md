@@ -113,3 +113,28 @@ Se ha preparado una corrección que separa y atribuye el origen real de la sesi�
 - [Pruebas separadas de seguridad: 35/35](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43198959200): 10 casos Google y 25 casos de administración.
 
 **Permanece bloqueada** la activación real por el coste CPU del hash frente a Workers Free, además de faltar respaldos reales restaurables. No se ha activado nada en producción ni enviado emails reales.
+
+## Actualización 13/11/2026 — panel SIN segundo inicio de sesión (solicitado por el propietario)
+
+El propietario ha simplificado el requisito: **quien ya tenga una sesión iniciada en Bellaquitas Fest y sea administrador NO debe volver a introducir email ni contraseña**. La administración sigue abriéndose en **una pestaña independiente**, con aspecto tipo WordPress, y sus permisos se comprueban en el servidor.
+
+Se ha implementado en la rama de auditoría el nuevo candidato, no desplegado:
+
+- **Entrada automática:** `/administracion/` → el navegador solicita `POST /administracion/api/sso` si todavía no tiene una sesión administrativa. Nunca pide ni envía una contraseña extra.
+- **Sesión pública necesaria:** cookie `__Host-bf_session` previamente expedida después de autenticar la identidad por Google o correo. En el primer ensayo, para cuentas originales, Google es el flujo verificado disponible. Las sesiones antiguas con método `unknown` no sirven.
+- **Servidor comprueba permisos:** el perfil debe existir, tener **role=admin** en D1 y la sesión original debe estar activa. Un socio o empleado de puerta no puede entrar aunque conozca la URL o cambie el nombre de una cookie.
+- **Sesión de panel propia:** cookie `__Host-bf_admin` **HttpOnly, Secure, SameSite=Strict**, máxima duración de 1 hora, registrada en `admin_sso_sessions`. Está ligada al **hash de la sesión pública**, no a un email: cada petición privada exige **ambas cookies**, la validez de ambas sesiones y rol admin actual.
+- **Revocación:** cerrar la web principal invalida el panel; cerrar solo el panel conserva la sesión pública y permite entrar de nuevo automáticamente si continúa siendo admin.
+- **Sin segunda contraseña:** el formulario email/password y la activación por email se retiraron del diseño candidato. Cuando `ADMIN_SSO_ENABLED=yes`, el antiguo endpoint de contraseña responde 410 y la activación responde 404; en producción nunca activar la contraseña costosa por error.
+- **Sin sesión o sin rol admin:** aparece una indicación para iniciar sesión en la web principal, no un acceso administrativo abierto.
+- **Sin cambios en el sitio público:** se mantienen los enlaces que abren una nueva pestaña y el diseño, vídeos, idiomas, logo y secciones de Bellaquitas.
+
+Archivos cambiados: `cloudflare/qa-candidates/admin-console-routes.js`, `admin-console.html`, `admin-console-browser.js`, `admin-console-ui.js`, `cloudflare/migrations/0007-admin-sso-sessions.sql` y ensayos del navegador y del Worker. **No se ha aplicado la migración SQL en Cloudflare ni cambiado `main`**.
+
+**Pruebas aprobadas con cuentas y D1 ficticios:**
+- [Aceptación integral del panel, permisos, Google, editor y móvil](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43356640930)
+- [Chrome móvil y escritorio, sin otra contraseña](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43356640892)
+
+**Pendiente para activar:** la sesión pública del dominio oficial todavía usa el sistema actual; antes de desplegar se debe crear el mismo flujo de autenticación pública con cookies verificadas por el Worker o un intercambio de sesiones seguro. **Una cookie de Supabase en el navegador no se convierte automáticamente en cookie `__Host-bf_session` de Cloudflare**. Migración de autenticación de socios, backups reales, facturación gratuita, DNS y pruebas finales siguen pendientes.
+
+Esta decisión **sustituye el requisito antiguo de introducir email/contraseña extra únicamente dentro del panel**. No elimina el inicio de sesión de la web principal ni la protección de permisos.
