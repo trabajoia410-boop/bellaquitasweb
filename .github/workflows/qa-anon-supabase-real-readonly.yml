@@ -1,0 +1,24 @@
+name: Fase 5 — Supabase real: accesos anónimos privados denegados (solo GET)
+on:
+  push:
+    branches:
+      - auditoria/fase5-2026-11-11
+    paths:
+      - cloudflare/test_public_anon_rls_live.mjs
+      - .github/workflows/qa-anon-supabase-real-readonly.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  anon-security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Comprobar RLS real con clave pública sin usuarios ni modificaciones
+        run: node cloudflare/test_public_anon_rls_live.mjs
