@@ -62,8 +62,13 @@ async function officialToken(){
 async function api(path,opts={}){
  const options={method:opts.method||"GET",credentials:"same-origin",cache:"no-store",headers:{}};
  // Una cookie D1 antigua no basta para administrar después de cerrar Supabase.
- const token=await officialToken();
- if(token)options.headers.Authorization="Bearer "+token;
+ // Para cerrar sesión no es necesario tener un bearer Supabase vigente:
+ // si el usuario salió primero de la web, el servidor aún debe revocar
+ // las cookies limitadas al panel que queden en el navegador.
+ if(path!=="/logout"){
+  const token=await officialToken();
+  if(token)options.headers.Authorization="Bearer "+token;
+ }
  if(opts.body!==undefined){
   if(opts.body instanceof Blob){
    options.body=opts.body;
