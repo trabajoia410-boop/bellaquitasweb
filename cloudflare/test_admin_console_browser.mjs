@@ -34,6 +34,12 @@ const server=createServer(async(req,res)=>{
   res.writeHead(200,{"Content-Type":"image/png"});res.end(image);return;
  }
  if(pathname==="/favicon.ico"){res.writeHead(204);res.end();return;}
+  // En producción /config.js viene de la web pública; aquí no hay
+  // credenciales ni solicitudes a Supabase real.
+  if(pathname==="/config.js"){
+   res.writeHead(200,{"Content-Type":"text/javascript; charset=utf-8"});
+   res.end("window.BELLAQUITAS_CONFIG={};");return;
+  }
  if(pathname==="/administracion/"||pathname==="/administracion/styles.css"||pathname==="/administracion/app.js"){
   res.writeHead(200,{"Content-Type":pathname.endsWith(".css")?"text/css":pathname.endsWith(".js")?"text/javascript":"text/html"});
   res.end(pathname.endsWith(".css")?ADMIN_CSS:pathname.endsWith(".js")?ADMIN_JS:ADMIN_HTML);
