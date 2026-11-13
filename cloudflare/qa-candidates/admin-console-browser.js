@@ -2,13 +2,6 @@
 (function(){
 "use strict";
 const ROOT="/administracion/api";
-const activateQuery=new URLSearchParams(location.search);
-let activationToken=activateQuery.get("activar");
-if(activationToken){
- if(!/^[A-Za-z0-9_-]{43}$/.test(activationToken))activationToken=null;
- history.replaceState(null,"",location.pathname);
-}
-
 const initialSection=new URLSearchParams(location.search).get("seccion")==="web"?"web":"inicio";
 const $=selector=>document.querySelector(selector);
 const H=value=>String(value==null?"":value).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
@@ -40,7 +33,6 @@ function loginFeedback(message,error=false){
 }
 function showLogin(){
  $("#access").hidden=false;$("#portal").hidden=true;
- sessionStorage.removeItem("bf_admin_unlocked");$("#admin-password").value="";
 }
 function showPortal(profile){
  $("#access").hidden=true;$("#portal").hidden=false;
@@ -61,7 +53,7 @@ async function api(path,opts={}){
  let data;
  try{data=await response.json();}catch{data={};}
  if(!response.ok){
-  if(response.status===401&&path!=="/login")showLogin();
+  if(response.status===401&&path!=="/sso")showLogin();
   throw new Error(data.error||("Error HTTP "+response.status));
  }
  return data;
@@ -305,28 +297,34 @@ async function renderTab(){
  if(state.tab==="comunidad")return renderCommunity();
  if(state.tab==="actividad")return renderActivity();
 }
-async function login(e){
- e.preventDefault();
+async function autoLogin(){
  loginFeedback("");
- const button=$("#login-submit");
- const email=$("#admin-email").value.trim(),password=$("#admin-password").value;
- button.disabled=true;button.textContent="Comprobando acceso…";
+ const button=$("#retry-sso");
+ button.disabled=true;button.textContent="Comprobando sesión…";
+ $("#access-status").textContent="Verificando tu cuenta en la web principal…";
  try{
-  const response=await api("/login",{method:"POST",body:{email,password}});
+  let response;
+  try{response=await api("/me");}
+  catch{response=await api("/sso",{method:"POST",body:{}});}
   if(response.profile?.role!=="admin")throw new Error("Acceso reservado a administradores");
-  sessionStorage.setItem("bf_admin_unlocked","yes");showPortal(response.profile);
-  $("#admin-password").value="";switchTab(initialSection);
- }catch(err){loginFeedback(err.message,true);}
- finally{button.disabled=false;button.textContent="Entrar al panel";}
+  showPortal(response.profile);
+  switchTab(initialSection);
+ }catch(err){
+  showLogin();
+  $("#access-status").textContent="Inicia sesión en Bellaquitas Fest y vuelve aquí.";
+  loginFeedback(err.message,true);
+ }finally{
+  button.disabled=false;button.textContent="Comprobar mi acceso de administrador";
+ }
 }
 async function logout(){
  try{await api("/logout",{method:"POST",body:{}});}catch{}
- showLogin();loginFeedback("Sesión administrativa cerrada.");
+ showLogin();$("#access-status").textContent="Panel cerrado. La sesión de tu web sigue abierta.";loginFeedback("Sesión administrativa cerrada.");
 }
 document.addEventListener("click",async e=>{
  const el=e.target.closest("button");if(!el)return;
  try{
-  if(el.id==="show-password"){const x=$("#admin-password");x.type=x.type==="password"?"text":"password";return;}
+  if(el.id==="retry-sso")return autoLogin();
   if(el.id==="logout-top"||el.id==="logout-side")return logout();
   if(el.id==="admin-menu"){const open=$("#sidebar").classList.toggle("open");el.setAttribute("aria-expanded",String(open));return;}
   if(el.dataset.tab)return switchTab(el.dataset.tab);
@@ -391,43 +389,6 @@ document.addEventListener("click",async e=>{
 });
 document.addEventListener("submit",async e=>{
  const form=e.target;
- if(form.id==="login-form")return login(e);
- if(form.id==="activate-request-form"){
-  e.preventDefault();
-  const button=form.querySelector("[type='submit']");
-  button.disabled=true;
-  const status=$("#activate-request-status");
-  status.textContent="";
-  try{
-   const data=await api("/activar/solicitar",{method:"POST",
-    body:{email:$("#activate-email").value.trim()}});
-   status.textContent=data.message||"Consulta tu correo electrónico.";
-  }catch(err){status.textContent=err.message;}
-  finally{button.disabled=false;}
-  return;
- }
- if(form.id==="activate-confirm-form"){
-  e.preventDefault();
-  const button=form.querySelector("[type='submit']");
-  button.disabled=true;
-  const status=$("#activate-confirm-status");status.textContent="";
-  try{
-   const password=$("#activate-new-password").value;
-   if(password!==$("#activate-repeat-password").value)
-    throw new Error("Las contraseñas no coinciden.");
-   if(!activationToken)throw new Error("El enlace no es válido; solicita uno nuevo.");
-   const result=await api("/activar/confirmar",{method:"POST",body:{token:activationToken,password}});
-   activationToken=null;
-   form.reset();
-   showLogin();
-   $("#login-form").hidden=false;$("#activate-help").hidden=false;
-   $("#activate-confirmation").hidden=true;
-   loginFeedback(result.message||"Contraseña activada. Ya puedes entrar.");
-  }catch(err){status.textContent=err.message;}
-  finally{if(button.isConnected)button.disabled=false;}
-  return;
- }
-
  if(!["catalog-form","member-form","album-form"].includes(form.id))return;
  e.preventDefault();
  const button=form.querySelector("[type='submit']");
@@ -443,16 +404,6 @@ document.addEventListener("submit",async e=>{
  }catch(err){feedback(err.message,true);}
  finally{if(button?.isConnected)button.disabled=false;}
 });
-$("#admin-password").value="";
-if(activationToken){
- showLogin();
- $("#login-form").hidden=true;
- $("#activate-help").hidden=true;
- $("#activate-confirmation").hidden=false;
-}else if(sessionStorage.getItem("bf_admin_unlocked")==="yes"){
- api("/me").then(data=>{
-  if(data.profile?.role==="admin"){showPortal(data.profile);switchTab(initialSection);}
-  else showLogin();
- }).catch(()=>showLogin());
-}else showLogin();
+showLogin();
+autoLogin();
 })();
