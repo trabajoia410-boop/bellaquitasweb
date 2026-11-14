@@ -66,7 +66,7 @@ between("if(act==='logout'){editorDraft=null;","if(act==='loyalty-face'){",
 once(
  "const r=await sb.rpc('update_display_name',{p_name:name});if(r.error)throw new Error(r.error.message);\n      await refresh();toast('Perfil actualizado.');return;",
  "await cloudUpdateName(name);return;");
-once(" init();\n})();",implementation+"\n init();\n})();");
+once("init();\n})();",implementation+"\ninit();\n})();");
 assert.ok(src.includes("location.assign('/v1/auth/google/start')"));
 assert.ok(src.includes("cloudApi('/v1/me/overview')"));
 assert.ok(!src.includes("await import('https://esm.sh/@supabase/"));
