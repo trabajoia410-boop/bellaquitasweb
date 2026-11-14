@@ -129,6 +129,9 @@ def validate(evidence: object, now: datetime | None = None) -> list[str]:
                 "google_subject_to_existing_id_verified",
                 "d1_session_method_column_verified",
                 "d1_admin_sso_table_verified",
+                "isolated_d1_migrations_verified",
+                "staging_auth_schema_after_private_backup_verified",
+                "staging_d1_schema_id_matches_production_target",
                 "sso_login_and_logout_real_verified",
                 "admin_role_denial_real_verified",
                 "member_and_door_roles_verified",
@@ -202,6 +205,9 @@ ALLOWED_EVIDENCE_FIELDS = {
         "google_oidc_signature_nonce_pkce_verified",
         "google_subject_to_existing_id_verified",
         "d1_session_method_column_verified","d1_admin_sso_table_verified",
+        "isolated_d1_migrations_verified",
+        "staging_auth_schema_after_private_backup_verified",
+        "staging_d1_schema_id_matches_production_target",
         "sso_login_and_logout_real_verified",
         "admin_role_denial_real_verified",
         "member_and_door_roles_verified",
@@ -313,6 +319,9 @@ def make_synthetic(now: datetime) -> dict:
                 "google_subject_to_existing_id_verified",
                 "d1_session_method_column_verified",
                 "d1_admin_sso_table_verified",
+                "isolated_d1_migrations_verified",
+                "staging_auth_schema_after_private_backup_verified",
+                "staging_d1_schema_id_matches_production_target",
                 "sso_login_and_logout_real_verified",
                 "admin_role_denial_real_verified",
                 "member_and_door_roles_verified",
@@ -374,6 +383,9 @@ def self_test() -> None:
       ("Login Google falso",{"authentication":{"admins_with_real_google_login":0}},"Google reales"),
       ("Sesiones D1 sin actualizar",{"authentication":{"d1_session_method_column_verified":False}},"d1_session"),
       ("Tabla admin inexistente",{"authentication":{"d1_admin_sso_table_verified":False}},"d1_admin"),
+      ("Ensayo aislado no realizado",{"authentication":{"isolated_d1_migrations_verified":False}},"isolated_d1"),
+      ("Ensayo confundido con destino real",{"authentication":{"staging_auth_schema_after_private_backup_verified":False}},"staging_auth"),
+      ("Identidad D1 de destino distinta",{"authentication":{"staging_d1_schema_id_matches_production_target":False}},"staging_d1"),
       ("Omitir seguridad Google",{"authentication":{"google_oidc_signature_nonce_pkce_verified":False}},"google_oidc"),
       ("Mismo origen ausente",{"authentication":{"same_origin_bellaquitas_fr_verified":False}},"same_origin"),
       ("Correo sin plan gratis",{"authentication":{"all_login_methods_covered_without_fees":False}},"all_login_methods"),
@@ -420,7 +432,7 @@ def self_test() -> None:
             safe_load_file(str(file))
             raise AssertionError("Se permitió secreto entre las evidencias")
         except RuntimeError:pass
-    print("OK: 28 bloqueos de corte + privacidad; solo datos ficticios.")
+    print("OK: 31 bloqueos de corte + privacidad; solo datos ficticios.")
     print("Un resultado de ensayo NUNCA equivale a autorización real.")
 
 def main():
