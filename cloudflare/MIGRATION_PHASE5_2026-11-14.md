@@ -63,3 +63,16 @@
 6. Reconciliación final y plan reversible; mantener DNS, producción y usuarios sin cambios hasta validar.
 
 **No hacer despliegue ni cambio DNS mientras quede algún bloqueo.**
+
+## Revisión adicional del 14/11/2026 (tarde)
+- Se detectó que la consola podía aceptar la sesión general sin una autenticación independiente. **Corregido en la rama**, aún no desplegado.
+- Migración `0007-admin-step-up.sql`: tabla `auth_admin_sessions`, clave de sesión aleatoria, hash SHA-256, asociación obligatoria al perfil admin y la cookie principal, expiración de 2 h.
+- La migración se creó y verificó **únicamente** en D1 `bellaquitas-migration-qa-20261114`, sin perfiles de clientes. Staging deberá migrarse antes de desplegar la rama.
+- Se exige reautenticación Google (`return=admin`) o contraseña de correo verificada (`admin_access:true`). No se conceden privilegios por una sesión general.
+- `/v1/admin/session` devuelve 401 sin ambas cookies válidas; el panel reclama autenticación nueva por pestaña.
+- Lecturas y escrituras de administración requieren `authenticatedAdminAccess`; sesiones de otros usuarios, cookies cruzadas y autorizaciones caducadas se rechazan.
+- Las rutas de usuario normal y control de puerta conservan las condiciones de acceso por rol originales.
+- Pruebas en memoria sin red ni datos reales: `test-admin-stepup.mjs`; regresión `test-mirror-regression.mjs`; chequeo CSP/JS `test-admin-console.mjs`.
+- Recursos originales: `build-static-assets.mjs` prepara exclusivamente los ficheros permitidos en `cloudflare/dist-static/assets/`. No publica archivos del repositorio ajenos al manifiesto ni realiza despliegue.
+- **La clave del backup anterior apareció en una respuesta del chat. Debe considerarse expuesta y rotarse antes de usar ese backup como copia de recuperación a largo plazo.** No volver a incluirla en documentos, código, logs o respuestas.
+- Sigue pendiente copiar el respaldo cifrado fuera de Cloudflare con gestión privada de la nueva clave; falta migración de logos en bytes exactos, pruebas reales de autenticación y QR, y conciliación final con producción.
