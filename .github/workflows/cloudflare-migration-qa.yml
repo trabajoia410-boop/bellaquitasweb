@@ -1,0 +1,31 @@
+name: Cloudflare migration — safe QA
+
+on:
+  pull_request:
+    paths:
+      - 'cloudflare/**'
+      - 'index.html'
+      - 'app.js'
+      - 'styles.css'
+      - 'locale-fr.js'
+      - 'assets/qr-local.js'
+      - 'assets/jsqr-local.js'
+      - '.github/workflows/cloudflare-migration-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  visual-parity-and-permissions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout only — no deployment
+        uses: actions/checkout@v4
+      - name: Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify original design and read-only permissions
+        run: node cloudflare/test-mirror-regression.mjs

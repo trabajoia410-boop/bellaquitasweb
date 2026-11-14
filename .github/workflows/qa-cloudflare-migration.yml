@@ -1,0 +1,30 @@
+name: QA migracion Bellaquitas (sin despliegue)
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - migracion/fase5-segura-20261114
+jobs:
+  static-migration-audit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Revisar sintaxis de los modulos Cloudflare
+        run: |
+          for f in cloudflare/{bellaquitas-api-staging,admin-console,auth-routes,email-auth-routes,protected-routes,web-mirror,mirror-write-routes,mirror-data-routes}.js; do
+            node --check "$f"
+          done
+      - name: Verificar bytes, SHA Git y ausencia de R2
+        run: node cloudflare/verify-migration.mjs
+      - name: Construir exclusivamente los recursos estáticos originales
+        run: node cloudflare/build-static-assets.mjs
+      - name: Comprobar acceso admin reforzado sin usuarios reales
+        run: |
+          node cloudflare/test-admin-stepup.mjs
+          node cloudflare/test-admin-console.mjs
