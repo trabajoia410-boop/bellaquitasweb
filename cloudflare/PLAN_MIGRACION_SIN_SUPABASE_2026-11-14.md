@@ -51,3 +51,23 @@ Pruebas sintéticas verdes:
 Ver [guía Cloudflare D1 sin Supabase](./GUIA_BACKUP_D1_SIN_SUPABASE_WINDOWS.md). El script tiene `--check`, `--self-test`, `--run`, `--verify` y `--restore-local`. **La copia real no se ha realizado todavía.**
 
 **Estado de producción:** sin cambios de `main`, `bellaquitas.fr`, DNS, usuarios, puntos, visitas, vídeo ni contrataciones. No desconectar el backend publicado hasta que todas las funciones sustitutas estén probadas, respaldadas y el dueño apruebe el corte.
+
+
+## Avance verificado: web pública D1, QR y puerta en Chrome (14/11/2026)
+
+Se han desarrollado componentes nuevos **solo en la rama de auditoría**, sin modificar `app.js`, `index.html`, `styles.css` ni `assets/` del repositorio oficial:
+
+- `qa-candidates/public-d1-read-routes.js`: GET `/v1/me/overview` limitado a los datos de la sesión D1, GET `/v1/door/overview` exclusivo a roles `puerta`/`admin` y GET `/v1/moments/public-photos` que únicamente devuelve medios de `assets/` de álbumes publicados. Ninguna escritura, no R2.
+- `qa-candidates/public-d1-browser-impl.js`: cliente `fetch` con `credentials:'same-origin'` y `redirect:'error'` hacia `/v1/` del propio dominio, sesión en cookie HttpOnly. Adapta carga de eventos, recompensas, puntos, visitas, tarjeta QR y acceso de puerta. Las escrituras de puntos solo se delegan a endpoints D1 protegidos y continúan bloqueadas en staging.
+- `build-public-d1-candidate.mjs`: genera, **sin alterar los archivos originales**, `recovered-src/app-cloudflare.js`, `index-cloudflare.html` y `sw-cloudflare.js`. El índice candidato retira el script de configuración del proveedor anterior, elimina sus orígenes de la CSP y usa el código D1. El SW nuevo no cachea datos privados ni rutas `/v1/`, y evita servir accidentalmente el `app.js` viejo tras cambiar.
+- Por protección de datos/coste el candidato **solo permite Google** hasta completar validación de email/contraseña Free y recuperación. El buzón de sugerencias **no afirma guardar mensajes** hasta que se configure Turnstile; las fotos dinámicas siguen bloqueadas mientras no exista almacenamiento gratuito verificado. Se conservan páginas y estilos.
+
+Pruebas completadas con **solo cuentas y API locales inventadas**:
+
+- [Rutas D1 por socio y puerta — 7 pruebas, aprobadas](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43565418221).
+- [Web candidata: conservación del HTML, CSP, Service Worker, ES/FR, QR, puntos, foto/medio y Chrome escritorio/móvil — aprobado](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43566880422).
+- [Batería completa fase 5 sin mutaciones — aprobada](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43566769049).
+
+Prueba visual funcional Chrome: invitado ve la portada original; invitado no puede ver su tarjeta; socia ficticia ve **53 puntos**, cuatro visitas y tarjeta QR en móvil; personal ficticio de puerta puede abrir su pantalla y consultar el socio. El login real de Google en el dominio **NO** se probó en estas pruebas.
+
+**Bloqueos que siguen vigentes:** backup D1 auténtico y restauración local real; ejecutar migraciones de sesiones D1 en entorno autorizado después del backup; separar cuenta ficticia de las seis reales; URL OAuth/Workers y zona `bellaquitas.fr`; corregir medios que aún referencien almacenamiento retirado; validar QR físico, sesión Google real, editor/administrador, correo/contraseña, recuperación, sugerencias, costes y reversión. Ninguna modificación de DNS, `main` ni D1 remota.
