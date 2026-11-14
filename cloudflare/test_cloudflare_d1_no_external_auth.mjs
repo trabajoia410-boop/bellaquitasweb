@@ -45,6 +45,7 @@ test("Google OAuth independiente comprueba token firmado y vinculación por subj
  assert.match(auth,/claims\.aud!==env\.GOOGLE_CLIENT_ID/);
  assert.match(auth,/provider_subject=\?/);
  assert.match(auth,/ALLOW_NEW_ACCOUNTS!=="yes"/);
+ assert.match(auth,/const publicHome=base\(env\)==="https:\/\/bellaquitas\.fr"/);
  assert.doesNotMatch(auth,/supabase/);
 });
 test("política Free-only bloquea R2 y configuración de identidad retirada",()=>{
