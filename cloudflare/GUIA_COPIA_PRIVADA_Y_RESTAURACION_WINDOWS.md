@@ -1,3 +1,5 @@
+> **DOCUMENTO OBSOLETO (14/11/2026).** El propietario ha decidido dejar de utilizar el proveedor de backend anterior. No ejecutar los comandos de este documento. La guía vigente usa exclusivamente Cloudflare D1: [GUIA_BACKUP_D1_SIN_SUPABASE_WINDOWS.md](./GUIA_BACKUP_D1_SIN_SUPABASE_WINDOWS.md). Esta página se conserva como historial de la fase 5, no como instrucción operativa.
+
 # Bellaquitas Fest — respaldo y restauración privados (Windows)
 
 **Fase 5 · 13 de noviembre de 2026 · Documento de preparación. Ninguna operación con datos reales ejecutada por ChatGPT.**
