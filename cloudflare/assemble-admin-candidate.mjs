@@ -21,6 +21,7 @@ const current=await readFile(path.join(qa,"admin-console-ui.js"),"utf8");
 assert.strictEqual(bundled,current,"Cambios en el panel sin empaquetar: regenerar admin-console-ui.js antes de validar");
 for(const [dest,src] of [
  ["auth-routes.js","auth-routes-admin-proof.js"],
+ ["public-d1-read-routes.js","public-d1-read-routes.js"],
  ["admin-activation-routes.js","admin-activation-routes.js"],
  ["admin-console-routes.js","admin-console-routes.js"],
  ["admin-console-ui.js","admin-console-ui.js"],
