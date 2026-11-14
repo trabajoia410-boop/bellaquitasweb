@@ -6,10 +6,11 @@ import assert from 'node:assert/strict';
 const base='https://bellaquitas-api-qa.bellaquitas-fest-410.workers.dev';
 const get=async path=>fetch(base+path,{method:'GET',cache:'no-store',signal:AbortSignal.timeout(20000),redirect:'manual'});
 const post=async path=>fetch(base+path,{method:'POST',cache:'no-store',signal:AbortSignal.timeout(20000),headers:{Origin:base,'Content-Type':'application/json'},body:'{}'});
-const [health,events,rewards,me,admin,loginStatus,google,panel,write,points]=await Promise.all([
+const [health,events,rewards,me,admin,loginStatus,google,panel,write,points,qrScript,readerScript,mirror]=await Promise.all([
  get('/health'),get('/v1/events'),get('/v1/rewards'),get('/v1/auth/me'),
  get('/v1/admin/session'),get('/v1/auth/email/status'),get('/v1/auth/google/start?return=admin'),
- get('/administracion/'),post('/v1/mirror/admin/write'),post('/v1/admin/member')
+ get('/administracion/'),post('/v1/mirror/admin/write'),post('/v1/admin/member'),
+ get('/espejo/assets/qr-local.js'),get('/espejo/assets/jsqr-local.js'),get('/espejo/')
 ]);
 assert.equal(health.status,200,'QA worker with D1 accessible');
 const h=await health.json();assert.equal(h.database,'connected');assert.equal(h.storage,'not-configured');
@@ -22,9 +23,18 @@ const features=await loginStatus.json();assert.equal(features.login,false);asser
 assert.equal(google.status,503,'Google OAuth must remain off in QA');
 assert.equal(panel.status,200);assert.match(panel.headers.get('content-security-policy')||'',/script-src 'nonce-/);
 const html=await panel.text();assert.ok(html.includes('id="loginForm"'));
+assert.equal(qrScript.status,200,'El espejo debe servir generador QR local');
+assert.equal(readerScript.status,200,'El espejo debe servir lector QR de cámara');
+assert.equal(mirror.status,200,'El espejo con diseño original debe responder');
+const qrSource=await qrScript.text(),readerSource=await readerScript.text();
+assert.ok(qrSource.includes('root.BellaQR={render}'),'Generador QR original disponible');
+assert.ok(readerSource.includes('jsQR'),'Lector QR original disponible');
+const mirrorHtml=await mirror.text();
+assert.ok(mirrorHtml.includes('assets/qr-local.js'),'La página original incluye el generador QR');
+assert.ok(!mirrorHtml.includes('https://cdn.jsdelivr.net'),'El lector QR no debe depender de CDN externo');
 assert.equal(write.status,401,'Anonymous editing denied');
 assert.equal(points.status,401,'Anonymous points/roles editing denied');
-for(const response of [health,events,rewards,me,admin,loginStatus,google,panel,write,points]){
+for(const response of [health,events,rewards,me,admin,loginStatus,google,panel,write,points,qrScript,readerScript,mirror]){
  assert.equal(response.headers.get('set-cookie'),null,'QA must not establish sessions');
 }
 console.log('OK: Worker QA live + D1 vacía + 0 cuentas + autenticación y escrituras denegadas. Dominio público intacto.');
