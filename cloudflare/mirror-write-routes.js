@@ -129,16 +129,7 @@ async function writes(env,body){
    .bind(hero,announcement).run();
   return {ok:true};
  }
- if(kind==="media"&&action==="remove"){
-  if(!Array.isArray(body.keys)||body.keys.length>30)throw Error("Lista de archivos inválida");
-  for(const key of body.keys){
-   if(typeof key!=="string"||
-     !/^media\/(?:events|rewards|promos|logos)\/[0-9a-f-]{36}\.(?:png|jpg|webp)$/i.test(key))
-     throw Error("Ruta de imagen no autorizada");
-  }
-  for(const key of body.keys)await env.MEDIA.delete(key);
-  return {ok:true};
- }
+ if(kind==="media"&&action==="remove")throw Error("Borrado de medios bloqueado durante la migración");
  if(kind==="community_suggestions"&&action==="status"){
   if(!uuid(body.id)||!["nuevo","revisado","archivado"].includes(body.status))throw Error("Estado inválido");
   const r=await env.DB.prepare("UPDATE community_suggestions SET status=? WHERE id=? RETURNING id")
@@ -146,26 +137,8 @@ async function writes(env,body){
   if(!r)throw Error("Sugerencia no encontrada");
   return {ok:true};
  }
- if(kind==="moments_albums"&&action==="delete"){
-  if(!uuid(body.id))throw Error("Galería inválida");
-  const photos=await env.DB.prepare("SELECT storage_path FROM moments_photos WHERE album_id=?").bind(body.id).all();
-  const r=await env.DB.prepare("DELETE FROM moments_albums WHERE id=? RETURNING id").bind(body.id).first();
-  if(!r)throw Error("Galería no encontrada");
-  for(const photo of photos.results||[]){
-   try{await env.MEDIA.delete(photo.storage_path);}
-   catch(e){console.error("R2 orphan album",String(e?.message||"error").slice(0,80));}
-  }
-  return {ok:true};
- }
- if(kind==="moments_photos"&&action==="delete"){
-  if(!uuid(body.id))throw Error("Foto inválida");
-  const row=await env.DB.prepare("DELETE FROM moments_photos WHERE id=? RETURNING storage_path")
-   .bind(body.id).first();
-  if(!row)throw Error("Foto no encontrada");
-  try{await env.MEDIA.delete(row.storage_path);}
-  catch(e){console.error("R2 orphan photo",String(e?.message||"error").slice(0,80));}
-  return {ok:true};
- }
+ if(kind==="moments_albums"&&action==="delete")throw Error("Borrado de galerías bloqueado durante la migración");
+ if(kind==="moments_photos"&&action==="delete")throw Error("Borrado de fotografías bloqueado durante la migración");
  throw Error("Operación no permitida");
 }
 function validateBytes(mime,bytes){
@@ -182,16 +155,7 @@ export async function mirrorWriteRoute(request,env){
  const write=url.pathname==="/v1/mirror/admin/write";
  const media=url.pathname.match(/^\/v1\/mirror\/media\/(events|rewards|promos|logos)\/([0-9a-f-]{36}\.(?:png|jpg|webp))$/i);
  if(!upload&&!write&&!media)return null;
- if(media){
-  if(request.method!=="GET")return bad("Método no permitido",405);
-  const object=await env.MEDIA.get("media/"+media[1]+"/"+media[2]);
-  if(!object)return bad("Imagen no encontrada",404);
-  const type=object.httpMetadata?.contentType;
-  if(!imageTypes[type])return bad("Tipo de imagen no válido",415);
-  return new Response(object.body,{headers:{
-    "Content-Type":type,"Cache-Control":"public,max-age=86400",
-    "X-Robots-Tag":"noindex,nofollow","X-Content-Type-Options":"nosniff"}});
- }
+ if(media)return bad("Imagen pendiente de migración a almacenamiento estático",503);
  if(request.method!==(upload?"PUT":"POST"))return bad("Método no permitido",405);
  const actor=await authenticatedProfile(request,env);
  if(!actor)return bad("Inicia sesión",401);
@@ -199,18 +163,7 @@ export async function mirrorWriteRoute(request,env){
  if(!checkOrigin(request,env))return bad("Origen no autorizado",403);
  if(env.STAGING_MUTATIONS!=="enabled")return bad("Las operaciones de pruebas están desactivadas",423);
  try{
-  if(upload){
-   const category=url.searchParams.get("category");
-   const type=(request.headers.get("Content-Type")||"").toLowerCase();
-   if(!validCategory(category)||!imageTypes[type])throw Error("Categoría o formato no válido");
-   const size=Number(request.headers.get("Content-Length")||0);
-   if(size>5*1024*1024)throw Error("Foto demasiado grande");
-   const bytes=await request.arrayBuffer();
-   validateBytes(type,bytes);
-   const key="media/"+category+"/"+crypto.randomUUID()+"."+imageTypes[type];
-   await env.MEDIA.put(key,bytes,{httpMetadata:{contentType:type}});
-   return reply({ok:true,key,url:url.origin+"/v1/mirror/"+key});
-  }
+  if(upload)return bad("La subida de imágenes está desactivada durante la migración",423);
   if(!/^application\/json(?:;|$)/i.test(request.headers.get("Content-Type")||""))
    throw Error("Se requiere JSON");
   const body=await parseBody(request);
