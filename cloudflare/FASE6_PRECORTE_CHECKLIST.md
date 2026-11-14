@@ -1,3 +1,5 @@
+> **ACTUALIZACIÓN DEL PROYECTO — 14/11/2026:** El propietario ha decidido dejar de usar el backend anterior. Las instrucciones históricas más abajo que lo mencionan **ya no autorizan tareas ni restablecen dependencias**. El único candado vigente es `cloudflare/phase6_readiness.py` (versión Cloudflare-D1-only). Seguir el [plan nuevo](./PLAN_MIGRACION_SIN_SUPABASE_2026-11-14.md) y la [guía de copia D1](./GUIA_BACKUP_D1_SIN_SUPABASE_WINDOWS.md). **Ninguna ruta de producción ni base de datos se ha migrado todavía.**
+
 # Bellaquitas Fest — Comprobación de preparación para la fase 6
 
 **12/11/2026 · Estado: NO AUTORIZADO EL CORTE DE BACKEND**
