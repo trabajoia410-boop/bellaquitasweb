@@ -28,3 +28,5 @@ jobs:
         run: |
           node cloudflare/test-admin-stepup.mjs
           node cloudflare/test-admin-console.mjs
+      - name: Verificar que el preview online NO permite autenticar ni guarda sesiones
+        run: node cloudflare/test-admin-visual-preview.mjs
