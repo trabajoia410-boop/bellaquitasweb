@@ -2,7 +2,7 @@
  * All mutations are disabled unless STAGING_MUTATIONS='enabled'.
  * D1 triggers enforce redemption debits, staff-only validation and admin audit.
  */
-import {authenticatedProfile,checkOrigin} from "./auth-routes.js";
+import {authenticatedProfile,authenticatedAdminAccess,checkOrigin} from "./auth-routes.js";
 const HEAD={"Content-Type":"application/json; charset=utf-8",
   "Cache-Control":"no-store","X-Content-Type-Options":"nosniff",
   "X-Robots-Tag":"noindex, nofollow"};
@@ -10,7 +10,7 @@ const out=(body,status=200)=>new Response(JSON.stringify(body),{status,headers:H
 const error=(message,status=400)=>out({error:message},status);
 const uuid=v=>typeof v==="string"&&/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(v);
 function staff(actor){return actor && (actor.role==="puerta"||actor.role==="admin");}
-function admin(actor){return actor&&actor.role==="admin";}
+function admin(privilegedActor){return actor&&actor.role==="admin";}
 async function readJson(req){
   if(!/^application\/json(?:;|$)/i.test(req.headers.get("Content-Type")||""))throw new Error("Se requiere JSON");
   const size=Number(req.headers.get("Content-Length")||0);
@@ -41,6 +41,7 @@ export async function protectedRoute(request,env){
   if(!known.includes(path)&&!photoMatch)return null;
   const actor=await authenticatedProfile(request,env);
   if(!actor)return error("Inicia sesión para acceder a esta función",401);
+  const privilegedActor=actor.role==="admin"?await authenticatedAdminAccess(request,env):null;
   if(path==="/v1/me/activity"){
     if(request.method!=="GET")return error("Método no permitido",405);
     const q=await env.DB.prepare("SELECT id,type,delta,detail,created_at FROM activity WHERE user_id=? ORDER BY created_at DESC LIMIT 100").bind(actor.id).all();
@@ -48,7 +49,7 @@ export async function protectedRoute(request,env){
   }
   if(path==="/v1/admin/members"){
     if(request.method!=="GET")return error("Método no permitido",405);
-    if(!admin(actor))return error("Acceso reservado a administradores",403);
+    if(!admin(privilegedActor))return error("Acceso reservado a administradores",403);
     const q=await env.DB.prepare("SELECT id,name,role,member_code,points,lifetime_points,visits,created_at FROM profiles ORDER BY created_at DESC LIMIT 500").all();
     return out({items:q.results||[]});
   }
@@ -113,7 +114,7 @@ export async function protectedRoute(request,env){
       return out({ok:true});
     }
     if(path==="/v1/admin/member"){
-      if(!admin(actor))return error("Acceso reservado a administradores",403);
+      if(!admin(privilegedActor))return error("Acceso reservado a administradores",403);
       if(!uuid(body.member_id))return error("Socio inválido");
       const target=await env.DB.prepare("SELECT id,name,role,points,lifetime_points,visits FROM profiles WHERE id=?").bind(body.member_id).first();
       if(!target)return error("La cuenta ya no existe",404);
@@ -137,7 +138,7 @@ export async function protectedRoute(request,env){
       return out({ok:true,profile:{id:target.id,...after}});
     }
     if(path==="/v1/admin/moments/create"){
-      if(!admin(actor))return error("Acceso reservado a administradores",403);
+      if(!admin(privilegedActor))return error("Acceso reservado a administradores",403);
       const title=String(body.title||"").trim(),date=String(body.event_date||"");
       if(title.length<2||title.length>120||!/^\d{4}-\d{2}-\d{2}$/.test(date))return error("Datos de la galería no válidos");
       const id=crypto.randomUUID();
@@ -145,7 +146,7 @@ export async function protectedRoute(request,env){
       return out({ok:true,id});
     }
     if(path==="/v1/admin/moments/publish"){
-      if(!admin(actor))return error("Acceso reservado a administradores",403);
+      if(!admin(privilegedActor))return error("Acceso reservado a administradores",403);
       if(!uuid(body.album_id)||typeof body.published!=="boolean")return error("Galería inválida");
       const record=await env.DB.prepare("UPDATE moments_albums SET published=? WHERE id=? RETURNING id,published")
         .bind(body.published?1:0,body.album_id).first();
