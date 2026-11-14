@@ -1,4 +1,5 @@
 import {authRoute} from "./auth-routes.js";
+import {publicD1ReadRoute} from "./public-d1-read-routes.js";
 import {adminConsoleRoute} from "./admin-console-routes.js";
 import {previewRoute} from "./preview-page.js";
 import {mirrorRoute} from "./web-mirror.js";
@@ -131,6 +132,8 @@ export default {
       if (emailResponse) return emailResponse;
       const authResponse = await authRoute(request, env);
       if (authResponse) return authResponse;
+      const personalRead = await publicD1ReadRoute(request, env);
+      if (personalRead) return personalRead;
       const suggestionResponse = await suggestionRoute(request, env);
       if (suggestionResponse) return suggestionResponse;
       const mirrorWrite = await mirrorWriteRoute(request, env);
