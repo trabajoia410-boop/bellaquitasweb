@@ -69,41 +69,23 @@ export async function mirrorRoute(request,env){
    }
    const expected=SITE_MEDIA.find(f=>f.path===filename);
    if(!expected)return fail(404,"Este archivo no pertenece al diseño original");
-   if(!env?.MEDIA)return fail(503,"R2 no está disponible");
-   const key="site-original/"+filename;
+   // Recurso idéntico al archivo Git, servido por Workers Static Assets.
+   // No se consulta R2 ni se recomprime el vídeo. El build valida byte-size y Git SHA-1.
+   if(!env?.ASSETS)return fail(503,"Los medios estáticos aún no están desplegados");
+   const assetUrl=new URL(request.url);
+   assetUrl.pathname="/assets/"+filename.split("/").map(encodeURIComponent).join("/");
    try{
-     // La API R2 permite servir intervalos de bytes; imprescindible en Safari.
-     // HEAD no descarga el objeto ni descomprime vídeo.
-     const object=request.method==="HEAD"
-       ?await env.MEDIA.head(key)
-       :await env.MEDIA.get(key,{range:request.headers});
-     if(!object||object.size!==expected.bytes||
-        object.customMetadata?.gitSha1!==expected.gitSha1)
-       return fail(503,"Archivo pendiente de verificación en R2");
-     const headers=new Headers({
-       ...PROTECTED,
-       "Content-Type":expected.type,
-       "Cache-Control":"public, max-age=86400",
-       "Accept-Ranges":"bytes",
-       "X-Content-Type-Options":"nosniff",
-       "Content-Disposition":"inline"
-     });
-     headers.set("ETag",object.httpEtag);
-     object.writeHttpMetadata(headers);
+     const served=await env.ASSETS.fetch(new Request(assetUrl,request));
+     if(served.status!==200&&served.status!==206)return fail(503,"Medio original pendiente de verificación");
+     const headers=new Headers(served.headers);
+     for(const [name,value] of Object.entries(PROTECTED))headers.set(name,value);
      headers.set("Content-Type",expected.type);
      headers.set("Accept-Ranges","bytes");
-     headers.set("Content-Length",String(
-       request.method==="HEAD"?object.size:(object.range?.length||object.size)));
-     if(request.method==="HEAD")return new Response(null,{status:200,headers});
-     const isRange=!!request.headers.get("Range")&&!!object.range;
-     if(isRange){
-       const offset=object.range.offset||0;
-       headers.set("Content-Range",`bytes ${offset}-${offset+object.range.length-1}/${object.size}`);
-     }
-     return new Response(object.body,{status:isRange?206:200,headers});
+     headers.set("Cache-Control","public,max-age=86400");
+     return new Response(request.method==="HEAD"?null:served.body,{status:served.status,headers});
    }catch(error){
-     console.error("R2 media mirror:",String(error?.message||"error").slice(0,105));
-     return fail(503,"El archivo todavía no está disponible desde R2");
+     console.error("Static media:",String(error?.message||"unavailable").slice(0,105));
+     return fail(503,"El medio original no está disponible");
    }
  }
  try{
