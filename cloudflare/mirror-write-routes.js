@@ -1,4 +1,4 @@
-import {authenticatedProfile,checkOrigin} from "./auth-routes.js";
+import {authenticatedProfile,authenticatedAdminAccess,checkOrigin} from "./auth-routes.js";
 // Bellaquitas Fest: futuras escrituras del editor y catálogos.
 // MODO CERRADO en staging: STAGING_MUTATIONS=disabled -> HTTP 423.
 // Todas las mutaciones requieren sesión admin y Origin de primera parte.
@@ -159,7 +159,7 @@ export async function mirrorWriteRoute(request,env){
  if(request.method!==(upload?"PUT":"POST"))return bad("Método no permitido",405);
  const actor=await authenticatedProfile(request,env);
  if(!actor)return bad("Inicia sesión",401);
- if(actor.role!=="admin")return bad("Acceso reservado a administradores",403);
+ if(!await authenticatedAdminAccess(request,env))return bad("Reautenticación de administrador requerida",403);
  if(!checkOrigin(request,env))return bad("Origen no autorizado",403);
  if(env.STAGING_MUTATIONS!=="enabled")return bad("Las operaciones de pruebas están desactivadas",423);
  try{
