@@ -17,4 +17,7 @@ assert.ok(script[1].includes("/v1/admin/session"),'Falta verificación de segund
 assert.ok(script[1].includes("admin_access:true"),'Falta exigir contraseña verificada para admin');
 assert.ok(html.includes('href="/v1/auth/google/start?return=admin"'),'Falta retorno OAuth admin');
 assert.ok(!html.includes('supabase.co'),'No debe conectar el panel con Supabase');
+assert.ok(script[1].includes('selectedIndex<0?null'), 'Crear evento/premio debe diferenciar nueva ficha');
+assert.ok(script[1].includes("setAttribute('contenteditable','true')"), 'Falta editor visual de portada');
+assert.ok(script[1].includes('preview.addEventListener'), 'Editor visual sin eventos de actualización');
 console.log('OK: panel independiente, JS válido, CSP nonce, reautenticación y API protegida.');
