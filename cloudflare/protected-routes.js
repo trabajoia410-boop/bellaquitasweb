@@ -10,7 +10,7 @@ const out=(body,status=200)=>new Response(JSON.stringify(body),{status,headers:H
 const error=(message,status=400)=>out({error:message},status);
 const uuid=v=>typeof v==="string"&&/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(v);
 function staff(actor){return actor && (actor.role==="puerta"||actor.role==="admin");}
-function admin(privilegedActor){return actor&&actor.role==="admin";}
+function admin(privilegedActor){return !!privilegedActor&&privilegedActor.role==="admin";}
 async function readJson(req){
   if(!/^application\/json(?:;|$)/i.test(req.headers.get("Content-Type")||""))throw new Error("Se requiere JSON");
   const size=Number(req.headers.get("Content-Length")||0);
