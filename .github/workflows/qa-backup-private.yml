@@ -6,6 +6,8 @@ on:
       - auditoria/fase5-2026-11-11
     paths:
       - cloudflare/backup_privado_local.py
+      - cloudflare/wrangler.backup.toml
+      - cloudflare/test_backup_target_config.py
       - cloudflare/restore_privado_aislado.py
       - cloudflare/test_restore_privado_local.py
       - cloudflare/test_backup_encryption_local.py
@@ -24,6 +26,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Comprobar sintaxis sin requerir claves
         run: python3 -m py_compile cloudflare/backup_privado_local.py
+      - name: Validar exportación SOLO a D1 staging sin R2 ni despliegue
+        run: python3 cloudflare/test_backup_target_config.py
       - name: Restaurar SQL sintético en SQLite y detectar datos incompletos
         run: python3 cloudflare/backup_privado_local.py --self-test
       - name: Verificar que el restaurador solo acepta base vacía y local
