@@ -66,6 +66,9 @@ between("if(act==='logout'){editorDraft=null;","if(act==='loyalty-face'){",
 once(
  "const r=await sb.rpc('update_display_name',{p_name:name});if(r.error)throw new Error(r.error.message);\n      await refresh();toast('Perfil actualizado.');return;",
  "await cloudUpdateName(name);return;");
+// Un service worker anterior puede conservar la app de otro backend.
+once("navigator.serviceWorker.register('./sw.js'",
+     "navigator.serviceWorker.register('./sw-cloudflare.js'");
 once("init();\n})();",implementation+"\ninit();\n})();");
 assert.ok(src.includes("location.assign('/v1/auth/google/start')"));
 assert.ok(src.includes("cloudApi('/v1/me/overview')"));
@@ -80,6 +83,36 @@ const output=join(here,"staging-source-2026-11-11",
  "recovered-src","app-cloudflare.js");
 await mkdir(dirname(output),{recursive:true});
 await writeFile(output,src,"utf8");
+
+const oldHtml=await readFile(join(here,"..","index.html"),"utf8");
+let html=oldHtml;
+function htmlOnce(from,to){
+ const chunks=html.split(from);
+ assert.equal(chunks.length,2,"Index cambió: "+from.slice(0,60));
+ html=chunks.join(to);
+}
+htmlOnce("<script src=\"config.js\"></script>","");
+htmlOnce("script-src 'self' https://esm.sh;","script-src 'self';");
+htmlOnce("connect-src 'self' https://vlsipvngvxcgnwrhpjgg.supabase.co wss://vlsipvngvxcgnwrhpjgg.supabase.co;",
+         "connect-src 'self';");
+htmlOnce('src="app.js?v=traduccion62"',
+         'src="app-cloudflare.js?v=d1-20261114"');
+assert.ok(!/supabase|esm.sh/i.test(html));
+await writeFile(join(dirname(output),"index-cloudflare.html"),html,"utf8");
+
+const oldServiceWorker=await readFile(join(here,"..","sw.js"),"utf8");
+let sw=oldServiceWorker.replace(
+  /bellaquitas-static-2026-11-06-v20/g,
+  "bellaquitas-static-2026-11-14-cloudflare-d1-v1"
+).replaceAll("./app.js","./app-cloudflare.js")
+ .replaceAll("'app.js'","'app-cloudflare.js'")
+ .replaceAll("'./config.js',","")
+ .replaceAll("'config.js',","");
+assert.ok(!/config.js|supabase/i.test(sw.replace(/^\/\*[^]*?\*\//,"")));
+await writeFile(join(dirname(output),"sw-cloudflare.js"),
+ sw.replace("Nunca almacenar respuestas de Supabase ni datos privados.",
+            "Nunca almacenar respuestas de Cloudflare D1 ni datos privados."),"utf8");
+
 console.log("OK: app pública Cloudflare-D1 generada en runner de prueba.");
 console.log("Diseño original intacto: no modificados app.js, HTML, CSS ni vídeos.");
 console.log("Sin despliegue, cuentas ni puntos reales; contraseña pendiente hasta verificación.");
