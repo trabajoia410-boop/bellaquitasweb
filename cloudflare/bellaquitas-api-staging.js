@@ -90,7 +90,7 @@ export default {
           service: "bellaquitas-staging",
           status: record?.ok === 1 ? "ok" : "error",
           database: record?.ok === 1 ? "connected" : "unavailable",
-          storage: env.MEDIA ? "configured" : "unavailable"
+          storage: env.ASSETS ? "static-assets" : "not-configured"
         }, record?.ok === 1 ? 200 : 503);
       }
       const publicQueries = {
@@ -110,8 +110,8 @@ export default {
         if (!row) return jsonResponse(request, {error: "Publicación no encontrada"}, 404);
         return jsonResponse(request, {site: withJsonFields([row])[0]});
       }
-      // These three logo objects were public at the source and have been
-      // copied and checksum-verified in private R2. No other R2 keys are public.
+      // Los logos originales deben subirse a Static Assets con los mismos bytes
+      // ANTES del corte. No servir sustituciones visuales ni recurrir a R2.
       const logo = pathname.match(/^\/v1\/assets\/logos\/([0-9a-f-]{36}\.(?:png|jpg))$/i);
       if (logo) {
         const permitted = new Set([
@@ -119,45 +119,23 @@ export default {
           "af5b256c-877b-4c9c-8d36-d00854885c4b.jpg",
           "f4978ae8-1058-43a7-b5cd-ef9b17c11843.png"
         ]);
-        const name = logo[1].toLowerCase();
-        if (!permitted.has(name)) return jsonResponse(request,{error:"Imagen no encontrada"},404);
-        const object = await env.MEDIA.get("logos/" + name);
-        if (!object) return jsonResponse(request,{error:"Imagen no encontrada"},404);
-        const mime = name.endsWith(".png")?"image/png":"image/jpeg";
-        if (object.httpMetadata?.contentType !== mime)
-          return jsonResponse(request,{error:"Formato inválido"},415);
-        return new Response(object.body,{
-          status:200,headers:responseHeaders(request,{
-            "Content-Type":mime,
-            "Content-Disposition":"inline",
-            "Cache-Control":"public, max-age=86400, immutable",
-            "X-Content-Type-Options":"nosniff"
-          })
-        });
+        const filename=logo[1].toLowerCase();
+        if (!permitted.has(filename)) return jsonResponse(request,{error:"No encontrado"},404);
+        if (!env.ASSETS) return jsonResponse(request,{error:"Medios pendientes de despliegue"},503);
+        const target=new URL(request.url);
+        target.pathname="/assets/migrated-logos/"+filename;
+        const response=await env.ASSETS.fetch(new Request(target,{method:"GET"}));
+        if(response.status!==200)return jsonResponse(request,{error:"Logo original aún no migrado"},503);
+        const mime=filename.endsWith(".png")?"image/png":"image/jpeg";
+        return new Response(response.body,{status:200,headers:responseHeaders(request,{
+          "Content-Type":mime,"Content-Disposition":"inline",
+          "Cache-Control":"public,max-age=86400","X-Content-Type-Options":"nosniff"
+        })});
       }
-      const photo = pathname.match(/^\/v1\/moments\/photos\/([0-9a-f-]{36})$/i);
-      if (photo) {
-        const record = await env.DB.prepare(
-          "SELECT p.storage_path, p.caption FROM moments_photos p " +
-          "INNER JOIN moments_albums a ON a.id = p.album_id " +
-          "WHERE p.id = ? AND a.published = 1 LIMIT 1"
-        ).bind(photo[1]).first();
-        if (!record || !env.MEDIA) return jsonResponse(request, {error: "Foto no encontrada"}, 404);
-        const object = await env.MEDIA.get(record.storage_path);
-        if (!object) return jsonResponse(request, {error: "Foto no encontrada"}, 404);
-        const mime = object.httpMetadata?.contentType || "";
-        if (!["image/jpeg", "image/png", "image/webp"].includes(mime)) {
-          return jsonResponse(request, {error: "Tipo de archivo no admitido"}, 415);
-        }
-        return new Response(object.body, {
-          status: 200,
-          headers: responseHeaders(request, {
-            "Content-Type": mime,
-            "Content-Disposition": "inline",
-            "X-Content-Type-Options": "nosniff"
-          })
-        });
-      }
+      // Hasta disponer del archivo de imagen original, el registro no se borra
+      // ni se sustituye por una imagen de menor calidad.
+      if (/^\/v1\/moments\/photos\/[0-9a-f-]{36}$/i.test(pathname))
+        return jsonResponse(request,{error:"Galería todavía no migrada a medios estáticos"},503);
       return jsonResponse(request, {error: "Ruta no encontrada"}, 404);
     } catch (error) {
       console.error("Bellaquitas staging API:", error?.message || "unknown");
