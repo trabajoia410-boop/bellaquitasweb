@@ -198,8 +198,13 @@ async function callbackGoogle(request,env) {
     "INSERT INTO auth_sessions(token_hash,profile_id,expires_at,auth_method) "+
     "VALUES (?,?,unixepoch()+?,'google')"
   ).bind(hash,actor.id,SESSION_SECONDS).run();
+  // En el dominio nuevo, el usuario vuelve a su cuenta real del sitio;
+  // nunca a la antigua página de vista previa del Worker.
+  const publicHome=base(env)==="https://bellaquitas.fr";
+  const destination=publicHome?"/#/mi-espacio":
+    (state.startsWith("M")?"/espejo/#/mi-espacio":"/preview");
   return new Response(null,{status:303,headers:{
-    "Location":base(env)+(state.startsWith("M")?"/espejo/#/mi-espacio":"/preview"),
+    "Location":base(env)+destination,
     "Set-Cookie":sessionCookie(session),
     "Cache-Control":"no-store","Referrer-Policy":"no-referrer"
   }});
