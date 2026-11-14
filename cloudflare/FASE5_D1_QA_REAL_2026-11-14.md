@@ -51,3 +51,14 @@ La base staging conserva una referencia histórica de logotipo externo en `site_
 - Sin zona Cloudflare para el dominio `bellaquitas.fr`; web pública GitHub Pages original intacta. No cambiar DNS ni `main` sin verificación de diseño, seguridad, respaldo y rollback.
 
 **Situación: fase 5/6 EN CURSO; fase 6 NO autorizada.**
+
+
+## Cierre técnico del ensayo del 14/11/2026
+
+- Se ha preparado el asistente [`COPIA_D1_CIFRADA_WINDOWS.ps1`](./COPIA_D1_CIFRADA_WINDOWS.ps1) para exportar, cifrar GPG AES256, verificar y restaurar **solo en el ordenador privado**, sin crear cuentas ni alterar Cloudflare.
+- **Prueba real en Windows Actions `-Check`: APROBADA**, con 6 perfiles sintéticos, sin credenciales ni acceso a servicios externos y sin exportar SQL privado. [Ver ejecución](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43570002483).
+- [Nueva guía de ejecución y verificación privadas](./GUIA_BACKUP_D1_SIN_SUPABASE_WINDOWS.md).
+- Lectura final de Cloudflare: **2 bases D1** EU, la nueva QA aislada con **0 perfiles, 0 puntos y 0 visitas**, y la D1 staging anterior conservando exactamente **7 perfiles, 2 admins, 1.999.998 puntos y 0 visitas**. Las nuevas columnas/tablas existen solamente en la QA vacía.
+- GitHub `main` sigue en `aafb4de85a204cdb79b281815df5819417e7d9c6`. Sin DNS, publicaciones ni migraciones a datos de usuarios.
+- No se ha conseguido aún guardar el SQL auténtico exportado como archivo GPG local ni restaurarlo; **no marcar los controles reales de fase 6 como completados**.
+
