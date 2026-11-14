@@ -76,10 +76,11 @@ test("HTML idéntico salvo scripts backend y CSP y service worker sin sesiones p
     "bellaquitas-fiesta-fondo.mp4"]){
    assert.equal(candidate.includes(video),source.includes(video),video);
  }
- assert.equal(index.replace(/<script src="app-cloudflare\.js\?v=d1-20261114" defer><\/script>/,"<script src=\"app.js?v=traduccion62\" defer></script>")
-    .replace("connect-src 'self';","connect-src 'self' https://vlsipvngvxcgnwrhpjgg.supabase.co wss://vlsipvngvxcgnwrhpjgg.supabase.co;")
-    .replace("script-src 'self';","script-src 'self' https://esm.sh;")
-    .replace('  <script src="locale-fr.js','  <script src="config.js"></script>\n  <script src="locale-fr.js'),
-    originalHtml,"No se puede modificar el diseño del index");
+ const expected=originalHtml
+    .replace('<script src="config.js"></script>','')
+    .replace("script-src 'self' https://esm.sh;","script-src 'self';")
+    .replace("connect-src 'self' https://vlsipvngvxcgnwrhpjgg.supabase.co wss://vlsipvngvxcgnwrhpjgg.supabase.co;","connect-src 'self';")
+    .replace('src="app.js?v=traduccion62"','src="app-cloudflare.js?v=d1-20261114"');
+ assert.equal(index,expected,"Solo pueden cambiar las cuatro referencias de backend");
 });
 console.log("OK: web candidata ES/FR, medios, QR y diseño originales con Cloudflare-D1.");
