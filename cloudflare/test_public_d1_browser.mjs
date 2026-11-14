@@ -105,7 +105,13 @@ try{
  mpage.on("pageerror",e=>errors.push(e.message));
  await mpage.goto(BASE+"/#/mi-espacio",{waitUntil:"domcontentloaded"});
  await verify(mpage,"Móvil: inicio de socia ficticia con sesión D1");
- assert.ok((await mpage.locator("#app").innerText()).includes("Socia inventada"));
+ const memberText=await mpage.locator("#app").innerText();
+ if(!memberText.includes("Socia inventada")){
+   console.error("FICTIONAL_BROWSER_DIAGNOSTIC",JSON.stringify({
+     body:memberText.slice(0,450),hits:hits.slice(-12),pageErrors:errors.slice(-5)
+   }));
+ }
+ assert.ok(memberText.includes("Socia inventada"));
  await mpage.goto(BASE+"/#/tarjeta",{waitUntil:"domcontentloaded"});
  await verify(mpage,"Móvil: tarjeta y QR de socia ficticia");
  assert.ok((await mpage.locator("#app").innerText()).includes("MBR-FAKE-12345"));
