@@ -504,7 +504,14 @@ def perform() -> None:
         expected_pg=before_pg
 
         print("[2/4] Exportando D1 staging (sin modificarla)...")
-        run(["wrangler","d1","export",DATABASE,"--remote","--output",
+        # Configuración explícita y versionada de D1 staging; si Wrangler
+        # se ejecuta desde otra carpeta, jamás seleccionar otra D1 por
+        # omisión. La exportación es de lectura, no deploy ni import.
+        config=Path(__file__).resolve().parent/"wrangler.backup.toml"
+        if not config.is_file():
+            raise RuntimeError("Falta configuración segura de D1 staging")
+        run(["wrangler","d1","export",DATABASE,"--remote",
+             "--config",str(config),"--output",
              str(work/"cloudflare-d1-staging.sql"),"--skip-confirmation"])
 
         print("[3/4] Descargando originales de Supabase Storage...")
