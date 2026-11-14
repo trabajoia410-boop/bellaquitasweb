@@ -270,11 +270,19 @@ def self_test()->None:
     assert manifest["metrics"]["google_links"]==6
     assert manifest["metrics"]["points"]==75
     assert sha(snapshot)==manifest["snapshot_sha256"]
-    tampered=bytearray(binary)
-    tampered[-8] ^= 0x40  # Cambiar CRC interno del gzip cifrable
+    # Crear un TAR válido pero con un punto cambiado en snapshot.sql;
+    # el manifiesto conserva el SHA original y debe detectar alteración.
+    tampered_sql=snapshot.replace(b"QR0",b"QRX",1)
+    assert tampered_sql!=snapshot
+    bad=io.BytesIO()
+    with tarfile.open(fileobj=bad,mode="w:gz") as tar:
+        for name,data in (("snapshot.sql",tampered_sql),(
+            "manifest.json",json.dumps(manifest).encode("utf8"))):
+            entry=tarfile.TarInfo(name);entry.size=len(data)
+            tar.addfile(entry,io.BytesIO(data))
     try:
-        verify_bundle(bytes(tampered))
-        raise AssertionError("No se detectó archivo alterado")
+        verify_bundle(bad.getvalue())
+        raise AssertionError("No se detectó el saldo alterado")
     except RuntimeError:
         pass
     print("OK: respaldo/restauración lógica D1 con seis cuentas inventadas")
