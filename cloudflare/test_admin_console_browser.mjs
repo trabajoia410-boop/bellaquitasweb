@@ -29,7 +29,7 @@ function respond(res,data,status=200,extra={}){
 }
 const server=createServer(async(req,res)=>{
  const url=new URL(req.url,"http://localhost"),pathname=url.pathname;
- if(pathname==="/espejo/assets/logo-navbar.png"){
+ if(pathname==="/assets/logo-navbar.png"){
   const image=fs.readFileSync(path.join(HERE,"..","assets","logo-navbar.png"));
   res.writeHead(200,{"Content-Type":"image/png"});res.end(image);return;
  }
