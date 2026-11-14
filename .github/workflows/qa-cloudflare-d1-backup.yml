@@ -1,0 +1,33 @@
+name: "Bellaquitas — respaldo Cloudflare D1 sin otros proveedores"
+on:
+  push:
+    branches:
+      - auditoria/fase5-2026-11-11
+    paths:
+      - cloudflare/backup_d1_solo.py
+      - cloudflare/wrangler.backup.toml
+      - .github/workflows/qa-cloudflare-d1-backup.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  encrypted-backup-offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Comprobar sintaxis, destino D1 y no usar un proveedor externo
+        run: |
+          python3 -m py_compile cloudflare/backup_d1_solo.py
+          python3 cloudflare/backup_d1_solo.py --check
+      - name: Ensayar archivo íntegro y archivo corrupto sin datos reales
+        run: python3 cloudflare/backup_d1_solo.py --self-test
+      - name: Exigir que exportación REAL esté prohibida en GitHub Actions
+        run: |
+          if python3 cloudflare/backup_d1_solo.py --run; then
+            echo 'ERROR: permitía exportar datos privados en GitHub Actions' >&2
+            exit 1
+          fi
+          echo 'OK: exportación real sólo en terminal privado'
