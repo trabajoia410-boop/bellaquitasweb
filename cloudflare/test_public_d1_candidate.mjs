@@ -9,6 +9,12 @@ const source=readFileSync("app.js","utf8");
 const candidate=readFileSync(
  "cloudflare/staging-source-2026-11-11/recovered-src/app-cloudflare.js","utf8");
 const impl=readFileSync("cloudflare/qa-candidates/public-d1-browser-impl.js","utf8");
+const index=readFileSync(
+ "cloudflare/staging-source-2026-11-11/recovered-src/index-cloudflare.html","utf8");
+const sw=readFileSync(
+ "cloudflare/staging-source-2026-11-11/recovered-src/sw-cloudflare.js","utf8");
+const originalHtml=readFileSync("index.html","utf8");
+
 test("JavaScript original sin modificar y candidato separado",()=>{
  assert.ok(source.length>170000);
  assert.ok(candidate.length>source.length/2);
@@ -53,5 +59,27 @@ test("publicación y perfiles de socios no se escriben desde rutas de lectura",(
  assert.match(impl,/cloudSaveSuggestion/);
  assert.match(impl,/cloudUpdateName/);
  assert.match(impl,/cloudResumeSavedSession/);
+});
+test("HTML idéntico salvo scripts backend y CSP y service worker sin sesiones privadas",()=>{
+ assert.match(index,/app-cloudflare\.js\?v=d1-20261114/);
+ assert.doesNotMatch(index,/config\.js|supabase|esm\.sh/i);
+ assert.match(index,/styles\.css\?v=iosencuadre61/);
+ assert.match(index,/locale-fr\.js\?v=traduccion62/);
+ assert.match(index,/assets\/qr-local\.js/);
+ assert.match(index,/assets\/favicon\.svg/);
+ assert.match(candidate,/sw-cloudflare\.js/);
+ assert.match(sw,/app-cloudflare\.js/);
+ assert.match(sw,/cloudflare-d1-v1/);
+ assert.doesNotMatch(sw,/config\.js|supabase/i);
+ for(const video of ["Bellaquitas Fest para móvil.mp4","bellaquitas fiesta portada movil.mp4",
+    "bellaquitas fiesta portada.mp4","bellaquitas-fiesta-fondo 1.mp4",
+    "bellaquitas-fiesta-fondo.mp4"]){
+   assert.equal(candidate.includes(video),source.includes(video),video);
+ }
+ assert.equal(index.replace(/<script src="app-cloudflare\.js\?v=d1-20261114" defer><\/script>/,"<script src=\"app.js?v=traduccion62\" defer></script>")
+    .replace("connect-src 'self';","connect-src 'self' https://vlsipvngvxcgnwrhpjgg.supabase.co wss://vlsipvngvxcgnwrhpjgg.supabase.co;")
+    .replace("script-src 'self';","script-src 'self' https://esm.sh;")
+    .replace('  <script src="locale-fr.js','  <script src="config.js"></script>\n  <script src="locale-fr.js'),
+    originalHtml,"No se puede modificar el diseño del index");
 });
 console.log("OK: web candidata ES/FR, medios, QR y diseño originales con Cloudflare-D1.");
