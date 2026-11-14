@@ -121,15 +121,7 @@ export async function mirrorDataRoute(request,env){
     "SELECT storage_path FROM moments_photos WHERE id=? LIMIT 1"
    ).bind(photoMatch[1]).first();
    if(!record)return reply({error:"Fotografía no encontrada"},404);
-   const stored=await env.MEDIA.get(record.storage_path);
-   if(!stored)return reply({error:"Fotografía no encontrada"},404);
-   const type=stored.httpMetadata?.contentType;
-   if(!["image/png","image/jpeg","image/webp"].includes(type))
-    return reply({error:"Formato no admitido"},415);
-   return new Response(stored.body,{headers:{
-    "Content-Type":type,"Cache-Control":"private, no-store",
-    "X-Content-Type-Options":"nosniff","X-Robots-Tag":"noindex, nofollow"
-   }});
+   return reply({error:"Fotografía pendiente de almacenamiento estático"},503);
   }
   return reply({error:"Ruta no encontrada"},404);
  }catch(error){
