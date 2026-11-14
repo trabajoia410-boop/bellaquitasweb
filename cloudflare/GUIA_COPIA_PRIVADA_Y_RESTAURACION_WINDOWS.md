@@ -64,3 +64,29 @@ No se exportarán datos reales a GitHub, Cloudflare Workers, ChatGPT ni archivos
 El archivo GPG incorpora las métricas de perfiles/Auth y una huella SHA-256 de **las filas individuales** de `public.profiles`. Durante el respaldo se calculan al inicio y al final; si cambian, el proceso **falla y no entrega una copia aprobada**. Después de restaurar, la huella se vuelve a calcular en el PostgreSQL local y debe coincidir con la original. **Los datos individuales se procesan en memoria local; la huella se guarda dentro del GPG cifrado, no en GitHub.**
 
 **Límite importante:** dos lecturas antes y después no forman una transacción común con `pg_dump`, la exportación de D1 y la descarga de S3. Un cambio que ocurra y luego se revierta entre lecturas podría escapar a la detección. Esto es un refuerzo, **no una garantía de instantánea atómica**. La restauración aislada real, comprobación de integridad y procedimiento de corte sin escrituras conflictivas siguen siendo imprescindibles. Nunca suspender el sitio ni bloquear los puntos reales sin autorización.
+
+
+## Preparación verificada en la fase 5 — 14 de noviembre de 2026
+
+El origen sigue en **Supabase Free (PostgreSQL 17)**. En el plan Free, Supabase **no incluye copias automáticas**; este procedimiento utiliza exportaciones manuales locales. El restaurador necesita un PostgreSQL 17 local, aislado, con roles/extensiones compatibles con el dump. **No intentes restaurar en producción para probarlo.**
+
+Se ha añadido `cloudflare/wrangler.backup.toml`, que fija la exportación D1 al proyecto de PRUEBAS **`bellaquitas-staging`**, jurisdicción `eu`, ID `c7ada9c9-d397-4e22-b5b8-3fbd8d13e550`. El script `backup_privado_local.py` siempre utiliza `wrangler d1 export --remote --config <ruta-de-esta-config>`, evitando seleccionar accidentalmente otra base de datos. No contiene secretos, no crea Workers, no usa R2 ni cambia DNS. **No utilices esta configuración para publicar un Worker.** El ensayo sintético está en [GitHub Actions](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43547533110).
+
+Para empezar desde Windows en una carpeta privada, descarga/clona exclusivamente la rama `auditoria/fase5-2026-11-11`, revisa los scripts y ejecuta primero **sin claves ni cambios**:
+
+```powershell
+python cloudflare/backup_privado_local.py --check
+python cloudflare/backup_privado_local.py --self-test
+python cloudflare/test_backup_target_config.py
+```
+
+Cuando hayas preparado las credenciales en tu equipo y un directorio cifrado local, los comandos operativos (nunca en este chat) son:
+
+```powershell
+python cloudflare/backup_privado_local.py --run
+python cloudflare/backup_privado_local.py --verify "RUTA_PRIVADA\bellaquitas-...tar.gz.gpg"
+python cloudflare/restore_privado_aislado.py --check
+python cloudflare/restore_privado_aislado.py --run "RUTA_PRIVADA\bellaquitas-...tar.gz.gpg"
+```
+
+**NO compartas la salida con tokens, rutas de almacenamiento ni datos personales**, y tampoco el archivo cifrado por chat. Una salida de confirmación general sin identificadores permite revisar el progreso. Si hay error, la copia/restauración **no está completada**; no saltar el control ni actualizar a una suscripción de pago.
