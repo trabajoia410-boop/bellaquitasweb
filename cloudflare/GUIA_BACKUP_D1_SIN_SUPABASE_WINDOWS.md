@@ -13,6 +13,24 @@ Este procedimiento **no consulta ni utiliza Supabase**. El origen es exclusivame
 - `--restore-local` restaura en un archivo **SQLite NUEVO** y vuelve a comparar los totales y las huellas. **No crea ni actualiza bases Cloudflare**.
 - `wrangler.backup.toml` fija la única base permitida: `bellaquitas-staging` (`c7ada9c9-d397-4e22-b5b8-3fbd8d13e550`), jurisdicción UE, sin R2 ni rutas web.
 
+## Opción simplificada: un solo comando en Windows
+
+Después de instalar Python 3.11+, Wrangler y GnuPG y descargar la rama de pruebas, abre PowerShell en la raíz del proyecto y ejecuta:
+
+```powershell
+.\cloudflare\COPIA_D1_CIFRADA_WINDOWS.ps1
+```
+
+El asistente solicita **la carpeta privada del equipo** y **el token Cloudflare** de forma oculta en la consola, nunca en ChatGPT. Después exporta el SQL remoto, solicita la contraseña de GPG, cifra AES256, verifica SHA-256 y crea un nuevo SQLite restaurado para comparar cuentas, Google, puntos y visitas. El script limpia el token de la sesión PowerShell al terminar; no altera D1 y no activa ningún servicio de pago.
+
+Antes puedes ejecutar solo la prueba **sin credenciales, sin red y con seis cuentas inventadas**:
+
+```powershell
+.\cloudflare\COPIA_D1_CIFRADA_WINDOWS.ps1 -Check
+```
+
+**ATENCIÓN:** el asistente no se ha ejecutado aún con tu exportación REAL: el respaldo privado y la restauración REAL siguen pendientes. No subir archivos `.sql`, `.gpg` ni `.sqlite` a GitHub ni compartir contraseñas, tokens o QR de socios. Solo después de que el script confirme `OK` y compruebes una segunda copia cifrada podrá estudiarse aplicar migraciones de sesión en la base original.
+
 ## Preparación en Windows
 
 1. Abre PowerShell en una carpeta local privada y clona/descarga únicamente la rama de prueba `auditoria/fase5-2026-11-11` del repositorio Bellaquitas Fest. No editar `main`.
