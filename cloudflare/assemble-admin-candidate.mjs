@@ -22,6 +22,7 @@ assert.strictEqual(bundled,current,"Cambios en el panel sin empaquetar: regenera
 for(const [dest,src] of [
  ["auth-routes.js","auth-routes-admin-proof.js"],
  ["public-d1-read-routes.js","public-d1-read-routes.js"],
+ ["public-no-legacy-media.js","public-no-legacy-media.js"],
  ["admin-activation-routes.js","admin-activation-routes.js"],
  ["admin-console-routes.js","admin-console-routes.js"],
  ["admin-console-ui.js","admin-console-ui.js"],
