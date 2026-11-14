@@ -1,0 +1,30 @@
+name: "Bellaquitas — web pública candidata Cloudflare-D1, diseño intacto"
+on:
+  push:
+    branches:
+      - auditoria/fase5-2026-11-11
+    paths:
+      - cloudflare/build-public-d1-candidate.mjs
+      - cloudflare/qa-candidates/public-d1-browser-impl.js
+      - cloudflare/test_public_d1_candidate.mjs
+      - .github/workflows/qa-public-d1-browser.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  public-app:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Generar candidato de app desde HTML/CSS/JS originales
+        run: node cloudflare/build-public-d1-candidate.mjs
+      - name: Comprobar JavaScript sin ejecutar APIs remotas
+        run: node --check cloudflare/staging-source-2026-11-11/recovered-src/app-cloudflare.js
+      - name: Comprobar destino de datos y seguridad del candidato
+        run: node --experimental-default-type=module --test cloudflare/test_public_d1_candidate.mjs
