@@ -141,7 +141,7 @@ def verify_bundle(binary:bytes)->tuple[bytes,dict]:
                 raise RuntimeError("Faltan objetos del respaldo")
             snapshot=sqlentry.read(MAX_SQL+1)
             manifest=json.loads(infoentry.read(65536))
-    except (tarfile.TarError,ValueError) as e:
+    except (tarfile.TarError,OSError,ValueError,UnicodeDecodeError) as e:
         raise RuntimeError("Archivo de backup inválido") from e
     if (manifest.get("database_id")!=DB_ID or
         manifest.get("format")!="bellaquitas-cloudflare-d1-v1" or
@@ -206,8 +206,10 @@ def run() -> None:
 
 def verify(file:Path,restore:Path|None=None)->None:
     local_required()
+    if file.is_symlink():
+        raise RuntimeError("No se aceptan enlaces simbólicos")
     archive=safe_location(file)
-    if archive.is_symlink() or not archive.is_file() or not archive.name.endswith(".gpg"):
+    if not archive.is_file() or not archive.name.endswith(".gpg"):
         raise RuntimeError("Se necesita un .gpg auténtico de una carpeta privada")
     destination=safe_location(restore) if restore else None
     if destination and (destination.exists() or destination.suffix!=".sqlite"):
@@ -268,10 +270,13 @@ def self_test()->None:
     assert manifest["metrics"]["google_links"]==6
     assert manifest["metrics"]["points"]==75
     assert sha(snapshot)==manifest["snapshot_sha256"]
+    tampered=bytearray(binary)
+    tampered[-8] ^= 0x40  # Cambiar CRC interno del gzip cifrable
     try:
-        verify_bundle(binary.replace(b"fictional",b"tampered!"))
+        verify_bundle(bytes(tampered))
         raise AssertionError("No se detectó archivo alterado")
-    except RuntimeError:pass
+    except RuntimeError:
+        pass
     print("OK: respaldo/restauración lógica D1 con seis cuentas inventadas")
     print("Ningún servicio remoto ha sido consultado")
 
