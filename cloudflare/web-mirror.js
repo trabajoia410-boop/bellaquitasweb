@@ -1,6 +1,7 @@
 import {MIRROR_SNAPSHOT} from "./mirror-snapshot.js";
 import {SITE_MEDIA} from "./site-media-manifest.js";
 import {MIRROR_SUGGESTIONS_UI} from "./mirror-suggestions-ui.js";
+import {MIRROR_ADMIN_NEW_TAB} from "./mirror-admin-newtab.js";
 const MIRROR_BASE="/espejo/";
 const PROTECTED={
  "Cache-Control":"no-store",
@@ -33,7 +34,7 @@ function sameDesignHTML(html){
  // El formulario original necesita Turnstile; solo se autoriza su proveedor.
  out=out.replaceAll("https://esm.sh","https://challenges.cloudflare.com");
  out=out.replaceAll("frame-src 'self' blob: about:","frame-src 'self' blob: about: https://challenges.cloudflare.com");
- out=out.replace("</body>",`<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script><script src="/espejo/auth-ui.js" defer></script><script src="/espejo/suggestions-ui.js" defer></script></body>`);
+ out=out.replace("</body>",`<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script><script src="/espejo/auth-ui.js" defer></script><script src="/espejo/suggestions-ui.js" defer></script><script src="/espejo/admin-newtab.js" defer></script></body>`);
  out=out.replace("</body>",`<div role="status" aria-label="Copia de pruebas Cloudflare" style="position:fixed;bottom:12px;right:12px;z-index:99999;padding:8px 13px;border:1px solid #d5a749;border-radius:999px;color:#f8d98d;background:#100c12ee;box-shadow:0 4px 18px #0009;font:600 11px/1.4 system-ui,sans-serif">PRUEBAS · SOLO LECTURA</div></body>`);
  return out;
 }
@@ -105,6 +106,7 @@ export async function mirrorRoute(request,env){
   if(path==="/espejo/suggestions-ui.js"){
    return js(MIRROR_SUGGESTIONS_UI);
   }
+  if(path==="/espejo/admin-newtab.js")return js(MIRROR_ADMIN_NEW_TAB);
   if(path==="/espejo/locale-fr.js"){
    return js(await original("locale-fr.js"));
   }
