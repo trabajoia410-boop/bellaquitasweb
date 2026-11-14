@@ -1,0 +1,32 @@
+name: "Fase 5 — API pública sin referencias a Storage anterior"
+on:
+  push:
+    branches:
+      - auditoria/fase5-2026-11-11
+    paths:
+      - cloudflare/qa-candidates/public-no-legacy-media.js
+      - cloudflare/qa-candidates/bellaquitas-api-staging-admin.js
+      - cloudflare/assemble-admin-candidate.mjs
+      - cloudflare/test_no_legacy_media_public.mjs
+      - .github/workflows/qa-public-no-legacy-media.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  no-legacy-media:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Probar sanitización de rutas de medios sin datos reales
+        run: node --experimental-default-type=module --test cloudflare/test_no_legacy_media_public.mjs
+      - name: Verificar ensamblaje estático de Worker sin publicar
+        run: |
+          node cloudflare/staging-source-2026-11-11/extract-modules.mjs
+          node cloudflare/assemble-admin-candidate.mjs
+          node --check cloudflare/staging-source-2026-11-11/recovered-src/public-no-legacy-media.js
