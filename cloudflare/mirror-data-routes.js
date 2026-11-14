@@ -1,4 +1,4 @@
-import {authenticatedProfile} from "./auth-routes.js";
+import {authenticatedProfile,authenticatedAdminAccess} from "./auth-routes.js";
 // Endpoints de lectura para conectar el renderer ORIGINAL al staging de Cloudflare.
 // Nunca devuelven registros privados a personas anónimas ni escriben puntos/visitas.
 const HEADERS={
@@ -60,7 +60,7 @@ export async function mirrorDataRoute(request,env){
    ).all();
    return reply({items:res.results||[]});
   }
-  if(!isAdmin(actor))return forbidden();
+  if(!isAdmin(await authenticatedAdminAccess(request,env)))return forbidden();
   if(path==="/v1/mirror/admin/catalog/events"){
    const res=await env.DB.prepare("SELECT * FROM events ORDER BY created_at DESC LIMIT 500").all();
    return reply({items:parseCatalog(res.results||[])});
