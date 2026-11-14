@@ -35,14 +35,10 @@ between("async function loadCommunity(){","function communityShell(content){",
  "async function loadCommunityAdmin(){communitySuggestions=[];}");
 between("async function saveCommunitySuggestion(form){","async function communityAdminAction(el,act){",
  "async function saveCommunitySuggestion(form){return cloudSaveSuggestion(form);}");
-once(
- "const url=sb.storage.from(MEDIA_BUCKET).getPublicUrl(p.storage_path).data.publicUrl;",
- "const url=p.image_url||'';");
-// La segunda ocurrencia de multimedia está en el panel antiguo que nunca
-// se monta; evita sin embargo que se genere una URL de proveedor externo.
-once(
- "const url=sb.storage.from(MEDIA_BUCKET).getPublicUrl(p.storage_path).data.publicUrl;",
- "const url=p.image_url||'';");
+const originalPhotoUrl="const url=sb.storage.from(MEDIA_BUCKET).getPublicUrl(p.storage_path).data.publicUrl;";
+assert.equal(src.split(originalPhotoUrl).length,3,
+ "Se esperaban dos referencias de fotos antiguas");
+src=src.split(originalPhotoUrl).join("const url=p.image_url||'';");
 between("function auth(){","function roleLabel(role){",
  "function auth(){return cloudAuthScreen();}");
 between("async function loadLive(){","function createQR(code){",
