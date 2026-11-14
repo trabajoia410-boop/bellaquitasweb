@@ -1,0 +1,24 @@
+name: Validación vídeos R2 y compatibilidad Safari
+
+on:
+  push:
+    branches:
+      - auditoria/fase5-2026-11-11
+    paths:
+      - cloudflare/test-staging-media.mjs
+      - .github/workflows/qa-video-staging.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  media:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Comprobar sintaxis
+        run: node --check cloudflare/test-staging-media.mjs
+      - name: Comprobar tamaño original, MIME y Range de los cinco MP4
+        run: node cloudflare/test-staging-media.mjs

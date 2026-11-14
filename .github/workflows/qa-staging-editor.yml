@@ -1,0 +1,24 @@
+name: Editor y R2 integrados en base de pruebas aislada
+on:
+  push:
+    branches:
+      - auditoria/fase5-2026-11-11
+    paths:
+      - cloudflare/test_staging_editor.mjs
+      - .github/workflows/qa-staging-editor.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  editor-sqlite-memory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Recuperar 17 módulos del Worker sin desplegar
+        run: node cloudflare/staging-source-2026-11-11/extract-modules.mjs
+      - name: Probar editor real con SQLite en memoria y R2 ficticio
+        run: node --experimental-sqlite --experimental-default-type=module --test cloudflare/test_staging_editor.mjs

@@ -1,0 +1,27 @@
+name: Autenticación y sesiones aisladas (sin emails reales)
+on:
+  push:
+    branches:
+      - auditoria/fase5-2026-11-11
+    paths:
+      - cloudflare/test_staging_auth.mjs
+      - cloudflare/staging-source-2026-11-11/**
+      - .github/workflows/qa-staging-auth.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  auth-memory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Extraer código exacto del Worker respaldado
+        run: node cloudflare/staging-source-2026-11-11/extract-modules.mjs
+      - name: Comprobar sintaxis
+        run: node --check cloudflare/test_staging_auth.mjs
+      - name: Correo, OAuth y sesiones con D1, Resend y Turnstile simulados
+        run: node --experimental-default-type=module --test cloudflare/test_staging_auth.mjs

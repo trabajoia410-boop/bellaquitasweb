@@ -1,0 +1,33 @@
+name: "Bellaquitas — D1 publica solo datos propios y control de puerta"
+on:
+  push:
+    branches:
+      - auditoria/fase5-2026-11-11
+    paths:
+      - cloudflare/qa-candidates/public-d1-read-routes.js
+      - cloudflare/qa-candidates/bellaquitas-api-staging-admin.js
+      - cloudflare/test_public_d1_read.mjs
+      - cloudflare/assemble-admin-candidate.mjs
+      - .github/workflows/qa-public-d1-least-privilege.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  privacy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Ensamblar Worker de ensayo local sin publicar
+        run: |
+          node cloudflare/staging-source-2026-11-11/extract-modules.mjs
+          node --experimental-default-type=module cloudflare/assemble-admin-candidate.mjs
+      - name: Validar sintaxis de rutas API
+        run: node --check cloudflare/staging-source-2026-11-11/recovered-src/public-d1-read-routes.js
+      - name: Probar permisos con perfiles y saldos inventados
+        run: node --experimental-sqlite --experimental-default-type=module --test cloudflare/test_public_d1_read.mjs

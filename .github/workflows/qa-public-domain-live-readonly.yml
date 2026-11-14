@@ -1,0 +1,25 @@
+name: Fase 5 — verificar dominio y vídeos originales reales (solo GET)
+on:
+  push:
+    branches:
+      - auditoria/fase5-2026-11-11
+    paths:
+      - cloudflare/test_public_domain_live_readonly.mjs
+      - .github/workflows/qa-public-domain-live-readonly.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-original-live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Comparar HTML, scripts y 5 vídeos contra main sin iniciar sesión
+        run: node cloudflare/test_public_domain_live_readonly.mjs

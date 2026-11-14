@@ -1,0 +1,31 @@
+# Solo evidencia visual de sitios públicos, sin autenticación.
+name: Capturas comparativas Bellaquitas staging
+
+on:
+  push:
+    branches:
+      - auditoria/fase5-2026-11-11
+    paths:
+      - cloudflare/capture-visual-staging.sh
+      - .github/workflows/qa-visual-staging.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  visual-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Capturar original y espejo (desktop/móvil)
+        run: bash cloudflare/capture-visual-staging.sh
+      - name: Guardar capturas para comparación manual
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bellaquitas-original-vs-cloudflare-2026-11-11
+          path: visual-evidence/
+          retention-days: 7
+          if-no-files-found: warn

@@ -1,0 +1,25 @@
+name: KV Free — fotografías en memoria, sin nube ni pagos
+on:
+  push:
+    branches:
+      - auditoria/fase5-2026-11-11
+    paths:
+      - cloudflare/qa-candidates/kv-media-adapter.js
+      - cloudflare/test_kv_media_adapter.mjs
+      - .github/workflows/qa-kv-media-free.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-free-spike:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verificar sintaxis del adaptador, sin Cloudflare real
+        run: node --experimental-default-type=module --check cloudflare/qa-candidates/kv-media-adapter.js
+      - name: Probar cuotas y operaciones solo en memoria ficticia
+        run: node --experimental-default-type=module --test cloudflare/test_kv_media_adapter.mjs

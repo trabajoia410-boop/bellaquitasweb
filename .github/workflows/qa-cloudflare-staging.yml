@@ -1,0 +1,28 @@
+# Pruebas exclusivamente de lectura del Worker de STAGING.
+# No usa credenciales ni modifica cuentas, puntos, visitas, DNS o la web pública.
+name: Auditoría Cloudflare staging (no destructiva)
+
+on:
+  push:
+    branches:
+      - auditoria/fase5-2026-11-11
+    paths:
+      - cloudflare/test-staging-api.mjs
+      - .github/workflows/qa-cloudflare-staging.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke-staging:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verificar sintaxis de las pruebas
+        run: node --check cloudflare/test-staging-api.mjs
+      - name: Comprobar API pública y denegaciones sin sesión
+        env:
+          BELLAQUITAS_STAGING_URL: https://bellaquitas-api-staging.bellaquitas-fest-410.workers.dev
+        run: node cloudflare/test-staging-api.mjs

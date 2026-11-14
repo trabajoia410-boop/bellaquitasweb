@@ -1,0 +1,34 @@
+name: Segundo vídeo móvil Safari — WebKit, solo lectura
+on:
+  push:
+    branches:
+      - auditoria/fase5-2026-11-11
+    paths:
+      - cloudflare/test-webkit-second-video.mjs
+      - .github/workflows/qa-webkit-second-video.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  second-video:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar motor WebKit gratuito
+        run: |
+          npm install --no-save --no-package-lock --ignore-scripts playwright@1.56.1
+          npx playwright install --with-deps webkit
+      - name: Comparar la decodificación del segundo vídeo original y Cloudflare
+        run: node cloudflare/test-webkit-second-video.mjs
+      - name: Guardar diagnóstico y capturas (7 días)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bellaquitas-webkit-second-video
+          path: webkit-second-video-evidence/
+          retention-days: 7
+          if-no-files-found: warn

@@ -1,0 +1,41 @@
+name: "Bellaquitas — autenticación Google y panel 100% Cloudflare D1"
+on:
+  push:
+    branches:
+      - auditoria/fase5-2026-11-11
+    paths:
+      - cloudflare/test_cloudflare_d1_no_external_auth.mjs
+      - cloudflare/qa-candidates/admin-console*
+      - cloudflare/qa-candidates/auth-routes-admin-proof.js
+      - cloudflare/qa-candidates/free-only-cost-policy.js
+      - cloudflare/qa-candidates/bellaquitas-api-staging-admin.js
+      - cloudflare/assemble-admin-candidate.mjs
+      - cloudflare/migrations/0005-auth-session-method.sql
+      - cloudflare/migrations/0007-admin-sso-sessions.sql
+      - .github/workflows/qa-cloudflare-d1-sso.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  cloudflare-native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: No permitir cliente, JWT ni endpoints del proveedor retirado
+        run: node --experimental-default-type=module --test cloudflare/test_cloudflare_d1_no_external_auth.mjs
+      - name: Ensamblar Worker nativo de prueba sin publicar
+        run: |
+          node cloudflare/staging-source-2026-11-11/extract-modules.mjs
+          node --experimental-default-type=module cloudflare/assemble-admin-candidate.mjs
+      - name: Sintaxis y seguridad de rutas
+        run: |
+          node --check cloudflare/staging-source-2026-11-11/recovered-src/admin-console-routes.js
+          node --check cloudflare/staging-source-2026-11-11/recovered-src/bellaquitas-api-staging.js
+      - name: Probar SSO Google y administración usando D1 local ficticia
+        run: node --experimental-sqlite --experimental-default-type=module --test cloudflare/test_admin_console.mjs

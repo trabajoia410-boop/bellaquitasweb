@@ -1,0 +1,24 @@
+name: Integración Worker completo con D1 ficticia (gratis)
+on:
+  push:
+    branches:
+      - auditoria/fase5-2026-11-11
+    paths:
+      - cloudflare/test_worker_full_stack.mjs
+      - .github/workflows/qa-worker-full-stack.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  worker-fictitious:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Recuperar los 17 módulos exactos del Worker sin desplegar nada
+        run: node cloudflare/staging-source-2026-11-11/extract-modules.mjs
+      - name: Probar enrutador, editor, socios y medios con D1/R2 en memoria
+        run: node --experimental-sqlite --experimental-default-type=module --test cloudflare/test_worker_full_stack.mjs
