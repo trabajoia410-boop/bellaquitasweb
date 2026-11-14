@@ -66,21 +66,14 @@ export function freeOnlyRequestBoundary(request,env){
     deleteProperty(){throw new Error("La política de coste no permite borrar restricciones");}
   });
   const pathname=new URL(request.url).pathname;
-  // Si estamos usando la sesión Supabase existente, los endpoints
-  // D1 anteriores NO deben permitir otro login ni ofrecer administración
-  // con una cookie genérica. Las operaciones verificadas de admin pasan
-  // únicamente por /administracion/api/* (doble rol + bearer Supabase).
-  // Las rutas públicas de lectura siguen disponibles.
+  // Si el Worker conserva la antigua opción de identidad externa,
+  // bloquearlo: nunca recurrir a un proveedor retirado por el dueño.
   if(env.ADMIN_SUPABASE_BRIDGE==="yes"){
-    const blockedLegacyPrivate=
-      /^\/v1\/(?:admin(?:\/|$)|door(?:\/|$)|me(?:\/|$)|mirror\/(?:admin|door|me)(?:\/|$))/.test(pathname)||
-      /^\/v1\/auth\/(?:email|google|logout)(?:\/|$)/.test(pathname)||
-      pathname==="/v1/rewards/request";
-    if(blockedLegacyPrivate){
-      return {env:safeEnv,blocked:safeResponse(
-        "Acceso privado únicamente desde la administración con la sesión oficial",403),synthetic:false};
-    }
+    return {env:safeEnv,blocked:safeResponse(
+      "Configuración de autenticación antigua prohibida",503),synthetic:false};
   }
+  // Google OAuth propio emite una sesión HttpOnly respaldada por D1.
+  // El panel solo la canjea a través de /administracion/api/sso.
   const mediaRead=request.method==="GET"&&(
     /^\/v1\/assets\/logos\//.test(pathname)||
     /^\/v1\/moments\/photos\//.test(pathname)||
