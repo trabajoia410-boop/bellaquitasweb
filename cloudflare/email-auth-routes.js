@@ -2,7 +2,7 @@
  * No se activa sin correo verificado, Turnstile, límites y secretos.
  * Las cuentas importadas de Google no reciben contraseñas ni se vinculan por email.
  */
-import {checkOrigin,createAuthSession,createVerifiedAdminSession} from "./auth-routes.js";
+import {checkOrigin,createAuthSession,createVerifiedAdminSession,authenticatedAdminAccess} from "./auth-routes.js";
 const HEAD={"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store","X-Content-Type-Options":"nosniff","X-Robots-Tag":"noindex, nofollow","Referrer-Policy":"no-referrer"};
 const json=(body,status=200,extra={})=>new Response(JSON.stringify(body),{status,headers:{...HEAD,...extra}});
 const unavailable=()=>json({error:"El acceso por correo no está activado todavía"},503);
@@ -16,6 +16,8 @@ const emailDeliveryReady=env=>emailLoginReady(env)&&
   typeof env.TURNSTILE_SECRET==="string"&&env.TURNSTILE_SECRET.length>8&&
   typeof env.TURNSTILE_SITE_KEY==="string"&&env.TURNSTILE_SITE_KEY.length>8;
 const emailRegistrationReady=env=>emailDeliveryReady(env)&&env.EMAIL_REGISTRATION_ENABLED==="yes";
+// Activación explícita, independientemente de registros de socios y operaciones de fidelidad.
+const adminEmailLinkReady=env=>emailDeliveryReady(env)&&env.ADMIN_EMAIL_LINK_ENABLED==="yes";
 const encode=bytes=>btoa(String.fromCharCode(...bytes)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
 function decode(value){if(typeof value!=="string"||!/^[A-Za-z0-9_-]{18,120}$/.test(value))throw Error("Malformed encoding");return Uint8Array.from(atob(value.replace(/-/g,"+").replace(/_/g,"/")),c=>c.charCodeAt(0));}
 const random=()=>{const b=new Uint8Array(32);crypto.getRandomValues(b);return encode(b);};
@@ -218,13 +220,92 @@ async function reset(request,env,data){
  ]);
  return json({ok:true,message:"Contraseña actualizada. Vuelve a iniciar sesión."});
 }
+// Un administrador ya identificado con Google puede vincular SU correo, tras comprobar
+// de nuevo control de la dirección mediante enlace de un solo uso. No crea perfiles.
+async function adminEmailLinkStart(request,env,data){
+ if(!adminEmailLinkReady(env))return unavailable();
+ const actor=await authenticatedAdminAccess(request,env);
+ if(!actor)return bad("Reautenticación de administrador necesaria",401);
+ const address=email(data.email);
+ if(!address||!validPassword(data.password))return bad("Correo o contraseña inválidos. Usa al menos 12 caracteres.");
+ const quota=await checkRate(env,request,"admin-email-link",address);
+ if(!quota.allowed)return rateRejected(quota);
+ const linked=await env.DB.prepare(
+  "SELECT 1 AS ok FROM auth_identity_links WHERE profile_id=? AND provider='google' LIMIT 1"
+ ).bind(actor.id).first();
+ if(!linked)return bad("La cuenta de administrador no tiene acceso Google verificado",403);
+ const existing=await env.DB.prepare(
+  "SELECT 1 AS ok FROM auth_email_credentials WHERE profile_id=? OR email=? LIMIT 1"
+ ).bind(actor.id,address).first();
+ if(existing)return bad("Este perfil o correo ya dispone de credenciales. Utiliza recuperar contraseña.",409);
+ const salt=random(),hash=await passwordHash(data.password,salt);
+ const token=random(),tokenHash=await sha256(token);
+ await env.DB.batch([
+  env.DB.prepare("DELETE FROM auth_admin_email_links WHERE profile_id=?").bind(actor.id),
+  env.DB.prepare(
+   "INSERT INTO auth_admin_email_links(token_hash,profile_id,email,password_hash,password_salt,password_iterations,expires_at) VALUES(?,?,?,?,?,?,unixepoch()+1200)"
+  ).bind(tokenHash,actor.id,address,hash,salt,ITERATIONS)
+ ]);
+ const origin=(env.PUBLIC_ORIGIN||new URL(request.url).origin).replace(/\/+$/,"");
+ const target=origin+"/administracion/#vincular="+token;
+ const sent=await sendMail(env,address,"Verifica tu correo de administración Bellaquitas Fest",
+  "Has solicitado vincular este correo a una cuenta de administrador.\n"+
+  "Para confirmar la dirección, abre este enlace antes de 20 minutos:\n"+target+
+  "\nDeberás volver a identificarte con tu cuenta administradora en esa pestaña."+
+  "\nSi no lo solicitaste, ignora el mensaje. No compartas el enlace.");
+ if(!sent){
+  await env.DB.prepare("DELETE FROM auth_admin_email_links WHERE token_hash=?").bind(tokenHash).run();
+  return bad("No se pudo enviar el correo de confirmación. Vuelve a intentarlo.",503);
+ }
+ return json({ok:true,message:"Comprueba el correo: envíe un enlace que caduca en 20 minutos."});
+}
+async function adminEmailLinkConfirm(request,env,data){
+ if(!adminEmailLinkReady(env))return unavailable();
+ const actor=await authenticatedAdminAccess(request,env);
+ if(!actor)return bad("Reautenticación de administrador necesaria",401);
+ if(typeof data.token!=="string"||!/^[A-Za-z0-9_-]{43}$/.test(data.token))
+  return bad("Enlace de verificación inválido",400);
+ const hash=await sha256(data.token);
+ const pending=await env.DB.prepare(
+  "SELECT profile_id,email,password_hash,password_salt,password_iterations FROM auth_admin_email_links "+
+  "WHERE token_hash=? AND profile_id=? AND expires_at>unixepoch()"
+ ).bind(hash,actor.id).first();
+ if(!pending)return bad("Enlace caducado o utilizado; solicita otro",400);
+ const existing=await env.DB.prepare(
+  "SELECT 1 AS ok FROM auth_email_credentials WHERE profile_id=? OR email=? LIMIT 1"
+ ).bind(actor.id,pending.email).first();
+ if(existing)return bad("Ya existe un correo vinculado; usa la recuperación de contraseña",409);
+ // Una transacción: vincular un correo AL MISMO perfil, conservar Google y revocar sesiones.
+ try{
+  await env.DB.batch([
+   env.DB.prepare(
+    "INSERT INTO auth_email_credentials(email,profile_id,password_hash,password_salt,password_iterations,verified_at) "+
+    "VALUES(?,?,?,?,?,unixepoch())"
+   ).bind(pending.email,actor.id,pending.password_hash,pending.password_salt,pending.password_iterations),
+   env.DB.prepare(
+    "INSERT INTO auth_identity_links(id,provider,provider_subject,profile_id) VALUES (?,'email',?,?)"
+   ).bind(crypto.randomUUID(),pending.email,actor.id),
+   env.DB.prepare("DELETE FROM auth_admin_email_links WHERE token_hash=?").bind(hash),
+   env.DB.prepare("DELETE FROM auth_admin_sessions WHERE profile_id=?").bind(actor.id),
+   env.DB.prepare("DELETE FROM auth_sessions WHERE profile_id=?").bind(actor.id)
+  ]);
+ }catch(error){
+  console.error("Admin link failed",String(error?.message||"unknown").slice(0,120));
+  return bad("No se pudo vincular el correo. No se ha cambiado el rol ni los puntos.",409);
+ }
+ const headers=new Headers(HEAD);
+ headers.append("Set-Cookie","__Host-bf_session=; Path=/; Max-Age=0; Secure; HttpOnly; SameSite=Lax");
+ headers.append("Set-Cookie","__Host-bf_admin=; Path=/; Max-Age=0; Secure; HttpOnly; SameSite=Lax");
+ return new Response(JSON.stringify({ok:true,reauthenticate:true,message:"Correo verificado y asociado al administrador original. Inicia sesión de nuevo."}),{status:200,headers});
+}
 export async function emailAuthRoute(request,env){
  const path=new URL(request.url).pathname;
  if(path==="/v1/auth/email/status"){
    if(request.method!=="GET")return bad("Método no permitido",405);
-   return json({login:emailLoginReady(env),registration:emailRegistrationReady(env),turnstileSiteKey:emailRegistrationReady(env)?env.TURNSTILE_SITE_KEY:null});
+   return json({login:emailLoginReady(env),registration:emailRegistrationReady(env),turnstileSiteKey:emailRegistrationReady(env)?env.TURNSTILE_SITE_KEY:null,adminLink:adminEmailLinkReady(env)});
  }
- const routes={"/v1/auth/email/register":registration,"/v1/auth/email/verify":verify,
+ const routes={"/v1/auth/admin/email/link/start":adminEmailLinkStart,"/v1/auth/admin/email/link/confirm":adminEmailLinkConfirm,
+   "/v1/auth/email/register":registration,"/v1/auth/email/verify":verify,
    "/v1/auth/email/login":login,"/v1/auth/email/forgot":forgot,"/v1/auth/email/reset":reset};
  const handler=routes[path];if(!handler)return null;
  if(request.method!=="POST")return bad("Método no permitido",405);
