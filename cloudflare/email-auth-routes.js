@@ -2,7 +2,7 @@
  * No se activa sin correo verificado, Turnstile, límites y secretos.
  * Las cuentas importadas de Google no reciben contraseñas ni se vinculan por email.
  */
-import {checkOrigin,createAuthSession} from "./auth-routes.js";
+import {checkOrigin,createAuthSession,createVerifiedAdminSession} from "./auth-routes.js";
 const HEAD={"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store","X-Content-Type-Options":"nosniff","X-Robots-Tag":"noindex, nofollow","Referrer-Policy":"no-referrer"};
 const json=(body,status=200,extra={})=>new Response(JSON.stringify(body),{status,headers:{...HEAD,...extra}});
 const unavailable=()=>json({error:"El acceso por correo no está activado todavía"},503);
@@ -174,6 +174,12 @@ async function login(request,env,data){
  let valid=false;
  try{valid=constantMatch(await passwordHash(data.password,record.password_salt,record.password_iterations),record.password_hash);}catch(_){}
  if(!valid)return bad("Correo o contraseña incorrectos",401);
+ if(data.admin_access===true){
+   const cookies=await createVerifiedAdminSession(record.profile_id,env);
+   const headers=new Headers(HEAD);
+   for(const cookie of cookies)headers.append("Set-Cookie",cookie);
+   return new Response(JSON.stringify({authenticated:true,admin:true}),{status:200,headers});
+ }
  const cookie=await createAuthSession(record.profile_id,env);
  return json({authenticated:true},200,{"Set-Cookie":cookie});
 }
