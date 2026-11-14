@@ -151,29 +151,7 @@ export async function protectedRoute(request,env){
         .bind(body.published?1:0,body.album_id).first();
       return record?out({ok:true,published:!!record.published}):error("Galería no encontrada",404);
     }
-    if(photoMatch){
-      if(!admin(actor))return error("Acceso reservado a administradores",403);
-      const album=await env.DB.prepare("SELECT id FROM moments_albums WHERE id=?").bind(photoMatch[1]).first();
-      if(!album)return error("Galería no encontrada",404);
-      const mime=(request.headers.get("Content-Type")||"").toLowerCase();
-      if(!["image/jpeg","image/png","image/webp"].includes(mime))return error("El archivo debe ser JPG, PNG o WebP",415);
-      const size=Number(request.headers.get("Content-Length")||0);
-      if(size>8*1024*1024)return error("El tamaño máximo de una foto es 8 MB",413);
-      const bytes=await request.arrayBuffer();
-      if(bytes.byteLength===0||bytes.byteLength>8*1024*1024)return error("Tamaño de archivo no válido",413);
-      const start=new Uint8Array(bytes.slice(0,12));
-      const jpeg=mime==="image/jpeg"&&start[0]===0xff&&start[1]===0xd8;
-      const png=mime==="image/png"&&start[0]===0x89&&start[1]===0x50&&start[2]===0x4e&&start[3]===0x47;
-      const webp=mime==="image/webp"&&String.fromCharCode(...start.slice(0,4))==="RIFF"&&String.fromCharCode(...start.slice(8,12))==="WEBP";
-      if(!jpeg&&!png&&!webp)return error("Formato de imagen incorrecto",415);
-      const id=crypto.randomUUID(),ext=mime==="image/png"?"png":mime==="image/webp"?"webp":"jpg";
-      const key="moments/"+album.id+"/"+id+"."+ext;
-      await env.MEDIA.put(key,bytes,{httpMetadata:{contentType:mime}});
-      try{
-        await env.DB.prepare("INSERT INTO moments_photos(id,album_id,storage_path) VALUES (?,?,?)").bind(id,album.id,key).run();
-      }catch(e){await env.MEDIA.delete(key);throw e;}
-      return out({ok:true,id});
-    }
+    if(photoMatch)return error("Las fotografías quedan bloqueadas hasta completar la migración estática",423);
   }catch(err){
     console.error("Staging operation:",String(err?.message||"error").slice(0,200));
     return error(errorMessage(err),409);
