@@ -574,6 +574,9 @@ def main():
         else:
             print("Herramientas disponibles. NO se ha accedido a cuentas ni exportado datos.")
     elif mode=="--verify":
+        raise RuntimeError(
+            "Verificación anterior retirada. Utiliza backup_d1_solo.py --verify"
+        )
         if len(sys.argv)!=3:
             raise RuntimeError("Uso: --verify /ruta/privada/archivo.tar.gz.gpg")
         if shutil.which("gpg") is None:
@@ -590,7 +593,10 @@ def main():
                 details["objects_supabase"])
             print("Esto NO sustituye una restauración PostgreSQL aislada.")
     elif mode=="--run":
-        perform()
+        raise RuntimeError(
+            "Exportación anterior retirada por el propietario. "+
+            "Utiliza python cloudflare/backup_d1_solo.py --run"
+        )
     else:
         raise RuntimeError("Uso: --check | --self-test | --run")
 
