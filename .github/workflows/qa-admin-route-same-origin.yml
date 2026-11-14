@@ -7,7 +7,8 @@ on:
       - cloudflare/test_admin_route_static.mjs
       - cloudflare/qa-candidates/admin-console.html
       - cloudflare/qa-candidates/admin-console-browser.js
-      - cloudflare/qa-candidates/supabase-admin-bridge.js
+      - cloudflare/qa-candidates/auth-routes-admin-proof.js
+      - cloudflare/test_cloudflare_d1_no_external_auth.mjs
       - cloudflare/qa-candidates/free-only-cost-policy.js
       - cloudflare/qa-candidates/bellaquitas-api-staging-admin.js
       - .github/workflows/qa-admin-route-same-origin.yml
