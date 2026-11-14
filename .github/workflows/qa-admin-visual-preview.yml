@@ -1,0 +1,24 @@
+name: Bellaquitas admin preview HTTP seguro
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - migracion/fase5-segura-20261114
+    paths:
+      - 'cloudflare/admin-console.js'
+      - 'cloudflare/admin-visual-preview.js'
+      - 'cloudflare/test-admin-visual-preview.mjs'
+      - '.github/workflows/qa-admin-visual-preview.yml'
+permissions:
+  contents: read
+jobs:
+  smoke-visual-no-auth:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test live visual read-only preview (no credentials)
+        run: node cloudflare/test-admin-visual-preview.mjs
