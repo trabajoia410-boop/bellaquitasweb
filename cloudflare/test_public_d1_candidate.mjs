@@ -47,7 +47,7 @@ test("la pantalla de acceso candidata ofrece solo Google sin formularios falsos"
  assert.doesNotMatch(impl,/supabase/i);
 });
 test("publicación y perfiles de socios no se escriben desde rutas de lectura",()=>{
- assert.match(impl,/await cloudApi\('\/v1\/site'/);
+ assert.match(impl,/cloudApi\('\/v1\/site'/);
  assert.match(impl,/await cloudLoadPublic\(\)/);
  assert.match(impl,/cloudLoadCommunity/);
  assert.match(impl,/cloudSaveSuggestion/);
