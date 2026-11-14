@@ -158,6 +158,9 @@ def main() -> None:
         print("Configuración local aceptada:",db,
               "| ningún dato descargado, restaurado o modificado.")
     elif len(sys.argv)==3 and sys.argv[1]=="--run":
+        raise RuntimeError(
+            "Restauración anterior retirada. Utiliza backup_d1_solo.py --restore-local"
+        )
         source=Path(sys.argv[2]).expanduser()
         if source.is_symlink():
             raise RuntimeError("No abrir copias enlazadas simbólicamente")
