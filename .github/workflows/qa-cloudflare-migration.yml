@@ -22,3 +22,7 @@ jobs:
           done
       - name: Verificar bytes, SHA Git y ausencia de R2
         run: node cloudflare/verify-migration.mjs
+      - name: Construir exclusivamente los recursos estáticos originales
+        run: node cloudflare/build-static-assets.mjs
+      - name: Comprobar acceso admin reforzado sin usuarios reales
+        run: node cloudflare/test-admin-stepup.mjs
