@@ -7,6 +7,7 @@ on:
       - cloudflare/build-public-d1-candidate.mjs
       - cloudflare/qa-candidates/public-d1-browser-impl.js
       - cloudflare/test_public_d1_candidate.mjs
+      - cloudflare/test_public_d1_browser.mjs
       - .github/workflows/qa-public-d1-browser.yml
   workflow_dispatch:
 permissions:
@@ -28,3 +29,7 @@ jobs:
         run: node --check cloudflare/staging-source-2026-11-11/recovered-src/app-cloudflare.js
       - name: Comprobar destino de datos y seguridad del candidato
         run: node --experimental-default-type=module --test cloudflare/test_public_d1_candidate.mjs
+      - name: Instalar Chrome automatizado sin bibliotecas facturables
+        run: npm install --no-save --no-package-lock --ignore-scripts playwright-core@1.56.1
+      - name: Probar escritorio, móvil, tarjeta QR y puerta con perfiles simulados
+        run: node cloudflare/test_public_d1_browser.mjs
