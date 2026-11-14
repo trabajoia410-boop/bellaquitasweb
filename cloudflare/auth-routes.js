@@ -118,8 +118,8 @@ export async function authenticatedProfile(request,env) {
     "SELECT p.id,p.name,p.role,p.member_code,p.points,p.lifetime_points,p.visits,p.created_at "+
     "FROM auth_sessions s JOIN profiles p ON p.id=s.profile_id "+
     "WHERE s.token_hash=? AND s.expires_at>unixepoch() "+
-    "AND (p.role<>\'admin\' OR s.created_at>=datetime(\'now\',\'-12 hours\')) LIMIT 1"
-  ).bind(hash).first();
+    "AND (p.role<>\'admin\' OR s.created_at>=unixepoch()-?) LIMIT 1"
+  ).bind(hash,ADMIN_SESSION_SECONDS).first();
 }
 export async function authenticatedAdminAccess(request,env) {
   const actor=await authenticatedProfile(request,env);
