@@ -1,4 +1,5 @@
 import {authRoute} from "./auth-routes.js";
+import {adminConsoleRoute} from "./admin-console.js";
 import {previewRoute} from "./preview-page.js";
 import {mirrorRoute} from "./web-mirror.js";
 import {mirrorDataRoute} from "./mirror-data-routes.js";
@@ -60,6 +61,9 @@ export default {
       return new Response(null, {status: 204, headers: responseHeaders(request)});
     }
     try {
+      // Consola en ruta separada, sin cambiar la portada ni la API pública.
+      const adminPage = adminConsoleRoute(request);
+      if (adminPage) return adminPage;
       const mirrorResponse = await mirrorRoute(request, env);
       if (mirrorResponse) return mirrorResponse;
       const previewResponse = previewRoute(request);
