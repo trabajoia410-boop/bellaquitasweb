@@ -56,7 +56,7 @@ async function api(path,body,who='user',options={}){
  assert.ok(r,'Ruta debe existir: '+path);
  return {status:r.status,body:await r.json()};
 }
-const points=()=>db.prepare('SELECT points,lifetime_points,visits FROM profiles WHERE id=?').get(userId);
+const points=()=>({...db.prepare('SELECT points,lifetime_points,visits FROM profiles WHERE id=?').get(userId)});
 const count=table=>db.prepare('SELECT count(*) AS n FROM '+table).get().n;
 const before=points();
 assert.equal((await api('/v1/admin/members',undefined,'admin')).status,403);
