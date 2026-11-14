@@ -1,0 +1,27 @@
+name: MP4 originales — byte ranges 206 con Static Assets simulado
+on:
+  push:
+    branches:
+      - auditoria/fase5-2026-11-11
+    paths:
+      - cloudflare/qa-candidates/static-mp4-range.js
+      - cloudflare/test_static_mp4_range.mjs
+      - .github/workflows/qa-static-mp4-range.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  range-original-media:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Recuperar el manifiesto y copiar SOLO el manejador candidato
+        run: |
+          node cloudflare/staging-source-2026-11-11/extract-modules.mjs
+          cp cloudflare/qa-candidates/static-mp4-range.js cloudflare/staging-source-2026-11-11/recovered-src/static-mp4-range.js
+      - name: Comprobar 206 / 416 / HEAD y comparar bytes de los 5 MP4 originales
+        run: node --experimental-default-type=module --test cloudflare/test_static_mp4_range.mjs

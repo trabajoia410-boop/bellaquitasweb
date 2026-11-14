@@ -1,0 +1,12 @@
+# SOLO para exportación PRIVADA de D1 STAGING de Bellaquitas.
+# No contiene secretos, rutas, custom domains ni bindings de R2.
+# No usar "wrangler deploy" con esta configuración.
+name = "bellaquitas-backup-readonly-qa"
+account_id = "7698bb24db010350ba4b02c36c0fbeb5"
+compatibility_date = "2026-11-10"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "bellaquitas-staging"
+database_id = "c7ada9c9-d397-4e22-b5b8-3fbd8d13e550"
+jurisdiction = "eu"

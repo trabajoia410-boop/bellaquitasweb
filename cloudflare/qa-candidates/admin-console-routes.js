@@ -1,0 +1,266 @@
+/**
+ * Bellaquitas Fest — administración independiente, candidato sin desplegar.
+ *
+ * /administracion/ abre una aplicación distinta de la web pública.
+ * SSO candidato: un admin YA autenticado en la web accede SIN introducir
+ * otra vez su correo ni contraseña. Sesión separada __Host-bf_admin (1 hora)
+ * ligada a la sesión pública Google/email verificada y al rol admin actual.
+ * La cookie pública sola nunca abre el panel, ni la cookie admin sola.
+ * Escrituras reutilizan todas las reglas y STAGING_MUTATIONS del Worker real.
+ *
+ * Esta fuente es propuesta de fase 5, no configuración activa de producción.
+ */
+import {emailAuthRoute} from "./email-auth-routes.js";
+import {authRoute,authenticatedProfile,checkOrigin} from "./auth-routes.js";
+import {mirrorDataRoute} from "./mirror-data-routes.js";
+import {mirrorWriteRoute} from "./mirror-write-routes.js";
+import {protectedRoute} from "./protected-routes.js";
+import {ADMIN_HTML,ADMIN_CSS,ADMIN_JS} from "./admin-console-ui.js";
+import {adminActivationRoute} from "./admin-activation-routes.js";
+
+const PREFIX="/administracion";
+const COOKIE="__Host-bf_admin";
+const PUBLIC_COOKIE="__Host-bf_session";
+const TTL=60*60;
+const HEAD={
+  "Cache-Control":"private, no-store",
+  "X-Content-Type-Options":"nosniff",
+  "X-Robots-Tag":"noindex, nofollow",
+  "Referrer-Policy":"no-referrer",
+  "X-Frame-Options":"DENY",
+  "Permissions-Policy":"camera=(), microphone=()"
+};
+const json=(body,status=200,headers={})=>new Response(JSON.stringify(body),{
+  status,headers:{...HEAD,"Content-Type":"application/json; charset=utf-8",...headers}
+});
+const invalid=()=>json({error:"Email, contraseña o permiso de administrador incorrectos"},401);
+const cookieExpire=()=>COOKIE+"=; Path=/; Max-Age=0; Secure; HttpOnly; SameSite=Strict";
+const sessionCookie=token=>COOKIE+"="+token+"; Path=/; Max-Age="+TTL+"; Secure; HttpOnly; SameSite=Strict";
+const tokenFrom=(request,name)=>{
+  const cookies=request.headers.get("Cookie")||"";
+  const found=cookies.split(";").map(x=>x.trim()).find(x=>x.startsWith(name+"="));
+  const value=found?found.slice(name.length+1):"";
+  return /^[A-Za-z0-9_-]{43}$/.test(value)?value:"";
+};
+const shaToken=async raw=>{
+  const digest=new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(raw)));
+  return btoa(String.fromCharCode(...digest)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+};
+const randomToken=()=>{
+  const b=new Uint8Array(32);
+  crypto.getRandomValues(b);
+  return btoa(String.fromCharCode(...b)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+};
+const profile=actor=>({id:actor.id,name:actor.name,role:"admin"});
+function translated(request,path,token){
+  const target=new URL(request.url);
+  target.pathname=path;
+  target.search=path==="/v1/mirror/admin/media/upload"?target.search:"";
+  const headers=new Headers(request.headers);
+  headers.delete("Cookie");
+  // No reenviar ninguna credencial a controladores internos D1.
+  headers.delete("Authorization");
+  if(token)headers.set("Cookie",PUBLIC_COOKIE+"="+token);
+  return new Request(target.toString(),{method:request.method,headers,
+    ...(request.method==="GET"||request.method==="HEAD"?{}:{body:request.body,duplex:"half"})});
+}
+const authRequest=(request,path,token)=>{
+  const url=new URL(request.url);url.pathname=path;url.search="";
+  const headers=new Headers(request.headers);
+  headers.delete("Cookie");
+  // No reenviar ninguna credencial a controladores internos D1.
+  headers.delete("Authorization");
+  if(token)headers.set("Cookie",PUBLIC_COOKIE+"="+token);
+  return new Request(url.toString(),{headers,method:"GET"});
+};
+async function endSession(request,env,token){
+  if(!token)return;
+  const url=new URL(request.url);url.pathname="/v1/auth/logout";url.search="";
+  const headers=new Headers(request.headers);
+  headers.set("Cookie",PUBLIC_COOKIE+"="+token);
+  await authRoute(new Request(url,{method:"POST",headers}),env);
+}
+async function identify(request,env){
+  const token=tokenFrom(request,COOKIE);
+  if(!token)return null;
+  if(env.ADMIN_SSO_ENABLED==="yes"){
+    // Ambas cookies D1 son necesarias: admin y pública, ambas HttpOnly.
+    const parent=tokenFrom(request,PUBLIC_COOKIE);
+    if(!parent)return null;
+    const [tokenHash,parentHash]=await Promise.all([shaToken(token),shaToken(parent)]);
+    const actor=await env.DB.prepare(
+      "SELECT p.id,p.name,p.role FROM admin_sso_sessions a "+
+      "JOIN auth_sessions s ON s.token_hash=a.parent_token_hash "+
+      "JOIN profiles p ON p.id=a.profile_id AND p.id=s.profile_id "+
+      "WHERE a.token_hash=? AND a.parent_token_hash=? "+
+      "AND a.expires_at>unixepoch() AND s.expires_at>unixepoch() "+
+      "AND s.auth_method IN ('google','email') AND p.role='admin' LIMIT 1"
+    ).bind(tokenHash,parentHash).first();
+    if(!actor)return null;
+    return {token:parent,adminToken:token,actor};
+  }
+  // Antigua vía email/contraseña: solo se conserva para pruebas aisladas;
+  // queda bloqueada cuando se activa la nueva opción SSO.
+  const actor=await authenticatedProfile(authRequest(request,"/v1/auth/me",token),env);
+  return actor?.role==="admin"?{token,actor}:null;
+}
+async function ssoSignIn(request,env){
+  if(request.method!=="POST")return json({error:"Método no permitido"},405);
+  if(env.ADMIN_SSO_ENABLED!=="yes")return json({error:"Acceso SSO todavía no habilitado"},503);
+  if(!checkOrigin(request,env))return json({error:"Origen no autorizado"},403);
+  const parent=tokenFrom(request,PUBLIC_COOKIE);
+  if(!parent)return json({error:"Inicia sesión primero en la web de Bellaquitas Fest"},401);
+  const parentHash=await shaToken(parent);
+  const actor=await env.DB.prepare(
+    "SELECT p.id,p.name,p.role FROM auth_sessions s "+
+    "JOIN profiles p ON p.id=s.profile_id "+
+    "WHERE s.token_hash=? AND s.expires_at>unixepoch() "+
+    "AND s.auth_method IN ('google','email') AND p.role='admin' LIMIT 1"
+  ).bind(parentHash).first();
+  if(!actor)return json({error:"Solo pueden entrar administradores con sesión verificada"},403);
+  const raw=randomToken();
+  // Limpiar sesiones expiradas; nunca modificar saldos ni perfiles.
+  await env.DB.prepare("DELETE FROM admin_sso_sessions WHERE expires_at<=unixepoch()").run();
+  await env.DB.prepare(
+    "INSERT INTO admin_sso_sessions(token_hash,parent_token_hash,profile_id,expires_at) "+
+    "VALUES (?,?,?,unixepoch()+?)"
+  ).bind(await shaToken(raw),parentHash,actor.id,TTL).run();
+  return json({ok:true,profile:profile(actor)},200,{"Set-Cookie":sessionCookie(raw)});
+}
+// La sesión del panel procede exclusivamente de Google OAuth/D1.
+function secureStatic(text,type){
+  const csp="default-src 'none'; script-src 'self'; style-src 'self'; "+
+    "img-src 'self' data: https:; connect-src 'self'; font-src 'self'; "+
+    "base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
+  return new Response(text,{headers:{
+    ...HEAD,"Content-Type":type,"Content-Security-Policy":csp
+  }});
+}
+async function signIn(request,env){
+  if(request.method!=="POST")return json({error:"Método no permitido"},405);
+  if(env.ADMIN_SSO_ENABLED==="yes")return json({error:"Este panel utiliza la sesión de la web; no admite otra contraseña"},410);
+  // No consumir CPU del plan Free hasta verificar el algoritmo en Workers real.
+  if(env.ADMIN_PASSWORD_RUNTIME_APPROVED!=="yes")return json({error:"Contraseña administrativa pendiente de validación de seguridad"},503);
+  if(!checkOrigin(request,env))return json({error:"Origen no autorizado"},403);
+  const res=await emailAuthRoute(translated(request,"/v1/auth/email/login"),env);
+  if(!res||!res.ok)return invalid();
+  const match=(res.headers.get("Set-Cookie")||"").match(/__Host-bf_session=([A-Za-z0-9_-]{43})/);
+  if(!match)return invalid();
+  const token=match[1];
+  const actor=await authenticatedProfile(authRequest(request,"/v1/auth/me",token),env);
+  if(actor?.role!=="admin"){
+    await endSession(request,env,token);
+    return invalid();
+  }
+  // Reduce la caducidad en la base, no solo en la cookie del navegador.
+  const hash=await shaToken(token);
+  await env.DB.prepare("UPDATE auth_sessions SET expires_at=unixepoch()+? WHERE token_hash=?")
+    .bind(TTL,hash).run();
+  return json({ok:true,profile:{id:actor.id,name:actor.name,role:"admin"}},200,{"Set-Cookie":sessionCookie(token)});
+}
+const READS={
+  "/events":"/v1/mirror/admin/catalog/events",
+  "/rewards":"/v1/mirror/admin/catalog/rewards",
+  "/promos":"/v1/mirror/admin/catalog/promos",
+  "/site-drafts":"/v1/mirror/admin/site-drafts",
+  "/community":"/v1/mirror/admin/community",
+  "/members":"/v1/admin/members",
+  "/activity":"/v1/mirror/admin/activity",
+  "/changes":"/v1/mirror/admin/changes"
+};
+const WRITES={
+  "/write":"/v1/mirror/admin/write",
+  "/member":"/v1/admin/member",
+  "/moments/create":"/v1/admin/moments/create",
+  "/moments/publish":"/v1/admin/moments/publish"
+};
+function wrap(res){
+  if(!res)return json({error:"Ruta administrativa no disponible"},404);
+  const headers=new Headers(HEAD);
+  headers.set("Content-Type",res.headers.get("Content-Type")||"application/json; charset=utf-8");
+  return new Response(res.body,{status:res.status,headers});
+}
+export async function adminConsoleRoute(request,env){
+  const url=new URL(request.url),path=url.pathname;
+  if(path===PREFIX&&request.method==="GET"){
+    return new Response(null,{status:308,headers:{Location:PREFIX+"/",...HEAD}});
+  }
+  if(path===PREFIX+"/"&&request.method==="GET"){
+    return secureStatic(ADMIN_HTML,"text/html; charset=utf-8");
+  }
+  if(path===PREFIX+"/styles.css"&&request.method==="GET"){
+    return secureStatic(ADMIN_CSS,"text/css; charset=utf-8");
+  }
+  if(path===PREFIX+"/app.js"&&request.method==="GET"){
+    return secureStatic(ADMIN_JS,"text/javascript; charset=utf-8");
+  }
+  if(!path.startsWith(PREFIX+"/api/"))return null;
+  // Sin formulario de contraseña ni enlaces de activación en el modo SSO.
+  if(env.ADMIN_SSO_ENABLED==="yes"&&path.startsWith(PREFIX+"/api/activar/"))
+    return json({error:"Activación de contraseña no disponible en el panel"},404);
+  const activation=env.ADMIN_SSO_ENABLED==="yes"?null:await adminActivationRoute(request,env);
+  if(activation)return activation;
+  if(path===PREFIX+"/api/supabase-bridge")return json({error:"Puente anterior retirado"},410);
+  if(path===PREFIX+"/api/sso")return ssoSignIn(request,env);
+  if(path===PREFIX+"/api/login")return signIn(request,env);
+  const authenticated=await identify(request,env);
+  if(path===PREFIX+"/api/me"&&request.method==="GET"){
+    return authenticated?
+      json({authenticated:true,profile:{id:authenticated.actor.id,name:authenticated.actor.name,role:"admin"}}):
+      json({authenticated:false},401);
+  }
+  if(path===PREFIX+"/api/logout"){
+    if(request.method!=="POST")return json({error:"Método no permitido"},405);
+    if(!checkOrigin(request,env))return json({error:"Origen no autorizado"},403);
+    // Revocar SIEMPRE la sesión del panel, aun si la sesión pública venció.
+    const raw=tokenFrom(request,COOKIE);
+    if(raw && env.ADMIN_SSO_ENABLED==="yes"){
+      await env.DB.prepare("DELETE FROM admin_sso_sessions WHERE token_hash=?")
+        .bind(await shaToken(raw)).run();
+    }else if(authenticated&&env.ADMIN_SSO_ENABLED!=="yes"){
+      await endSession(request,env,authenticated.token);
+    }
+    // El logout del panel NO cierra la sesión pública de Cloudflare.
+    const headers=new Headers(HEAD);
+    headers.set("Content-Type","application/json; charset=utf-8");
+    headers.append("Set-Cookie",cookieExpire());
+    return new Response(JSON.stringify({ok:true}),{status:200,headers});
+  }
+  if(!authenticated)return json({error:"Inicia sesión de administrador"},401);
+  const suffix=path.slice((PREFIX+"/api").length);
+  if(request.method==="GET"&&suffix==="/site"){
+    const row=await env.DB.prepare(
+      "SELECT hero_text,announcement,page_settings,updated_at FROM site_content WHERE key='homepage'"
+    ).first();
+    let settings={};
+    if(row){try{settings=JSON.parse(row.page_settings||"{}");}catch{}}
+    return json({site:row?{...row,settings}:null});
+  }
+  if(request.method==="GET"&&READS[suffix]){
+    const req=authRequest(request,READS[suffix],authenticated.token);
+    return wrap(READS[suffix].startsWith("/v1/admin/")?
+      await protectedRoute(req,env):await mirrorDataRoute(req,env));
+  }
+  const photoRead=suffix.match(/^\/photos\/([0-9a-f-]{36})$/i);
+  if(request.method==="GET"&&photoRead){
+    const req=authRequest(request,"/v1/mirror/admin/media/"+photoRead[1],authenticated.token);
+    return wrap(await mirrorDataRoute(req,env));
+  }
+  if(request.method==="POST"&&WRITES[suffix]){
+    if(!checkOrigin(request,env))return json({error:"Origen no autorizado"},403);
+    const req=translated(request,WRITES[suffix],authenticated.token);
+    return wrap(suffix==="/write"?await mirrorWriteRoute(req,env):await protectedRoute(req,env));
+  }
+  if(request.method==="PUT"&&suffix==="/upload"){
+    if(!checkOrigin(request,env))return json({error:"Origen no autorizado"},403);
+    const req=translated(request,"/v1/mirror/admin/media/upload",authenticated.token);
+    return wrap(await mirrorWriteRoute(req,env));
+  }
+  const photo=suffix.match(/^\/moments\/([0-9a-f-]{36})\/photo$/i);
+  if(request.method==="POST"&&photo){
+    if(!checkOrigin(request,env))return json({error:"Origen no autorizado"},403);
+    const req=translated(request,"/v1/admin/moments/"+photo[1]+"/photo",authenticated.token);
+    return wrap(await protectedRoute(req,env));
+  }
+  return json({error:"Ruta no encontrada"},404);
+}

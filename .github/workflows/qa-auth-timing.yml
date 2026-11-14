@@ -1,0 +1,37 @@
+name: Seguridad login — candidato aislado, no desplegar
+on:
+  push:
+    branches:
+      - auditoria/fase5-2026-11-11
+    paths:
+      - cloudflare/qa-candidates/email-auth-routes.js
+      - cloudflare/test_staging_auth_timing.mjs
+      - .github/workflows/qa-auth-timing.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  auth-timing-simulation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Extraer copia del Worker actual, sin despliegue
+        run: node cloudflare/staging-source-2026-11-11/extract-modules.mjs
+      - name: Sustituir SOLO en el runner efímero módulo de correo para pruebas
+        run: cp cloudflare/qa-candidates/email-auth-routes.js cloudflare/staging-source-2026-11-11/recovered-src/email-auth-routes.js
+      - name: Comprobar sintaxis y respuesta homogénea ante correos inexistentes
+        run: |
+          node --check cloudflare/staging-source-2026-11-11/recovered-src/email-auth-routes.js
+          node --experimental-default-type=module --test cloudflare/test_staging_auth_timing.mjs
+      - name: Comprobar registro, acceso y recuperación existentes (regresión)
+        run: node --experimental-default-type=module --test cloudflare/test_staging_auth.mjs
+      - name: Ejecutar regresión completa con el módulo candidato (solo runner)
+        run: |
+          python3 -m unittest discover -s cloudflare -p test_sqlite_rules.py -v
+          node --experimental-sqlite --experimental-default-type=module --test cloudflare/test_staging_roles.mjs cloudflare/test_staging_google.mjs cloudflare/test_staging_editor.mjs
+          node cloudflare/test-staging-api.mjs
+          node cloudflare/test-staging-media.mjs

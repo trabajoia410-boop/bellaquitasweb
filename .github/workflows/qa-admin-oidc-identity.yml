@@ -1,0 +1,26 @@
+name: Acceso OIDC candidato — JWT y admins ficticios sin proveedor real
+on:
+  push:
+    branches:
+      - auditoria/fase5-2026-11-11
+    paths:
+      - cloudflare/qa-candidates/admin-oidc-verifier.js
+      - cloudflare/test_admin_oidc_identity.mjs
+      - cloudflare/migrations/0006-admin-external-identity-candidate.sql
+      - .github/workflows/qa-admin-oidc-identity.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-external-login-spike:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verificar sintaxis, sin ejecutar conexiones
+        run: node --check cloudflare/qa-candidates/admin-oidc-verifier.js
+      - name: Verificar JWT RS256, nonce, issuer, audiencia y vinculación admin en SQLite de memoria
+        run: node --experimental-sqlite --experimental-default-type=module --test cloudflare/test_admin_oidc_identity.mjs

@@ -1,0 +1,24 @@
+name: Vídeos públicos actuales — Range HTTP 206 sin tocar producción
+on:
+  push:
+    branches:
+      - auditoria/fase5-2026-11-11
+    paths:
+      - cloudflare/test_public_original_mp4_206.mjs
+      - .github/workflows/qa-original-videos-206.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  public-readonly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Recuperar manifiesto original sin contactar con cuentas privadas
+        run: node cloudflare/staging-source-2026-11-11/extract-modules.mjs
+      - name: Leer solo 1024 bytes de cada vídeo público y comparar con GitHub
+        run: node --experimental-default-type=module --test cloudflare/test_public_original_mp4_206.mjs

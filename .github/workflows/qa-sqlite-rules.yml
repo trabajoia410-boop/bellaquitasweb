@@ -1,0 +1,21 @@
+name: Comprobación aislada de QR y fidelidad
+on:
+  push:
+    branches:
+      - auditoria/fase5-2026-11-11
+    paths:
+      - cloudflare/test_sqlite_rules.py
+      - cloudflare/migrations/0001-schema.sql
+      - cloudflare/migrations/0002-auth-and-invariants.sql
+      - .github/workflows/qa-sqlite-rules.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolated-inmemory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Comprobar las reglas D1 con socios ficticios en SQLite temporal
+        run: python3 -m unittest discover -s cloudflare -p test_sqlite_rules.py -v

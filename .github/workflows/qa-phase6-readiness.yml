@@ -1,0 +1,28 @@
+name: Fase 6 — candado del corte (sin datos reales)
+on:
+  push:
+    branches:
+      - auditoria/fase5-2026-11-11
+    paths:
+      - cloudflare/phase6_readiness.py
+      - .github/workflows/qa-phase6-readiness.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test-readiness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verificar sintaxis del candado de fase 6
+        run: python3 -m py_compile cloudflare/phase6_readiness.py
+      - name: Comprobar bloqueos para backup, CPU, cuentas y reversión usando datos sintéticos
+        run: python3 cloudflare/phase6_readiness.py --self-test
+      - name: Asegurar que no autoriza una migración sin evidencia privada
+        run: |
+          if python3 cloudflare/phase6_readiness.py --check /no-existe/evidencias-reales.json; then
+            echo "ERROR: se autorizó un corte sin respaldo ni aprobación" >&2
+            exit 1
+          fi
+          echo "OK: no se puede autorizar un corte sin evidencias externas al repositorio."
