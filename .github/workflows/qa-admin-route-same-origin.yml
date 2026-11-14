@@ -1,0 +1,29 @@
+name: "Fase 5 — ruta del panel mismo dominio (sin tocar DNS)"
+on:
+  push:
+    branches:
+      - auditoria/fase5-2026-11-11
+    paths:
+      - cloudflare/test_admin_route_static.mjs
+      - cloudflare/qa-candidates/admin-console.html
+      - cloudflare/qa-candidates/admin-console-browser.js
+      - cloudflare/qa-candidates/supabase-admin-bridge.js
+      - cloudflare/qa-candidates/free-only-cost-policy.js
+      - cloudflare/qa-candidates/bellaquitas-api-staging-admin.js
+      - .github/workflows/qa-admin-route-same-origin.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  safe-route-static-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validar rutas HTML/CSS/JS/API y bloqueo R2 sin publicar
+        run: node --experimental-default-type=module cloudflare/test_admin_route_static.mjs
