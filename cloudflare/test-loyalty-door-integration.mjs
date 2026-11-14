@@ -11,11 +11,13 @@ const db=new DatabaseSync(':memory:');
 db.exec(readFileSync('cloudflare/fixtures/loyalty-d1-schema.sql','utf8'));
 db.exec('CREATE TABLE auth_sessions (token_hash TEXT PRIMARY KEY,profile_id TEXT REFERENCES profiles(id),expires_at INTEGER NOT NULL,created_at INTEGER NOT NULL DEFAULT(unixepoch())); CREATE TABLE auth_admin_sessions (token_hash TEXT PRIMARY KEY,profile_id TEXT REFERENCES profiles(id),regular_session_hash TEXT REFERENCES auth_sessions(token_hash),expires_at INTEGER NOT NULL,created_at INTEGER NOT NULL DEFAULT(unixepoch()));');
 const DB={
- prepare(sql){return {bind(...p){return {
-  async first(){return db.prepare(sql).get(...p)||null;},
-  async run(){return db.prepare(sql).run(...p);},
-  async all(){return {results:db.prepare(sql).all(...p)};}
- };}}},
+ prepare(sql){return {
+  params:[],
+  bind(...params){this.params=params;return this;},
+  async first(){return db.prepare(sql).get(...this.params)||null;},
+  async run(){return db.prepare(sql).run(...this.params);},
+  async all(){return {results:db.prepare(sql).all(...this.params)};}
+ };},
  async batch(q){
   db.exec('BEGIN');
   try{const result=[];for(const x of q)result.push(await x.run());db.exec('COMMIT');return result;}
