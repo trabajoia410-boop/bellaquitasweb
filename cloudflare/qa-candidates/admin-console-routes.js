@@ -17,16 +17,10 @@ import {mirrorWriteRoute} from "./mirror-write-routes.js";
 import {protectedRoute} from "./protected-routes.js";
 import {ADMIN_HTML,ADMIN_CSS,ADMIN_JS} from "./admin-console-ui.js";
 import {adminActivationRoute} from "./admin-activation-routes.js";
-import {verifiedSupabaseAdmin,bridgeEnabled,bridgeOriginAllowed} from "./supabase-admin-bridge.js";
 
 const PREFIX="/administracion";
 const COOKIE="__Host-bf_admin";
 const PUBLIC_COOKIE="__Host-bf_session";
-const BRIDGE_PARENT_COOKIE="__Secure-bf_admin_parent";
-const bridgeParentCookie=(token,ttl)=>BRIDGE_PARENT_COOKIE+"="+token+
-  "; Path=/administracion; Max-Age="+ttl+"; Secure; HttpOnly; SameSite=Strict";
-const bridgeParentExpire=()=>BRIDGE_PARENT_COOKIE+
-  "=; Path=/administracion; Max-Age=0; Secure; HttpOnly; SameSite=Strict";
 const TTL=60*60;
 const HEAD={
   "Cache-Control":"private, no-store",
@@ -64,8 +58,7 @@ function translated(request,path,token){
   target.search=path==="/v1/mirror/admin/media/upload"?target.search:"";
   const headers=new Headers(request.headers);
   headers.delete("Cookie");
-  // El JWT privado de Supabase SOLO se utiliza para verificar identidad
-  // en el puente y no se pasa a handlers D1 heredados ni a sus logs.
+  // No reenviar ninguna credencial a controladores internos D1.
   headers.delete("Authorization");
   if(token)headers.set("Cookie",PUBLIC_COOKIE+"="+token);
   return new Request(target.toString(),{method:request.method,headers,
@@ -75,8 +68,7 @@ const authRequest=(request,path,token)=>{
   const url=new URL(request.url);url.pathname=path;url.search="";
   const headers=new Headers(request.headers);
   headers.delete("Cookie");
-  // El JWT privado de Supabase SOLO se utiliza para verificar identidad
-  // en el puente y no se pasa a handlers D1 heredados ni a sus logs.
+  // No reenviar ninguna credencial a controladores internos D1.
   headers.delete("Authorization");
   if(token)headers.set("Cookie",PUBLIC_COOKIE+"="+token);
   return new Request(url.toString(),{headers,method:"GET"});
@@ -92,13 +84,8 @@ async function identify(request,env){
   const token=tokenFrom(request,COOKIE);
   if(!token)return null;
   if(env.ADMIN_SSO_ENABLED==="yes"){
-    // Ambas cookies son necesarias. El padre puede ser revocado por logout
-    // en la web pública; las sesiones antiguas auth_method='unknown' fallan.
-    // El puente Supabase no emite __Host-bf_session a la web pública.
-    // Una cookie de padre restringida a /administracion impide usarla
-    // directamente en /v1/admin/* fuera del panel.
-    const parent=tokenFrom(request,env.ADMIN_SUPABASE_BRIDGE==="yes"?
-      BRIDGE_PARENT_COOKIE:PUBLIC_COOKIE);
+    // Ambas cookies D1 son necesarias: admin y pública, ambas HttpOnly.
+    const parent=tokenFrom(request,PUBLIC_COOKIE);
     if(!parent)return null;
     const [tokenHash,parentHash]=await Promise.all([shaToken(token),shaToken(parent)]);
     const actor=await env.DB.prepare(
@@ -110,10 +97,6 @@ async function identify(request,env){
       "AND s.auth_method IN ('google','email') AND p.role='admin' LIMIT 1"
     ).bind(tokenHash,parentHash).first();
     if(!actor)return null;
-    // Cookies D1 por sí solas NO autorizan con el puente encendido.
-    // El bearer actual y el rol en Supabase se validan para cada llamada.
-    if(env.ADMIN_SUPABASE_BRIDGE==="yes"&&
-       !(await verifiedSupabaseAdmin(request,env,actor.id)))return null;
     return {token:parent,adminToken:token,actor};
   }
   // Antigua vía email/contraseña: solo se conserva para pruebas aisladas;
@@ -124,8 +107,6 @@ async function identify(request,env){
 async function ssoSignIn(request,env){
   if(request.method!=="POST")return json({error:"Método no permitido"},405);
   if(env.ADMIN_SSO_ENABLED!=="yes")return json({error:"Acceso SSO todavía no habilitado"},503);
-  if(env.ADMIN_SUPABASE_BRIDGE==="yes")
-    return json({error:"Usa la sesión oficial de Bellaquitas Fest"},410);
   if(!checkOrigin(request,env))return json({error:"Origen no autorizado"},403);
   const parent=tokenFrom(request,PUBLIC_COOKIE);
   if(!parent)return json({error:"Inicia sesión primero en la web de Bellaquitas Fest"},401);
@@ -137,9 +118,6 @@ async function ssoSignIn(request,env){
     "AND s.auth_method IN ('google','email') AND p.role='admin' LIMIT 1"
   ).bind(parentHash).first();
   if(!actor)return json({error:"Solo pueden entrar administradores con sesión verificada"},403);
-  if(env.ADMIN_SUPABASE_BRIDGE==="yes"&&
-     !(await verifiedSupabaseAdmin(request,env,actor.id)))
-    return json({error:"La sesión oficial de Bellaquitas no está verificada"},401);
   const raw=randomToken();
   // Limpiar sesiones expiradas; nunca modificar saldos ni perfiles.
   await env.DB.prepare("DELETE FROM admin_sso_sessions WHERE expires_at<=unixepoch()").run();
@@ -149,51 +127,10 @@ async function ssoSignIn(request,env){
   ).bind(await shaToken(raw),parentHash,actor.id,TTL).run();
   return json({ok:true,profile:profile(actor)},200,{"Set-Cookie":sessionCookie(raw)});
 }
-/**
- * Intercambio real, sin contraseña duplicada: Auth de Supabase valida
- * el token; RLS confirma admin ACTUAL y D1 el MISMO id y rol.
- * No escribe ninguna tabla de socios, puntos, visitas o identidades.
- */
-async function supabaseBridgeSignIn(request,env){
-  if(request.method!=="POST")return json({error:"Método no permitido"},405);
-  if(!bridgeEnabled(env))return json({error:"Puente Supabase desactivado"},503);
-  if(!bridgeOriginAllowed(request,env))return json({
-    error:"La administración solo funciona en bellaquitas.fr/administracion"
-  },403);
-  if(!checkOrigin(request,env))return json({error:"Origen no autorizado"},403);
-  const verified=await verifiedSupabaseAdmin(request,env);
-  if(!verified)return json({error:"Inicia sesión en Bellaquitas Fest como administrador"},401);
-  const actor=await env.DB.prepare(
-    "SELECT id,name,role FROM profiles WHERE id=? AND role='admin' LIMIT 1"
-  ).bind(verified.id).first();
-  if(!actor)return json({error:"No existe administrador vinculado en la migración"},403);
-  const now=Math.floor(Date.now()/1000);
-  const ttl=Math.min(TTL,verified.expiresAt-now);
-  if(ttl<16)return json({error:"Actualiza la sesión en Bellaquitas Fest"},401);
-  const parent=randomToken(),admin=randomToken();
-  const parentHash=await shaToken(parent),adminHash=await shaToken(admin);
-  // La transacción evita una sesión admin huérfana si falla un FK.
-  await env.DB.batch([
-    env.DB.prepare("INSERT INTO auth_sessions(token_hash,profile_id,expires_at,auth_method) VALUES (?,?,unixepoch()+?,?)")
-      .bind(parentHash,verified.id,ttl,verified.method),
-    env.DB.prepare("INSERT INTO admin_sso_sessions(token_hash,parent_token_hash,profile_id,expires_at) VALUES (?,?,?,unixepoch()+?)")
-      .bind(adminHash,parentHash,verified.id,ttl)
-  ]);
-  const headers=new Headers(HEAD);
-  headers.set("Content-Type","application/json; charset=utf-8");
-  // CRÍTICO: no emitir el token D1 de administrador como cookie pública
-  // de Path=/. Un cierre de sesión en Supabase debe quitar acceso a
-  // /v1/admin/* aunque todavía existan cookies limitadas al panel.
-  headers.append("Set-Cookie",bridgeParentCookie(parent,ttl));
-  headers.append("Set-Cookie",COOKIE+"="+admin+
-    "; Path=/; Max-Age="+ttl+"; Secure; HttpOnly; SameSite=Strict");
-  return new Response(JSON.stringify({ok:true,profile:profile(actor)}),{
-    status:200,headers
-  });
-}
+// La sesión del panel procede exclusivamente de Google OAuth/D1.
 function secureStatic(text,type){
-  const csp="default-src 'none'; script-src 'self' https://esm.sh; style-src 'self'; "+
-    "img-src 'self' data: https:; connect-src 'self' https://esm.sh https://vlsipvngvxcgnwrhpjgg.supabase.co; font-src 'self'; "+
+  const csp="default-src 'none'; script-src 'self'; style-src 'self'; "+
+    "img-src 'self' data: https:; connect-src 'self'; font-src 'self'; "+
     "base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
   return new Response(text,{headers:{
     ...HEAD,"Content-Type":type,"Content-Security-Policy":csp
@@ -263,7 +200,7 @@ export async function adminConsoleRoute(request,env){
     return json({error:"Activación de contraseña no disponible en el panel"},404);
   const activation=env.ADMIN_SSO_ENABLED==="yes"?null:await adminActivationRoute(request,env);
   if(activation)return activation;
-  if(path===PREFIX+"/api/supabase-bridge")return supabaseBridgeSignIn(request,env);
+  if(path===PREFIX+"/api/supabase-bridge")return json({error:"Puente anterior retirado"},410);
   if(path===PREFIX+"/api/sso")return ssoSignIn(request,env);
   if(path===PREFIX+"/api/login")return signIn(request,env);
   const authenticated=await identify(request,env);
@@ -275,34 +212,18 @@ export async function adminConsoleRoute(request,env){
   if(path===PREFIX+"/api/logout"){
     if(request.method!=="POST")return json({error:"Método no permitido"},405);
     if(!checkOrigin(request,env))return json({error:"Origen no autorizado"},403);
-    if(env.ADMIN_SUPABASE_BRIDGE==="yes"){
-      // Logout funciona incluso si el navegador ya eliminó el bearer de
-      // Supabase (se cierra sesión primero en la web principal).
-      // El par de cookies solo puede revocar SU PROPIA sesión D1.
-      const admin=tokenFrom(request,COOKIE);
-      const parent=tokenFrom(request,BRIDGE_PARENT_COOKIE);
-      if(admin&&parent){
-        const adminHash=await shaToken(admin),parentHash=await shaToken(parent);
-        await env.DB.prepare(
-          "DELETE FROM auth_sessions WHERE token_hash=? "+
-          "AND EXISTS (SELECT 1 FROM admin_sso_sessions "+
-          "WHERE token_hash=? AND parent_token_hash=?)"
-        ).bind(parentHash,adminHash,parentHash).run();
-      }
-    }else if(authenticated){
-      if(env.ADMIN_SSO_ENABLED==="yes"){
-        await env.DB.prepare("DELETE FROM admin_sso_sessions WHERE token_hash=?")
-          .bind(await shaToken(authenticated.adminToken)).run();
-      }else{
-        await endSession(request,env,authenticated.token);
-      }
+    // Revocar SIEMPRE la sesión del panel, aun si la sesión pública venció.
+    const raw=tokenFrom(request,COOKIE);
+    if(raw && env.ADMIN_SSO_ENABLED==="yes"){
+      await env.DB.prepare("DELETE FROM admin_sso_sessions WHERE token_hash=?")
+        .bind(await shaToken(raw)).run();
+    }else if(authenticated&&env.ADMIN_SSO_ENABLED!=="yes"){
+      await endSession(request,env,authenticated.token);
     }
-    // Al salir del panel el usuario SIGUE conectado a Supabase.
+    // El logout del panel NO cierra la sesión pública de Cloudflare.
     const headers=new Headers(HEAD);
     headers.set("Content-Type","application/json; charset=utf-8");
     headers.append("Set-Cookie",cookieExpire());
-    if(env.ADMIN_SUPABASE_BRIDGE==="yes")
-      headers.append("Set-Cookie",bridgeParentExpire());
     return new Response(JSON.stringify({ok:true}),{status:200,headers});
   }
   if(!authenticated)return json({error:"Inicia sesión de administrador"},401);
