@@ -5,6 +5,7 @@
  */
 const COOKIE = "__Host-bf_session";
 const SESSION_SECONDS = 30 * 24 * 60 * 60;
+const ADMIN_SESSION_SECONDS = 12 * 60 * 60;
 const BASE = "https://bellaquitas-api-staging.bellaquitas-fest-410.workers.dev";
 const HEADER = {
   "Cache-Control": "no-store",
@@ -79,16 +80,19 @@ function readCookie(request,name) {
 function clearCookie() {
   return COOKIE+"=; Path=/; Max-Age=0; Secure; HttpOnly; SameSite=Lax";
 }
-function sessionCookie(value) {
-  return COOKIE+"="+value+"; Path=/; Max-Age="+SESSION_SECONDS+"; Secure; HttpOnly; SameSite=Lax";
+function sessionCookie(value,maxAge=SESSION_SECONDS) {
+  return COOKIE+"="+value+"; Path=/; Max-Age="+maxAge+"; Secure; HttpOnly; SameSite=Lax";
 }
 // Solo lo utiliza el Worker tras verificar una credencial de identidad.
 export async function createAuthSession(profileId,env) {
   if(typeof profileId!=="string"||!/^[a-f0-9-]{36}$/i.test(profileId))throw Error("Invalid profile identifier");
+  const profile=await env.DB.prepare("SELECT role FROM profiles WHERE id=?").bind(profileId).first();
+  if(!profile)throw Error("Profile not found");
+  const age=profile.role==="admin"?ADMIN_SESSION_SECONDS:SESSION_SECONDS;
   const raw=token(),hash=await digest(raw);
   await env.DB.prepare("INSERT INTO auth_sessions(token_hash,profile_id,expires_at) VALUES (?,?,unixepoch()+?)")
-    .bind(hash,profileId,SESSION_SECONDS).run();
-  return sessionCookie(raw);
+    .bind(hash,profileId,age).run();
+  return sessionCookie(raw,age);
 }
 export async function authenticatedProfile(request,env) {
   const secret=readCookie(request,COOKIE);
@@ -97,7 +101,8 @@ export async function authenticatedProfile(request,env) {
   return env.DB.prepare(
     "SELECT p.id,p.name,p.role,p.member_code,p.points,p.lifetime_points,p.visits,p.created_at "+
     "FROM auth_sessions s JOIN profiles p ON p.id=s.profile_id "+
-    "WHERE s.token_hash=? AND s.expires_at>unixepoch() LIMIT 1"
+    "WHERE s.token_hash=? AND s.expires_at>unixepoch() "+
+    "AND (p.role<>\'admin\' OR s.created_at>=datetime(\'now\',\'-12 hours\')) LIMIT 1"
   ).bind(hash).first();
 }
 function strictOrigin(request,env) {
@@ -190,16 +195,17 @@ async function callbackGoogle(request,env) {
       if(!link){console.error("Account creation:",e?.message);return fail("No se pudo crear la cuenta",503);}
     }
   }
-  const actor=await env.DB.prepare("SELECT id FROM profiles WHERE id=?")
+  const actor=await env.DB.prepare("SELECT id,role FROM profiles WHERE id=?")
     .bind(link.profile_id).first();
   if(!actor)return fail("No se encontró la ficha del socio",403);
   const session=token(),hash=await digest(session);
+  const ttl=actor.role==="admin"?ADMIN_SESSION_SECONDS:SESSION_SECONDS;
   await env.DB.prepare(
     "INSERT INTO auth_sessions(token_hash,profile_id,expires_at) VALUES (?,?,unixepoch()+?)"
-  ).bind(hash,actor.id,SESSION_SECONDS).run();
+  ).bind(hash,actor.id,ttl).run();
   return new Response(null,{status:303,headers:{
     "Location":base(env)+(state.startsWith("A")?"/administracion/":state.startsWith("M")?"/espejo/#/mi-espacio":"/preview"),
-    "Set-Cookie":sessionCookie(session),
+    "Set-Cookie":sessionCookie(session,ttl),
     "Cache-Control":"no-store","Referrer-Policy":"no-referrer"
   }});
 }
