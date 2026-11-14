@@ -1,0 +1,34 @@
+name: "Bellaquitas — respaldo D1 Windows: prueba local sin secretos"
+on:
+  push:
+    branches:
+      - auditoria/fase5-2026-11-11
+    paths:
+      - cloudflare/COPIA_D1_CIFRADA_WINDOWS.ps1
+      - cloudflare/backup_d1_solo.py
+      - cloudflare/wrangler.backup.toml
+      - .github/workflows/qa-windows-d1-private-backup.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  offline-windows:
+    runs-on: windows-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Ejecutar exclusivamente -Check con seis socios FICTICIOS
+        shell: pwsh
+        run: |
+          .\cloudflare\COPIA_D1_CIFRADA_WINDOWS.ps1 -Check
+      - name: Asegurar que nunca se genera un fichero privado en CI
+        shell: pwsh
+        run: |
+          if (Get-ChildItem . -Recurse -Include "*.gpg","*.sqlite" -File | Select-Object -First 1) {
+            throw "Se creó por error un archivo confidencial en el runner"
+          }
