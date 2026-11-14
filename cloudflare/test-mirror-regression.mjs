@@ -33,15 +33,17 @@ const database={
  },
  async batch(){this.calls++;return [{results:[]},{results:[]},{results:[]}]}
 };
-let profile=null;
+let profile=null,stepUpGranted=false;
 const authenticatedProfile=async()=>profile;
+const authenticatedAdminAccess=async()=>stepUpGranted&&profile?.role==="admin"?profile:null;
 const checkOrigin=request=>request.headers.get("Origin")===base;
-const injections={authenticatedProfile,checkOrigin,Response,URL};
+const injections={authenticatedProfile,authenticatedAdminAccess,checkOrigin,Response,URL};
 const read=loadModule("mirror-data-routes.js","mirrorDataRoute",injections);
 const write=loadModule("mirror-write-routes.js","mirrorWriteRoute",injections);
 const env={DB:database,MEDIA:{},STAGING_MUTATIONS:"disabled"};
 
-async function expect(path,method,role,origin,status){
+async function expect(path,method,role,origin,status,reauth=role==="admin"){
+ stepUpGranted=reauth;
  profile=role?{
   id:"11111111-1111-4111-8111-111111111111",
   member_code:"MBR-QAFAKE123",name:"Ficticio",role,points:0,visits:0
@@ -67,6 +69,8 @@ for(const [role,status] of [
 ]){
  await expect("/v1/mirror/admin/catalog/events","GET",role,base,status);
 }
+await expect("/v1/mirror/admin/write","POST","admin",base,403,false);
+await expect("/v1/mirror/admin/catalog/events","GET","admin",base,403,false);
 await expect("/v1/mirror/public/photos","GET",null,base,200);
 
 // Paridad exacta entre el diseño del sitio en la rama y la copia congelada.
@@ -87,7 +91,7 @@ const bridge=file("web-mirror-bridge.js");
 assert.ok(bridge.includes('requestJson("/v1/auth/me")'));
 assert.ok(bridge.includes('"/v1/mirror/admin/write"'));
 assert.ok(!bridge.includes("createClient(cfg.supabaseUrl"));
-console.log("✓ Roles y permisos del espejo: 10 casos, todas las mutaciones protegidas.");
+console.log("✓ Roles y permisos del espejo: 12 casos, todas las mutaciones protegidas.");
 console.log("✓ Paridad de 6 archivos originales HTML/CSS/JS/FR/QR.");
 console.log("✓ Datos conectados solo a Cloudflare en el espejo.");
 console.log("Pruebas terminadas. No se modificó ningún dato real.");
