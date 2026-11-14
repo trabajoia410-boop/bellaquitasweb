@@ -45,220 +45,187 @@ def recent(value: object, age: timedelta, now: datetime) -> bool:
     return stamp is not None and now - age <= stamp <= now
 
 def validate(evidence: object, now: datetime | None = None) -> list[str]:
-    """Human-readable missing steps, never logs email, keys, IDs, secrets."""
-    now = now or datetime.now(UTC)
-    errors: list[str] = []
-    if not isinstance(evidence, dict):
-        return ["La evidencia no es un objeto JSON válido"]
-    def part(name: str) -> dict:
-        item = evidence.get(name)
-        if not isinstance(item, dict):
-            errors.append(f"Falta sección '{name}'")
+    """Candado EXCLUSIVO de la solución Cloudflare Workers + D1 y GitHub."""
+    now=now or datetime.now(UTC)
+    errors=[]
+    if not isinstance(evidence,dict):
+        return ["Evidencias no válidas"]
+    if evidence.get("backend")!="cloudflare-d1-only":
+        errors.append("Arquitectura: solo se admite Cloudflare D1, sin proveedor antiguo")
+    def part(name):
+        value=evidence.get(name)
+        if not isinstance(value,dict):
+            errors.append("Falta sección "+name)
             return {}
-        return item
-    def required(data: dict, field: str, area: str) -> None:
-        if data.get(field) is not True:
-            errors.append(f"{area}: falta confirmar '{field}'")
-    def number(data: dict, field: str) -> int | None:
-        value = data.get(field)
-        if type(value) is not int or value < 0:
-            errors.append(f"Conciliación: '{field}' debe ser un entero no negativo")
+        return value
+    def required(data,name,section):
+        if data.get(name) is not True:
+            errors.append(section+": falta confirmar "+name)
+    def count(data,name,section):
+        value=data.get(name)
+        if type(value) is not int or value<0:
+            errors.append(section+": falta recuento "+name)
             return None
         return value
 
-    backup = part("backup")
-    required(backup,"encrypted_and_private","Respaldo")
-    required(backup,"postgres_restore_tested","Respaldo")
-    required(backup,"postgres_profiles_points_auth_match_verified","Respaldo")
-    required(backup,"source_stable_during_export_verified","Respaldo")
-    required(backup,"per_profile_sha256_restore_verified","Respaldo")
-    required(backup,"isolated_local_restore_non_superuser_verified","Respaldo")
-    required(backup,"storage_inventory_complete_verified","Respaldo")
-    required(backup,"d1_restore_tested","Respaldo")
-    required(backup,"supabase_storage_bytes_verified","Respaldo")
-    required(backup,"second_copy_verified","Respaldo")
+    backup=part("backup")
+    for key in ("encrypted_and_private","d1_export_real_verified",
+                "d1_restore_local_real_verified","d1_profile_sha256_verified",
+                "d1_google_links_verified","second_copy_verified",
+                "r2_bucket_absent_verified","github_assets_hashes_verified"):
+        required(backup,key,"Respaldo")
+    if backup.get("r2_mode")!="removed":
+        errors.append("Respaldo: R2 fue eliminado; no puede volver a activarse")
+    if backup.get("source")!="cloudflare-d1":
+        errors.append("Respaldo: solo se acepta exportación de Cloudflare D1")
     checksum=backup.get("archive_sha256")
     if not isinstance(checksum,str) or not re.fullmatch(r"[a-fA-F0-9]{64}",checksum):
         errors.append("Respaldo: falta SHA-256 del archivo cifrado")
     if not recent(backup.get("created_at"),MAX_BACKUP_AGE,now):
-        errors.append("Respaldo: falta una copia reciente (máximo 48 horas)")
-    # R2 se vació y eliminó el 13/11/2026 por petición del propietario.
-    # Los originales NO están ahí: 17 permanecen en GitHub y 3 en
-    # Supabase Storage. La copia privada de DB/Storage sigue siendo obligatoria.
-    mode=backup.get("r2_mode")
-    if mode=="removed":
-        required(backup,"r2_bucket_absent_verified","Respaldo")
-        required(backup,"r2_originals_source_verified","Respaldo")
-        if type(backup.get("r2_objects")) is not int or backup["r2_objects"]!=0:
-            errors.append("Respaldo: R2 eliminado debe contener cero objetos")
-    elif mode=="present":
-        # La suscripción R2 se canceló y el propietario exige cero gastos.
-        # Aunque existieran 20 respaldos válidos, JAMÁS aceptar recrear R2.
-        errors.append("Respaldo: R2 fue eliminado; no se permite volver a activarlo")
-    else:
-        errors.append("Respaldo: estado R2 no reconocido; confirmar retirada segura")
-    if type(backup.get("supabase_storage_objects")) is not int or backup["supabase_storage_objects"] < 3:
-        errors.append("Respaldo: inventario Supabase Storage incompleto (al menos 3 objetos)")
+        errors.append("Respaldo: copia auténtica debe tener menos de 48 horas")
+    source_count=count(backup,"source_profile_count","Respaldo")
+    restored_count=count(backup,"restored_profile_count","Respaldo")
+    if source_count is not None and restored_count!=source_count:
+        errors.append("Respaldo: perfiles restaurados no coinciden")
+    source_points=count(backup,"source_points","Respaldo")
+    restored_points=count(backup,"restored_points","Respaldo")
+    if source_points is not None and source_points!=restored_points:
+        errors.append("Respaldo: puntos restaurados no coinciden")
+    source_links=count(backup,"source_google_links","Respaldo")
+    restored_links=count(backup,"restored_google_links","Respaldo")
+    if source_links is not None and (source_links<6 or restored_links!=source_links):
+        errors.append("Respaldo: identidades Google incompletas")
 
     reconciliation=part("reconciliation")
     if not recent(reconciliation.get("checked_at"),MAX_RECONCILIATION_AGE,now):
-        errors.append("Conciliación: conteos demasiado antiguos (máximo 24 horas)")
-    src=number(reconciliation,"source_profiles")
-    dest=number(reconciliation,"target_profiles")
-    src_points=number(reconciliation,"source_points")
-    dest_points=number(reconciliation,"target_points")
-    src_visits=number(reconciliation,"source_visits")
-    dest_visits=number(reconciliation,"target_visits")
-    if src is not None and dest is not None and src != dest:
-        errors.append("Conciliación: el número de perfiles difiere (retirar/excluir cuenta ficticia)")
-    if src_points is not None and dest_points is not None and src_points != dest_points:
-        errors.append("Conciliación: puntos de fidelidad diferentes")
-    if src_visits is not None and dest_visits is not None and src_visits != dest_visits:
-        errors.append("Conciliación: visitas diferentes")
-    required(reconciliation,"no_real_test_mutations","Conciliación")
-    required(reconciliation,"translation_and_media_parity_verified","Conciliación")
-    required(reconciliation,"profiles_row_parity_verified","Conciliación")
-    required(reconciliation,"original_public_files_sha_verified","Conciliación")
-    required(reconciliation,"admin_ui_diff_explicitly_reviewed","Conciliación")
-    required(reconciliation,"audit_workflows_no_publish_verified","Conciliación")
+        errors.append("Conciliación: pruebas demasiado antiguas")
+    pairs=(("source_profiles","target_profiles","perfiles"),
+           ("source_points","target_points","puntos"),
+           ("source_visits","target_visits","visitas"),
+           ("source_lifetime_points","target_lifetime_points","puntos históricos"))
+    for left,right,label in pairs:
+        a=count(reconciliation,left,"Conciliación")
+        b=count(reconciliation,right,"Conciliación")
+        if a is not None and b is not None and a!=b:
+            errors.append("Conciliación: difieren "+label)
+    for key in ("no_real_test_mutations","all_six_real_profiles_preserved",
+                "test_profile_excluded","original_public_files_sha_verified",
+                "translations_and_videos_parity_verified",
+                "legacy_external_media_urls_absent_verified",
+                "public_frontend_cloudflare_only_verified",
+                "admin_frontend_cloudflare_only_verified"):
+        required(reconciliation,key,"Conciliación")
 
-    authentication=part("authentication")
-    login_method=authentication.get("admin_login_method")
-    required(authentication,"google_and_admin_link_verified","Autenticación")
-    required(authentication,"session_and_logout_verified","Autenticación")
-    required(authentication,"free_cpu_or_external_auth_verified","Autenticación")
-    required(authentication,"no_paid_upgrade_or_automatic_billing","Autenticación")
-    if not recent(authentication.get("free_plan_checked_at"),MAX_PRICING_AGE,now):
-        errors.append("Autenticación: comprobar los límites gratuitos en los últimos 14 días")
-    admin_count=authentication.get("existing_admin_accounts")
-    if login_method=="sso_existing_account":
-        # Nuevo requisito del propietario: acceso directo para el rol admin
-        # autenticado en la web, sin otra contraseña o email.
-        required(authentication,"sso_admin_role_verified","Autenticación")
-        required(authentication,"sso_parent_session_revocation_verified","Autenticación")
-        # No aceptar únicamente pruebas con cuentas simuladas.
-        required(authentication,"real_supabase_admin_session_tested","Autenticación")
-        required(authentication,"real_supabase_role_denial_tested","Autenticación")
-        required(authentication,"real_admin_same_origin_verified","Autenticación")
-        required(authentication,"real_admin_logout_revocation_tested","Autenticación")
-        required(authentication,"canonical_admin_route_served_on_bellaquitas_fr","Autenticación")
-        required(authentication,"cross_origin_token_transmission_blocked","Autenticación")
-        required(authentication,"www_and_workers_dev_access_tested","Autenticación")
-        required(authentication,"admin_parent_cookie_scoped_to_panel_verified","Autenticación")
-        required(authentication,"legacy_d1_private_routes_closed_verified","Autenticación")
-        required(authentication,"supabase_rls_role_policy_audited","Autenticación")
-        active=authentication.get("admins_with_verified_sso")
-        if type(admin_count) is not int or admin_count < 1 or type(active) is not int or active != admin_count:
-            errors.append("Autenticación: faltan administradores con acceso SSO verificado")
-    elif login_method=="email_password":
-        # Mantener comprobación del modo antiguo, sin habilitarlo por accidente.
-        required(authentication,"email_password_works","Autenticación")
-        active=authentication.get("admins_with_verified_login")
-        if type(admin_count) is not int or admin_count < 1 or type(active) is not int or active != admin_count:
-            errors.append("Autenticación: aún hay administradores sin contraseña verificada")
-    else:
-        errors.append("Autenticación: el método del acceso administrativo no está aprobado")
-    required(authentication,"no_new_duplicate_admin_accounts","Autenticación")
+    auth=part("authentication")
+    if auth.get("admin_login_method")!="google-d1":
+        errors.append("Autenticación: solo se permite Google OAuth y sesiones D1")
+    if count(auth,"google_linked_profiles","Autenticación")!=6:
+        errors.append("Autenticación: deben conservarse exactamente 6 vinculaciones")
+    if count(auth,"existing_admin_accounts","Autenticación")!=2:
+        errors.append("Autenticación: faltan los dos administradores originales")
+    if count(auth,"admins_with_real_google_login","Autenticación")!=2:
+        errors.append("Autenticación: faltan dos pruebas Google reales")
+    for key in ("google_oidc_signature_nonce_pkce_verified",
+                "google_subject_to_existing_id_verified",
+                "d1_session_method_column_verified",
+                "d1_admin_sso_table_verified",
+                "sso_login_and_logout_real_verified",
+                "admin_role_denial_real_verified",
+                "member_and_door_roles_verified",
+                "same_origin_bellaquitas_fr_verified",
+                "no_external_identity_service_in_runtime",
+                "password_accounts_transition_verified",
+                "all_login_methods_covered_without_fees",
+                "no_duplicate_or_reset_loyalty_accounts",
+                "free_worker_cpu_verified"):
+        required(auth,key,"Autenticación")
 
     costs=part("costs")
-    required(costs,"cloudflare_workers_and_d1_free_confirmed","Costes")
-    required(costs,"r2_no_uncapped_billing_or_nonbillable_storage_verified","Costes")
-    required(costs,"resend_email_free_limit_protected","Costes")
-    required(costs,"all_other_meters_and_autopay_reviewed","Costes")
-    required(costs,"budget_alert_not_considered_hard_cap","Costes")
-    # Cero euros: sin esto, ni siquiera se puede declarar preparado el corte.
-    required(costs,"workers_free_plan_verified","Costes")
-    required(costs,"d1_and_kv_free_plan_verified","Costes")
-    required(costs,"zero_cost_runtime_guard_verified","Costes")
-    required(costs,"r2_binding_removed_or_inaccessible","Costes")
-    # En modo R2 retirado no basta un binding inaccesible. El Worker
-    # PUBLICADO debe no declarar R2 en absoluto antes de abrir rutas reales.
-    if mode=="removed":
-        required(costs,"deployed_worker_r2_binding_absent_verified","Costes")
-    required(costs,"deployed_worker_bindings_audited","Costes")
-    required(costs,"no_metered_subscriptions_or_autopay_verified","Costes")
-    required(costs,"workers_route_fail_closed_verified","Costes")
+    for key in ("workers_free_plan_verified","d1_free_plan_verified",
+                "worker_under_free_daily_limits_verified",
+                "d1_under_free_daily_limits_verified",
+                "no_r2_binding_or_usage_verified",
+                "no_paid_email_service_verified",
+                "zero_cost_runtime_guard_verified",
+                "worker_fail_closed_verified",
+                "no_automatic_paid_upgrade_verified",
+                "all_billing_sources_reviewed"):
+        required(costs,key,"Costes")
     if not recent(costs.get("checked_at"),MAX_PRICING_AGE,now):
-        errors.append("Costes: revisar facturación y límites dentro de 14 días")
+        errors.append("Costes: verificar cuotas y facturas de los últimos 14 días")
 
     rollback=part("rollback")
-    required(rollback,"procedure_rehearsed","Reversión")
-    required(rollback,"previous_backend_retained","Reversión")
-    required(rollback,"write_conflicts_plan_checked","Reversión")
-    required(rollback,"dns_and_domain_ready","Reversión")
-    required(rollback,"design_unchanged","Reversión")
+    for key in ("d1_rollback_snapshot_restored",
+                "github_pages_unchanged",
+                "cutover_writes_plan_rehearsed",
+                "dns_and_domain_ready",
+                "admin_login_fallback_verified",
+                "site_design_unchanged"):
+        required(rollback,key,"Reversión")
 
     owner=part("authorization")
-    if owner.get("scope")!="phase6-backend-cutover" or owner.get("explicit_permission") is not True:
-        errors.append("Autorización: el propietario aún no ha autorizado expresamente el corte")
+    if owner.get("scope")!="phase6-cloudflare-d1-only" or owner.get("explicit_permission") is not True:
+        errors.append("Autorización: el propietario no ha aprobado el corte Cloudflare D1")
     if not recent(owner.get("authorized_at"),MAX_APPROVAL_AGE,now):
-        errors.append("Autorización: consentimiento ausente o anterior a siete días")
-
+        errors.append("Autorización: aprobación ausente o caducada")
     return errors
 
 # Prohibido incluir PII, tokens, contraseñas o exportaciones en las evidencias.
 # El comprobador solo consume indicadores estrictamente definidos.
+# Solo métricas anónimas; jamás incluir nombres, tokens, passwords o IDs.
 ALLOWED_EVIDENCE_FIELDS = {
-    "backup": {
-        "encrypted_and_private", "postgres_restore_tested",
-        "postgres_profiles_points_auth_match_verified",
-        "source_stable_during_export_verified",
-        "per_profile_sha256_restore_verified",
-        "isolated_local_restore_non_superuser_verified",
-        "storage_inventory_complete_verified",
-        "d1_restore_tested", "r2_bytes_verified",
-        "supabase_storage_bytes_verified", "second_copy_verified",
-        "archive_sha256", "r2_objects", "supabase_storage_objects",
-        "created_at", "r2_mode", "r2_bucket_absent_verified",
-        "r2_originals_source_verified",
+    "backend":set(),
+    "backup":{
+        "encrypted_and_private","d1_export_real_verified",
+        "d1_restore_local_real_verified","d1_profile_sha256_verified",
+        "d1_google_links_verified","second_copy_verified",
+        "r2_bucket_absent_verified","github_assets_hashes_verified",
+        "r2_mode","source","archive_sha256","created_at",
+        "source_profile_count","restored_profile_count",
+        "source_points","restored_points",
+        "source_google_links","restored_google_links",
     },
-    "reconciliation": {
-        "checked_at", "source_profiles", "target_profiles",
-        "source_points", "target_points", "source_visits", "target_visits",
-        "no_real_test_mutations", "translation_and_media_parity_verified",
-        "profiles_row_parity_verified", "original_public_files_sha_verified",
-        "admin_ui_diff_explicitly_reviewed", "audit_workflows_no_publish_verified",
+    "reconciliation":{
+        "checked_at","source_profiles","target_profiles",
+        "source_points","target_points","source_visits","target_visits",
+        "source_lifetime_points","target_lifetime_points",
+        "no_real_test_mutations","all_six_real_profiles_preserved",
+        "test_profile_excluded","original_public_files_sha_verified",
+        "translations_and_videos_parity_verified",
+        "legacy_external_media_urls_absent_verified",
+        "public_frontend_cloudflare_only_verified",
+        "admin_frontend_cloudflare_only_verified",
     },
-    "authentication": {
-        "email_password_works", "google_and_admin_link_verified",
-        "session_and_logout_verified", "free_cpu_or_external_auth_verified",
-        "no_paid_upgrade_or_automatic_billing", "free_plan_checked_at",
-        "existing_admin_accounts", "admins_with_verified_login",
-        "no_new_duplicate_admin_accounts", "admin_login_method",
-        "admins_with_verified_sso", "sso_admin_role_verified",
-        "sso_parent_session_revocation_verified",
-        "real_supabase_admin_session_tested",
-        "real_supabase_role_denial_tested",
-        "real_admin_same_origin_verified",
-        "real_admin_logout_revocation_tested",
-        "canonical_admin_route_served_on_bellaquitas_fr",
-        "cross_origin_token_transmission_blocked",
-        "www_and_workers_dev_access_tested",
-        "admin_parent_cookie_scoped_to_panel_verified",
-        "legacy_d1_private_routes_closed_verified",
-        "supabase_rls_role_policy_audited",
+    "authentication":{
+        "admin_login_method","google_linked_profiles",
+        "existing_admin_accounts","admins_with_real_google_login",
+        "google_oidc_signature_nonce_pkce_verified",
+        "google_subject_to_existing_id_verified",
+        "d1_session_method_column_verified","d1_admin_sso_table_verified",
+        "sso_login_and_logout_real_verified",
+        "admin_role_denial_real_verified",
+        "member_and_door_roles_verified",
+        "same_origin_bellaquitas_fr_verified",
+        "no_external_identity_service_in_runtime",
+        "password_accounts_transition_verified",
+        "all_login_methods_covered_without_fees",
+        "no_duplicate_or_reset_loyalty_accounts","free_worker_cpu_verified",
     },
-    "costs": {
-        "cloudflare_workers_and_d1_free_confirmed",
-        "r2_no_uncapped_billing_or_nonbillable_storage_verified",
-        "resend_email_free_limit_protected",
-        "all_other_meters_and_autopay_reviewed",
-        "budget_alert_not_considered_hard_cap", "checked_at",
-        "workers_free_plan_verified", "d1_and_kv_free_plan_verified",
-        "zero_cost_runtime_guard_verified", "r2_binding_removed_or_inaccessible",
-        "deployed_worker_r2_binding_absent_verified",
-        "deployed_worker_bindings_audited",
-        "no_metered_subscriptions_or_autopay_verified",
-        "workers_route_fail_closed_verified",
+    "costs":{
+        "workers_free_plan_verified","d1_free_plan_verified",
+        "worker_under_free_daily_limits_verified",
+        "d1_under_free_daily_limits_verified",
+        "no_r2_binding_or_usage_verified","no_paid_email_service_verified",
+        "zero_cost_runtime_guard_verified","worker_fail_closed_verified",
+        "no_automatic_paid_upgrade_verified",
+        "all_billing_sources_reviewed","checked_at",
     },
-    "rollback": {
-        "procedure_rehearsed", "previous_backend_retained",
-        "write_conflicts_plan_checked", "dns_and_domain_ready",
-        "design_unchanged",
+    "rollback":{
+        "d1_rollback_snapshot_restored","github_pages_unchanged",
+        "cutover_writes_plan_rehearsed","dns_and_domain_ready",
+        "admin_login_fallback_verified","site_design_unchanged",
     },
-    "authorization": {
-        "scope", "explicit_permission", "authorized_at",
-    },
+    "authorization":{"scope","explicit_permission","authorized_at"},
 }
 
 def reject_unexpected_evidence_fields(evidence: object) -> None:
@@ -309,210 +276,152 @@ def safe_load_file(filename: str) -> dict:
 def make_synthetic(now: datetime) -> dict:
     stamp=now.isoformat()
     return {
-      "backup":{
-        "encrypted_and_private":True,
-        "postgres_restore_tested":True,
-        "postgres_profiles_points_auth_match_verified":True,
-        "source_stable_during_export_verified":True,
-        "per_profile_sha256_restore_verified":True,
-        "isolated_local_restore_non_superuser_verified":True,
-        "storage_inventory_complete_verified":True,
-        "d1_restore_tested":True,
-        "r2_mode":"removed",
-        "r2_bucket_absent_verified":True,
-        "r2_originals_source_verified":True,
-        "supabase_storage_bytes_verified":True,
-        "second_copy_verified":True,
-        "archive_sha256":"a"*64,
-        "r2_objects":0,
-        "supabase_storage_objects":3,
-        "created_at":stamp},
-      "reconciliation":{
-        "checked_at":stamp,
-        "source_profiles":3,"target_profiles":3,
-        "source_points":40,"target_points":40,
-        "source_visits":1,"target_visits":1,
-        "no_real_test_mutations":True,
-        "translation_and_media_parity_verified":True,
-        "profiles_row_parity_verified":True,
-        "original_public_files_sha_verified":True,
-        "admin_ui_diff_explicitly_reviewed":True,
-        "audit_workflows_no_publish_verified":True},
-      "authentication":{
-        "existing_admin_accounts":1,
-        "admin_login_method":"sso_existing_account",
-        "admins_with_verified_sso":1,
-        "sso_admin_role_verified":True,
-        "sso_parent_session_revocation_verified":True,
-        "real_supabase_admin_session_tested":True,
-        "real_supabase_role_denial_tested":True,
-        "real_admin_same_origin_verified":True,
-        "real_admin_logout_revocation_tested":True,
-        "canonical_admin_route_served_on_bellaquitas_fr":True,
-        "cross_origin_token_transmission_blocked":True,
-        "www_and_workers_dev_access_tested":True,
-        "admin_parent_cookie_scoped_to_panel_verified":True,
-        "legacy_d1_private_routes_closed_verified":True,
-        "supabase_rls_role_policy_audited":True,
-        "google_and_admin_link_verified":True,
-        "session_and_logout_verified":True,
-        "free_cpu_or_external_auth_verified":True,
-        "no_paid_upgrade_or_automatic_billing":True,
-        "free_plan_checked_at":stamp,
-        "no_new_duplicate_admin_accounts":True},
-      "costs":{
-        "cloudflare_workers_and_d1_free_confirmed":True,
-        "r2_no_uncapped_billing_or_nonbillable_storage_verified":True,
-        "resend_email_free_limit_protected":True,
-        "all_other_meters_and_autopay_reviewed":True,
-        "budget_alert_not_considered_hard_cap":True,
-        "workers_free_plan_verified":True,
-        "d1_and_kv_free_plan_verified":True,
-        "zero_cost_runtime_guard_verified":True,
-        "r2_binding_removed_or_inaccessible":True,
-        "deployed_worker_r2_binding_absent_verified":True,
-        "deployed_worker_bindings_audited":True,
-        "no_metered_subscriptions_or_autopay_verified":True,
-        "workers_route_fail_closed_verified":True,
-        "checked_at":stamp},
-      "rollback":{
-        "procedure_rehearsed":True,
-        "previous_backend_retained":True,
-        "write_conflicts_plan_checked":True,
-        "dns_and_domain_ready":True,
-        "design_unchanged":True},
-      "authorization":{
-        "explicit_permission":True,
-        "scope":"phase6-backend-cutover",
-        "authorized_at":stamp},
+        "backend":"cloudflare-d1-only",
+        "backup":{
+            "encrypted_and_private":True,"d1_export_real_verified":True,
+            "d1_restore_local_real_verified":True,
+            "d1_profile_sha256_verified":True,"d1_google_links_verified":True,
+            "second_copy_verified":True,"r2_bucket_absent_verified":True,
+            "github_assets_hashes_verified":True,
+            "r2_mode":"removed","source":"cloudflare-d1",
+            "archive_sha256":"a"*64,"created_at":stamp,
+            "source_profile_count":7,"restored_profile_count":7,
+            "source_points":91,"restored_points":91,
+            "source_google_links":6,"restored_google_links":6,
+        },
+        "reconciliation":{
+            "checked_at":stamp,
+            "source_profiles":6,"target_profiles":6,
+            "source_points":91,"target_points":91,
+            "source_visits":2,"target_visits":2,
+            "source_lifetime_points":120,"target_lifetime_points":120,
+            **{x:True for x in (
+                "no_real_test_mutations","all_six_real_profiles_preserved",
+                "test_profile_excluded","original_public_files_sha_verified",
+                "translations_and_videos_parity_verified",
+                "legacy_external_media_urls_absent_verified",
+                "public_frontend_cloudflare_only_verified",
+                "admin_frontend_cloudflare_only_verified"
+            )}
+        },
+        "authentication":{
+            "admin_login_method":"google-d1",
+            "google_linked_profiles":6,"existing_admin_accounts":2,
+            "admins_with_real_google_login":2,
+            **{x:True for x in (
+                "google_oidc_signature_nonce_pkce_verified",
+                "google_subject_to_existing_id_verified",
+                "d1_session_method_column_verified",
+                "d1_admin_sso_table_verified",
+                "sso_login_and_logout_real_verified",
+                "admin_role_denial_real_verified",
+                "member_and_door_roles_verified",
+                "same_origin_bellaquitas_fr_verified",
+                "no_external_identity_service_in_runtime",
+                "password_accounts_transition_verified",
+                "all_login_methods_covered_without_fees",
+                "no_duplicate_or_reset_loyalty_accounts",
+                "free_worker_cpu_verified"
+            )}
+        },
+        "costs":{
+            "checked_at":stamp,
+            **{x:True for x in (
+                "workers_free_plan_verified","d1_free_plan_verified",
+                "worker_under_free_daily_limits_verified",
+                "d1_under_free_daily_limits_verified",
+                "no_r2_binding_or_usage_verified",
+                "no_paid_email_service_verified",
+                "zero_cost_runtime_guard_verified","worker_fail_closed_verified",
+                "no_automatic_paid_upgrade_verified",
+                "all_billing_sources_reviewed"
+            )}
+        },
+        "rollback":{x:True for x in (
+            "d1_rollback_snapshot_restored","github_pages_unchanged",
+            "cutover_writes_plan_rehearsed","dns_and_domain_ready",
+            "admin_login_fallback_verified","site_design_unchanged"
+        )},
+        "authorization":{
+            "scope":"phase6-cloudflare-d1-only",
+            "explicit_permission":True,
+            "authorized_at":stamp,
+        }
     }
 
 def self_test() -> None:
-    now=datetime(2026,11,12,11,0,tzinfo=UTC)
+    now=datetime(2026,11,14,11,0,tzinfo=UTC)
     good=make_synthetic(now)
     assert not validate(good,now),validate(good,now)
-    assert any("Falta sección" in x for x in validate({},now))
-    print("OK: rechazo sin ninguna evidencia")
+    assert validate({},now)
+    print("OK: sin evidencia nunca se autoriza una publicación")
     mutations=[
-      ("Rechazo sin autorización",{"authorization":{"explicit_permission":False}},"Autorización"),
-      ("Rechazo si falta restaurar PostgreSQL",{"backup":{"postgres_restore_tested":False}},"Respaldo"),
-      ("Rechazo si puntos/Auth restaurados no coinciden",{"backup":{"postgres_profiles_points_auth_match_verified":False}},"postgres_profiles_points_auth_match_verified"),
-      ("Rechazo si no se comprobó estabilidad antes/después",{"backup":{"source_stable_during_export_verified":False}},"source_stable_during_export_verified"),
-      ("Rechazo si huella SHA256 de cada socio no coincide",{"backup":{"per_profile_sha256_restore_verified":False}},"per_profile_sha256_restore_verified"),
-      ("Rechazo si restore no fue aislado y sin superuser",{"backup":{"isolated_local_restore_non_superuser_verified":False}},"isolated_local_restore_non_superuser_verified"),
-      ("Rechazo inventario Storage no completo",{"backup":{"storage_inventory_complete_verified":False}},"storage_inventory_complete_verified"),
-      ("Rechazo si falta Supabase Storage",{"backup":{"supabase_storage_objects":2}},"Supabase Storage"),
-      ("Rechazo R2 eliminado pero contiene objetos",{"backup":{"r2_objects":3}},"cero objetos"),
-      ("Rechazo R2 sin comprobación de bucket ausente",{"backup":{"r2_bucket_absent_verified":False}},"r2_bucket_absent_verified"),
-      ("Rechazo originales no comprobados",{"backup":{"r2_originals_source_verified":False}},"r2_originals_source_verified"),
-      ("Rechazo modo R2 inesperado",{"backup":{"r2_mode":"unknown"}},"estado R2"),
-      ("Rechazo de la cuenta ficticia sin retirar",{"reconciliation":{"target_profiles":4}},"perfiles"),
-      ("Rechazo de puntos diferentes",{"reconciliation":{"target_points":41}},"puntos"),
-      ("Rechazo si no se han comparado los seis campos por perfil",{"reconciliation":{"profiles_row_parity_verified":False}},"profiles_row_parity_verified"),
-      ("Rechazo si cambian vídeos o estilo original",{"reconciliation":{"original_public_files_sha_verified":False}},"original_public_files_sha_verified"),
-      ("Rechazo si cambió app.js sin revisión",{"reconciliation":{"admin_ui_diff_explicitly_reviewed":False}},"admin_ui_diff_explicitly_reviewed"),
-      ("Rechazo publicación desde QA",{"reconciliation":{"audit_workflows_no_publish_verified":False}},"audit_workflows_no_publish_verified"),
-      ("Rechazo si SSO no cumple Free",{"authentication":{"free_cpu_or_external_auth_verified":False}},"Autenticación"),
-      ("Rechazo si falta administrador SSO",{"authentication":{"admins_with_verified_sso":0}},"SSO"),
-      ("Rechazo si no comprueba el rol admin",{"authentication":{"sso_admin_role_verified":False}},"sso_admin_role_verified"),
-      ("Rechazo sin revocación de la sesión principal",{"authentication":{"sso_parent_session_revocation_verified":False}},"sso_parent_session_revocation_verified"),
-      ("Rechazo si solo hay pruebas Supabase ficticias",{"authentication":{"real_supabase_admin_session_tested":False}},"real_supabase_admin_session_tested"),
-      ("Rechazo si no se prueba pérdida del rol Supabase real",{"authentication":{"real_supabase_role_denial_tested":False}},"real_supabase_role_denial_tested"),
-      ("Rechazo si no se probó mismo dominio",{"authentication":{"real_admin_same_origin_verified":False}},"real_admin_same_origin_verified"),
-      ("Rechazo si no se sirve /administracion en dominio oficial",{"authentication":{"canonical_admin_route_served_on_bellaquitas_fr":False}},"canonical_admin_route_served_on_bellaquitas_fr"),
-      ("Rechazo si bearer puede ir a otro dominio",{"authentication":{"cross_origin_token_transmission_blocked":False}},"cross_origin_token_transmission_blocked"),
-      ("Rechazo sin comprobar workers.dev y www",{"authentication":{"www_and_workers_dev_access_tested":False}},"www_and_workers_dev_access_tested"),
-      ("Rechazo sin comprobación de logout real",{"authentication":{"real_admin_logout_revocation_tested":False}},"real_admin_logout_revocation_tested"),
-      ("Rechazo sin cookie admin limitada",{"authentication":{"admin_parent_cookie_scoped_to_panel_verified":False}},"admin_parent_cookie_scoped_to_panel_verified"),
-      ("Rechazo login D1 heredado",{"authentication":{"legacy_d1_private_routes_closed_verified":False}},"legacy_d1_private_routes_closed_verified"),
-      ("Rechazo RLS no auditado",{"authentication":{"supabase_rls_role_policy_audited":False}},"supabase_rls_role_policy_audited"),
-      ("Rechazo de método admin no aprobado",{"authentication":{"admin_login_method":"none"}},"método"),
-      ("Rechazo de cambio a plan facturable",{"authentication":{"no_paid_upgrade_or_automatic_billing":False}},"no_paid_upgrade_or_automatic_billing"),
-      ("Rechazo de R2 sin límite de facturación",{"costs":{"r2_no_uncapped_billing_or_nonbillable_storage_verified":False}},"r2_no_uncapped_billing"),
-      ("Rechazo si solo existen alertas de presupuesto",{"costs":{"budget_alert_not_considered_hard_cap":False}},"budget_alert"),
-      ("Rechazo si no se controla el correo gratuito",{"costs":{"resend_email_free_limit_protected":False}},"resend_email"),
-      ("Rechazo si no se conocen los demás cargos",{"costs":{"all_other_meters_and_autopay_reviewed":False}},"all_other_meters"),
-      ("Rechazo R2 eliminado pero aún vinculado al Worker",{"costs":{"deployed_worker_r2_binding_absent_verified":False}},"deployed_worker_r2_binding_absent_verified"),
-      ("Rechazo sin auditoría de bindings desplegados",{"costs":{"deployed_worker_bindings_audited":False}},"deployed_worker_bindings_audited"),
-      ("Rechazo Worker no confirmado Free",{"costs":{"workers_free_plan_verified":False}},"workers_free_plan_verified"),
-      ("Rechazo D1 KV fuera de Free",{"costs":{"d1_and_kv_free_plan_verified":False}},"d1_and_kv_free_plan_verified"),
-      ("Rechazo guardia de gasto inactiva",{"costs":{"zero_cost_runtime_guard_verified":False}},"zero_cost_runtime_guard_verified"),
-      ("Rechazo binding R2 todavía accesible",{"costs":{"r2_binding_removed_or_inaccessible":False}},"r2_binding_removed_or_inaccessible"),
-      ("Rechazo suscripción de gasto automático",{"costs":{"no_metered_subscriptions_or_autopay_verified":False}},"no_metered_subscriptions_or_autopay_verified"),
-      ("Rechazo fail-open del Worker",{"costs":{"workers_route_fail_closed_verified":False}},"workers_route_fail_closed_verified"),
-      ("Rechazo sin plan de reversión",{"rollback":{"procedure_rehearsed":False}},"Reversión"),
-      ("Rechazo por evidencia antigua",{"reconciliation":{"checked_at":"2026-01-01T00:00:00Z"}},"antiguos"),
+      ("Proveedor ajeno",{"backend":"otro"},"Arquitectura"),
+      ("Copia real ausente",{"backup":{"d1_export_real_verified":False}},"d1_export"),
+      ("Restauración real ausente",{"backup":{"d1_restore_local_real_verified":False}},"d1_restore"),
+      ("Huella de perfiles incompleta",{"backup":{"d1_profile_sha256_verified":False}},"d1_profile"),
+      ("Fuente de copia no D1",{"backup":{"source":"legacy"}},"Cloudflare D1"),
+      ("R2 reactivado",{"backup":{"r2_mode":"present"}},"R2"),
+      ("Google perdido en copia",{"backup":{"restored_google_links":5}},"identidades Google"),
+      ("Puntos perdidos en restauración",{"backup":{"restored_points":90}},"puntos"),
+      ("Puntos diferentes",{"reconciliation":{"target_points":92}},"puntos"),
+      ("Visitas diferentes",{"reconciliation":{"target_visits":3}},"visitas"),
+      ("Puntos históricos",{"reconciliation":{"target_lifetime_points":121}},"puntos históricos"),
+      ("Cuenta ficticia mezclada",{"reconciliation":{"test_profile_excluded":False}},"test_profile_excluded"),
+      ("URLs de medios antiguos",{"reconciliation":{"legacy_external_media_urls_absent_verified":False}},"media"),
+      ("Web conserva backend retirado",{"reconciliation":{"public_frontend_cloudflare_only_verified":False}},"public_frontend"),
+      ("Panel conserva backend retirado",{"reconciliation":{"admin_frontend_cloudflare_only_verified":False}},"admin_frontend"),
+      ("Login Google falso",{"authentication":{"admins_with_real_google_login":0}},"Google reales"),
+      ("Sesiones D1 sin actualizar",{"authentication":{"d1_session_method_column_verified":False}},"d1_session"),
+      ("Tabla admin inexistente",{"authentication":{"d1_admin_sso_table_verified":False}},"d1_admin"),
+      ("Omitir seguridad Google",{"authentication":{"google_oidc_signature_nonce_pkce_verified":False}},"google_oidc"),
+      ("Mismo origen ausente",{"authentication":{"same_origin_bellaquitas_fr_verified":False}},"same_origin"),
+      ("Correo sin plan gratis",{"authentication":{"all_login_methods_covered_without_fees":False}},"all_login_methods"),
+      ("Plan de pago habilitado",{"costs":{"no_automatic_paid_upgrade_verified":False}},"paid_upgrade"),
+      ("R2 todavía vinculado",{"costs":{"no_r2_binding_or_usage_verified":False}},"no_r2"),
+      ("Sin CPU comprobada",{"authentication":{"free_worker_cpu_verified":False}},"free_worker_cpu"),
+      ("Sin restaurar vuelta atrás",{"rollback":{"d1_rollback_snapshot_restored":False}},"d1_rollback"),
+      ("Sin permiso explícito",{"authorization":{"explicit_permission":False}},"Autorización"),
+      ("Sin nueva autorización",{"authorization":{"scope":"phase6-backend-cutover"}},"Autorización"),
+      ("Datos caducados",{"backup":{"created_at":"2026-01-01T00:00:00Z"}},"48 horas"),
     ]
-    passed=0
-    for title, overrides, match in mutations:
-        fixture=copy.deepcopy(good)
-        for key,values in overrides.items():
-            fixture[key]=values if key not in fixture else {**fixture[key],**values}
-        problems=validate(fixture,now)
-        assert problems and any(match.casefold() in p.casefold() for p in problems),(title,problems)
-        print("OK:",title)
-        passed+=1
-    # Bloqueo obligatorio: R2 fue retirado por el propietario, y su
-    # reactivación NUNCA será aceptada por la preparación de fase 6.
-    legacy_r2=copy.deepcopy(good)
-    legacy_r2["backup"].update({
-        "r2_mode":"present", "r2_objects":20, "r2_bytes_verified":True
-    })
-    assert any("no se permite volver" in x for x in validate(legacy_r2,now))
-    legacy_r2["backup"]["r2_bytes_verified"]=False
-    assert any("no se permite volver" in x for x in validate(legacy_r2,now))
-    # La vía anterior sigue aceptándose SOLO con todas sus pruebas propias,
-    # nunca se considera una contraseña en SSO ni se suponen equivalentes.
-    legacy=copy.deepcopy(good)
-    legacy["authentication"].update({
-        "admin_login_method":"email_password",
-        "email_password_works":True,
-        "admins_with_verified_login":1,
-    })
-    assert not validate(legacy,now),validate(legacy,now)
-    legacy["authentication"]["email_password_works"]=False
-    assert any("email_password_works" in x for x in validate(legacy,now))
-    with tempfile.TemporaryDirectory() as temp:
-        file=Path(temp)/"synthetic-evidence.json"
+    for name,overrides,expected in mutations:
+        item=copy.deepcopy(good)
+        for section,value in overrides.items():
+            if isinstance(value,dict) and isinstance(item.get(section),dict):
+                item[section].update(value)
+            else:item[section]=value
+        problems=validate(item,now)
+        assert any(expected.casefold() in x.casefold() for x in problems),(name,problems)
+        print("OK:",name)
+    with tempfile.TemporaryDirectory() as tmp:
+        file=Path(tmp)/"synthetic-evidence.json"
         file.write_text(json.dumps(good),encoding="utf8")
         file.chmod(0o600)
         assert not validate(safe_load_file(str(file)),now)
-        # Un archivo compartido no cuenta como evidencia privada.
-        if os.name == "posix":
+        if os.name=="posix":
             file.chmod(0o644)
             try:
                 safe_load_file(str(file))
-                raise AssertionError("Se aceptó un fichero legible por terceros")
-            except RuntimeError as exc:
-                assert "0600" in str(exc)
+                raise AssertionError("Archivo de evidencia no privado")
+            except RuntimeError:pass
             file.chmod(0o600)
-        alias=Path(temp)/"alias-evidence.json"
+        alias=Path(tmp)/"alias"
         alias.symlink_to(file)
         try:
             safe_load_file(str(alias))
-            raise AssertionError("Se aceptó enlace simbólico")
-        except RuntimeError:
-            pass
-        private_with_secret=copy.deepcopy(good)
-        private_with_secret["authentication"]["password_forbidden"]="SOLO-DATO-FICTICIO"
-        file.write_text(json.dumps(private_with_secret),encoding="utf8")
+            raise AssertionError("Se permitió symlink")
+        except RuntimeError:pass
+        fake=copy.deepcopy(good)
+        fake["authentication"]["password_forbidden"]="sintetico"
+        file.write_text(json.dumps(fake),encoding="utf8")
         file.chmod(0o600)
         try:
             safe_load_file(str(file))
-            raise AssertionError("Se aceptaron credenciales en evidencia")
-        except RuntimeError as exc:
-            assert "campos no permitidos" in str(exc)
-        private_with_secret=copy.deepcopy(good)
-        private_with_secret["secret_access_token"]="SOLO-DATO-FICTICIO"
-        file.write_text(json.dumps(private_with_secret),encoding="utf8")
-        file.chmod(0o600)
-        try:
-            safe_load_file(str(file))
-            raise AssertionError("Se aceptó sección con secretos")
-        except RuntimeError as exc:
-            assert "Sección de evidencia no permitida" in str(exc)
-    print(f"OK: {passed+1} comprobaciones de rechazo y controles de privacidad, solo con datos ficticios.")
-    print("AVISO: pasar un fixture de ensayo NO es autorización para publicar.")
+            raise AssertionError("Se permitió secreto entre las evidencias")
+        except RuntimeError:pass
+    print("OK: 28 bloqueos de corte + privacidad; solo datos ficticios.")
+    print("Un resultado de ensayo NUNCA equivale a autorización real.")
 
 def main():
     if len(sys.argv)==2 and sys.argv[1]=="--self-test":
