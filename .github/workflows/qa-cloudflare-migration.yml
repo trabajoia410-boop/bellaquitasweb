@@ -25,4 +25,6 @@ jobs:
       - name: Construir exclusivamente los recursos estáticos originales
         run: node cloudflare/build-static-assets.mjs
       - name: Comprobar acceso admin reforzado sin usuarios reales
-        run: node cloudflare/test-admin-stepup.mjs
+        run: |
+          node cloudflare/test-admin-stepup.mjs
+          node cloudflare/test-admin-console.mjs
