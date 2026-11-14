@@ -116,7 +116,7 @@ try{
  await verify(mpage,"Móvil: tarjeta y QR de socia ficticia");
  assert.ok((await mpage.locator("#app").innerText()).includes("MBR-FAKE-12345"));
  assert.equal(await mpage.locator("#qr-code").count(),1);
- assert.equal(await mpage.locator(".menu-toggle").count()>0,true);
+ assert.equal(await mpage.locator(".mobile-appbar").count()>0,true);
  await members.close();
 
  const staff=await browser.newContext({viewport:{width:1440,height:900},serviceWorkers:"block"});
