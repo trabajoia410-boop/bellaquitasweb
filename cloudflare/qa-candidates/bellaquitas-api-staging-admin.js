@@ -4,6 +4,7 @@ import {adminConsoleRoute} from "./admin-console-routes.js";
 import {previewRoute} from "./preview-page.js";
 import {mirrorRoute} from "./web-mirror.js";
 import {staticMediaFallback} from "./static-media-fallback.js";
+import {stripRetiredStorage} from "./public-no-legacy-media.js";
 import {mirrorDataRoute} from "./mirror-data-routes.js";
 import {mirrorWriteRoute} from "./mirror-write-routes.js";
 import {suggestionRoute} from "./suggestion-routes.js";
@@ -102,7 +103,7 @@ function withJsonFields(rows) {
     for (const field of ["active", "published"]) {
       if (field in item) item[field] = item[field] === 1;
     }
-    return item;
+    return stripRetiredStorage(item);
   });
 }
 export default {
