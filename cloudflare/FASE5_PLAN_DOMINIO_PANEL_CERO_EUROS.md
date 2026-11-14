@@ -45,3 +45,33 @@ Servir un panel **estático** en `bellaquitas.fr/administracion/` desde GitHub P
 - Ejecutar una copia privada real y una restauración real aislada, reconciliar los 6 perfiles, excluir fixture y obtener autorización expresa para fase 6.
 
 **Decisión actualmente en vigor:** fase 5, solo GitHub rama `auditoria/fase5-2026-11-11`; el propietario exige preservar el sitio actual, ningún cargo y ningún cambio de DNS hasta validación.
+
+
+## Estado confirmado el 14/11/2026 y despliegue preparado, NO ejecutado
+
+**Auditoría real Cloudflare de solo lectura:** 0 zonas Cloudflare para `bellaquitas.fr`, 0 custom domains Workers y un Worker antiguo `bellaquitas-api-staging` que aún declara el binding del R2 `MEDIA`. El bucket y 20 objetos originales de la migración anterior están **eliminados**; el nuevo candidato evita esa dependencia. El dominio sigue funcionando en GitHub Pages. No existen las rutas Cloudflare necesarias para `/administracion/`, por lo que **no hay SSO real desplegado todavía**.
+
+**Ruta que se implementará únicamente DESPUÉS de tener backup privado/restauración real y autorización del corte**:
+
+```text
+https://bellaquitas.fr/                → GitHub Pages original, igual que ahora
+https://bellaquitas.fr/assets/...      → GitHub Pages: fotos y cinco vídeos
+https://bellaquitas.fr/config.js       → GitHub Pages: clave ANON pública
+https://bellaquitas.fr/administracion/*→ Worker Free protegido (ruta exclusiva)
+```
+
+Para que una ruta de Worker funcione en `bellaquitas.fr` es obligatoria una **zona Cloudflare activa y DNS de ese hostname proxied**, según la documentación oficial. **Añadir la zona y cambiar nameservers/proxy en Hostinger requiere un plan de vuelta atrás probado; NO lo hemos hecho.** La ruta debería configurarse para **fail closed**, no `fail open`, para evitar omitir el Worker ante error 1027. No adjuntar `R2`, `Resend` ni bindings innecesarios al Worker final.
+
+Requisitos ya preparados y probados sin conexión real al navegador: HTML/CSS/JS de administración bajo `/administracion`, clave pública de config compartida, logos desde `/assets/logo-navbar.png`, bearer Supabase validado contra Auth + rol actual RLS + rol D1, cookies administrativas protegidas, bloqueo de APIs D1 heredadas y `COST_POLICY=free-only`. [Comprobación automática de rutas](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43547985765). **Estas pruebas son de candidato, no equivalen a una sesión real ni a un Worker desplegado en `bellaquitas.fr`.**
+
+## Límites oficiales a comprobar antes de activar
+
+- **Workers Free:** 100.000 solicitudes diarias (error 1027 al rebasar), máximo **10 ms de CPU por invocación** y 50 subrequests. Tiempo de espera de red normalmente no suma CPU.
+- **D1 Free:** 5.000.000 filas leídas/día, 100.000 filas escritas/día, **5 GB de almacenamiento agregado, 500 MB por base y 10 bases**. Se bloquean consultas al superar cuota y no debe contratarse un plan de pago para resolverlo.
+- D1 staging observada en la consulta de esta fase: **270.336 bytes, 20 tablas**, tamaño dentro de cuota (esto NO demuestra carga de producción, CPU real ni consumo diario futuro).
+- **Supabase Free:** sin backups automáticos y **riesgo de pausa por baja actividad tras una semana**. Si la autenticación continúa usando Supabase Auth, no podemos prometer disponibilidad 24/7 sin pausas; hace falta estudiar una alternativa gratuita o aceptar expresamente la limitación antes de cortar. No proponer pago como solución automática.
+- La API de facturación Cloudflare devuelve HTTP 403 para este acceso: las capturas del usuario aportan evidencia histórica de cero cargos, pero el asistente no puede certificar facturas actuales con el token conectado.
+
+Fuentes oficiales: [Cloudflare Workers Free](https://developers.cloudflare.com/workers/platform/limits/), [Cloudflare D1 Free](https://developers.cloudflare.com/d1/platform/pricing/), [Cloudflare Workers Routes](https://developers.cloudflare.com/workers/configuration/routing/routes/), [Copias Supabase Free](https://supabase.com/kb/faqs/platform/free-plan-backups), [Pausas de Supabase Free](https://supabase.com/docs/guides/platform/free-project-pausing).
+
+**No autorizado todavía:** cambios DNS, nuevas rutas Worker productivas, importación de datos reales, publicación `main`, uso de credenciales privadas del administrador o activación de servicios facturables.
