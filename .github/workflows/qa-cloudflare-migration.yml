@@ -34,5 +34,7 @@ jobs:
         run: node cloudflare/test-admin-visual-preview.mjs
       - name: Comprobar tarjeta QR y lectura jsQR con imágenes ficticias
         run: node cloudflare/test-qr-roundtrip.mjs
+      - name: Verificar fidelidad, visitas, puntos, canjes y auditoría solo en SQLite RAM
+        run: node cloudflare/test-loyalty-door-integration.mjs
       - name: Probar Worker QA independiente con DB vacía y roles cerrados
         run: node cloudflare/test-qa-worker-http.mjs
