@@ -31,7 +31,7 @@
     },
     "bothRealAdminLoginsVerified": {
       "passed": false,
-      "evidence": "cloudflare/STAGING_ADMIN_ACCESS_2026-11-15.md (2 admins vinculados a Google, 0 claves admin correo; /administracion/ no desplegada todavía en Worker staging, 2 logins reales pendientes)"
+      "evidence": "cloudflare/STAGING_ADMIN_DEPLOYED_2026-11-15.md (panel staging ya devuelve 200 con CSP y login UI; 2 identidades Google sin ensayo interactivo ni credenciales email admin)"
     },
     "productionDatabaseBackupConfirmed": {
       "passed": false,
