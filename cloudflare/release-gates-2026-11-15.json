@@ -23,7 +23,7 @@
     },
     "originalVideosDeployedToMediaQa": {
       "passed": false,
-      "evidence": "GitHub Actions QA media 43775094654 verificó 20 medios originales y trató de desplegar únicamente Worker media QA. FALTA API Token Cloudflare como GitHub Actions Secret, por lo que subida no se hizo. No se usó R2. Ver cloudflare/FASE5_EJECUCION_2026-11-16.md."
+      "evidence": "20 originales auditados en GitHub Actions 43775094654; subida Cloudflare Worker QA no ejecutada por ausencia de CLOUDFLARE_API_TOKEN secreto en GitHub. Intento alternativo de Cloudflare Pages QA rechazado por API HTTP 401 error 8000011 (instalación GitHub en Pages), consulta posterior confirma cero proyectos. 5 vídeos temporales confirmados HTTP 206 en 43776451180. NO se ha desplegado Static Assets propios, sigue FALSO."
     },
     "realHttp206AndIosAndroidPlayback": {
       "passed": false,
