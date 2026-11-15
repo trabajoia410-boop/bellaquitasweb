@@ -44,3 +44,11 @@ La validación HTTP simulada en CI es buena, pero NO sustituye la prueba real en
 ## Inventario completo de Storage al 15/11/2026
 
 La consulta de solo lectura a `storage.objects` encontró **exactamente 3 archivos** en el bucket `bellaquitas-media`, todos en `logos/`, con **1.939.302 bytes** en total. No había otras fotografías de usuarios o galerías en este bucket en el momento de la consulta. Esto no sustituye una revisión final justo antes del corte.
+
+## Actualización — logos recuperados e incorporados
+
+El estado de “pendiente” anterior ya está **resuelto**. En la misma fecha se localizaron los tres archivos en las copias anteriores de Bellaquitas Fest y se verificó su MD5/tamaño exactamente contra el manifiesto histórico. La automatización GitHub recuperó además los tres objetos de su origen público histórico, confirmó **SHA-256 completo** y añadió los 3 binarios a `assets/migrated-logos/` en la rama de migración. No se recurrió a imágenes sustitutas.
+
+Se confirmó en GitHub Actions que `node cloudflare/build-static-assets.mjs --require-logos` pasa y que el conjunto suma **20 medios** (17 originales del repositorio y 3 logos restaurados). Documento de evidencia definitivo: `cloudflare/ORIGINAL_LOGOS_RECOVERED_2026-11-15.md`.
+
+**Sigue pendiente** desplegar Workers Static Assets en Cloudflare QA y probar reproducción real, especialmente Safari/iPhone. `bellaquitas.fr` no se ha cambiado.
