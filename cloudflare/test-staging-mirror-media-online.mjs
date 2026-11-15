@@ -28,6 +28,7 @@ let checkedRanges=0;
 for(const video of videos){
  const path='/espejo/assets/'+encodeURIComponent(video.path);
  const head=await read(path,{method:'HEAD'});
+ if(head.status!==200){const probe=await read(path,{headers:{Range:'bytes=0-255'}});console.error('Diagnóstico espejo staging:',video.path,'HEAD',head.status,'RANGE',probe.status,'respuesta',(await probe.text()).slice(0,180));}
  assert.equal(head.status,200,'Video HEAD no disponible en espejo: '+video.path);
  assert.equal(Number(head.headers.get('content-length')),video.bytes,'Se ha cambiado tamaño del vídeo: '+video.path);
  assert.equal(head.headers.get('content-type'),'video/mp4');
