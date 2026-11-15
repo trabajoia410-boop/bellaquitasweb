@@ -49,3 +49,18 @@ La migración `0007-admin-step-up.sql` y la `0008-admin-email-link.sql` están v
 - Repetir concordancia completa de Google, roles, perfiles, eventos y contenido inmediatamente antes del corte final.
 - No activar panel administrativo hasta tener esquema 0007, 0008, doble inicio real y recuperación segura.
 - Nunca publicar cuentas/IDs/correos, hashes de tokens ni claves de respaldo en registros o comentarios.
+
+## Actualización posterior — 15/11/2026: tablas administrativas instaladas en staging
+
+La observación anterior de *tablas ausentes en staging* corresponde a la **situación previa** a esta intervención y ha quedado resuelta.
+
+- Se verificó una restauración aislada preexistente: **20 tablas y 44 registros idénticos**, además de 18 índices/triggers/vistas coincidentes.
+- Se guardó un bookmark de Time Travel en la base privada de copias, sin publicarlo en Git.
+- Se aplicaron exclusivamente `0007-admin-step-up.sql` y `0008-admin-email-link.sql` a **D1 staging**.
+- Ahora hay **2 tablas y 4 índices nuevos**, con estructuras equivalentes a QA y **ningún registro** administrativo nuevo.
+- Después se volvieron a comprobar los **44 registros originales**: siguen siendo idénticos al respaldo restaurado, con 7 perfiles, 1.999.998 puntos y 0 visitas.
+- `STAGING_MUTATIONS=disabled` continúa y no se ha habilitado ninguna autenticación administrativa real. El origen Supabase, la web y el DNS siguen intactos.
+
+El informe detallado y la evidencia de aplicación están en `cloudflare/ADMIN_MIGRATION_APPLIED_2026-11-15.md`.
+
+**No confundir esquema instalado con panel listo:** faltan la prueba de los dos administradores, rotación segura de la clave del respaldo y controles de salida.
