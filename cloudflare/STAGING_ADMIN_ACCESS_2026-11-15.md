@@ -68,3 +68,14 @@ Esta diferencia impide dar por verificado un login administrador real en staging
 5. No tocar `bellaquitas.fr`, GitHub `main`, DNS ni puntos. Mantener PR #3 en borrador.
 
 **Separación:** panel preparado en rama/QA ≠ panel desplegado en staging ≠ panel autorizado en el dominio público.
+
+## Resultado final de QA automático
+
+La prueba HTTP contra `bellaquitas-api-staging` confirmó las siguientes condiciones: el registro de email aparece **desactivado**, `POST /v1/auth/email/register` con solicitud vacía no crea cuenta, y no es posible gestionar socios de forma anónima. El endpoint `/administracion/` del Worker de preparación todavía responde `404`: se mantiene **como limitación identificada**, no como un éxito ficticio del panel.
+
+Los tests reconocen las respuestas denegadas `401/403/404/405/503` según la ruta legada y siguen fallando si una ruta de escritura responde correctamente a un visitante anónimo. La vista previa de QA verifica el panel con CSP, pero no autoriza autenticación.
+
+- [QA migración sin despliegue — verde](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43683919169).
+- [Cloudflare migration safe QA — verde](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43683919142).
+
+**No cambiar un bloqueo de acceso por un chequeo verde:** aún faltan el despliegue revisado del panel a staging y las pruebas reales de los dos administradores.
