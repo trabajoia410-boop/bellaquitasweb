@@ -27,7 +27,7 @@
     },
     "realHttp206AndIosAndroidPlayback": {
       "passed": false,
-      "evidence": "cloudflare/STAGING_MIRROR_MEDIA_VERIFIED_2026-11-15.md (10 HTTP 206 reales en el espejo staging, bytes MP4 correctos; prueba física de Safari/iPhone y Android aún pendiente)"
+      "evidence": "cloudflare/STAGING_BROWSER_VISUAL_QA_2026-11-15.md (5 MP4/10 HTTP206 en espejo y segundo vídeo listo readyState4 en WebKit/Android; falta reproducción física iPhone/Android y Static Assets)"
     },
     "bothRealAdminLoginsVerified": {
       "passed": false,
@@ -51,7 +51,7 @@
     },
     "finalEsFrMobileVisualParity": {
       "passed": false,
-      "evidence": "cloudflare/STAGING_MIRROR_MEDIA_VERIFIED_2026-11-15.md (HTML/CSS/JS/locale-fr.js y medios ya accesibles en staging; falta revisión visual ES/FR y en dispositivos móviles reales)"
+      "evidence": "cloudflare/STAGING_BROWSER_VISUAL_QA_2026-11-15.md (WebKit iPhone13, Chromium Pixel7/Desktop, 0 overflow, menú y ES→FR correctos; falta traducción exhaustiva y teléfonos reales)"
     },
     "googleIdentityMappingExact": {
       "passed": true,
