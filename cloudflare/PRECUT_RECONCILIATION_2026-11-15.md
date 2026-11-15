@@ -31,6 +31,23 @@
 - Cloudflare contiene **1 perfil adicional**: rol socio, vinculado a correo, creado en D1 el 10/11/2026 a las 23:53:05 (fecha según D1), 0 puntos, 0 visitas, 0 sesiones activas y 0 movimientos.
 - No se han incluido nombres, correos ni IDs de usuarios en este informe.
 
+## Comparación más profunda de los datos (15/11/2026)
+
+Además de los recuentos, se compararon los registros completos con la misma clave primaria, normalizando únicamente diferencias de representación Postgres/SQLite (fechas, booleanos y campos JSON).
+
+- `profiles`: 6 de 6 registros de Supabase coinciden campo por campo; 1 adicional solo en Cloudflare
+- `events`: 1 registro idéntico
+- `activity`: 2 registros idénticos
+- `admin_member_changes`: 3 registros idénticos
+- `site_content`: 1 registro idéntico, incluido `page_settings`
+- `site_drafts`: 1 registro idéntico, incluido `settings`
+
+**Total: 14 registros comunes coinciden sin diferencias de contenido.** Los otros seis grupos comunes tienen 0 registros en ambos sistemas. La comparación es una fotografía puntual; debe repetirse antes del cambio DNS.
+
+**Identidades de acceso:** Los 6 usuarios `auth.users` de Supabase tienen 6 identidades Google vinculadas a sus perfiles (sin perfiles huérfanos). Las 6 correspondencias `profile_id`/`provider_id`/`sub` coinciden exactamente con `auth_identity_links` en D1 staging, incluidos 2 admins y 1 personal de puerta. D1 tiene además 1 perfil de correo que no aparece en Supabase.
+
+**Incidencia de esquema:** La D1 staging aún NO contiene `auth_admin_sessions` (migración 0007) ni `auth_admin_email_links` (migración 0008), aunque ambas tablas ya están en QA aislado. La reautenticación real del panel requiere la migración 0007. No se aplicaron escrituras a staging; ver `AUTH_DATA_PARITY_2026-11-15.md` y el test ficticio `test-admin-migration-preflight.mjs`.
+
 ## Decisión de seguridad
 
 **BLOQUEO:** no copiar tablas a ciegas, no eliminar ese perfil y no activar Cloudflare como producción hasta averiguar si el perfil adicional es una prueba o un usuario legítimo registrado exclusivamente en staging. La coincidencia de saldos globales no demuestra por sí misma igualdad de toda la base.
