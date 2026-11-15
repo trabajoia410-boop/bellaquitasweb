@@ -26,12 +26,13 @@ const REQUIRED_KEYS=[
  'finalEsFrMobileVisualParity',
  'googleIdentityMappingExact',
  'stagingAdminStepupSchemaApplied',
- 'stagingPostadminRestoreVerified'
+ 'stagingPostadminRestoreVerified',
+ 'stagingOnlyAccountCutoverPolicyApproved'
 ];
 assert.deepEqual(Object.keys(gates.readiness).sort(),[...REQUIRED_KEYS].sort(),
  'No añadir ni eliminar condiciones de publicación sin revisión del checklist');
 const items=Object.entries(gates.readiness);
-assert.equal(items.length,15,'No deben borrarse bloqueos en silencio');
+assert.equal(items.length,16,'No deben borrarse bloqueos en silencio');
 for(const [key,item] of items){
  assert.equal(typeof item.passed,'boolean',key);
  assert.ok(typeof item.evidence==='string'&&item.evidence.length>20,'Se requiere evidencia: '+key);
