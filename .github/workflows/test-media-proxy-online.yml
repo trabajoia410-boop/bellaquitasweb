@@ -1,0 +1,31 @@
+name: Bellaquitas QA — proxy multimedia temporal sin R2
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - migracion/fase5-segura-20261114
+    paths:
+      - .github/workflows/test-media-proxy-online.yml
+      - cloudflare/media-proxy-qa-worker.js
+      - cloudflare/test-media-proxy-online.mjs
+permissions:
+  contents: read
+jobs:
+  verify-temporary-media-qa:
+    if: github.repository == 'trabajoia410-boop/bellaquitasweb' && github.ref == 'refs/heads/migracion/fase5-segura-20261114'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Confirmar originales sin cambiar bytes ni diseños
+        run: |
+          node cloudflare/verify-migration.mjs
+          node cloudflare/build-static-assets.mjs --require-logos
+          node cloudflare/test-media-proxy-qa.mjs
+      - name: Comprobar 5 MP4 (10 respuestas HTTP 206) y 3 logos originales en Cloudflare QA real
+        run: node cloudflare/test-media-proxy-online.mjs
+      - name: Verificar que las condiciones de producción siguen cerradas
+        run: node cloudflare/check-release-gates.mjs --assert-blocked
