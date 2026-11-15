@@ -3,6 +3,24 @@ import {SITE_MEDIA} from "./site-media-manifest.js";
 import {MIRROR_SUGGESTIONS_UI} from "./mirror-suggestions-ui.js";
 import {MIRROR_ADMIN_NEW_TAB} from "./mirror-admin-newtab.js";
 const MIRROR_BASE="/espejo/";
+const QA_MEDIA_PROXY="https://bellaquitas-media-proxy-qa.bellaquitas-fest-410.workers.dev";
+const STAGING_HOSTNAME="bellaquitas-api-staging.bellaquitas-fest-410.workers.dev";
+// Fallback EXCLUSIVO del espejo en staging: nunca activar en bellaquitas.fr ni QA pública.
+// El proxy no es alojamiento definitivo. Cuando se vincule ASSETS, se usará ASSETS.
+function temporaryMediaAllowed(request,env){
+ return !env?.ASSETS&&env?.STAGING_MUTATIONS==="disabled"&&
+  env?.ALLOW_NEW_ACCOUNTS==="no"&&
+  new URL(request.url).hostname===STAGING_HOSTNAME;
+}
+async function fromTemporaryMedia(request,filename){
+ const safe=new URL(QA_MEDIA_PROXY+"/assets/"+encodeURIComponent(filename));
+ const headers=new Headers();
+ const range=request.headers.get("Range");
+ if(range)headers.set("Range",range);
+ // Jamás transmitir cookies, Authorization ni headers de usuarios al origen de medios.
+ return fetch(safe,{method:request.method,headers,redirect:"manual"});
+}
+
 const PROTECTED={
  "Cache-Control":"no-store",
  "X-Content-Type-Options":"nosniff",
@@ -87,22 +105,25 @@ export async function mirrorRoute(request,env){
    }
    const expected=SITE_MEDIA.find(f=>f.path===filename);
    if(!expected)return fail(404,"Este archivo no pertenece al diseño original");
-   // Recurso idéntico al archivo Git, servido por Workers Static Assets.
-   // No se consulta R2 ni se recomprime el vídeo. El build valida byte-size y Git SHA-1.
-   if(!env?.ASSETS)return fail(503,"Los medios estáticos aún no están desplegados");
+   // Static Assets es el destino definitivo. Mientras no esté configurado,
+   // solo el host de staging de Bellaquitas puede usar el proxy QA verificado.
+   const useProxy=temporaryMediaAllowed(request,env);
+   if(!env?.ASSETS&&!useProxy)return fail(503,"Los medios estáticos aún no están desplegados");
    const assetUrl=new URL(request.url);
-   assetUrl.pathname="/assets/"+filename.split("/").map(encodeURIComponent).join("/");
+   assetUrl.pathname="/assets/"+encodeURIComponent(filename);
    try{
-     const served=await env.ASSETS.fetch(new Request(assetUrl,request));
+     const served=useProxy
+      ?await fromTemporaryMedia(request,filename)
+      :await env.ASSETS.fetch(new Request(assetUrl,request));
      if(served.status!==200&&served.status!==206)return fail(503,"Medio original pendiente de verificación");
      const headers=new Headers(served.headers);
      for(const [name,value] of Object.entries(PROTECTED))headers.set(name,value);
      headers.set("Content-Type",expected.type);
      headers.set("Accept-Ranges","bytes");
-     headers.set("Cache-Control","public,max-age=86400");
+     headers.set("Cache-Control",useProxy?"no-store":"public,max-age=86400");
      return new Response(request.method==="HEAD"?null:served.body,{status:served.status,headers});
    }catch(error){
-     console.error("Static media:",String(error?.message||"unavailable").slice(0,105));
+     console.error("Media QA:",String(error?.message||"unavailable").slice(0,105));
      return fail(503,"El medio original no está disponible");
    }
  }
