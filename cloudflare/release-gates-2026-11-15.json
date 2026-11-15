@@ -23,11 +23,11 @@
     },
     "originalVideosDeployedToMediaQa": {
       "passed": false,
-      "evidence": "cloudflare/MEDIA_PROXY_QA_VERIFIED_2026-11-15.md (20 medios disponibles en proxy temporal HTTPS con GitHub como origen; NO alojados en Workers Static Assets; ASSETS definitivo pendiente)"
+      "evidence": "cloudflare/STAGING_MIRROR_MEDIA_VERIFIED_2026-11-15.md (5 MP4 accesibles en espejo staging por Service Binding a proxy GitHub; Static Assets propio aún NO desplegado)"
     },
     "realHttp206AndIosAndroidPlayback": {
       "passed": false,
-      "evidence": "cloudflare/MEDIA_PROXY_QA_VERIFIED_2026-11-15.md (10 respuestas HTTP 206 reales de 5 MP4 por proxy QA verificadas byte a byte; faltan Static Assets e inspección física Safari/iPhone y Android)"
+      "evidence": "cloudflare/STAGING_MIRROR_MEDIA_VERIFIED_2026-11-15.md (10 HTTP 206 reales en el espejo staging, bytes MP4 correctos; prueba física de Safari/iPhone y Android aún pendiente)"
     },
     "bothRealAdminLoginsVerified": {
       "passed": false,
@@ -51,7 +51,7 @@
     },
     "finalEsFrMobileVisualParity": {
       "passed": false,
-      "evidence": "cloudflare/ORIGINAL_LOGOS_RECOVERED_2026-11-15.md (logos ya recuperados; faltan despliegue real de multimedia y paridad visual completa ES/FR + iOS/Android)"
+      "evidence": "cloudflare/STAGING_MIRROR_MEDIA_VERIFIED_2026-11-15.md (HTML/CSS/JS/locale-fr.js y medios ya accesibles en staging; falta revisión visual ES/FR y en dispositivos móviles reales)"
     },
     "googleIdentityMappingExact": {
       "passed": true,
