@@ -12,9 +12,10 @@ assert.ok(line,'Falta un manifiesto del dry-run');
 const plan=JSON.parse(line);
 assert.equal(plan.worker,'bellaquitas-media-qa');
 assert.equal(plan.mode,'dry-run');
-assert.equal(plan.files,17,'Debe incluir los 17 archivos originales Git');
+assert.equal(plan.files,20,'Debe incluir 17 archivos originales y los 3 logos recuperados');
 assert.equal(plan.videos,5);
-assert.equal(plan.missingLogos,3);
+assert.equal(plan.missingLogos,0,'Los tres logos originales certificados ya están en el repositorio');
+assert.equal(plan.allLogosVerified,true);
 assert.equal(plan.hasDatabaseBinding,false);
 assert.equal(plan.productionDomainChanged,false);
 assert.equal(plan.shaHash,'sha256-first16bytes-hex');
@@ -51,4 +52,4 @@ for(const [name,size] of samples){
  assert.deepEqual(Buffer.from(await r.arrayBuffer()),Buffer.from(bytes));
 }
 assert.equal(run.stderr.trim().length,0,'No debe haber errores ni secretos expuestos');
-console.log('OK: 17 recursos verificados para subida QA, 5 MP4, 3 logos aún pendientes, worker aislado y 206 sin modificar bytes. Sin red ni tokens.');
+console.log('OK: 20 recursos verificados para subida QA, 5 MP4 y 3 logos auténticos, worker aislado y 206 sin modificar bytes. Sin red ni tokens.');
