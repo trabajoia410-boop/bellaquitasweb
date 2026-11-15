@@ -66,8 +66,8 @@
       "evidence": "Restauración D1 aislada comprobada nuevamente por lectura completa 15/11/2026: 22 tablas,44 objetos,44 filas campo por campo, 7 perfiles, 2 admin, 1999998 puntos, FK 0; informe cloudflare/FASE5_BACKUP_Y_PANEL_BILINGUE_2026-11-15.md."
     },
     "stagingOnlyAccountCutoverPolicyApproved": {
-      "passed": false,
-      "evidence": "cloudflare/EXTRA_ACCOUNT_RECONCILIATION_2026-11-15.md (conservar socio/credenciales; falta confirmar política de inclusión final y delta de altas posteriores; NO eliminar)"
+      "passed": true,
+      "evidence": "cloudflare/POLITICA_CORTE_CUENTAS_2026-11-16.md: decisión formal conservadora preservar 7ª cuenta email verificada y altas tardías; dry-run cloudflare/plan-account-cutover.mjs; 12 pruebas de colisiones/roles/puntos/identidades en cloudflare/test-account-cutover-policy.mjs y QA verde https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43775436405; API Cloudflare D1 staging y restore SELECT: 7 perfiles, 6 Google, 1 email verificado, 2 admins, 1999998 puntos, 0 duplicados, FK0. NO es conciliación final de origen ni autorización DNS."
     }
   }
 }
