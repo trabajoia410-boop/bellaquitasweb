@@ -30,6 +30,8 @@ jobs:
         run: node cloudflare/test-media-qa-deploy.mjs
       - name: Verificar proxy multimedia temporal QA sin red ni R2
         run: node cloudflare/test-media-proxy-qa.mjs
+      - name: Probar vídeo del espejo solo en staging, sin cookies y con Range 206
+        run: node cloudflare/test-mirror-temporary-media.mjs
       - name: Comprobar media Worker online y HTTP Range real cuando haya assets
         run: node cloudflare/test-media-qa-online.mjs
       - name: Comprobar cifrado externo AES-256-GCM con clave nueva, sin red ni datos reales
