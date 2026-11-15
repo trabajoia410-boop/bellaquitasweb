@@ -1,0 +1,57 @@
+{
+  "project": "Bellaquitas Fest",
+  "migrationBranch": "migracion/fase5-segura-20261114",
+  "asOf": "2026-11-15",
+  "productionDomain": "bellaquitas.fr",
+  "productionChangesAuthorized": false,
+  "readiness": {
+    "baselineDbAndRolesReviewed": {
+      "passed": true,
+      "evidence": "cloudflare/PRECUT_RECONCILIATION_2026-11-15.md (6 perfiles comunes coinciden en puntos, roles y visitas)"
+    },
+    "isolatedQrAndLoyaltyTests": {
+      "passed": true,
+      "evidence": "cloudflare/QA_QR_FIDELITY_2026-11-14.md (solo SQLite RAM)"
+    },
+    "mediaAssetBytesVerifiedInGit": {
+      "passed": true,
+      "evidence": "cloudflare/verify-migration.mjs (17 assets, 5 MP4)"
+    },
+    "originalThreeLogosRecovered": {
+      "passed": false,
+      "evidence": "cloudflare/legacy-logos-manifest.json (solo metadatos; 3 objetos pendientes)"
+    },
+    "originalVideosDeployedToMediaQa": {
+      "passed": false,
+      "evidence": "bellaquitas-media-qa workers.dev (Worker publicado, sin binding ASSETS)"
+    },
+    "realHttp206AndIosAndroidPlayback": {
+      "passed": false,
+      "evidence": "cloudflare/test-media-qa-online.mjs (se ejecuta cuando existan assets)"
+    },
+    "bothRealAdminLoginsVerified": {
+      "passed": false,
+      "evidence": "La reautenticación solo se ha probado con perfiles ficticios"
+    },
+    "productionDatabaseBackupConfirmed": {
+      "passed": false,
+      "evidence": "No consta snapshot externo de producción verificado"
+    },
+    "exposedBackupKeyRotatedOutOfChat": {
+      "passed": false,
+      "evidence": "La clave antigua expuesta debe sustituirse fuera del chat"
+    },
+    "cloudflareExtraProfileReviewed": {
+      "passed": false,
+      "evidence": "Cloudflare staging tiene 1 socio adicional con 0 puntos respecto a Supabase"
+    },
+    "realDeviceQrDoorTest": {
+      "passed": false,
+      "evidence": "Test JS local correcto, pero falta la cámara física"
+    },
+    "finalEsFrMobileVisualParity": {
+      "passed": false,
+      "evidence": "Vídeos estáticos y logos sin desplegar en espejo funcional"
+    }
+  }
+}
