@@ -42,8 +42,8 @@
       "evidence": "cloudflare/ADMIN_TWO_ACCOUNTS_AND_RESTORE_2026-11-15.md (la clave antigua expuesta NO se ha rotado ni sustituido fuera del chat)"
     },
     "cloudflareExtraProfileReviewed": {
-      "passed": false,
-      "evidence": "Cloudflare staging tiene 1 socio adicional con 0 puntos respecto a Supabase"
+      "passed": true,
+      "evidence": "cloudflare/EXTRA_ACCOUNT_RECONCILIATION_2026-11-15.md (socio email verificado, creado tras importación, 0 puntos; 22 tablas auditadas sin PII)"
     },
     "realDeviceQrDoorTest": {
       "passed": false,
@@ -64,6 +64,10 @@
     "stagingPostadminRestoreVerified": {
       "passed": true,
       "evidence": "cloudflare/ADMIN_TWO_ACCOUNTS_AND_RESTORE_2026-11-15.md (22 tablas,17 índices,5 triggers,44 filas idénticas en nueva D1 UE sin Worker binding)"
+    },
+    "stagingOnlyAccountCutoverPolicyApproved": {
+      "passed": false,
+      "evidence": "cloudflare/EXTRA_ACCOUNT_RECONCILIATION_2026-11-15.md (conservar socio/credenciales; falta confirmar política de inclusión final y delta de altas posteriores; NO eliminar)"
     }
   }
 }
