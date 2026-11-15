@@ -4,11 +4,19 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {Script} from 'node:vm';
 const file=readFileSync('cloudflare/admin-console.js','utf8');
-const start='const HTML=',end=';\nexport function adminConsoleRoute';
-assert.ok(file.startsWith(start));
-const pos=file.indexOf(end);
-assert.ok(pos>start.length);
-const html=JSON.parse(file.slice(start.length,pos));
+// Extraer exclusivamente el literal JSON del HTML; otros módulos constantes
+// pueden aparecer entre el HTML y la función de enrutamiento.
+assert.ok(file.startsWith('const HTML='));
+const encoded=file.match(/^const HTML=("(?:\\\\.|[^"\\\\])*");/);
+assert.ok(encoded,'Falta cadena segura del HTML');
+const html=JSON.parse(encoded[1]);
+const translator=file.match(/const ADMIN_TRANSLATION_JS=("(?:\\\\.|[^"\\\\])*");/);
+assert.ok(translator,'Falta módulo independiente de traducción admin');
+const localizedScript=JSON.parse(translator[1]);
+new Script(localizedScript,{filename:'admin-i18n-inline.js'});
+assert.ok(localizedScript.includes('bellaquitas-lang'));
+assert.ok(localizedScript.includes('MutationObserver'));
+assert.ok(localizedScript.includes('setLang(preferred)'));
 const script=html.match(/<script nonce="__NONCE__">([\s\S]*?)<\/script>/);
 assert.ok(script,'El panel necesita CSP con nonce');
 new Script(script[1],{filename:'admin-console-inline.js'});
