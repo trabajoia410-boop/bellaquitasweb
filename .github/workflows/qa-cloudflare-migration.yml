@@ -24,6 +24,8 @@ jobs:
         run: node cloudflare/verify-migration.mjs
       - name: Construir exclusivamente los recursos estáticos originales
         run: node cloudflare/build-static-assets.mjs
+      - name: Comprobar bloqueo del lanzamiento sin logos originales certificados
+        run: node cloudflare/test-original-logos-guard.mjs
       - name: Examinar formato MP4 original sin recodificar para iPhone y Android
         run: node cloudflare/audit-original-videos.mjs
       - name: Verificar elección de MP4 móvil/escritorio en Safari sin cambios de diseño
