@@ -7,6 +7,8 @@ on:
     paths:
       - .github/workflows/qa-mobile-mirror-browser.yml
       - cloudflare/test-mobile-mirror-browser.mjs
+      - cloudflare/test-admin-i18n-browser.mjs
+      - cloudflare/admin-console.js
 permissions:
   contents: read
 jobs:
@@ -27,6 +29,8 @@ jobs:
         run: npx playwright install --with-deps chromium webkit
       - name: Auditar ES/FR, menú, anchura y vídeo inline en Safari y Chrome simulados
         run: node cloudflare/test-mobile-mirror-browser.mjs
+      - name: Comprobar panel administrador bilingüe en navegador aislado y sin credenciales
+        run: node cloudflare/test-admin-i18n-browser.mjs
       - name: Guardar capturas anónimas de preparación
         if: always()
         uses: actions/upload-artifact@v4
