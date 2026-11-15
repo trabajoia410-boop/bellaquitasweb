@@ -67,10 +67,16 @@ for(const item of cases){
     assert.equal(metrics.lowerVideo.src,expected,
       'Safari/Chrome ha elegido vídeo incorrecto bajo la banda amarilla');
    }
+   // Capturar etiquetas reales, no solamente el atributo <html lang>.
+   const navTextEs=String(await page.locator('#app nav.bf-desktop-nav').first().textContent()||'').trim();
+   assert.ok(navTextEs,'Faltan enlaces de navegación en español.');
    await page.screenshot({path:'qa-browser/'+item.label+'-ES.png',fullPage:false,animations:'disabled',timeout:30000});
    await page.locator('.lang-choice[data-lang="fr"]').first().click({timeout:15000});
    await page.waitForFunction(()=>document.documentElement.lang==='fr',null,{timeout:15000});
    await sleep(300);
+   const navTextFr=String(await page.locator('#app nav.bf-desktop-nav').first().textContent()||'').trim();
+   assert.ok(navTextFr,'Faltan enlaces de navegación en francés.');
+   assert.notEqual(navTextFr,navTextEs,'El selector FR solo cambió el atributo lang, no los enlaces reales: '+item.label);
    await page.screenshot({path:'qa-browser/'+item.label+'-FR.png',fullPage:false,animations:'disabled',timeout:30000});
    // La segunda sección se carga de forma diferida; verificar la selección REAL
    // después de llevarla al viewport, en particular Safari/WebKit del iPhone.
