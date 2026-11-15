@@ -1,0 +1,26 @@
+{
+  "sourceBucket": "bellaquitas-media",
+  "sourceFolder": "logos",
+  "verifiedAt": "2026-11-15",
+  "note": "ETag y tamaño de objetos originales de Supabase Storage. No incluye contenido binario ni credenciales.",
+  "files": [
+    {
+      "path": "705cc152-5de2-407a-a880-1e78ca4b30ea.png",
+      "bytes": 904603,
+      "etagMd5": "f82bce49eb067393ec892975fc42ca98",
+      "type": "image/png"
+    },
+    {
+      "path": "af5b256c-877b-4c9c-8d36-d00854885c4b.jpg",
+      "bytes": 130096,
+      "etagMd5": "e20bd134732bae16a651831d901f1f5e",
+      "type": "image/jpeg"
+    },
+    {
+      "path": "f4978ae8-1058-43a7-b5cd-ef9b17c11843.png",
+      "bytes": 904603,
+      "etagMd5": "f82bce49eb067393ec892975fc42ca98",
+      "type": "image/png"
+    }
+  ]
+}
