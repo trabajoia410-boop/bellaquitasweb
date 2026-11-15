@@ -43,6 +43,7 @@ jobs:
       - name: Comprobar acceso admin reforzado sin usuarios reales
         run: |
           node cloudflare/test-admin-stepup.mjs
+          node cloudflare/test-two-admin-session-lifecycle.mjs
           node cloudflare/test-admin-session-sql.mjs
           node cloudflare/test-admin-email-link.mjs
           node cloudflare/test-admin-console.mjs
