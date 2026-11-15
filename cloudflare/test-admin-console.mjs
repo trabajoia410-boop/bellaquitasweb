@@ -7,10 +7,10 @@ const file=readFileSync('cloudflare/admin-console.js','utf8');
 // Extraer exclusivamente el literal JSON del HTML; otros módulos constantes
 // pueden aparecer entre el HTML y la función de enrutamiento.
 assert.ok(file.startsWith('const HTML='));
-const encoded=file.match(/^const HTML=("(?:\\\\.|[^"\\\\])*");/);
+const encoded=file.match(/^const HTML=("(?:\\.|[^"\\])*");/);
 assert.ok(encoded,'Falta cadena segura del HTML');
 const html=JSON.parse(encoded[1]);
-const translator=file.match(/const ADMIN_TRANSLATION_JS=("(?:\\\\.|[^"\\\\])*");/);
+const translator=file.match(/const ADMIN_TRANSLATION_JS=("(?:\\.|[^"\\])*");/);
 assert.ok(translator,'Falta módulo independiente de traducción admin');
 const localizedScript=JSON.parse(translator[1]);
 new Script(localizedScript,{filename:'admin-i18n-inline.js'});
