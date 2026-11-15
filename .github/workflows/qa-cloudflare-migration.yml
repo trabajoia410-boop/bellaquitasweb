@@ -55,6 +55,8 @@ jobs:
           node cloudflare/test-admin-console.mjs
       - name: Verificar que el preview online NO permite autenticar ni guarda sesiones
         run: node cloudflare/test-admin-visual-preview.mjs
+      - name: Comprobar página QA de cámara y QR real por HTTPS sin credenciales
+        run: node cloudflare/test-device-qa-live.mjs
       - name: Verificar página QA para cámara física, sin sesiones, R2 ni DB
         run: node cloudflare/test-device-qa.mjs
       - name: Comprobar tarjeta QR y lectura jsQR con imágenes ficticias
