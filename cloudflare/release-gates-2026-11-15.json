@@ -23,11 +23,11 @@
     },
     "originalVideosDeployedToMediaQa": {
       "passed": false,
-      "evidence": "cloudflare/STAGING_MIRROR_MEDIA_VERIFIED_2026-11-15.md (5 MP4 accesibles en espejo staging por Service Binding a proxy GitHub; Static Assets propio aún NO desplegado)"
+      "evidence": "GitHub Actions QA media 43775094654 verificó 20 medios originales y trató de desplegar únicamente Worker media QA. FALTA API Token Cloudflare como GitHub Actions Secret, por lo que subida no se hizo. No se usó R2. Ver cloudflare/FASE5_EJECUCION_2026-11-16.md."
     },
     "realHttp206AndIosAndroidPlayback": {
       "passed": false,
-      "evidence": "cloudflare/STAGING_BROWSER_VISUAL_QA_2026-11-15.md (5 MP4/10 HTTP206 en espejo y segundo vídeo listo readyState4 en WebKit/Android; falta reproducción física iPhone/Android y Static Assets)"
+      "evidence": "5 vídeos reproducibles desde espejo staging y selector de prueba física en Worker device-qa; HTTP 206 staging previamente confirmado. FALTAN Static Assets propios y reproducción comprobada con dispositivos físicos iPhone/Android. Sigue FALSO."
     },
     "bothRealAdminLoginsVerified": {
       "passed": false,
@@ -39,7 +39,7 @@
     },
     "exposedBackupKeyRotatedOutOfChat": {
       "passed": false,
-      "evidence": "Copia lógica staging nueva cifrada con AES-GCM/RSA, clave privada creada fuera de Git y separada del ZIP de datos; la clave antigua comprometida de producción NO consta rotada. Sigue FALSO."
+      "evidence": "Copia staging con nueva clave privada fuera de repo disponible, pero antiguo backup D1 protegido devolvió SQLITE_AUTH en intento de leer metadatos (16/11/2026). No se alteró ni rotó clave histórica de producción. Sigue FALSO."
     },
     "cloudflareExtraProfileReviewed": {
       "passed": true,
@@ -47,11 +47,11 @@
     },
     "realDeviceQrDoorTest": {
       "passed": false,
-      "evidence": "Test JS local correcto, pero falta la cámara física"
+      "evidence": "Worker independiente real https://bellaquitas-device-qa.bellaquitas-fest-410.workers.dev/ publicado sin D1/R2/cookies y con jsQR original; CI HTTPS 43776050095 correcto. FALTA uso de cámara y validación de puerta físicamente; sigue FALSO."
     },
     "finalEsFrMobileVisualParity": {
       "passed": false,
-      "evidence": "cloudflare/test-public-routes-browser.mjs / GitHub Actions 43770712164: 66 rutas/idiomas/navegadores (iPhone WebKit, Pixel Chromium y desktop), sin overflow ni POST, 6 capturas; panel admin ES/FR comprobado en Chromium 390/1440. Sigue FALSO hasta pruebas físicas y traducciones exhaustivas de todo contenido."
+      "evidence": "66 combinaciones automatizadas ES/FR WebKit/Chromium (43770712164), panel admin bilingüe y nueva vista QA ES/FR con cámara y vídeos (43776050095). FALTAN pruebas físicas y auditoría exhaustiva contenido dinámico; sigue FALSO."
     },
     "googleIdentityMappingExact": {
       "passed": true,
