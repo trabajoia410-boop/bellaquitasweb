@@ -30,6 +30,8 @@ jobs:
         run: node cloudflare/test-media-qa-deploy.mjs
       - name: Comprobar media Worker online y HTTP Range real cuando haya assets
         run: node cloudflare/test-media-qa-online.mjs
+      - name: Garantizar que la migración pública permanece bloqueada
+        run: node cloudflare/check-release-gates.mjs --assert-blocked
       - name: Examinar formato MP4 original sin recodificar para iPhone y Android
         run: node cloudflare/audit-original-videos.mjs
       - name: Verificar elección de MP4 móvil/escritorio en Safari sin cambios de diseño
