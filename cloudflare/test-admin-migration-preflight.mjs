@@ -19,7 +19,7 @@ const original={
 };
 for(const migration of ['0007-admin-step-up.sql','0008-admin-email-link.sql']){
  const sql=readFileSync('cloudflare/migrations/'+migration,'utf8');
- assert.ok(!/\bDROP\b|\bDELETE\b|\bUPDATE\s+profiles\b/i.test(sql),
+ assert.ok(!/(?:^|;)\s*(?:DROP|DELETE|UPDATE|INSERT|ALTER)\b/im.test(sql.replace(/^--.*$/gm,'')),
  'Migración administrativa no debe cambiar cuentas o puntos');
  db.exec(sql);
  db.exec(sql); // reejecución sin duplicar ni destruir
