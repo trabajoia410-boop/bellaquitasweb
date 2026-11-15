@@ -31,7 +31,7 @@
     },
     "bothRealAdminLoginsVerified": {
       "passed": false,
-      "evidence": "La reautenticación solo se ha probado con perfiles ficticios"
+      "evidence": "cloudflare/STAGING_ADMIN_ACCESS_2026-11-15.md (2 admins vinculados a Google, 0 claves admin correo; /administracion/ no desplegada todavía en Worker staging, 2 logins reales pendientes)"
     },
     "productionDatabaseBackupConfirmed": {
       "passed": false,
