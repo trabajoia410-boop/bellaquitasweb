@@ -30,6 +30,8 @@ jobs:
         run: node cloudflare/test-media-qa-deploy.mjs
       - name: Comprobar media Worker online y HTTP Range real cuando haya assets
         run: node cloudflare/test-media-qa-online.mjs
+      - name: Comprobar cifrado externo AES-256-GCM con clave nueva, sin red ni datos reales
+        run: node cloudflare/offsite-d1-backup.mjs --self-test
       - name: Garantizar que la migración pública permanece bloqueada
         run: node cloudflare/check-release-gates.mjs --assert-blocked
       - name: Examinar formato MP4 original sin recodificar para iPhone y Android
