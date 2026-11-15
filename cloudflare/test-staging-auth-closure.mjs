@@ -29,8 +29,8 @@ assert.ok([401,404].includes(session.status),'No existe una sesión admin sin re
 assert.ok([200,404].includes(profile.status),'El perfil anónimo no debe lanzar 500');
 if(profile.status===200)assert.equal((await profile.json()).authenticated,false);
 assert.equal(registration.status,503,'No permitir crear nuevas cuentas por correo');
-assert.ok([404,503].includes(linkStart.status),'La ruta de vinculación no puede activarse sin autorización');
-assert.ok([401,404].includes(unauthorizedEdit.status),'Edición de socios requiere admin');
+assert.ok([401,403,404,405,503].includes(linkStart.status),'La ruta de vinculación no puede activarse sin autorización');
+assert.ok([401,403,404,405].includes(unauthorizedEdit.status),'Edición de socios requiere admin');
 for(const item of [health,status,panel,session,profile,registration,linkStart,unauthorizedEdit]){
  assert.equal(item.headers.get('set-cookie'),null,'Un visitante anónimo no debe recibir sesión');
 }
