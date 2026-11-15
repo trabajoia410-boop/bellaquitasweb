@@ -27,7 +27,7 @@
     },
     "realHttp206AndIosAndroidPlayback": {
       "passed": false,
-      "evidence": "5 vídeos reproducibles desde espejo staging y selector de prueba física en Worker device-qa; HTTP 206 staging previamente confirmado. FALTAN Static Assets propios y reproducción comprobada con dispositivos físicos iPhone/Android. Sigue FALSO."
+      "evidence": "GitHub Actions 43776451180: QA HTTPS de página de dispositivo más HEAD y Range 206 real de cinco MP4 de espejo staging comparando sus primeros 128 bytes con originales Git. FALTAN vídeos independientes en Cloudflare Static Assets y reproducción física iPhone/Android; sigue FALSO."
     },
     "bothRealAdminLoginsVerified": {
       "passed": false,
