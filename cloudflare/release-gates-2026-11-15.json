@@ -58,8 +58,8 @@
       "evidence": "cloudflare/AUTH_DATA_PARITY_2026-11-15.md (6 Google profile_id y subject idénticos entre Supabase y D1 staging)"
     },
     "stagingAdminStepupSchemaApplied": {
-      "passed": false,
-      "evidence": "cloudflare/AUTH_DATA_PARITY_2026-11-15.md (tablas auth_admin_sessions y auth_admin_email_links presentes solo en QA, faltan en staging)"
+      "passed": true,
+      "evidence": "cloudflare/ADMIN_MIGRATION_APPLIED_2026-11-15.md (0007 y 0008 aplicadas en staging; 44 registros iguales, 0 cambios de puntos, 0 FK)"
     }
   }
 }
