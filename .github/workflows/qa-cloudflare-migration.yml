@@ -54,5 +54,7 @@ jobs:
         run: node cloudflare/test-loyalty-door-integration.mjs
       - name: Probar Worker QA independiente con DB vacía y roles cerrados
         run: node cloudflare/test-qa-worker-http.mjs
+      - name: Verificar que registro email requiere dos permisos explícitos sin D1
+        run: node cloudflare/test-email-registration-gate.mjs
       - name: Verificar staging real con registro email desactivado y panel protegido
         run: node cloudflare/test-staging-auth-closure.mjs
