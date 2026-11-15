@@ -54,3 +54,9 @@ El proceso `--deploy` utiliza el flujo oficial `assets-upload-session` → `asse
 - Comparar ES/FR, diseño, logs, y verificar que ninguna sesión real ni puntos cambian.
 
 **Importantísimo:** no fusionar PR #3 ni actualizar DNS antes de cumplir `release-gates-2026-11-15.json` y verificar el respaldo de producción. Todos los bloqueos siguen registrados.
+
+## Actualización: archivos completos en Git
+
+Los 3 logos originales ya fueron recuperados y añadidos al repositorio en `assets/migrated-logos/` tras verificar tamaño, MD5 y SHA-256. La prueba `cloudflare/test-media-qa-deploy.mjs` ahora exige **20 medios disponibles**, entre ellos 5 MP4 y 3 logos; la construcción de Static Assets con `--require-logos` pasa.
+
+**Importante:** esto es una *preparación validada localmente en GitHub Actions*, no un despliegue multimedia. El Worker `bellaquitas-media-qa` todavía debe recibir los 20 assets originales mediante el mecanismo de upload firmado/credenciales locales, sin R2. Los tests HTTP 206 contra el Worker real no quedan marcados como aprobados mientras falte esa publicación. Ver `cloudflare/ORIGINAL_LOGOS_RECOVERED_2026-11-15.md`.
