@@ -26,6 +26,8 @@ jobs:
         run: node cloudflare/build-static-assets.mjs
       - name: Comprobar bloqueo del lanzamiento sin logos originales certificados
         run: node cloudflare/test-original-logos-guard.mjs
+      - name: Validar media Worker QA y dry-run de 17 assets sin token ni red
+        run: node cloudflare/test-media-qa-deploy.mjs
       - name: Examinar formato MP4 original sin recodificar para iPhone y Android
         run: node cloudflare/audit-original-videos.mjs
       - name: Verificar elección de MP4 móvil/escritorio en Safari sin cambios de diseño
