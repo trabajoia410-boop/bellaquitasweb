@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import {mkdirSync} from 'node:fs';
 import {chromium,webkit,devices} from 'playwright';
 
-const URL='https://bellaquitas-api-staging.bellaquitas-fest-410.workers.dev/espejo/';
+const MIRROR_URL='https://bellaquitas-api-staging.bellaquitas-fest-410.workers.dev/espejo/';
 const cases=[
  {label:'iPhone13-WebKit',engine:webkit,device:'iPhone 13',mobile:true},
  {label:'Pixel7-Chromium',engine:chromium,device:'Pixel 7',mobile:true},
@@ -28,7 +28,7 @@ for(const item of cases){
    page.on('request',r=>{
     if(r.method()==='POST')visited.push({method:r.method(),domain:new URL(r.url()).hostname});
    });
-   const response=await page.goto(URL,{waitUntil:'domcontentloaded',timeout:60000});
+   const response=await page.goto(MIRROR_URL,{waitUntil:'domcontentloaded',timeout:60000});
    assert.equal(response.status(),200,'El espejo no carga: '+item.label);
    await page.locator('#app .site-header').first().waitFor({timeout:30000});
    await page.locator('.lang-choice[data-lang="fr"]').first().waitFor({timeout:30000});
