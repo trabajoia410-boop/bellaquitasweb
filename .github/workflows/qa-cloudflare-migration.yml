@@ -24,6 +24,8 @@ jobs:
         run: node cloudflare/verify-migration.mjs
       - name: Construir exclusivamente los recursos estáticos originales
         run: node cloudflare/build-static-assets.mjs
+      - name: Examinar formato MP4 original sin recodificar para iPhone y Android
+        run: node cloudflare/audit-original-videos.mjs
       - name: Comprobar acceso admin reforzado sin usuarios reales
         run: |
           node cloudflare/test-admin-stepup.mjs
