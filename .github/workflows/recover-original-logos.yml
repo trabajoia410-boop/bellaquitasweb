@@ -1,0 +1,55 @@
+name: Recuperar logos originales (solo rama de migración)
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - migracion/fase5-segura-20261114
+    paths:
+      - .github/workflows/recover-original-logos.yml
+
+permissions:
+  contents: write
+
+jobs:
+  recover:
+    if: github.ref == 'refs/heads/migracion/fase5-segura-20261114'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Descargar SOLO los 3 objetos históricos públicos
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://vlsipvngvxcgnwrhpjgg.supabase.co/storage/v1/object/public/bellaquitas-media/logos"
+          mkdir -p assets/migrated-logos
+          first="705cc152-5de2-407a-a880-1e78ca4b30ea.png"
+          second="af5b256c-877b-4c9c-8d36-d00854885c4b.jpg"
+          third="f4978ae8-1058-43a7-b5cd-ef9b17c11843.png"
+          for file in "$first" "$second" "$third"; do
+            if ! curl --fail --location --silent --show-error --max-time 25 --retry 2 \
+              "$base/$file" --output "assets/migrated-logos/$file"; then
+              echo "::warning::El objeto histórico no es accesible por su URL pública: $file"
+              echo "La migración sigue BLOQUEADA; no crear logos aproximados."
+              echo "Los archivos exactos recuperados en ChatGPT deberán importarse por canal autorizado."
+              exit 0
+            fi
+          done
+          test "$(stat -c%s "assets/migrated-logos/$first")" = "904603"
+          test "$(stat -c%s "assets/migrated-logos/$second")" = "130096"
+          test "$(stat -c%s "assets/migrated-logos/$third")" = "904603"
+          echo "697d666d3bf2e748a7d91fcb32e2dccec5e9d80c34c79027cc2e94bff80f09c5  assets/migrated-logos/$first" | sha256sum --check --status
+          echo "d1d30804198332297be440df0f02db37d5487b10c58ab6dd5937dd95acd18ff0  assets/migrated-logos/$second" | sha256sum --check --status
+          echo "697d666d3bf2e748a7d91fcb32e2dccec5e9d80c34c79027cc2e94bff80f09c5  assets/migrated-logos/$third" | sha256sum --check --status
+          node cloudflare/build-static-assets.mjs --require-logos
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- assets/migrated-logos/"$first" assets/migrated-logos/"$second" assets/migrated-logos/"$third"
+          if git diff --cached --quiet; then
+            echo "Los tres archivos ya están incorporados y verificados"
+          else
+            git commit -m "Recuperar los 3 logos binarios originales con SHA-256 verificado (solo migración)"
+            git push origin HEAD:migracion/fase5-segura-20261114
+          fi
