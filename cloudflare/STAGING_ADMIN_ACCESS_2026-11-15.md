@@ -79,3 +79,9 @@ Los tests reconocen las respuestas denegadas `401/403/404/405/503` según la rut
 - [Cloudflare migration safe QA — verde](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43683919142).
 
 **No cambiar un bloqueo de acceso por un chequeo verde:** aún faltan el despliegue revisado del panel a staging y las pruebas reales de los dos administradores.
+
+## Actualización del 15/11/2026 — panel desplegado en staging
+
+La observación de `404` del apartado anterior corresponde al **estado previo**. Ya se desplegó y se ha probado HTTP 200 de `/administracion/` sobre el Worker de preparación. Las pruebas en GitHub Actions comprueban CSP nonce, autenticación administrativa exigida, bloqueo de cambios y registro email desactivado. **No se han probado los dos accesos reales ni activado contraseñas administrativas todavía**.
+
+El despliegue tuvo que retirar exclusivamente el binding a un R2 inexistente. La versión anterior no puede garantizarse como opción de rollback por esa referencia; se preparó una versión fail-closed de emergencia. Consultar el informe posterior y definitivo: `cloudflare/STAGING_ADMIN_DEPLOYED_2026-11-15.md`.
