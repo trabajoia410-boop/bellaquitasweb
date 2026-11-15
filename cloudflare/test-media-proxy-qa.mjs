@@ -43,7 +43,7 @@ try{
   assert.ok(url.startsWith('https://raw.githubusercontent.com/trabajoia410-boop/bellaquitasweb/'+originSHA+'/assets/'));
   assert.ok(url.includes('Bellaquitas%20Fest%20para%20m%C3%B3vil.mp4'));
   assert.equal(options.headers.get('Range'),range);
-  assert.equal(options.redirect,'error');
+  assert.equal(options.redirect,'manual');
   return new Response(new Uint8Array(256),{status:206,headers:{
    'Content-Range':'bytes 0-255/9072277','Content-Length':'256','Content-Type':'application/octet-stream'
   }});
