@@ -28,6 +28,8 @@ jobs:
         run: node cloudflare/test-original-logos-guard.mjs
       - name: Validar media Worker QA y dry-run de 17 assets sin token ni red
         run: node cloudflare/test-media-qa-deploy.mjs
+      - name: Verificar proxy multimedia temporal QA sin red ni R2
+        run: node cloudflare/test-media-proxy-qa.mjs
       - name: Comprobar media Worker online y HTTP Range real cuando haya assets
         run: node cloudflare/test-media-qa-online.mjs
       - name: Comprobar cifrado externo AES-256-GCM con clave nueva, sin red ni datos reales
