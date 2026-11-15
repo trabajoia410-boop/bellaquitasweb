@@ -63,6 +63,8 @@ jobs:
         run: node cloudflare/test-qa-worker-http.mjs
       - name: Verificar que registro email requiere dos permisos explícitos sin D1
         run: node cloudflare/test-email-registration-gate.mjs
+      - name: Conciliar usuarios de dos orígenes sin perder socio email ni visitas (solo ficticios)
+        run: node cloudflare/test-account-cutover-policy.mjs
       - name: Comprobar que ninguna restauración puede perder socios locales ni puntos
         run: node cloudflare/test-staging-restore-readonly.mjs
       - name: Verificar espejo staging real con vídeo 206, CSS y traducción francesa
