@@ -31,15 +31,15 @@
     },
     "bothRealAdminLoginsVerified": {
       "passed": false,
-      "evidence": "cloudflare/STAGING_ADMIN_DEPLOYED_2026-11-15.md (panel staging ya devuelve 200 con CSP y login UI; 2 identidades Google sin ensayo interactivo ni credenciales email admin)"
+      "evidence": "cloudflare/ADMIN_TWO_ACCOUNTS_AND_RESTORE_2026-11-15.md (2 admins ficticios verificados con hash, sesiones y 2 contraseñas; logins reales siguen pendientes)"
     },
     "productionDatabaseBackupConfirmed": {
       "passed": false,
-      "evidence": "No consta snapshot externo de producción verificado"
+      "evidence": "cloudflare/ADMIN_TWO_ACCOUNTS_AND_RESTORE_2026-11-15.md (restauración de staging comprobada; copia externa cifrada de Supabase producción aún pendiente)"
     },
     "exposedBackupKeyRotatedOutOfChat": {
       "passed": false,
-      "evidence": "La clave antigua expuesta debe sustituirse fuera del chat"
+      "evidence": "cloudflare/ADMIN_TWO_ACCOUNTS_AND_RESTORE_2026-11-15.md (la clave antigua expuesta NO se ha rotado ni sustituido fuera del chat)"
     },
     "cloudflareExtraProfileReviewed": {
       "passed": false,
@@ -60,6 +60,10 @@
     "stagingAdminStepupSchemaApplied": {
       "passed": true,
       "evidence": "cloudflare/ADMIN_MIGRATION_APPLIED_2026-11-15.md (0007 y 0008 aplicadas en staging; 44 registros iguales, 0 cambios de puntos, 0 FK)"
+    },
+    "stagingPostadminRestoreVerified": {
+      "passed": true,
+      "evidence": "cloudflare/ADMIN_TWO_ACCOUNTS_AND_RESTORE_2026-11-15.md (22 tablas,17 índices,5 triggers,44 filas idénticas en nueva D1 UE sin Worker binding)"
     }
   }
 }
