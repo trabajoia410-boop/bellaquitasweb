@@ -8,7 +8,7 @@ const STAGING_HOSTNAME="bellaquitas-api-staging.bellaquitas-fest-410.workers.dev
 // Fallback EXCLUSIVO del espejo en staging: nunca activar en bellaquitas.fr ni QA pública.
 // El proxy no es alojamiento definitivo. Cuando se vincule ASSETS, se usará ASSETS.
 function temporaryMediaAllowed(request,env){
- return !env?.ASSETS&&typeof env?.MEDIA_QA_PROXY?.fetch==="function"&&
+ return !env?.ASSETS&&typeof env?.VIDEO_QA_PROXY?.fetch==="function"&&
   env?.STAGING_MUTATIONS==="disabled"&&
   env?.ALLOW_NEW_ACCOUNTS==="no"&&
   new URL(request.url).hostname===STAGING_HOSTNAME;
@@ -20,7 +20,7 @@ async function fromTemporaryMedia(request,filename,env){
  if(range)headers.set("Range",range);
  // Solo Service Binding interno. Jamás transmitir cookies, Authorization o headers
  // del usuario; tampoco realizar llamadas externas workers.dev desde otro Worker.
- return env.MEDIA_QA_PROXY.fetch(new Request(safe,{
+ return env.VIDEO_QA_PROXY.fetch(new Request(safe,{
   method:request.method,headers,redirect:"manual"
  }));
 }
