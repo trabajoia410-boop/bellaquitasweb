@@ -58,3 +58,5 @@ jobs:
         run: node cloudflare/test-email-registration-gate.mjs
       - name: Verificar staging real con registro email desactivado y panel protegido
         run: node cloudflare/test-staging-auth-closure.mjs
+      - name: Exigir panel staging publicado con CSP y administración cerrada a anónimos
+        run: node cloudflare/test-staging-admin-deployed.mjs
