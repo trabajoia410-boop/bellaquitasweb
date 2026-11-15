@@ -72,9 +72,30 @@ for(const item of cases){
    await page.waitForFunction(()=>document.documentElement.lang==='fr',null,{timeout:15000});
    await sleep(300);
    await page.screenshot({path:'qa-browser/'+item.label+'-FR.png',fullPage:false,animations:'disabled',timeout:30000});
+   // La segunda sección se carga de forma diferida; verificar la selección REAL
+   // después de llevarla al viewport, en particular Safari/WebKit del iPhone.
+   const lower=page.locator('video.bf-after-marquee-video').first();
+   await lower.scrollIntoViewIfNeeded({timeout:15000});
+   await sleep(1500);
+   const playback=await lower.evaluate(video=>({
+    active:video.currentSrc||video.getAttribute('src')||'',
+    selectedAttribute:video.getAttribute('src')||'',
+    readyState:video.readyState,
+    networkState:video.networkState,
+    mobile:video.querySelector('source[media]')?.getAttribute('src')||'',
+    desktop:video.querySelector('source:not([media])')?.getAttribute('src')||''
+   }));
+   console.log('VIDEO-LOWER:',item.label,JSON.stringify(playback));
+   const expected=item.mobile?playback.mobile:playback.desktop;
+   assert.ok(playback.active,'El vídeo bajo la franja amarilla no seleccionó ninguna fuente: '+item.label);
+   assert.equal(
+    decodeURIComponent(new URL(playback.active,page.url()).pathname),
+    decodeURIComponent(new URL(expected,page.url()).pathname),
+    'Fuente errónea del vídeo bajo la banda amarilla en '+item.label
+   );
    // Solo lectura: no iniciar sesión, no cambiar datos, no pulsar "Registrar".
    assert.equal(visited.length,0,'La página anónima no debe enviar POST durante la inspección: '+item.label);
-   console.log('OK:',item.label,JSON.stringify({...metrics,langAfter:'fr',postRequests:0,
+   console.log('OK:',item.label,JSON.stringify({...metrics,videoLowerAfterScroll:playback.active,langAfter:'fr',postRequests:0,
     captures:2}));
   }finally{await context.close()}
  }finally{await browser.close()}
