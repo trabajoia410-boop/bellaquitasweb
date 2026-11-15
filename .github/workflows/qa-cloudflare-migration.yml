@@ -26,6 +26,8 @@ jobs:
         run: node cloudflare/build-static-assets.mjs
       - name: Examinar formato MP4 original sin recodificar para iPhone y Android
         run: node cloudflare/audit-original-videos.mjs
+      - name: Verificar elección de MP4 móvil/escritorio en Safari sin cambios de diseño
+        run: node cloudflare/test-ios-video-selection.mjs
       - name: Comprobar acceso admin reforzado sin usuarios reales
         run: |
           node cloudflare/test-admin-stepup.mjs
