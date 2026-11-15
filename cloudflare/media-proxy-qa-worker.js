@@ -124,7 +124,7 @@ export default {
   let upstream;
   try{
    upstream=await fetch(target,{method:request.method,headers,redirect:"manual"});
-  }catch(err){return response(503,"Recurso temporal no disponible ("+String(err?.message||"error").slice(0,90)+")");}
+  }catch{return response(503,"Recurso temporal no disponible");}
   if(![200,206,304,416].includes(upstream.status))
    return response(503,"El origen original no está disponible");
   if(range&&upstream.status===200)
