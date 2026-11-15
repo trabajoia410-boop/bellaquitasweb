@@ -28,6 +28,11 @@ for(const item of videos){
  const original=readFileSync('assets/'+item.path);
  assert.equal(original.length,item.bytes);
  const head=await request(url,{method:'HEAD'});
+ if(head.status!==200){
+  const probe=await request(url,{headers:{Range:'bytes=0-255'}});
+  const message=probe.status===206?'bytes:206':(await probe.text().catch(()=>'<unavailable>')).slice(0,180);
+  console.error('Diagnóstico de origen QA: HEAD='+head.status+' RANGE='+probe.status+' causa='+message);
+ }
  assert.equal(head.status,200,'Video HEAD no disponible: '+item.path);
  assert.equal(Number(head.headers.get('content-length')),item.bytes,'Tamaño HEAD cambiado: '+item.path);
  assert.equal(head.headers.get('content-type'),'video/mp4');
