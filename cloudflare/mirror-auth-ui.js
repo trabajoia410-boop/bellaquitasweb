@@ -18,7 +18,9 @@ const strings={
   resetOk:"Contraseña cambiada correctamente. Ya puedes iniciar sesión.",
   processing:"Procesando…",
   expired:"Enlace caducado. Solicita otro correo de recuperación.",
-  back:"Volver a iniciar sesión"
+  back:"Volver a iniciar sesión",
+  invalidName:"Introduce un nombre válido.",
+  requestFailed:"No se pudo completar la solicitud."
  },
  fr:{
   captcha:"Terminez la vérification de sécurité avant de continuer.",
@@ -33,7 +35,9 @@ const strings={
   resetOk:"Mot de passe modifié. Vous pouvez vous connecter.",
   processing:"Traitement en cours…",
   expired:"Lien expiré. Demandez un nouveau message.",
-  back:"Retour à la connexion"
+  back:"Retour à la connexion",
+  invalidName:"Saisissez un nom valide.",
+  requestFailed:"Impossible de terminer la demande."
  }
 };
 const tr=()=>strings[document.documentElement.lang==="fr"?"fr":"es"];
@@ -68,7 +72,7 @@ async function post(path,body){
   headers:{"Content-Type":"application/json"},
   body:JSON.stringify(body)});
  const value=await r.json().catch(()=>({}));
- if(!r.ok)throw Error(value.error||"No se pudo completar la solicitud.");
+ if(!r.ok)throw Error(value.error||tr().requestFailed);
  return value;
 }
 function clearWidget(){
@@ -158,7 +162,7 @@ async function submit(form,kind){
  try{
   if(kind==="register"){
    const name=String(data.get("name")||"").trim();
-   if(name.length<2||name.length>80)throw Error("Introduce un nombre válido.");
+   if(name.length<2||name.length>80)throw Error(tr().invalidName);
    await post("/v1/auth/email/register",{name,email,password,turnstileToken:captcha,return_to:"espejo"});
    notice(tr().sent);
   }else if(kind==="forgot"){
