@@ -34,4 +34,26 @@ assert.equal(post.status,405,'No permitir POST ni datos reales');
 assert.equal(head.status,200);assert.equal((await head.text()).length,0);
 for(const x of [page,health,script,library,notFound,post,head])
  assert.equal(x.headers.get('set-cookie'),null,'Sin cookies de sesión');
+// Los cinco MP4 de la página QA deben funcionar por HTTP Range real (sin R2).
+const sourceBase='https://bellaquitas-api-staging.bellaquitas-fest-410.workers.dev';
+const manifestText=readFileSync('cloudflare/site-media-manifest.js','utf8');
+const manifestPart=manifestText.match(/export const SITE_MEDIA\s*=\s*(\[[\s\S]*?\]);/);
+assert.ok(manifestPart,'Inventario histórico ausente');
+const originals=JSON.parse(manifestPart[1]).filter(x=>x.type==='video/mp4');
+assert.equal(originals.length,5,'Cinco archivos MP4 originales');
+for(const file of originals){
+ const url=sourceBase+'/espejo/assets/'+encodeURIComponent(file.path);
+ const headResponse=await fetch(url,{method:'HEAD',cache:'no-store',signal:AbortSignal.timeout(30000)});
+ assert.equal(headResponse.status,200,'No existe MP4 '+file.path);
+ assert.match(headResponse.headers.get('content-type')||'',/video\/mp4/);
+ assert.equal(Number(headResponse.headers.get('content-length')),file.bytes,'El vídeo no debe recomprimirse');
+ const response=await fetch(url,{headers:{Range:'bytes=0-127'},cache:'no-store',signal:AbortSignal.timeout(30000)});
+ assert.equal(response.status,206,'El vídeo debe aceptar HTTP Range para Safari');
+ assert.equal(response.headers.get('content-range'),'bytes 0-127/'+file.bytes);
+ assert.equal(response.headers.get('set-cookie'),null,'Ningún vídeo crea sesiones');
+ assert.deepEqual(Buffer.from(await response.arrayBuffer()),readFileSync('assets/'+file.path).subarray(0,128),
+  'Los bytes de vídeo en staging deben coincidir con Git');
+}
+console.log('OK: cinco MP4 reales, HTTP 206, bytes originales exactos, sin cookies. Aún no son Static Assets propios.');
+
 console.log('OK: dispositivo QA HTTPS publicado, lector QR original idéntico, cámara local, ES/FR, 5 vídeos de staging, cero cookies/POST/DB/R2.');
