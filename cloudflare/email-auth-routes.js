@@ -15,7 +15,8 @@ const emailDeliveryReady=env=>emailLoginReady(env)&&
   typeof env.RESEND_FROM==="string"&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(env.RESEND_FROM)&&
   typeof env.TURNSTILE_SECRET==="string"&&env.TURNSTILE_SECRET.length>8&&
   typeof env.TURNSTILE_SITE_KEY==="string"&&env.TURNSTILE_SITE_KEY.length>8;
-const emailRegistrationReady=env=>emailDeliveryReady(env)&&env.EMAIL_REGISTRATION_ENABLED==="yes";
+// Defensa doble: las altas por correo también deben respetar el bloqueo global de nuevos perfiles.
+const emailRegistrationReady=env=>emailDeliveryReady(env)&&env.EMAIL_REGISTRATION_ENABLED==="yes"&&env.ALLOW_NEW_ACCOUNTS==="yes";
 // Activación explícita, independientemente de registros de socios y operaciones de fidelidad.
 const adminEmailLinkReady=env=>emailDeliveryReady(env)&&env.ADMIN_EMAIL_LINK_ENABLED==="yes";
 const encode=bytes=>btoa(String.fromCharCode(...bytes)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
