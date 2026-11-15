@@ -40,3 +40,7 @@ node cloudflare/build-static-assets.mjs --require-logos
 Después habrá que publicar los recursos en un Worker QA con `ASSETS` y comprobar **HTTP Range 206 real**, vídeo en Safari iOS y Android y visualización del logotipo, sin modificar el dominio final.
 
 La validación HTTP simulada en CI es buena, pero NO sustituye la prueba real en un Worker con archivos estáticos publicados.
+
+## Inventario completo de Storage al 15/11/2026
+
+La consulta de solo lectura a `storage.objects` encontró **exactamente 3 archivos** en el bucket `bellaquitas-media`, todos en `logos/`, con **1.939.302 bytes** en total. No había otras fotografías de usuarios o galerías en este bucket en el momento de la consulta. Esto no sustituye una revisión final justo antes del corte.
