@@ -5,7 +5,10 @@
  */
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
 const base='https://bellaquitas-media-qa.bellaquitas-fest-410.workers.dev';
+const requireAssets=process.argv.includes('--require-assets');
+assert.ok(process.argv.slice(2).every(x=>x==='--require-assets'),'Argumentos no autorizados');
 const read=async(path,init={})=>fetch(base+path,{
  redirect:'manual',signal:AbortSignal.timeout(30000),cache:'no-store',...init
 });
@@ -26,6 +29,7 @@ assert.equal(originals.length,5);
 if(!config.assetsReady){
  const v=await read('/assets/'+encodeURIComponent(originals[0].path));
  assert.equal(v.status,503,'El medio aún no se ha publicado: fallar cerrado');
+ if(requireAssets)throw Error('BLOQUEADO: Media QA sigue sin ASSETS. No se han validado HTTP 206 reales ni los 3 logos.');
  console.log('OK: media QA aislado, sin assets ni datos, rechaza escrituras; publicación MP4 pendiente.');
 }else{
  for(const media of originals){
@@ -46,5 +50,23 @@ if(!config.assetsReady){
    assert.deepEqual(data,file.subarray(offset,last+1),'Bytes originales deben coincidir al inicio/final');
   }
  }
- console.log('OK: 5 MP4 en Cloudflare QA; HTTP 206 REAL, tamaño intacto y bytes de inicio/final verificados.');
+ const logos=JSON.parse(readFileSync('cloudflare/legacy-logos-manifest.json','utf8')).files;
+ assert.equal(logos.length,3,'Se necesitan exactamente tres logos históricos');
+ for(const logo of logos){
+  const path='/assets/migrated-logos/'+encodeURIComponent(logo.path);
+  const local=readFileSync('assets/migrated-logos/'+logo.path);
+  assert.equal(local.length,logo.bytes,'El logo recuperado en Git no coincide');
+  assert.equal(createHash('md5').update(local).digest('hex'),logo.etagMd5,
+   'El logo local no coincide con el original');
+  const head=await read(path,{method:'HEAD'});
+  assert.equal(head.status,200,'Logo original no accesible en QA');
+  assert.equal(head.headers.get('content-type'),logo.type);
+  assert.equal(Number(head.headers.get('content-length')),logo.bytes,'No recodificar logo');
+  const got=await read(path);
+  assert.equal(got.status,200,'No se pudo leer el logo en QA');
+  assert.equal(got.headers.get('set-cookie'),null);
+  const bytes=Buffer.from(await got.arrayBuffer());
+  assert.deepEqual(bytes,local,'Logo QA diferente de su original en Git');
+ }
+ console.log('OK: 5 MP4 en Cloudflare QA con HTTP 206 REAL y bytes idénticos; 3 logos originales servidos sin recomprimir.');
 }
