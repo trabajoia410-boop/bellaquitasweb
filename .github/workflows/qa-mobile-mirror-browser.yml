@@ -8,6 +8,7 @@ on:
       - .github/workflows/qa-mobile-mirror-browser.yml
       - cloudflare/test-mobile-mirror-browser.mjs
       - cloudflare/test-admin-i18n-browser.mjs
+      - cloudflare/test-public-routes-browser.mjs
       - cloudflare/admin-console.js
 permissions:
   contents: read
@@ -31,6 +32,8 @@ jobs:
         run: node cloudflare/test-mobile-mirror-browser.mjs
       - name: Comprobar panel administrador bilingüe en navegador aislado y sin credenciales
         run: node cloudflare/test-admin-i18n-browser.mjs
+      - name: Recorrer once rutas públicas ES y FR sin datos de usuarios
+        run: node cloudflare/test-public-routes-browser.mjs
       - name: Guardar capturas anónimas de preparación
         if: always()
         uses: actions/upload-artifact@v4
