@@ -13,13 +13,13 @@ const post=(path,origin=BASE)=>request(path,{
  method:'POST',headers:{'Origin':origin,'Content-Type':'application/json','Sec-Fetch-Site':origin===BASE?'same-origin':'cross-site'},
  body:'{}'
 });
-const [health,admin,adminHead,redirect,adminPost,session,me,status,signup,link,member,write,foreignPost,mirror,app,events]=await Promise.all([
+const [health,admin,adminHead,redirect,adminPost,session,me,status,signup,link,member,write,foreignPost,mirror,app,newTab,events]=await Promise.all([
  request('/health'),request('/administracion/'),request('/administracion/',{method:'HEAD'}),
  request('/administracion'),post('/administracion/'),request('/v1/admin/session'),
  request('/v1/auth/me'),request('/v1/auth/email/status'),post('/v1/auth/email/register'),
  post('/v1/auth/admin/email/link/start'),post('/v1/admin/member'),
  post('/v1/mirror/admin/write'),post('/v1/admin/member','https://untrusted.example'),
- request('/espejo/'),request('/espejo/app.js'),request('/v1/events')
+ request('/espejo/'),request('/espejo/app.js'),request('/espejo/admin-newtab.js'),request('/v1/events')
 ]);
 assert.equal(health.status,200,'La D1 debe continuar accesible');
 const alive=await health.json();
@@ -57,13 +57,17 @@ assert.equal(write.status,401,'Sin admin no se edita la web');
 assert.ok([401,403].includes(foreignPost.status),'Una petición de otro origen sin credenciales debe rechazarse');
 assert.equal(mirror.status,200,'El espejo visual de staging debe mantenerse');
 assert.equal(app.status,200,'El código del espejo debe cargarse');
+assert.equal(newTab.status,200,'El enlace a admin de nueva pestaña debe servirse');
+const tabCode=await newTab.text();
+assert.ok(tabCode.includes("window.open('/administracion/','_blank','noopener,noreferrer')"),
+ 'El menú del espejo debe abrir admin en otra pestaña sin acceso al objeto opener');
 const js=await app.text();
 assert.ok(js.includes('Fuente original correcta bajo la banda amarilla'),
  'El cambio de vídeo móvil Safari debe permanecer en el espejo');
 assert.equal(events.status,200);
 const eventList=await events.json();
 assert.ok(Array.isArray(eventList.items),'Conservar API de eventos');
-for(const r of [health,admin,adminHead,redirect,adminPost,session,me,status,signup,link,member,write,foreignPost,mirror,app,events]){
+for(const r of [health,admin,adminHead,redirect,adminPost,session,me,status,signup,link,member,write,foreignPost,mirror,app,newTab,events]){
  assert.equal(r.headers.get('set-cookie'),null,'Una llamada anónima no debe crear sesiones');
 }
 console.log('OK: staging /administracion/ PUBLICADO, CSP nonce, vista editor/eventos/socios, Google y email visibles, alta cerrada, admin 401, origen cruzado denegado, espejo y vídeo iPhone, sin escrituras.');
