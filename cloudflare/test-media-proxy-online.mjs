@@ -50,6 +50,20 @@ for(const item of videos){
   ranges++;
  }
 }
+const extraFiles=manifest.filter(x=>x.type!=='video/mp4');
+assert.equal(extraFiles.length,12);
+for(const item of extraFiles){
+ const path='/assets/'+encodeURIComponent(item.path);
+ const expected=readFileSync('assets/'+item.path);
+ const head=await request(path,{method:'HEAD'});
+ assert.equal(head.status,200,'Recurso original ausente: '+item.path);
+ assert.equal(Number(head.headers.get('content-length')),item.bytes);
+ assert.equal(head.headers.get('content-type'),item.type);
+ const got=await request(path);
+ assert.equal(got.status,200,'Recurso original no descargable: '+item.path);
+ assert.equal(got.headers.get('set-cookie'),null);
+ assert.deepEqual(Buffer.from(await got.arrayBuffer()),expected,'Recurso original diferente: '+item.path);
+}
 const logos=JSON.parse(readFileSync('cloudflare/legacy-logos-manifest.json','utf8')).files;
 assert.equal(logos.length,3);
 for(const logo of logos){
@@ -64,4 +78,4 @@ for(const logo of logos){
  assert.equal(got.headers.get('set-cookie'),null);
  assert.deepEqual(Buffer.from(await got.arrayBuffer()),original,'Los bytes del logo no coinciden');
 }
-console.log('OK: Cloudflare Worker QA temporal + GitHub SHA fijo, 5 MP4 / '+ranges+' respuestas HTTP 206 y 3 logos completos idénticos en bytes; sin R2/D1. NO son Static Assets definitivos.');
+console.log('OK: Cloudflare Worker QA temporal + GitHub SHA fijo, 5 MP4 / '+ranges+' respuestas HTTP 206 y 3 logos y 12 archivos adicionales completos idénticos en bytes; sin R2/D1. NO son Static Assets definitivos.');
