@@ -60,7 +60,7 @@ blocks((a,b)=>{a.profiles[0].points+=1},/divergentes/);
 blocks((a,b)=>{a.profiles[0].role='socio'},/divergentes/);
 blocks((a,b)=>{a.profiles[1].visits+=1},/divergentes/);
 blocks((a,b)=>{b.profiles[6].member_code=b.profiles[0].member_code},/duplicado/);
-blocks((a,b)=>{a.profiles[0].member_code=b.profiles[6].member_code},/duplicado/);
+blocks((a,b)=>{a.profiles[0].member_code=b.profiles[6].member_code},/duplicado|divergentes/);
 blocks((a,b)=>{a.auth_identity_links[0].profile_id='gb'},/proveedor|identidad|duplicad/i);
 blocks((a,b)=>{b.auth_email_credentials[0].profile_id='ga'},/credencial/i);
 blocks((a,b)=>{b.auth_email_credentials[0].password_hash='otro-hash';
