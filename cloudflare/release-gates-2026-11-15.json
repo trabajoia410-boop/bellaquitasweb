@@ -7,7 +7,7 @@
   "readiness": {
     "baselineDbAndRolesReviewed": {
       "passed": true,
-      "evidence": "cloudflare/PRECUT_RECONCILIATION_2026-11-15.md (6 perfiles comunes coinciden en puntos, roles y visitas)"
+      "evidence": "cloudflare/AUTH_DATA_PARITY_2026-11-15.md (14 registros y campos compartidos idénticos, perfil extra documentado)"
     },
     "isolatedQrAndLoyaltyTests": {
       "passed": true,
@@ -52,6 +52,14 @@
     "finalEsFrMobileVisualParity": {
       "passed": false,
       "evidence": "Vídeos estáticos y logos sin desplegar en espejo funcional"
+    },
+    "googleIdentityMappingExact": {
+      "passed": true,
+      "evidence": "cloudflare/AUTH_DATA_PARITY_2026-11-15.md (6 Google profile_id y subject idénticos entre Supabase y D1 staging)"
+    },
+    "stagingAdminStepupSchemaApplied": {
+      "passed": false,
+      "evidence": "cloudflare/AUTH_DATA_PARITY_2026-11-15.md (tablas auth_admin_sessions y auth_admin_email_links presentes solo en QA, faltan en staging)"
     }
   }
 }
