@@ -65,6 +65,8 @@ jobs:
         run: node cloudflare/test-email-registration-gate.mjs
       - name: Comprobar que ninguna restauración puede perder socios locales ni puntos
         run: node cloudflare/test-staging-restore-readonly.mjs
+      - name: Verificar espejo staging real con vídeo 206, CSS y traducción francesa
+        run: node cloudflare/test-staging-mirror-media-online.mjs
       - name: Verificar staging real con registro email desactivado y panel protegido
         run: node cloudflare/test-staging-auth-closure.mjs
       - name: Exigir panel staging publicado con CSP y administración cerrada a anónimos
