@@ -8,17 +8,21 @@ const STAGING_HOSTNAME="bellaquitas-api-staging.bellaquitas-fest-410.workers.dev
 // Fallback EXCLUSIVO del espejo en staging: nunca activar en bellaquitas.fr ni QA pública.
 // El proxy no es alojamiento definitivo. Cuando se vincule ASSETS, se usará ASSETS.
 function temporaryMediaAllowed(request,env){
- return !env?.ASSETS&&env?.STAGING_MUTATIONS==="disabled"&&
+ return !env?.ASSETS&&typeof env?.MEDIA_QA_PROXY?.fetch==="function"&&
+  env?.STAGING_MUTATIONS==="disabled"&&
   env?.ALLOW_NEW_ACCOUNTS==="no"&&
   new URL(request.url).hostname===STAGING_HOSTNAME;
 }
-async function fromTemporaryMedia(request,filename){
+async function fromTemporaryMedia(request,filename,env){
  const safe=new URL(QA_MEDIA_PROXY+"/assets/"+encodeURIComponent(filename));
  const headers=new Headers();
  const range=request.headers.get("Range");
  if(range)headers.set("Range",range);
- // Jamás transmitir cookies, Authorization ni headers de usuarios al origen de medios.
- return fetch(safe,{method:request.method,headers,redirect:"manual"});
+ // Solo Service Binding interno. Jamás transmitir cookies, Authorization o headers
+ // del usuario; tampoco realizar llamadas externas workers.dev desde otro Worker.
+ return env.MEDIA_QA_PROXY.fetch(new Request(safe,{
+  method:request.method,headers,redirect:"manual"
+ }));
 }
 
 const PROTECTED={
@@ -113,7 +117,7 @@ export async function mirrorRoute(request,env){
    assetUrl.pathname="/assets/"+encodeURIComponent(filename);
    try{
      const served=useProxy
-      ?await fromTemporaryMedia(request,filename)
+      ?await fromTemporaryMedia(request,filename,env)
       :await env.ASSETS.fetch(new Request(assetUrl,request));
      if(served.status!==200&&served.status!==206)return fail(503,"Medio original pendiente de verificación");
      const headers=new Headers(served.headers);
