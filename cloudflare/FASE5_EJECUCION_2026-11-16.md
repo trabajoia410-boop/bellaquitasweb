@@ -26,6 +26,12 @@ Se activó el workflow [Bellaquitas multimedia QA](https://github.com/trabajoia4
 
 **Control `originalVideosDeployedToMediaQa` todavía pendiente.** No habilitar secreto en código ni copiarlo en chat.
 
+### Alternativa Cloudflare Pages sin R2 ni API token
+
+El 16/11 se intentó crear exclusivamente el proyecto QA `bellaquitas-media-qa-pages`, conectado al repositorio de GitHub en la rama de migración y compilando los archivos originales mediante `node cloudflare/build-static-assets.mjs --require-logos`. La API Cloudflare devolvió **HTTP 401, código 8000011: problema interno de la instalación Git de Cloudflare Pages**. La lectura posterior de la cuenta confirma **cero proyectos Pages creados**; no se cambió DNS, la rama principal, los medios ni las suscripciones.
+
+La alternativa requiere que el propietario repare/reconecte la instalación GitHub de Cloudflare Pages o aporte una credencial limitada mediante GitHub Actions Secret, nunca en el chat. Hasta entonces no se puede declarar que los MP4 estén alojados en Static Assets propios.
+
 ## 3. Cámara/QR físico y verificación de vídeo — banco de pruebas real desplegado
 
 Nuevo Worker **aislado** `bellaquitas-device-qa` creado con Cloudflare conectado:
@@ -48,6 +54,8 @@ https://bellaquitas-device-qa.bellaquitas-fest-410.workers.dev/
 - Las pruebas físicas no pueden completarse desde un servidor sin acceso a la cámara real de un usuario.
 
 **Por estos motivos no se marcaron como completados** los controles de backup producción, clave histórica ni los administradores.
+
+La [prueba HTTPS de los 5 MP4 con HTTP 206, bytes originales y sin cookies](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43776451180) también terminó correctamente; demuestra servicio de vídeo temporal, **no** subida a Cloudflare Static Assets.
 
 ## Producción protegida
 
