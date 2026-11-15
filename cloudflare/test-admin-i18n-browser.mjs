@@ -14,7 +14,7 @@ const response=adminConsoleRoute(req);
 assert.equal(response.status,200);
 assert.match(response.headers.get('content-security-policy')||'',/script-src 'nonce-[^']+'/);
 const html=await response.text();
-assert.match(html,/id="bq-admin-language"/.source ? /<script nonce="[^"]+">/ : /<script nonce="[^"]+">/);
+assert.match(html,/<script nonce="[^"]+">/);
 assert.ok(!html.includes('supabase.co'));
 assert.ok(html.includes('ADMINISTR')||html.includes('Administración'));
 
@@ -49,6 +49,7 @@ try{
    await page.waitForFunction(()=>document.querySelector('#login h1')?.textContent?.trim()==='Panneau d’administration');
    assert.equal((await page.locator('aside [data-tab="site"]').textContent()).trim(),'Modifier le site');
    assert.equal((await page.locator('aside [data-tab="security"]').textContent()).trim(),'Sécurité');
+   await page.waitForFunction(()=>document.querySelector('#emailHelp')?.textContent?.trim()==='La connexion par e-mail n’est pas encore activée ; utilisez Google.');
    assert.equal((await page.locator('#emailHelp').textContent()).trim(),'La connexion par e-mail n’est pas encore activée ; utilisez Google.');
    assert.equal(await page.locator('#email').inputValue(),'simulado@example.invalid');
 
