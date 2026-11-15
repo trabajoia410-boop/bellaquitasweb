@@ -35,11 +35,11 @@
     },
     "productionDatabaseBackupConfirmed": {
       "passed": false,
-      "evidence": "cloudflare/OFFSITE_ENCRYPTED_BACKUP_2026-11-15.md (herramienta local de exportación/cifrado real lista y simulación CI; respaldo EXTERNO real de producción aún pendiente)"
+      "evidence": "cloudflare/FASE5_BACKUP_Y_PANEL_BILINGUE_2026-11-15.md: copia lógica cifrada de D1 STAGING descargable, autenticada y restaurada en SQLite RAM (22 tablas/44 objetos/44 filas, FK0, integrity ok); NO es exportación oficial ni respaldo de producción. Sigue FALSO."
     },
     "exposedBackupKeyRotatedOutOfChat": {
       "passed": false,
-      "evidence": "cloudflare/OFFSITE_ENCRYPTED_BACKUP_2026-11-15.md (clave aleatoria local implementada, pero clave histórica expuesta aún no sustituida en copia real fuera del chat)"
+      "evidence": "Copia lógica staging nueva cifrada con AES-GCM/RSA, clave privada creada fuera de Git y separada del ZIP de datos; la clave antigua comprometida de producción NO consta rotada. Sigue FALSO."
     },
     "cloudflareExtraProfileReviewed": {
       "passed": true,
@@ -51,7 +51,7 @@
     },
     "finalEsFrMobileVisualParity": {
       "passed": false,
-      "evidence": "cloudflare/STAGING_BROWSER_VISUAL_QA_2026-11-15.md (WebKit iPhone13, Chromium Pixel7/Desktop, 0 overflow, menú y ES→FR correctos; falta traducción exhaustiva y teléfonos reales)"
+      "evidence": "cloudflare/test-public-routes-browser.mjs / GitHub Actions 43770712164: 66 rutas/idiomas/navegadores (iPhone WebKit, Pixel Chromium y desktop), sin overflow ni POST, 6 capturas; panel admin ES/FR comprobado en Chromium 390/1440. Sigue FALSO hasta pruebas físicas y traducciones exhaustivas de todo contenido."
     },
     "googleIdentityMappingExact": {
       "passed": true,
@@ -63,7 +63,7 @@
     },
     "stagingPostadminRestoreVerified": {
       "passed": true,
-      "evidence": "cloudflare/ADMIN_TWO_ACCOUNTS_AND_RESTORE_2026-11-15.md (22 tablas,17 índices,5 triggers,44 filas idénticas en nueva D1 UE sin Worker binding)"
+      "evidence": "Restauración D1 aislada comprobada nuevamente por lectura completa 15/11/2026: 22 tablas,44 objetos,44 filas campo por campo, 7 perfiles, 2 admin, 1999998 puntos, FK 0; informe cloudflare/FASE5_BACKUP_Y_PANEL_BILINGUE_2026-11-15.md."
     },
     "stagingOnlyAccountCutoverPolicyApproved": {
       "passed": false,
