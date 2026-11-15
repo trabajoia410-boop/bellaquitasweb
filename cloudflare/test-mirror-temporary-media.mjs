@@ -13,7 +13,7 @@ const route='/espejo/assets/'+encodeURIComponent(video);
 const safeEnv={STAGING_MUTATIONS:'disabled',ALLOW_NEW_ACCOUNTS:'no'};
 let serviceCalls=0;
 const service={async fetch(){serviceCalls++;throw Error('Servicios fuera de la ruta probada')}};
-const proxyEnv={...safeEnv,MEDIA_QA_PROXY:service};
+const proxyEnv={...safeEnv,VIDEO_QA_PROXY:service};
 const req=(host=STAGE,options={})=>new Request(host+route,options);
 const original=globalThis.fetch;
 let fetched=0;
