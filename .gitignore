@@ -9,3 +9,5 @@ node_modules/
 __pycache__/
 playwright-report/
 test-results/
+# Salida compilada de vídeos y logos (se regeneran y no deben subirse al repo)
+cloudflare/dist-static/
