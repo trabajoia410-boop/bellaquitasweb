@@ -43,9 +43,26 @@ function sameDesignJS(source){
  const live="const live = !!(cfg.supabaseUrl && cfg.supabaseAnonKey);";
  if(!source.includes(needle)||!source.includes(live))
    throw Error("Renderer changed; do not serve an unsafe Supabase-connected preview");
- // Solo se sustituye la conexión de datos. El renderer y el diseño siguen idénticos.
+ // El vídeo bajo la banda amarilla ya incluye <source media>, pero Safari
+ // puede ignorar ese media al elegir fuente. Reforzamos SOLO la selección,
+ // usando los dos MP4 originales SIN modificar CSS, dimensiones ni bytes.
+ const anchor="  video.load();\n  const playback=video.play();";
+ const select=[
+   "  // Fuente original correcta bajo la banda amarilla, también en Safari iOS.",
+   "  if(video.matches('.bf-after-marquee-video')){",
+   "   const mobile=video.querySelector('source[media]');",
+   "   const desktop=video.querySelector('source:not([media])');",
+   "   const selected=bfVideoMobileMedia.matches?mobile?.getAttribute('src'):desktop?.getAttribute('src');",
+   "   if(selected && video.getAttribute('src')!==selected)video.setAttribute('src',selected);",
+   "  }"
+ ].join("\n");
+ if(!source.includes(anchor)||!source.includes("video.matches('.bf-hero-video')")||
+    !source.includes('assets/Bellaquitas%20Fest%20para%20m%C3%B3vil.mp4'))
+    throw Error("Selector de vídeo original cambió; comprobar antes de aplicar parche iOS");
+ // Solo se sustituye la conexión de datos y se corrige la elección de fuente.
  return source.replace(needle,"await import('/espejo/bridge.js')")
-   .replace(live,"const live = true; // Catálogos y sesiones de Cloudflare, sin Supabase.");
+   .replace(live,"const live = true; // Catálogos y sesiones de Cloudflare, sin Supabase.")
+   .replace(anchor,select+"\n"+anchor);
 }
 export async function mirrorRoute(request,env){
  const url=new URL(request.url),path=url.pathname;
