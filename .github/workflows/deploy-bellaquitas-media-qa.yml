@@ -68,6 +68,13 @@ jobs:
           set -euo pipefail
           node cloudflare/test-media-qa-online.mjs --require-assets
 
+      - name: Comprobar de nuevo que el Worker QA no tenga vínculos sensibles
+        if: env.MEDIA_QA_DEPLOYED == 'true'
+        run: |
+          set -euo pipefail
+          echo "Comprobación postdespliegue: pruebas Range/bytes del paso anterior aprobadas"
+          node cloudflare/check-release-gates.mjs --assert-blocked
+
       - name: Registrar estado verificable sin publicar datos privados
         if: always()
         env:
