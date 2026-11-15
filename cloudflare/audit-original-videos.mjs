@@ -37,6 +37,53 @@ function readBoxes(file) {
  return {boxes,buffer:b};
 }
 
+
+/**
+ * Consulta las descripciones de pista STSD sin decodificar el vídeo.
+ * Funciona en el runner gratuito aunque ffprobe no esté instalado.
+ */
+function readChildren(buffer,start,end){
+ const children=[];let p=start;
+ while(p+8<=end){
+  const small=buffer.readUInt32BE(p),type=buffer.toString('latin1',p+4,p+8);
+  let len=small,header=8;
+  if(small===1){if(p+16>end)break;len=Number(buffer.readBigUInt64BE(p+8));header=16;}
+  else if(small===0)len=end-p;
+  if(!Number.isSafeInteger(len)||len<header||p+len>end)break;
+  children.push({type,offset:p,length:len,header});
+  p+=len;
+ }
+ return children;
+}
+function extractVideoTrackFormats(buffer,moov){
+ const formats=[];
+ const nested=(atom,type)=>readChildren(buffer,atom.offset+(atom.header||8),atom.offset+atom.length)
+  .filter(x=>x.type===type);
+ for(const trak of nested(moov,'trak'))
+  for(const mdia of nested(trak,'mdia'))
+   for(const minf of nested(mdia,'minf'))
+    for(const stbl of nested(minf,'stbl'))
+     for(const stsd of nested(stbl,'stsd')){
+      const start=stsd.offset+(stsd.header||8);
+      if(start+8>stsd.offset+stsd.length)continue;
+      const count=buffer.readUInt32BE(start+4);
+      let p=start+8;
+      for(let i=0;i<Math.min(count,16);i++){
+       if(p+16>stsd.offset+stsd.length)break;
+       const len=buffer.readUInt32BE(p);
+       if(len<16||p+len>stsd.offset+stsd.length)break;
+       const fourcc=buffer.toString('latin1',p+4,p+8);
+       if(['avc1','avc3','hvc1','hev1','av01','mp4v','vp09'].includes(fourcc)){
+        const width=p+36<=buffer.length?buffer.readUInt16BE(p+32):0;
+        const height=p+36<=buffer.length?buffer.readUInt16BE(p+34):0;
+        formats.push({fourcc,width,height});
+       }
+       p+=len;
+      }
+     }
+ return formats;
+}
+
 let ffprobePresent=false;
 try{execFileSync('ffprobe',['-version'],{stdio:'ignore',timeout:5000});ffprobePresent=true;}catch{}
 const report=[];
@@ -50,9 +97,17 @@ for(const a of media){
  assert.equal(boxes[0].type,'ftyp','El archivo debe comenzar como MP4');
  const brand=buffer.toString('latin1',ftyp.offset+8,ftyp.offset+12);
  const fastStart=moov.offset<mdat.offset;
+ const tracks=extractVideoTrackFormats(buffer,moov);
  const item={file:a.path,bytes:a.bytes,majorBrand:brand,moovBeforeMdat:fastStart,
-  atomOrder:boxes.map(x=>x.type).join(','),codecs:[],resolution:[],durationSeconds:null,
+  atomOrder:boxes.map(x=>x.type).join(','),codecs:tracks.map(t=>t.fourcc),
+  resolution:tracks.map(t=>t.width+'x'+t.height),durationSeconds:null,
   warnings:[]};
+ if(tracks.length===0)item.warnings.push('No se ha podido leer STSD; comprobar con ffprobe');
+ for(const t of tracks){
+  if(!['avc1','avc3','hvc1','hev1'].includes(t.fourcc))
+    item.warnings.push('Video '+t.fourcc+': comprobar compatibilidad con Safari');
+  if(!t.width||!t.height)item.warnings.push('Dimensiones del track incompletas');
+ }
  if(!fastStart)item.warnings.push('moov al final: comprobar Range 206 y arranque en Safari');
  if(ffprobePresent){
   const output=execFileSync('ffprobe',[
