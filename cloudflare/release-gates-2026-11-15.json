@@ -23,11 +23,11 @@
     },
     "originalVideosDeployedToMediaQa": {
       "passed": false,
-      "evidence": "cloudflare/test-media-qa-online.mjs (5 MP4 originales y 3 logos ya listos en Git; subir a Worker QA con ASSETS y verificar HTTP real)"
+      "evidence": "cloudflare/MEDIA_QA_UPLOAD_PREPARED_2026-11-15.md (20 assets verificados en Git; GitHub Actions sin CLOUDFLARE_API_TOKEN, upload NO ejecutado, ASSETS ausente)"
     },
     "realHttp206AndIosAndroidPlayback": {
       "passed": false,
-      "evidence": "cloudflare/test-media-qa-online.mjs (se ejecuta cuando existan assets)"
+      "evidence": "cloudflare/MEDIA_QA_UPLOAD_PREPARED_2026-11-15.md (test-media-qa-online.mjs --require-assets preparado y aún sin HTTP 206 real; prueba física Safari/Android pendiente)"
     },
     "bothRealAdminLoginsVerified": {
       "passed": false,
