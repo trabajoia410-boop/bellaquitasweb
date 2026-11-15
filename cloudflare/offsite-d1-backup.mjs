@@ -22,6 +22,7 @@ import {tmpdir} from 'node:os';
 const SOURCE_DB='c7ada9c9-d397-4e22-b5b8-3fbd8d13e550';
 const LIMIT=64*1024*1024;
 const PREFIX=Buffer.from('-- Bellaquitas Fest D1 SQL backup\n-- Exportación de preparación, NO es Supabase producción\n','utf8');
+const LOCAL_PREFIX=Buffer.from('-- Bellaquitas Fest SQL backup local\n-- Archivo proporcionado por el usuario: origen NO verificado\n','utf8');
 const repoRoot=realpathSync(process.cwd());
 const digest=b=>createHash('sha256').update(b).digest('hex');
 const args=process.argv.slice(2);
@@ -37,16 +38,18 @@ function outsideRepo(filename){
 function noOverwrite(file){
  if(existsSync(file))throw Error('El archivo de salida ya existe; no se permite sobrescribirlo');
 }
-function doEncrypt(plaintext,key){
+function doEncrypt(plaintext,key,source='cloudflare-d1-staging'){
  assert.equal(key.length,32);
- assert.ok(plaintext.length>PREFIX.length&&plaintext.length<LIMIT,'Exportación vacía o demasiado grande');
- assert.ok(plaintext.subarray(0,PREFIX.length).equals(PREFIX),'Cabecera de respaldo no válida');
+ const prefix=source==='cloudflare-d1-staging'?PREFIX:source==='local-sql-unverified'?LOCAL_PREFIX:null;
+ assert.ok(prefix,'Fuente de copia no autorizada');
+ assert.ok(plaintext.length>prefix.length&&plaintext.length<LIMIT,'Exportación vacía o demasiado grande');
+ assert.ok(plaintext.subarray(0,prefix.length).equals(prefix),'Cabecera de respaldo no válida');
  const iv=randomBytes(12);
  const cipher=createCipheriv('aes-256-gcm',key,iv);
  const compressed=gzipSync(plaintext);
  const encrypted=Buffer.concat([cipher.update(compressed),cipher.final(),cipher.getAuthTag()]);
  return {
-  version:1,source:'cloudflare-d1-staging',compression:'gzip',
+  version:1,source,compression:'gzip',
   algorithm:'AES-256-GCM',created_at:new Date().toISOString(),
   plaintext_bytes:plaintext.length,plaintext_sha256:digest(plaintext),
   iv_base64:iv.toString('base64'),ciphertext_base64:encrypted.toString('base64')
@@ -54,8 +57,10 @@ function doEncrypt(plaintext,key){
 }
 function doDecrypt(archive,key){
  assert.equal(key.length,32,'Clave AES-256 incorrecta');
- if(archive?.version!==1||archive?.source!=='cloudflare-d1-staging'||
-    archive?.compression!=='gzip'||archive?.algorithm!=='AES-256-GCM')
+ const prefix=archive?.source==='cloudflare-d1-staging'?PREFIX:
+   archive?.source==='local-sql-unverified'?LOCAL_PREFIX:null;
+ if(archive?.version!==1||!prefix||archive?.compression!=='gzip'||
+    archive?.algorithm!=='AES-256-GCM')
   throw Error('Formato de copia desconocido');
  const iv=Buffer.from(archive.iv_base64||'','base64');
  const bytes=Buffer.from(archive.ciphertext_base64||'','base64');
@@ -70,7 +75,7 @@ function doDecrypt(archive,key){
  assert.equal(hash.length,32,'SHA-256 ausente');
  assert.ok(timingSafeEqual(hash,actual),'Integridad de SQL incorrecta');
  assert.equal(archive.plaintext_bytes,plain.length,'Tamaño descifrado no coincide');
- assert.ok(plain.subarray(0,PREFIX.length).equals(PREFIX),'La copia no es D1 SQL de Bellaquitas');
+ assert.ok(plain.subarray(0,prefix.length).equals(prefix),'La copia SQL no corresponde al origen declarado');
  return plain;
 }
 function loadKey(file){
@@ -150,6 +155,11 @@ async function selfTest(){
   const key=randomBytes(32),blob=doEncrypt(fake,key);
   store(blob,key,archivePath,keyPath);
   assert.ok(doDecrypt(loadArchive(archivePath),loadKey(keyPath)).equals(fake));
+  const fakeLocal=Buffer.concat([LOCAL_PREFIX,Buffer.from("CREATE TABLE qa_local(id TEXT);\nINSERT INTO qa_local VALUES ('ficticio');\n")]);
+  const localKey=randomBytes(32);
+  const localArchive=doEncrypt(fakeLocal,localKey,'local-sql-unverified');
+  assert.ok(doDecrypt(localArchive,localKey).equals(fakeLocal));
+  assert.throws(()=>doDecrypt(localArchive,randomBytes(32)),'Copia local: clave falsa debe fallar');
   assert.throws(()=>doDecrypt(blob,randomBytes(32)),'Clave falsa debe fallar');
   const tampered=structuredClone(blob);
   const raw=Buffer.from(tampered.ciphertext_base64,'base64');raw[0]^=1;
@@ -177,6 +187,26 @@ async function main(){
   console.log('AVISO: NO es una copia de Supabase producción ni autoriza la migración final.');
   return;
  }
+ if(args[0]==='--encrypt-local-sql'&&args.length===4){
+  const [filePath,archivePath,keyPath]=args.slice(1);
+  const source=outsideRepo(filePath);
+  assert.ok(/\.sql$/i.test(source),'Se necesita un archivo .sql exportado localmente');
+  assert.ok(statSync(source).isFile(),'La exportación SQL debe ser archivo regular');
+  const archive=outsideRepo(archivePath),key=outsideRepo(keyPath);
+  noOverwrite(archive);noOverwrite(key);
+  const bytes=readFileSync(source);
+  assert.ok(bytes.length>15&&bytes.length<LIMIT-LOCAL_PREFIX.length,'Exportación vacía o excesiva');
+  new TextDecoder('utf-8',{fatal:true}).decode(bytes);
+  assert.ok(!bytes.includes(0),'Solo se admite SQL texto, nunca dumps binarios');
+  assert.ok(/(?:CREATE TABLE|INSERT INTO|COPY |SET |BEGIN|CREATE SCHEMA|-- PostgreSQL database dump)/i.test(bytes.toString('utf8',0,4000)),
+    'El archivo no parece ser una exportación SQL');
+  const plaintext=Buffer.concat([LOCAL_PREFIX,bytes]);
+  const secret=randomBytes(32),blob=doEncrypt(plaintext,secret,'local-sql-unverified');
+  store(blob,secret,archive,key);
+  console.log('OK: SQL local cifrado y verificado en dos ubicaciones separadas; fuente NO certificada.');
+  console.log('NOTA: conserva el SQL original protegido o elimínalo de forma segura según tu procedimiento.');
+  return;
+ }
  if(args[0]==='--verify'&&args.length===3){
   const sql=doDecrypt(loadArchive(args[1]),loadKey(args[2]));
   console.log('OK: copia D1 cifrada verificada; bytes SQL:',sql.length);
@@ -189,6 +219,6 @@ async function main(){
   console.log('OK: SQL recuperado en un archivo NUEVO protegido. Bórralo después de restaurar la base aislada.');
   return;
  }
- throw Error('Uso: --self-test | --export-staging ARCHIVO_CIFRADO.json CLAVE_NUEVA.b64 | --verify ARCHIVO_CIFRADO.json CLAVE_NUEVA.b64 | --restore ARCHIVO_CIFRADO.json CLAVE_NUEVA.b64 SALIDA.sql');
+ throw Error('Uso: --self-test | --export-staging ARCHIVO_CIFRADO.json CLAVE_NUEVA.b64 | --encrypt-local-sql ORIGEN.sql ARCHIVO_CIFRADO.json CLAVE_NUEVA.b64 | --verify ARCHIVO_CIFRADO.json CLAVE_NUEVA.b64 | --restore ARCHIVO_CIFRADO.json CLAVE_NUEVA.b64 SALIDA.sql');
 }
 main().catch(e=>{console.error('Copia de seguridad no completada:',e.message);process.exitCode=1});
