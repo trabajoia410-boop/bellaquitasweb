@@ -18,12 +18,12 @@
       "evidence": "cloudflare/verify-migration.mjs (17 assets, 5 MP4)"
     },
     "originalThreeLogosRecovered": {
-      "passed": false,
-      "evidence": "cloudflare/legacy-logos-manifest.json (solo metadatos; 3 objetos pendientes)"
+      "passed": true,
+      "evidence": "cloudflare/ORIGINAL_LOGOS_RECOVERED_2026-11-15.md (3 binarios originales recuperados; tamaños/ETag MD5 y SHA-256 verificados; en assets/migrated-logos/ rama de migración)"
     },
     "originalVideosDeployedToMediaQa": {
       "passed": false,
-      "evidence": "bellaquitas-media-qa workers.dev (Worker publicado, sin binding ASSETS)"
+      "evidence": "cloudflare/test-media-qa-online.mjs (5 MP4 originales y 3 logos ya listos en Git; subir a Worker QA con ASSETS y verificar HTTP real)"
     },
     "realHttp206AndIosAndroidPlayback": {
       "passed": false,
@@ -35,11 +35,11 @@
     },
     "productionDatabaseBackupConfirmed": {
       "passed": false,
-      "evidence": "cloudflare/ADMIN_TWO_ACCOUNTS_AND_RESTORE_2026-11-15.md (restauración de staging comprobada; copia externa cifrada de Supabase producción aún pendiente)"
+      "evidence": "cloudflare/OFFSITE_ENCRYPTED_BACKUP_2026-11-15.md (herramienta local de exportación/cifrado real lista y simulación CI; respaldo EXTERNO real de producción aún pendiente)"
     },
     "exposedBackupKeyRotatedOutOfChat": {
       "passed": false,
-      "evidence": "cloudflare/ADMIN_TWO_ACCOUNTS_AND_RESTORE_2026-11-15.md (la clave antigua expuesta NO se ha rotado ni sustituido fuera del chat)"
+      "evidence": "cloudflare/OFFSITE_ENCRYPTED_BACKUP_2026-11-15.md (clave aleatoria local implementada, pero clave histórica expuesta aún no sustituida en copia real fuera del chat)"
     },
     "cloudflareExtraProfileReviewed": {
       "passed": true,
@@ -51,7 +51,7 @@
     },
     "finalEsFrMobileVisualParity": {
       "passed": false,
-      "evidence": "Vídeos estáticos y logos sin desplegar en espejo funcional"
+      "evidence": "cloudflare/ORIGINAL_LOGOS_RECOVERED_2026-11-15.md (logos ya recuperados; faltan despliegue real de multimedia y paridad visual completa ES/FR + iOS/Android)"
     },
     "googleIdentityMappingExact": {
       "passed": true,
