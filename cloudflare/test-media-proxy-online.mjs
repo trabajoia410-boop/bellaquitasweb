@@ -57,7 +57,10 @@ for(const item of extraFiles){
  const expected=readFileSync('assets/'+item.path);
  const head=await request(path,{method:'HEAD'});
  assert.equal(head.status,200,'Recurso original ausente: '+item.path);
- assert.equal(Number(head.headers.get('content-length')),item.bytes);
+ // GitHub responde HEAD sin Content-Length para recursos de texto comprimibles.
+ // La comprobación concluyente es descargar el GET y comparar cada byte.
+ const reported=Number(head.headers.get('content-length'));
+ assert.ok(reported===0||reported===item.bytes,'Tamaño HEAD inesperado: '+item.path);
  assert.equal(head.headers.get('content-type'),item.type);
  const got=await request(path);
  assert.equal(got.status,200,'Recurso original no descargable: '+item.path);
