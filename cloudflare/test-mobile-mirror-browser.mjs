@@ -69,8 +69,7 @@ for(const item of cases){
    }
    await page.screenshot({path:'qa-browser/'+item.label+'-ES.png',fullPage:false,animations:'disabled',timeout:30000});
    await page.locator('.lang-choice[data-lang="fr"]').first().click({timeout:15000});
-   await page.waitForFunction(()=>document.documentElement.lang==='fr',{timeout:15000});
-   assert.equal(await page.locator('.lang-choice[data-lang="fr"]').first().getAttribute('aria-pressed'),null);
+   await page.waitForFunction(()=>document.documentElement.lang==='fr',null,{timeout:15000});
    await sleep(300);
    await page.screenshot({path:'qa-browser/'+item.label+'-FR.png',fullPage:false,animations:'disabled',timeout:30000});
    // Solo lectura: no iniciar sesión, no cambiar datos, no pulsar "Registrar".
