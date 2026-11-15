@@ -94,4 +94,17 @@ assert.ok(!bridge.includes("createClient(cfg.supabaseUrl"));
 console.log("✓ Roles y permisos del espejo: 12 casos, todas las mutaciones protegidas.");
 console.log("✓ Paridad de 6 archivos originales HTML/CSS/JS/FR/QR.");
 console.log("✓ Datos conectados solo a Cloudflare en el espejo.");
+// Los avisos de validación del acceso deben estar localizados en ES y FR.
+const authUi=file("mirror-auth-ui.js");
+for(const phrase of [
+ 'invalidName:"Introduce un nombre válido."',
+ 'invalidName:"Saisissez un nom valide."',
+ 'requestFailed:"No se pudo completar la solicitud."',
+ 'requestFailed:"Impossible de terminer la demande."',
+ 'throw Error(tr().invalidName)',
+ 'value.error||tr().requestFailed'
+]){
+ assert.ok(authUi.includes(phrase),"Falta localización de registro: "+phrase);
+}
+console.log("✓ Validación y error local de acceso traducidos ES/FR.");
 console.log("Pruebas terminadas. No se modificó ningún dato real.");
