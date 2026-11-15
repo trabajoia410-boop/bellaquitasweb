@@ -28,4 +28,21 @@ assert.ok(!html.includes('supabase.co'),'No debe conectar el panel con Supabase'
 assert.ok(script[1].includes('selectedIndex<0?null'), 'Crear evento/premio debe diferenciar nueva ficha');
 assert.ok(script[1].includes("setAttribute('contenteditable','true')"), 'Falta editor visual de portada');
 assert.ok(script[1].includes('preview.addEventListener'), 'Editor visual sin eventos de actualización');
+// Comprobar que no falte ninguna etiqueta estática visible ni aviso administrativo.
+const dictSource=localizedScript.match(/const dict=(\{[^\n]+\});\nconst reverse=/);
+assert.ok(dictSource,'Diccionario bilingüe ausente');
+const dictionary=JSON.parse(dictSource[1]);
+const plain=html.replace(/<script[\s\S]*?<\/script>/g,'').replace(/<style[\s\S]*?<\/style>/g,'');
+const visible=[...new Set([...plain.matchAll(/>([^<>]+)</g)].map(m=>m[1].trim())
+ .filter(x=>x&&/[A-Za-zÀ-ÿ]/.test(x)))];
+const names=new Set(['👑 BELLAQUITAS','FEST','Bellaquitas Fest']);
+assert.deepEqual(visible.filter(x=>!names.has(x)&&!Object.hasOwn(dictionary,x)),[],
+ 'Todas las etiquetas estáticas del panel deben traducirse al francés');
+assert.equal(new Set(Object.values(dictionary)).size,Object.keys(dictionary).length,
+ 'Dos textos franceses iguales impedirían restaurar el español correctamente');
+const dynamic=[...new Set([...script[1].matchAll(/(?:status\(|textContent\s*=|throw Error\()\s*'([^']+)'/g)]
+ .map(m=>m[1]))];
+assert.deepEqual(dynamic.filter(x=>!Object.hasOwn(dictionary,x)),[],
+ 'Todos los estados admin literales deben tener traducción');
+console.log('OK: cobertura completa de '+visible.length+' etiquetas visibles y '+dynamic.length+' avisos ES/FR.');
 console.log('OK: panel independiente, JS válido, CSP nonce, reautenticación y API protegida.');
