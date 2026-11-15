@@ -5,6 +5,7 @@
  */
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+// Reconfirmación tras corregir redirect:manual en Workers (versión QA aislada).
 const BASE='https://bellaquitas-media-proxy-qa.bellaquitas-fest-410.workers.dev';
 const SHA='733244ec58fa2d0af053bf969d25525a8f878aa2';
 const request=(path,opts={})=>fetch(BASE+path,{cache:'no-store',redirect:'manual',signal:AbortSignal.timeout(45000),...opts});
