@@ -46,6 +46,21 @@ export async function productionSiteRoute(request,env) {
     200,"application/javascript; charset=utf-8"
   );
 
+  // Preservar robots.txt + sitemap.xml que Google Search Console ya conoce.
+  // En pruebas SITE_MODE no sirve esta ruta; los archivos son los originales.
+  if(path==="/robots.txt"||path==="/sitemap.xml"){
+    if(!env.ASSETS?.fetch)
+      return response("SEO original no preparado",503,"text/plain; charset=utf-8");
+    const target=new URL(path,u.origin);
+    const result=await env.ASSETS.fetch(new Request(target,{method:request.method}));
+    if(result.status!==200)
+      return response("SEO original no preparado",503,"text/plain; charset=utf-8");
+    return new Response(request.method==="HEAD"?null:result.body,{status:200,headers:{
+      "Content-Type":path==="/robots.txt"?"text/plain; charset=utf-8":"application/xml; charset=utf-8",
+      "Cache-Control":"public,max-age=3600",
+      "X-Content-Type-Options":"nosniff"
+    }});
+  }
   if(path==="/manifest.webmanifest"){
     if(!env.ASSETS?.fetch)
       return response("Recursos no preparados",503,"text/plain; charset=utf-8");
