@@ -53,7 +53,7 @@ check(site.site && typeof site.site==='object','contenido web existente');
 const admin=await get(api,'/administracion/');
 check(admin.status===200,'panel administrativo independiente responde');
 const html=await admin.text();
-check(/bq-admin-language/.test(html) && /\bES\b/.test(html) && /\bFR\b/.test(html),
+check(/bq-admin-language/.test(html) && /Español/.test(html) && /Français/.test(html),
   'selector ES/FR presente');
 check(/no-store/i.test(admin.headers.get('cache-control')||''),
   'panel no se almacena en caché');
