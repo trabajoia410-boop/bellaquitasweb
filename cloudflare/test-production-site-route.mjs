@@ -3,7 +3,8 @@
  * Asegura rutas raíz, CSS/JS, ES/FR, vídeo original, QR y admin separado.
  */
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readFileSync,existsSync} from 'node:fs';
+import {ADDITIONAL_MEDIA} from './visual-extra-media.js';
 import {productionSiteRoute} from './production-site-route.js';
 import {SITE_MEDIA} from './site-media-manifest.js';
 
@@ -21,7 +22,8 @@ const env={
      return new Response(JSON.stringify(manifest),{status:200,headers:{'Content-Type':'application/manifest+json'}});
    if(url.pathname.startsWith('/assets/')){
      const key=decodeURIComponent(url.pathname.slice('/assets/'.length));
-     const expected=SITE_MEDIA.find(x=>x.path===key);
+     const expected=SITE_MEDIA.find(x=>x.path===key) ||
+       (key===ADDITIONAL_MEDIA.path&&existsSync('assets/'+key)?ADDITIONAL_MEDIA:null);
      if(!expected)return new Response(null,{status:404});
      const range=req.headers.get('Range');
      if(range){
@@ -88,6 +90,10 @@ assert.equal(video.headers.get('Content-Type'),'video/mp4');
 assert.equal(video.headers.get('Content-Range'),'bytes 0-255/'+media.bytes);
 assert.equal((await video.arrayBuffer()).byteLength,256);
 
+// No confundir haber recuperado el JPG en Library con haberlo desplegado.
+const extraJpg=await get('/assets/62609.jpg');
+assert.equal(extraJpg.status,existsSync('assets/62609.jpg')?200:503,
+ 'El fondo lateral solo existe cuando el binario original está empaquetado');
 const favicon=await get('/assets/favicon.svg');
 assert.equal(favicon.status,200);
 assert.equal(favicon.headers.get('Content-Type'),'image/svg+xml');
