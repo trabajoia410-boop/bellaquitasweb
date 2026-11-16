@@ -8,7 +8,7 @@
 - Suma aproximada de los tamaños que declara API D1: **1.560.576 bytes** (≈ **1,49 MiB**) en las seis bases; muy por debajo de los límites actuales. La restauración aislada del origen ocupa ~315 KB. La API no informa de un número fiable de tablas en listado, pero se verificó el esquema por SQL.
 - Free D1: **500 MB como tamaño máximo por base**, 5 GB totales por cuenta; uso gratuito diario **5 millones de filas leídas** y **100.000 filas escritas**. Estos límites son por cuenta, no por cada base.
 - Workers Free: **100.000 solicitudes diarias**, con reinicio a medianoche UTC. Si se supera, el sistema puede devolver error HTTP/Cloudflare 1027; no es un servidor que quede suspendido por no recibir tráfico.
-- Media pública: los cinco MP4 y logos originales están en **Workers Static Assets**; 20 recursos verificados y respuesta Range 206. El MP4 más grande ocupa 25.437.525 bytes ≈ **24,26 MiB**, dentro del máximo de archivo estático de 25 MiB. No se usa R2.
+- Workers Static Assets: las solicitudes que se resuelven directamente como activos estáticos son gratuitas e ilimitadas; si una ruta invoca código Worker (por ejemplo `run_worker_first`), sí puede contar hacia el límite de 100.000 peticiones diarias.\n- Correo transaccional Resend Free: 3.000 correos/mes, 100/día y hasta tres dominios en el plan gratuito. No activar Pro ni sobreconsumo de pago. Cuando se alcanza el límite sin pago por uso, se detiene el envío, lo cual afecta recuperación de contraseñas pero evita cargos.\n- Media pública: los cinco MP4 y logos originales están en **Workers Static Assets**; 20 recursos verificados y respuesta Range 206. El MP4 más grande ocupa 25.437.525 bytes ≈ **24,26 MiB**, dentro del máximo de archivo estático de 25 MiB. No se usa R2.
 - `bellaquitas-api-staging`: 17 bindings, cinco secretos, **cero R2**. `STAGING_MUTATIONS=disabled`, `ALLOW_NEW_ACCOUNTS=no`.
 
 ## Riesgos y comportamiento en planes gratuitos
@@ -24,6 +24,6 @@
 - [D1 Pricing](https://developers.cloudflare.com/d1/platform/pricing/)
 - [D1 Limits](https://developers.cloudflare.com/d1/platform/limits/)
 - [Workers Limits](https://developers.cloudflare.com/workers/platform/limits/)
-- [Workers Static Assets](https://developers.cloudflare.com/workers/static-assets/)
+- [Workers Static Assets — billing and limitations](https://developers.cloudflare.com/workers/static-assets/billing-and-limitations/)\n- [Resend pricing](https://resend.com/pricing/)
 
 **Conclusión:** El despliegue de prueba y el backup aislado observados caben en los límites del plan gratuito. **No** se autoriza el dominio de producción solo por cumplir esos límites; siguen pendientes accesos de dos administradores, backup integral, clave privada, pruebas reales y QA visual.
