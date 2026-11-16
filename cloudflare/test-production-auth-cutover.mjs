@@ -9,6 +9,7 @@ import {googleLanding,emailLink} from "./production-auth-redirects.js";
 const origin="https://bellaquitas.fr", token="A".repeat(43);
 const ok={
  SITE_MODE:"production",
+ PUBLISH_APPROVED:"yes",
  PUBLIC_ORIGIN:origin,
  TURNSTILE_EXPECTED_HOSTNAME:"bellaquitas.fr",
  STAGING_MUTATIONS:"enabled",
@@ -47,6 +48,7 @@ for(const [key,bad] of [
  ["ADMIN_EMAIL_LINK_ENABLED","no"],
  ["SUGGESTIONS_ENABLED","no"],
  ["SITE_MODE","unknown"],
+ ["PUBLISH_APPROVED","no"],
  ["TURNSTILE_EXPECTED_HOSTNAME","example.invalid"],
  ["DB",null],
  ["ASSETS",null]
