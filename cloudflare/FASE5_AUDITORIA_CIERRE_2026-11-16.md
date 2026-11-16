@@ -67,3 +67,11 @@
 ### Limitaciones de auditoría
 
 Las pruebas HTTP y las consultas D1 se ejecutaron realmente. El flujo de dos administradores en CI usa cuentas sintéticas; no se conocen ni prueban contraseñas reales. Se ha contrastado el backup core con CSV originales y restauración D1 aislada; no se ha podido acceder a un `pg_dump` integral del proveedor origen.
+
+## Ampliación final de verificación técnica (16/11/2026)
+
+- La compilación en Workers Free ejecutó **tres veces** WebCrypto PBKDF2 encadenado de **6 × 100.000 iteraciones** con contraseña sintética, obteniendo `HTTP 200`, `ok:true` y `phases:6`; GitHub Actions [43845399767](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43845399767) SUCCESS. El reloj `Date.now()` dentro de Workers marcó `elapsedMs:0`, dato no apto para cuantificar CPU, pero la terminación HTTP es real. No se han autenticado personas ni se han tocado cuentas.
+- Retirado el Worker temporal `bellaquitas-crypto-bench-qa-20261116`; Cloudflare confirma que ya **no existe**. Se retiraron la prueba CI temporal y su workflow para que ninguna validación permanente dependa de ese Worker; se conservaron los resultados en documentación.
+- Resend: dominio `bellaquitas.fr` **verified**, envío habilitado en región EU, consumo real 0/100 hoy y 3/3000 en ciclo actual, sin envíos de auditoría.
+- GitHub `main` comparada contra la rama de migración: `main` no recibe commits de la rama, diferencia a favor de rama de QA; no se publicó la versión nueva.
+- Son verificaciones de **ingeniería** concluidas. No convierten los seis gates externos/integrales pendientes en aprobados ni justifican afirmar finalizada la fase 5.
