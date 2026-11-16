@@ -48,6 +48,8 @@ jobs:
         run: node cloudflare/test-account-cutover-policy.mjs
       - name: Probar auditor de exportaciones originales
         run: node cloudflare/test-audit-production-export.mjs
+      - name: Verificar portada final original, PWA, vídeos y ES/FR sin desplegar
+        run: node cloudflare/test-production-site-route.mjs
       - name: Verificar que D1 preproducción está aislada, sin DNS ni escrituras
         run: node cloudflare/test-preproduction-config.mjs
       - name: Verificar bloqueo de publicación antes de las pruebas pendientes
