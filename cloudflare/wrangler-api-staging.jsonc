@@ -18,5 +18,8 @@
       "service": "bellaquitas-media-proxy-qa",
       "environment": "production"
     }
-  ]
+  ],
+  "vars": {
+    "ADMIN_EMAIL_LINK_ENABLED": "yes"
+  }
 }
