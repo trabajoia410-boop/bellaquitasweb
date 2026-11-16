@@ -15,7 +15,7 @@
   "services": [
     {
       "binding": "VIDEO_QA_PROXY",
-      "service": "bellaquitas-media-proxy-qa",
+      "service": "bellaquitas-media-qa",
       "environment": "production"
     }
   ],
