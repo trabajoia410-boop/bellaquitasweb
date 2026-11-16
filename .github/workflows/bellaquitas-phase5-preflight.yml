@@ -59,3 +59,5 @@ jobs:
           node-version: '22'
       - name: Seguridad de panel, API pública y vídeos MP4
         run: node cloudflare/test-stage-http-phase5.mjs
+      - name: Benchmark Worker Free sintético de 600k PBKDF2 (sin cuentas ni secretos)
+        run: node cloudflare/test-crypto-worker-free.mjs
