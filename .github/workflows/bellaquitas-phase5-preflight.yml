@@ -40,6 +40,8 @@ jobs:
         run: node --experimental-sqlite cloudflare/test-admin-email-link.mjs
       - name: Verificar OAuth Google contra login CSRF de otro navegador
         run: node cloudflare/test-oauth-browser-bound-state.mjs
+      - name: Probar editor completo con 2 administradores ficticios y D1 en memoria
+        run: node --experimental-sqlite cloudflare/test-editor-admin-offline.mjs
       - name: Probar fusión de cuentas y puntos sin escritura real
         run: node cloudflare/test-account-cutover-policy.mjs
       - name: Probar auditor de exportaciones originales
