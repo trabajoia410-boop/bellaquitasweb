@@ -31,6 +31,10 @@ fake.phase6PreproductionDb.realUsersImported = true;
 fake.phase6PreproductionDb.productionWorkerConfigured = true;
 fake.phase6PreproductionDb.finalAccountReconciliationCompleted = true;
 fake.phase6PreproductionDb.authRoutePreflightPassed = true;
+fake.phase6PreproductionDb.visualAssetParityComplete = true;
+fake.phase6VisualAssetAudit.repoMissing = false;
+fake.phase6VisualAssetAudit.originalBinaryImportedToRepo = true;
+fake.phase6VisualAssetAudit.missing = [];
 const releaseWithPhysicalQaPending = evaluateRelease(fake);
 assert.equal(releaseWithPhysicalQaPending.readyForControlledPublication, true,
   'La QA física no debe impedir una publicación con seguridad previa completa');
@@ -50,6 +54,18 @@ for (const critical of [
   assert.equal(evaluateRelease(blocked).readyForControlledPublication, false,
     'Nunca publicar faltando la protección previa: ' + critical);
 }
+// No se puede certificar paridad visual mientras falta la foto 62609.jpg.
+assert.equal(actual.visualReady,false);
+const noRecoveredBackground=structuredClone(fake);
+noRecoveredBackground.phase6VisualAssetAudit.missing=['62609.jpg'];
+assert.equal(evaluateRelease(noRecoveredBackground).readyForControlledPublication,false,
+ 'Prohibido publicar un diseño con el fondo lateral original ausente');
+const noVisualState=structuredClone(fake);
+noVisualState.phase6PreproductionDb.visualAssetParityComplete=false;
+assert.equal(evaluateRelease(noVisualState).readyForControlledPublication,false);
+const noBinary=structuredClone(fake);
+noBinary.phase6VisualAssetAudit.originalBinaryImportedToRepo=false;
+assert.equal(evaluateRelease(noBinary).readyForControlledPublication,false);
 // Los logins personales quedan para DESPUÉS, pero la técnica no.
 assert.ok(fake.readiness.bothRealAdminLoginsVerified.passed===false);
 assert.equal(releaseWithPhysicalQaPending.adminTechnologyReady,true);
