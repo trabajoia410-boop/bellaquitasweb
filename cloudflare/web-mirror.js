@@ -27,6 +27,17 @@ async function fromTemporaryMedia(request,filename,env){
  }));
 }
 
+// Enviar a Static Assets solo Range: ni cookies ni Authorization viajan
+// al backend de medios, aunque la petición proceda de un socio autenticado.
+function fromOriginalStaticAssets(request,assetUrl,env){
+ const headers=new Headers();
+ const range=request.headers.get("Range");
+ if(range)headers.set("Range",range);
+ return env.ASSETS.fetch(new Request(assetUrl,{
+  method:request.method,headers,redirect:"manual"
+ }));
+}
+
 const PROTECTED={
  "Cache-Control":"no-store",
  "X-Content-Type-Options":"nosniff",
@@ -121,7 +132,7 @@ export async function mirrorRoute(request,env){
    try{
      let served=useProxy
       ?await fromTemporaryMedia(request,filename,env)
-      :await env.ASSETS.fetch(new Request(assetUrl,request));
+      :await fromOriginalStaticAssets(request,assetUrl,env);
      if(served.status!==200&&served.status!==206)return fail(503,"Medio original pendiente de verificación");
 
      // Algunas respuestas 206 de un Worker a otro tienen Content-Length
@@ -130,14 +141,16 @@ export async function mirrorRoute(request,env){
      // a Safari; un segundo intento interno es seguro, sin cookies ni D1.
      // No ocultar un segundo fallo devolviendo 206 vacío: responder 503.
      const requested=/^bytes=(\d+)-(\d+)$/.exec(request.headers.get("Range")||"");
-     if(useProxy&&request.method==="GET"&&expected.type==="video/mp4"&&requested){
+     if(request.method==="GET"&&expected.type==="video/mp4"&&requested){
        const start=Number(requested[1]),end=Number(requested[2]);
        const length=end-start+1;
        if(Number.isSafeInteger(length)&&start>=0&&length>0&&length<=262144){
          const correctRange="bytes "+start+"-"+end+"/"+expected.bytes;
          let body=null;
          for(let attempt=0;attempt<2;attempt++){
-           if(attempt>0)served=await fromTemporaryMedia(request,filename,env);
+           if(attempt>0)served=useProxy
+             ?await fromTemporaryMedia(request,filename,env)
+             :await fromOriginalStaticAssets(request,assetUrl,env);
            if(served.status!==206||
                served.headers.get("Content-Range")!==correctRange||
                Number(served.headers.get("Content-Length"))!==length){
@@ -146,7 +159,7 @@ export async function mirrorRoute(request,env){
            try{body=new Uint8Array(await served.arrayBuffer());}
            catch{body=null;}
            if(body&&body.byteLength===length)break;
-           console.warn("Fragmento multimedia QA incompleto, intento "+(attempt+1));
+           console.warn("Fragmento multimedia incompleto, intento "+(attempt+1));
          }
          if(!body||body.byteLength!==length)
            return fail(503,"Fragmento de vídeo temporalmente no disponible");
