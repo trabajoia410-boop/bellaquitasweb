@@ -31,6 +31,8 @@ jobs:
         run: npm install --no-save --no-package-lock --no-audit --no-fund playwright
       - name: Instalar navegadores Chromium y WebKit
         run: npx playwright install --with-deps chromium webkit
+      - name: Comprobar seguridad OAuth local antes de navegar
+        run: node cloudflare/test-oauth-browser-bound-state.mjs
       - name: Auditar ES/FR, menú, anchura y vídeo inline en Safari y Chrome simulados
         run: node cloudflare/test-mobile-mirror-browser.mjs
       - name: Comprobar panel administrador bilingüe en navegador aislado y sin credenciales
