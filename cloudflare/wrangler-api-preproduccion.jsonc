@@ -26,7 +26,8 @@
     "EMAIL_AUTH_ENABLED": "no",
     "ADMIN_EMAIL_LINK_ENABLED": "no",
     "SUGGESTIONS_ENABLED": "no",
-    "SITE_MODE": "preproduction"
+    "SITE_MODE": "preproduction",
+    "PUBLISH_APPROVED": "no"
   },
   "assets": {
     "directory": "./dist-static",
