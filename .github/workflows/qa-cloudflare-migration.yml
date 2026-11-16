@@ -34,8 +34,10 @@ jobs:
         run: node cloudflare/test-media-proxy-qa.mjs
       - name: Probar vídeo del espejo solo en staging, sin cookies y con Range 206
         run: node cloudflare/test-mirror-temporary-media.mjs
+      - name: Verificar fragmentos 206 y 416 cuando Static Assets devuelve 200
+        run: node cloudflare/test-media-range-static-assets.mjs
       - name: Comprobar media Worker online y HTTP Range real cuando haya assets
-        run: node cloudflare/test-media-qa-online.mjs
+        run: node cloudflare/test-media-qa-online.mjs --require-assets
       - name: Comprobar cifrado externo AES-256-GCM con clave nueva, sin red ni datos reales
         run: node cloudflare/offsite-d1-backup.mjs --self-test
       - name: Garantizar que la migración pública permanece bloqueada
