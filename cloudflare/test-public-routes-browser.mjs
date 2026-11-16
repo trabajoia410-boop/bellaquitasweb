@@ -19,11 +19,13 @@ for(const c of CASES){
  try{
   const context=await browser.newContext({...c.context,locale:'es-ES',reducedMotion:'reduce'});
   try{
-   const page=await context.newPage(),writeRequests=[];
+   const page=await context.newPage(),writeRequests=[],forbiddenProviders=[];
    page.on('request',r=>{
     const url=new URL(r.url());
     if(url.origin===ORIGIN&&!['GET','HEAD','OPTIONS'].includes(r.method()))
      writeRequests.push({path:url.pathname,method:r.method()});
+    if(/(^|\\.)(supabase\\.co|supabase\\.com|r2\\.dev|cloudflarestorage\\.com|esm\\.sh)$/i.test(url.hostname))
+     forbiddenProviders.push(url.hostname);
    });
    const nav=await page.goto(ORIGIN+'/espejo/',{waitUntil:'domcontentloaded',timeout:60000});
    assert.equal(nav.status(),200,'El espejo debe abrir antes de recorrer rutas');
@@ -40,12 +42,24 @@ for(const c of CASES){
        header:!!app?.querySelector('.site-header'),textLen:(app?.textContent||'').trim().length,
        authForm:!!app?.querySelector('#auth-form'),
        suggestionsForm:!!app?.querySelector('#community-suggestion-form'),
-       labels:[...(app?.querySelectorAll('#auth-form label')||[])].map(x=>x.textContent.trim())};
+       labels:[...(app?.querySelectorAll('#auth-form label')||[])].map(x=>x.textContent.trim()),
+       nav:[...(app?.querySelectorAll('.bf-desktop-nav a.nav-link')||[])].map(x=>({href:x.getAttribute('href'),text:x.textContent.trim()})),
+       menuText:(app?.querySelector('#site-menu')?.textContent||'').replace(/\\s+/g,' ').trim()};
      });
      assert.equal(info.lang,lang,'Idioma incorrecto: '+route+' '+c.name);
      assert.equal(info.header,true,'Falta cabecera: '+route+' '+c.name);
      assert.ok(info.textLen>100,'Página vacía: '+route+' '+c.name);
      assert.ok(info.over<=8,'Desbordamiento '+info.over+'px: '+c.name+' '+route+' '+lang);
+     const home=info.nav.find(item=>item.href==='#/');
+     assert.equal(home?.text,lang==='fr'?'Accueil':'Inicio','Traducción inicio: '+c.name+' '+route+' '+lang);
+     if(lang==='fr'){
+      for(const [href,expected] of [['#/experiencia','Expériences'],['#/eventos','Événements'],['#/ventajas','Avantages'],['#/preguntas','Questions']]){
+       const link=info.nav.find(item=>item.href===href);
+       if(link)assert.equal(link.text,expected,'Traducción navegación '+href+' '+c.name+' '+route);
+      }
+      for(const untranslated of ['Comparte tus ideas','Fotografías de nuestros eventos','Nuestras redes oficiales'])
+       assert.ok(!info.menuText.includes(untranslated),'Menú sin traducir: '+untranslated+' '+c.name+' '+route);
+     }
      if(['/acceso','/registro','/recuperar'].includes(route)){
       assert.equal(info.authForm,true,'Falta formulario de acceso en '+route+' '+c.name);
       if(lang==='fr'){
@@ -60,6 +74,7 @@ for(const c of CASES){
     }
    }
    assert.deepEqual(writeRequests,[],'Una navegación anónima no debe enviar escrituras al Worker');
+   assert.deepEqual(forbiddenProviders,[],'La web Cloudflare no debe pedir recursos al antiguo backend, R2 o esm.sh');
    console.log('OK:',c.name,'rutas ES/FR',ROUTES.length*2,'sin escrituras y sin desbordamiento');
   }finally{await context.close();}
  }finally{await browser.close();}
