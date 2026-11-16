@@ -10,7 +10,7 @@ assert.equal(cfg.main,'./bellaquitas-api-staging.js');
 assert.equal(cfg.compatibility_date,'2026-11-10','Conservar versión de runtime');
 assert.equal(cfg.workers_dev,true);
 assert.equal(cfg.keep_vars,true,'No sobrescribir variables existentes');
-assert.ok(!Object.hasOwn(cfg,'vars'),'Prohibido incrustar valores existentes/secretos en Git');
+assert.deepEqual(cfg.vars,{ADMIN_EMAIL_LINK_ENABLED:'yes'},'Solo habilitar auto-vinculación admin tras Google + correo; no versionar secretos');
 assert.ok(!Object.hasOwn(cfg,'routes')&&!Object.hasOwn(cfg,'route'),'No cambiar DNS ni rutas de producción');
 assert.ok(!Object.hasOwn(cfg,'assets'),'El backend no debe reemplazar ASSETS de vídeo ya publicados');
 assert.ok(!Object.hasOwn(cfg,'r2_buckets'),'No volver a R2');
