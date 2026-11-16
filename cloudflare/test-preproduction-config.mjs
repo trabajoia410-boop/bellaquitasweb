@@ -40,8 +40,10 @@ assert.notEqual(db.database_id,stageDb.database_id,
   'NUNCA utilizar D1 staging como base futura de producción');
 assert.notEqual(db.database_id,'2642aff7-11da-4dc6-b359-9bc9417eda31',
   'NUNCA utilizar la restauración aislada como base editable');
-assert.deepEqual(target.services,staging.services,
-  'Los medios originales deben permanecer aislados, sin R2');
+assert.equal(target.services,undefined,
+  'El Worker de preproducción debe servir medios directamente, sin Service Binding a QA');
+assert.ok(Array.isArray(staging.services) && staging.services.length===1,
+  'No se cambia el servidor multimedia de staging existente');
 for(const key of [
  'STAGING_MUTATIONS',
  'ALLOW_NEW_ACCOUNTS',
