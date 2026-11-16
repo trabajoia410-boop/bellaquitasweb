@@ -27,7 +27,7 @@
     },
     "realHttp206AndIosAndroidPlayback": {
       "passed": false,
-      "evidence": "cloudflare/FASE5_QA_FISICA_Y_ADMIN_2026-11-16.md: CORP same-origin impedía media, se corrigió solo para medios públicos; Worker media QA build c9d4be74-e755-4795-b43d-c57b1ec22f9a SUCCESS, cinco MP4 ya con 206 real y bytes íntegros. CI browser 43791639958: Pixel7 Chromium y Chrome escritorio readyState4, tiempo >1.2s, Safari WebKit simulado sin bloqueo pero sin avance observado. FALTA prueba física iPhone y Android; sigue FALSO."
+      "evidence": "16/11/2026: ESPEJO STAGING cambiado de proxy GitHub temporal a Cloudflare Workers Static Assets (Service Binding VIDEO_QA_PROXY ahora service bellaquitas-media-qa), build Cloudflare 536ad894-3c35-4529-ae1e-3e8c7c19cf1c success, GitHub Actions 43808936094 success: 5 MP4/10 HTTP206 con bytes originales inicio+fin, tres logos idénticos, sin R2, ni cookies. FALTA reproducir en iPhone y Android físicos, y comparar visualmente antes del corte. Ver cloudflare/FASE5_MEDIOS_DIRECTOS_Y_ROTACION_2026-11-16.md. Sigue FALSO."
     },
     "bothRealAdminLoginsVerified": {
       "passed": false,
@@ -39,7 +39,7 @@
     },
     "exposedBackupKeyRotatedOutOfChat": {
       "passed": false,
-      "evidence": "16/11/2026: GitHub QA tiene preventivo cloudflare/test-no-private-backup-leaks.mjs y .gitignore para evitar subir claves privadas PEM, bases locales y backups; tests validan archivos versionados. NO se rotó la clave histórica ni se probó restauración usando clave nueva sobre copia original de producción; sigue FALSO."
+      "evidence": "16/11/2026: herramienta nueva --rotate en cloudflare/offsite-d1-backup.mjs para recifrar backups JSON AES256-GCM v1 en memoria, clave/nonce nuevos, prueba sintética 43808681874 success. NO admite ZIP RSA, no ha rotado la clave histórica expuesta ni renovado copia original de producción (archivos/credenciales de origen no disponibles). Ver cloudflare/FASE5_MEDIOS_DIRECTOS_Y_ROTACION_2026-11-16.md. Sigue FALSO."
     },
     "cloudflareExtraProfileReviewed": {
       "passed": true,
