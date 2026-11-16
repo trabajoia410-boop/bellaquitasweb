@@ -38,10 +38,16 @@ for(const [name,engine,device] of [
   assert.equal((await page.locator('aside [data-tab="site"]').textContent()).trim(),'Modifier le site');
   assert.equal((await page.locator('aside [data-tab="security"]').textContent()).trim(),'Sécurité');
   assert.equal(await page.locator('#email').inputValue(),'ficticio@example.invalid');
+  const recovery=page.locator('#adminPasswordRecovery');
+  assert.equal((await recovery.textContent()).trim(),'Mot de passe oublié ?','Enlace de recuperación FR');
+  assert.equal(await recovery.getAttribute('href'),'/espejo/#/recuperar');
+  assert.equal(await recovery.getAttribute('target'),'_blank','Recuperación no debe cerrar panel admin');
+  assert.match(await recovery.getAttribute('rel')||'',/noopener/);
   await page.locator('#bq-admin-language button[data-lang="es"]').click();
   await page.waitForFunction(()=>document.documentElement.lang==='es');
   await page.waitForFunction(()=>document.querySelector('#login h1')?.textContent?.trim()==='Panel de administrador');
   assert.equal(await page.locator('#email').inputValue(),'ficticio@example.invalid');
+  assert.equal((await recovery.textContent()).trim(),'¿Has olvidado tu contraseña?','Enlace de recuperación ES');
   const over=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
   assert.ok(over<=8,'Administración tiene overflow horizontal '+over+'px');
   assert.deepEqual(writes,[],'Prueba de interfaz no debe escribir ni llamar POST');
