@@ -36,7 +36,7 @@ for(const [name,size] of samples){
  const bytes=Uint8Array.from({length:100},(_,i)=>i);
  const range='bytes=0-99';
  const env={ASSETS:{async fetch(request){
-  assert.equal(request.headers.get('Range'),range);
+  assert.equal(request.headers.get('Range'),null,'ASSETS debe recibir GET sin Range para impedir doble recorte');
   return new Response(bytes,{status:206,headers:{
    'Content-Type':'application/octet-stream','Content-Range':'bytes 0-99/'+size,
    'Content-Length':String(bytes.length),'Accept-Ranges':'bytes'
