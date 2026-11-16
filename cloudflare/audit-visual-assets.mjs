@@ -7,6 +7,8 @@
  */
 import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
+import {createHash} from 'node:crypto';
+import {ADDITIONAL_MEDIA} from './visual-extra-media.js';
 
 const mirror=readFileSync('cloudflare/mirror-snapshot.js','utf8');
 const prefix='export const MIRROR_SNAPSHOT=';
@@ -20,6 +22,14 @@ const allowed=JSON.parse(match[1]);
 const inventory=new Set(allowed.map(x=>x.path));
 assert.equal(inventory.size,allowed.length,'Inventario duplicado');
 const dynamicFiles=new Set(['qr-local.js','jsqr-local.js']);
+const extraExists=existsSync('assets/'+ADDITIONAL_MEDIA.path);
+if(extraExists){
+ const bytes=readFileSync('assets/'+ADDITIONAL_MEDIA.path);
+ assert.equal(bytes.length,ADDITIONAL_MEDIA.bytes,'Foto lateral no original: tamaño');
+ assert.equal(createHash('sha256').update(bytes).digest('hex'),ADDITIONAL_MEDIA.sha256,
+  'Foto lateral no original: SHA256');
+}
+
 for(const name of dynamicFiles)
  assert.ok(Object.hasOwn(snapshot,'assets/'+name),'QR original perdido: '+name);
 const assetsSeen=new Set();
@@ -31,12 +41,15 @@ for(const [name,source] of Object.entries(snapshot)){
   let path=m[1];
   try{path=decodeURIComponent(path)}catch{}
   assetsSeen.add(path);
-  if(!inventory.has(path) && !dynamicFiles.has(path))missing.add(path);
+  if(!inventory.has(path) && !dynamicFiles.has(path) &&
+      !(path===ADDITIONAL_MEDIA.path && extraExists))missing.add(path);
  }
 }
 for(const asset of inventory)
  assert.ok(existsSync('assets/'+asset),'Media original del manifest no existe: '+asset);
 const gates=JSON.parse(readFileSync('cloudflare/release-gates-2026-11-15.json','utf8'));
+assert.equal(gates.phase6VisualAssetAudit?.sourceOriginalSha256,ADDITIONAL_MEDIA.sha256);
+assert.equal(gates.phase6VisualAssetAudit?.sourceOriginalSize,ADDITIONAL_MEDIA.bytes);
 const found=[...missing].sort(),documented=[...(gates.phase6VisualAssetAudit?.missing||[])].sort();
 assert.deepEqual(found,documented,
  'Cambio en recursos visuales sin actualizar gate de publicación');
