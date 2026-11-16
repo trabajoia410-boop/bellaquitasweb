@@ -26,6 +26,7 @@ assert.deepEqual(state,{service:'bellaquitas-device-qa',production:false,hasD1:f
 assert.equal(script.status,200);
 const js=await script.text();
 assert.ok(js.includes('getUserMedia')&&js.includes('window.jsQR')&&!js.includes('fetch('));
+assert.ok(js.includes("https://bellaquitas-media-qa.bellaquitas-fest-410.workers.dev"),'QA móvil debe usar multimedia Cloudflare y no proxy temporal');
 assert.equal(library.status,200);
 const live=Buffer.from(await library.arrayBuffer()),orig=readFileSync('assets/jsqr-local.js');
 assert.deepEqual(createHash('sha256').update(live).digest('hex'),createHash('sha256').update(orig).digest('hex'),'La biblioteca QR debe ser byte por byte idéntica a la original');
@@ -35,18 +36,18 @@ assert.equal(head.status,200);assert.equal((await head.text()).length,0);
 for(const x of [page,health,script,library,notFound,post,head])
  assert.equal(x.headers.get('set-cookie'),null,'Sin cookies de sesión');
 // Los cinco MP4 de la página QA deben funcionar por HTTP Range real (sin R2).
-const sourceBase='https://bellaquitas-api-staging.bellaquitas-fest-410.workers.dev';
+const sourceBase='https://bellaquitas-media-qa.bellaquitas-fest-410.workers.dev';
 const manifestText=readFileSync('cloudflare/site-media-manifest.js','utf8');
 const manifestPart=manifestText.match(/export const SITE_MEDIA\s*=\s*(\[[\s\S]*?\]);/);
 assert.ok(manifestPart,'Inventario histórico ausente');
 const originals=JSON.parse(manifestPart[1]).filter(x=>x.type==='video/mp4');
 assert.equal(originals.length,5,'Cinco archivos MP4 originales');
 for(const file of originals){
- const url=sourceBase+'/espejo/assets/'+encodeURIComponent(file.path);
+ const url=sourceBase+'/assets/'+encodeURIComponent(file.path);
  const headResponse=await fetch(url,{method:'HEAD',cache:'no-store',signal:AbortSignal.timeout(30000)});
  assert.equal(headResponse.status,200,'No existe MP4 '+file.path);
  assert.match(headResponse.headers.get('content-type')||'',/video\/mp4/);
- assert.equal(Number(headResponse.headers.get('content-length')),file.bytes,'El vídeo no debe recomprimirse');
+ if(headResponse.headers.has('content-length'))assert.equal(Number(headResponse.headers.get('content-length')),file.bytes,'HEAD no coincide con original');
  const response=await fetch(url,{headers:{Range:'bytes=0-127'},cache:'no-store',signal:AbortSignal.timeout(30000)});
  assert.equal(response.status,206,'El vídeo debe aceptar HTTP Range para Safari');
  assert.equal(response.headers.get('content-range'),'bytes 0-127/'+file.bytes);
@@ -54,6 +55,6 @@ for(const file of originals){
  assert.deepEqual(Buffer.from(await response.arrayBuffer()),readFileSync('assets/'+file.path).subarray(0,128),
   'Los bytes de vídeo en staging deben coincidir con Git');
 }
-console.log('OK: cinco MP4 reales, HTTP 206, bytes originales exactos, sin cookies. Aún no son Static Assets propios.');
+console.log('OK: cinco MP4 de Cloudflare Static Assets, HTTP 206 real, bytes originales exactos, sin cookies.');
 
-console.log('OK: dispositivo QA HTTPS publicado, lector QR original idéntico, cámara local, ES/FR, 5 vídeos de staging, cero cookies/POST/DB/R2.');
+console.log('OK: dispositivo QA HTTPS publicado, lector QR original idéntico, cámara local, ES/FR, 5 vídeos de Cloudflare Static Assets, cero cookies/POST/DB/R2.');
