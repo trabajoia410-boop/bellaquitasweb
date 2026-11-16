@@ -117,10 +117,40 @@ export async function mirrorRoute(request,env){
    const assetUrl=new URL(request.url);
    assetUrl.pathname="/assets/"+encodeURIComponent(filename);
    try{
-     const served=useProxy
+     let served=useProxy
       ?await fromTemporaryMedia(request,filename,env)
       :await env.ASSETS.fetch(new Request(assetUrl,request));
      if(served.status!==200&&served.status!==206)return fail(503,"Medio original pendiente de verificación");
+
+     // Algunas respuestas 206 de un Worker a otro tienen Content-Length
+     // correcto pero entregan un cuerpo vacío durante un fallo transitorio
+     // de streaming. En rangos pequeños, COMPROBAR bytes antes de enviarlos
+     // a Safari; un segundo intento interno es seguro, sin cookies ni D1.
+     // No ocultar un segundo fallo devolviendo 206 vacío: responder 503.
+     const requested=/^bytes=(\d+)-(\d+)$/.exec(request.headers.get("Range")||"");
+     if(useProxy&&request.method==="GET"&&expected.type==="video/mp4"&&requested){
+       const start=Number(requested[1]),end=Number(requested[2]);
+       const length=end-start+1;
+       if(Number.isSafeInteger(length)&&start>=0&&length>0&&length<=262144){
+         const correctRange="bytes "+start+"-"+end+"/"+expected.bytes;
+         let body=null;
+         for(let attempt=0;attempt<2;attempt++){
+           if(attempt>0)served=await fromTemporaryMedia(request,filename,env);
+           if(served.status!==206||
+               served.headers.get("Content-Range")!==correctRange||
+               Number(served.headers.get("Content-Length"))!==length){
+             return fail(503,"Fragmento de vídeo no verificado");
+           }
+           try{body=new Uint8Array(await served.arrayBuffer());}
+           catch{body=null;}
+           if(body&&body.byteLength===length)break;
+           console.warn("Fragmento multimedia QA incompleto, intento "+(attempt+1));
+         }
+         if(!body||body.byteLength!==length)
+           return fail(503,"Fragmento de vídeo temporalmente no disponible");
+         served=new Response(body,{status:206,headers:served.headers});
+       }
+     }
      const headers=new Headers(served.headers);
      for(const [name,value] of Object.entries(PROTECTED))headers.set(name,value);
      headers.set("Content-Type",expected.type);
