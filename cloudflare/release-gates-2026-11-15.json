@@ -27,11 +27,11 @@
     },
     "realHttp206AndIosAndroidPlayback": {
       "passed": false,
-      "evidence": "Worker media QA permanente con HTTP 206 REAL, 5 MP4 original y 3 logos intactos, GitHub Actions 43785881578 verde; test WebKit/Chromium simulado previamente aprobado. FALTA reproducción física en un iPhone y Android antes de marcar este control como pasado."
+      "evidence": "cloudflare/FASE5_QA_FISICA_Y_ADMIN_2026-11-16.md: CORP same-origin impedía media, se corrigió solo para medios públicos; Worker media QA build c9d4be74-e755-4795-b43d-c57b1ec22f9a SUCCESS, cinco MP4 ya con 206 real y bytes íntegros. CI browser 43791639958: Pixel7 Chromium y Chrome escritorio readyState4, tiempo >1.2s, Safari WebKit simulado sin bloqueo pero sin avance observado. FALTA prueba física iPhone y Android; sigue FALSO."
     },
     "bothRealAdminLoginsVerified": {
       "passed": false,
-      "evidence": "cloudflare/ADMIN_TWO_ACCOUNTS_AND_RESTORE_2026-11-15.md (2 admins ficticios verificados con hash, sesiones y 2 contraseñas; logins reales siguen pendientes)"
+      "evidence": "cloudflare/FASE5_QA_FISICA_Y_ADMIN_2026-11-16.md: consulta de lectura real D1 staging/restauración: 2 administradores, ambos vinculados a identidades Google, ninguno con credencial email verificada, 0 sesiones admin step-up/links. Google OAuth secreto configurado y flujo PKCE preparado, no se han iniciado sesiones ni leído contraseñas. FALTAN ambos inicios reales y, si se pide acceso email+password, vinculación verificada por las personas administradoras. Sigue FALSO."
     },
     "productionDatabaseBackupConfirmed": {
       "passed": false,
@@ -47,11 +47,11 @@
     },
     "realDeviceQrDoorTest": {
       "passed": false,
-      "evidence": "Worker independiente real https://bellaquitas-device-qa.bellaquitas-fest-410.workers.dev/ publicado sin D1/R2/cookies y con jsQR original; CI HTTPS 43776050095 correcto. FALTA uso de cámara y validación de puerta físicamente; sigue FALSO."
+      "evidence": "cloudflare/FASE5_QA_FISICA_Y_ADMIN_2026-11-16.md: página real / de device QA actualizada con QR sintético reconocible localmente, prueba jsQR contra píxeles exactos (CI 43790644785) y cámara física activada sólo por usuario. CI Playwright 43791639958 pasó; sin envío de QR ni escrituras. FALTA usar cámara física y validar control de puerta autorizado con puntos/visitas intactos."
     },
     "finalEsFrMobileVisualParity": {
       "passed": false,
-      "evidence": "66 combinaciones automatizadas ES/FR WebKit/Chromium (43770712164), panel admin bilingüe y nueva vista QA ES/FR con cámara y vídeos (43776050095). FALTAN pruebas físicas y auditoría exhaustiva contenido dinámico; sigue FALSO."
+      "evidence": "QA 66 rutas ES/FR WebKit/Chromium (43770712164), QR sintético y diagnóstico ES/FR incluyendo etiquetas de 5 MP4 e informe local (43791639958), revalidación Chromium real readyState4. Por probar en móviles físicos y completar revisión exhaustiva del contenido dinámico; sigue FALSO. Ver cloudflare/FASE5_QA_FISICA_Y_ADMIN_2026-11-16.md."
     },
     "googleIdentityMappingExact": {
       "passed": true,
