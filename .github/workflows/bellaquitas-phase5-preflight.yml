@@ -65,6 +65,8 @@ jobs:
           node-version: '22'
       - name: Seguridad de panel, API pública y vídeos MP4
         run: node cloudflare/test-stage-http-phase5.mjs
+      - name: Comprobar 10 rangos HTTP 206 y bytes originales desde la web espejo
+        run: node cloudflare/test-staging-mirror-media-online.mjs
 
   browser-esfr-parity:
     name: ES/FR y diseño responsive (WebKit iPhone, Chrome Android y PC)
