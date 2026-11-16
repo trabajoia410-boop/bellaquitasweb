@@ -14,11 +14,25 @@ const get = async (base, path, headers={}) => {
   const target = new URL(path, base);
   assert.ok([new URL(api).host,new URL(media).host].includes(target.host),
     'Solicitud fuera de los hosts de QA');
-  const r = await fetch(target, {
-    method: 'GET', headers, redirect: 'manual',
-    signal: AbortSignal.timeout(25000)
-  });
-  return r;
+  // GitHub Actions puede ver resets TLS transitorios en rutas GET/HEAD
+  // de workers.dev. Reintentar SOLO errores de red, jamás un HTTP 206
+  // inválido, bytes vacíos, un fallo de permisos o una respuesta 5xx.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      return await fetch(target, {
+        method: 'GET', headers, redirect: 'manual',
+        signal: AbortSignal.timeout(25000)
+      });
+    } catch (error) {
+      const cause = error?.cause?.code || error?.code || '';
+      if (attempt === 2 || !['ECONNRESET','ETIMEDOUT','UND_ERR_CONNECT_TIMEOUT'].includes(cause)) {
+        throw error;
+      }
+      console.warn('QA: conexión GET interrumpida, reintento '+(attempt+1)+'/2 en '+target.pathname+' ('+cause+')');
+      await new Promise(resolve => setTimeout(resolve, 300 * (attempt+1)));
+    }
+  }
+  throw new Error('GET no completado');
 };
 const check = (ok, message) => {
   assert.ok(ok, message);
