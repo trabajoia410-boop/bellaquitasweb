@@ -32,3 +32,12 @@
 `realHttp206AndIosAndroidPlayback`, `bothRealAdminLoginsVerified`, `productionDatabaseBackupConfirmed`, `exposedBackupKeyRotatedOutOfChat`, `realDeviceQrDoorTest`, `finalEsFrMobileVisualParity`.
 
 Las pruebas manuales positivas de administrador, Android y QR ya declaradas por el propietario **se respetan y no se solicitan de nuevo**. Sin evidencia independiente de ambos accesos Cloudflare, sin backup PostgreSQL integral y rotación privada, y sin prueba física iPhone no se dan por superados los gates estrictos. Sigue `productionChangesAuthorized=false`.
+
+## 5. Editor administrativo probado en SQLite en memoria
+
+- Test `cloudflare/test-editor-admin-offline.mjs` ejecutado desde `.github/workflows/bellaquitas-phase5-preflight.yml` con **DOS administradores sintéticos** y un socio sintético.
+- Operaciones verificadas en D1-compatible SQLite temporal: evento ficticio crear/editar por segundo admin/desactivar/borrar; premio nuevo con coste y traducción FR; promoción; guardar borrador y publicar contenido de portada con traducciones ES/FR.
+- Denegaciones comprobadas: staging `STAGING_MUTATIONS=disabled` devuelve **423**; sin sesión **401**; socio o mezcla de cookies administrativas **403**; origen cruzado **403**; coste negativo y borrado multimedia **409**; subida directa sin R2 **423**.
+- Los tres perfiles sintéticos terminan con **los mismos roles, puntos, lifetime_points y visitas**.
+- [CI fase5, 16/11, run 43860259762](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43860259762) **SUCCESS** en sus tres trabajos: test del editor, OAuth sintético, 73 comprobaciones HTTP reales de staging y 66 combinaciones ES/FR (iPhone WebKit, Pixel Chromium, PC). Sin datos de socios reales ni escrituras de fidelidad.
+- **No se ha habilitado la edición en staging para cuentas reales** ni se ha publicado el panel en `bellaquitas.fr`; sigue pendiente probar el acceso real de los dos administradores y la importación completa de contraseñas/verificación de correo.
