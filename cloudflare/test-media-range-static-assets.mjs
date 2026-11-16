@@ -8,10 +8,17 @@ const base='https://bellaquitas-media-qa.example.test';
 const file='auth-startup.js';
 const original=Uint8Array.from({length:56},(_,i)=>(i*19)%256);
 let assetFetches=0;
-const env={ASSETS:{async fetch(_req){
+const forwardedRanges=[];
+const env={ASSETS:{async fetch(req){
  assetFetches++;
- // Imitamos el comportamiento real: el asset IGNORA el Range y devuelve 200.
- return new Response(original,{status:200,headers:{'Content-Type':'application/octet-stream'}});
+ const suppliedRange=req.headers.get('Range');
+ forwardedRanges.push(suppliedRange);
+ // Emular un comportamiento contradictorio del caché: Range pedido al
+ // origen sirve cuerpo YA recortado pero devuelve status 200, provocando
+ // 206 vacío al aplicar un segundo corte para los últimos bytes.
+ const partial=suppliedRange?.match(/^bytes=(\d+)-(\d+)$/);
+ const payload=partial?original.slice(Number(partial[1]),Number(partial[2])+1):original;
+ return new Response(payload,{status:200,headers:{'Content-Type':'application/octet-stream'}});
 }}};
 async function get(range,method='GET'){
  const headers=range?{Range:range}:{};
@@ -59,4 +66,5 @@ assert.equal(unsafe.status,405);
 const mystery=await worker.fetch(new Request(base+'/assets/UNKNOWN.mp4'),env);
 assert.equal(mystery.status,404);
 assert.ok(assetFetches>=8,'Se usa siempre el binding Static Assets');
+assert.deepEqual(forwardedRanges,Array(forwardedRanges.length).fill(null),'No reenviar Range al caché Static Assets para evitar doble recorte');
 console.log('OK: 7 Range parciales exactos, HEAD206, 4 inválidos 416, bytes y MIME intactos, 0 escrituras.');
