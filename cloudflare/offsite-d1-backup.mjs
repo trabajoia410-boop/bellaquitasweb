@@ -103,6 +103,40 @@ function store(archive,key,archivePath,keyPath){
  }
  return {archive:a,key:k};
 }
+/**
+ * Cambia clave AES-256-GCM de un backup VALIDADO sin escribir SQL en claro.
+ * Preserva la etiqueta de origen; no transforma staging en producción.
+ * NUNCA borra el archivo o llave de origen: borrarlos requiere verificación
+ * independiente de la copia nueva y decisión explícita del propietario.
+ */
+function rotateArchive(oldArchivePath,oldKeyPath,newArchivePath,newKeyPath){
+ const source=outsideRepo(oldArchivePath),oldKeyFile=outsideRepo(oldKeyPath);
+ const nextArchive=outsideRepo(newArchivePath),nextKeyFile=outsideRepo(newKeyPath);
+ assert.ok(source!==oldKeyFile,'La copia y clave antigua deben ser distintas');
+ assert.ok(![source,oldKeyFile].includes(nextArchive)&&![source,oldKeyFile].includes(nextKeyFile),
+  'Nunca sobreescribir archivo o clave original');
+ noOverwrite(nextArchive);noOverwrite(nextKeyFile);
+ const archive=loadArchive(source),oldKey=loadKey(oldKeyFile);
+ let plain,verified;
+ const nextKey=randomBytes(32);
+ try{
+  assert.ok(!oldKey.equals(nextKey),'La nueva clave nunca debe ser la antigua');
+  plain=doDecrypt(archive,oldKey);
+  const updated=doEncrypt(plain,nextKey,archive.source);
+  assert.equal(updated.source,archive.source,'No alterar la procedencia del respaldo');
+  assert.equal(updated.plaintext_sha256,archive.plaintext_sha256,'No alterar el hash original');
+  assert.notEqual(updated.iv_base64,archive.iv_base64,'Nuevo nonce obligatorio');
+  store(updated,nextKey,nextArchive,nextKeyFile);
+  verified=doDecrypt(loadArchive(nextArchive),loadKey(nextKeyFile));
+  assert.ok(plain.equals(verified),'Los dos respaldos no contienen el mismo SQL');
+  return Object.freeze({source:archive.source,bytes:plain.length,
+   sqlHashMatches:true,oldArchivePreserved:true,sqlNotWrittenToDisk:true});
+ }finally{
+  if(plain)plain.fill(0);
+  if(verified)verified.fill(0);
+  oldKey.fill(0);nextKey.fill(0);
+ }
+}
 async function getD1Export(accountId,token){
  assert.match(accountId||'',/^[0-9a-f]{32}$/i,'ID de cuenta inválido');
  assert.ok(typeof token==='string'&&token.length>=20,'Falta Cloudflare API Token local de lectura D1');
@@ -155,6 +189,26 @@ async function selfTest(){
   const key=randomBytes(32),blob=doEncrypt(fake,key);
   store(blob,key,archivePath,keyPath);
   assert.ok(doDecrypt(loadArchive(archivePath),loadKey(keyPath)).equals(fake));
+  // Rotación sin archivo SQL sin cifrar: la copia antigua sigue intacta.
+  const folderC=join(dir,'nueva-copia'),folderD=join(dir,'nueva-clave');
+  mkdirSync(folderC,{mode:0o700});mkdirSync(folderD,{mode:0o700});
+  const newArchive=join(folderC,'qa-rotada.enc.json'),newKey=join(folderD,'qa-rotada.key');
+  const output=rotateArchive(archivePath,keyPath,newArchive,newKey);
+  assert.equal(output.source,'cloudflare-d1-staging');
+  assert.equal(output.oldArchivePreserved,true);
+  assert.ok(doDecrypt(loadArchive(newArchive),loadKey(newKey)).equals(fake));
+  assert.throws(()=>doDecrypt(loadArchive(newArchive),loadKey(keyPath)),
+   'La clave antigua NO puede leer la copia recién cifrada');
+  assert.ok(doDecrypt(loadArchive(archivePath),loadKey(keyPath)).equals(fake),
+   'La rotación NO debe alterar ni borrar la copia original');
+  assert.throws(()=>rotateArchive(archivePath,join(folderA,'clave-errónea'),join(folderC,'otra.enc.json'),join(folderD,'otra.key')),
+   'No rotar si la clave antigua no existe');
+  assert.throws(()=>rotateArchive(archivePath,join(folderD,'qa-rotada.key'),join(folderC,'otra.enc.json'),join(folderA,'otra.key')),
+   'No rotar con clave antigua incorrecta');
+  assert.throws(()=>rotateArchive(archivePath,keyPath,newArchive,newKey),
+   'Nunca sobrescribir una rotación anterior');
+  assert.throws(()=>rotateArchive(archivePath,keyPath,archivePath,newKey),
+   'No sobrescribir la copia antigua');
   const fakeLocal=Buffer.concat([LOCAL_PREFIX,Buffer.from("CREATE TABLE qa_local(id TEXT);\nINSERT INTO qa_local VALUES ('ficticio');\n")]);
   const localKey=randomBytes(32);
   const localArchive=doEncrypt(fakeLocal,localKey,'local-sql-unverified');
@@ -207,6 +261,14 @@ async function main(){
   console.log('NOTA: conserva el SQL original protegido o elimínalo de forma segura según tu procedimiento.');
   return;
  }
+ if(args[0]==='--rotate'&&args.length===5){
+  const [oldArchive,oldKey,newArchive,newKey]=args.slice(1);
+  const result=rotateArchive(oldArchive,oldKey,newArchive,newKey);
+  console.log('OK: copia recifrada con clave aleatoria nueva en destino separado; sin SQL claro en disco.');
+  console.log('Origen conservado como '+result.source+'; NO certifica producción ni rota otros backups.');
+  console.log('Conserva original y clave antigua hasta verificar el nuevo respaldo de forma independiente.');
+  return;
+ }
  if(args[0]==='--verify'&&args.length===3){
   const sql=doDecrypt(loadArchive(args[1]),loadKey(args[2]));
   console.log('OK: copia D1 cifrada verificada; bytes SQL:',sql.length);
@@ -219,6 +281,6 @@ async function main(){
   console.log('OK: SQL recuperado en un archivo NUEVO protegido. Bórralo después de restaurar la base aislada.');
   return;
  }
- throw Error('Uso: --self-test | --export-staging ARCHIVO_CIFRADO.json CLAVE_NUEVA.b64 | --encrypt-local-sql ORIGEN.sql ARCHIVO_CIFRADO.json CLAVE_NUEVA.b64 | --verify ARCHIVO_CIFRADO.json CLAVE_NUEVA.b64 | --restore ARCHIVO_CIFRADO.json CLAVE_NUEVA.b64 SALIDA.sql');
+ throw Error('Uso: --self-test | --export-staging ARCHIVO_CIFRADO.json CLAVE_NUEVA.b64 | --encrypt-local-sql ORIGEN.sql ARCHIVO_CIFRADO.json CLAVE_NUEVA.b64 | --rotate COPIA_ANTIGUA.json CLAVE_ANTIGUA.b64 COPIA_NUEVA.json CLAVE_NUEVA.b64 | --verify ARCHIVO_CIFRADO.json CLAVE_NUEVA.b64 | --restore ARCHIVO_CIFRADO.json CLAVE_NUEVA.b64 SALIDA.sql');
 }
 main().catch(e=>{console.error('Copia de seguridad no completada:',e.message);process.exitCode=1});
