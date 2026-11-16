@@ -104,7 +104,7 @@ try{
  assert.deepEqual(new Uint8Array(await response.arrayBuffer()),fullVideo.subarray(0,256));
  assert.equal(rangeGets,1);
  assert.equal(fullGets,1,'ASSETS se reabre sin Range al responder 200');
- const endRange='bytes '+(fullLength-256)+'-'+(fullLength-1);
+ const endRange='bytes='+(fullLength-256)+'-'+(fullLength-1);
  response=await mirrorRoute(req(STAGE,{headers:{Range:endRange}}),direct200);
  assert.equal(response.status,206,'Safari puede leer los últimos 256 bytes');
  assert.deepEqual(new Uint8Array(await response.arrayBuffer()),fullVideo.subarray(fullLength-256));
