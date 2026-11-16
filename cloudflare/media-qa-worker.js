@@ -135,7 +135,18 @@ export default {
     "Content-Length":String(range.length),"Accept-Ranges":"bytes","Cross-Origin-Resource-Policy":"cross-origin","Cache-Control":"public,max-age=3600"
    }});
   }
-  const response=await env.ASSETS.fetch(request);
+  // Cloudflare Static Assets responde 200 incluso cuando el cliente pide Range.
+  // No propagar Range a ASSETS: en algunos nodos de caché devuelve 200 con
+  // un cuerpo ya parcial, y al recortarlo otra vez (sobre todo cerca del EOF)
+  // Safari obtiene 206 con 0 bytes. Pedir la representación COMPLETA evita
+  // ese doble recorte antes del streaming propio.
+  let assetRequest=request;
+  if(range&&request.method==="GET"){
+   const forwarded=new Headers(request.headers);
+   for(const h of ["Range","If-Range","If-None-Match","If-Modified-Since"])forwarded.delete(h);
+   assetRequest=new Request(request.url,{method:"GET",headers:forwarded});
+  }
+  const response=await env.ASSETS.fetch(assetRequest);
   if(response.status!==200&&response.status!==206&&response.status!==304&&response.status!==416)
    return respond("Medio original no disponible",503);
   const outgoing=new Headers(response.headers);
