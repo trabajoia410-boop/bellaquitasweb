@@ -61,6 +61,9 @@ for(const [label,engine,settings] of environments){
    'El diagnóstico no debe tener scroll horizontal');
   assert.deepEqual(writes,[],'No hay POST ni operaciones que puedan modificar usuarios/puntos');
   assert.deepEqual(forbidden,[],'No contactar dominio público ni proveedor retirado');
+  assert.ok(mediaRequests.length>0,'Debe intentar reproducir los vídeos desde media QA');
+  assert.ok(!failedMedia.some(x=>/Cross-Origin-Resource-Policy|NotSameOrigin/i.test(JSON.stringify(x))),
+   'Los MP4 públicos no deben bloquearse por políticas entre Workers');
   assert.deepEqual(errors,[],'El navegador debe poder ejecutar el diagnóstico');
   await ctx.close();
   console.log(JSON.stringify({device:label,qa:'OK',qrSynthetic:'OK',esFr:'OK',noWrites:true,
