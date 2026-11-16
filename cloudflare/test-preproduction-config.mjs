@@ -66,7 +66,18 @@ assert.equal(gates.phase6PreproductionDb?.adminProfiles,2);
 assert.equal(gates.phase6PreproductionDb?.activeSessionsCopied,0);
 assert.equal(gates.phase6PreproductionDb?.finalAccountReconciliationCompleted,false,
   'La fotografía inicial no equivale al corte final de cuentas');
+assert.equal(gates.phase6PreproductionDb?.preproductionWorkerDeployed,true,
+  'Debe existir un Worker aislado con la fotografía inicial');
+assert.equal(gates.phase6PreproductionDb?.preproductionWorkerBuildStatus,'success');
+assert.equal(gates.phase6PreproductionDb?.workerHasDbBinding,true);
+assert.equal(gates.phase6PreproductionDb?.workerDbBindingId,db.database_id);
+assert.equal(gates.phase6PreproductionDb?.workerHasAssetsBinding,true);
+assert.equal(gates.phase6PreproductionDb?.staticAssetsBuildVerified,true);
+assert.equal(gates.phase6PreproductionDb?.workerHasAuthSecrets,false,
+ 'No declarar autenticación lista si faltan secretos en preproducción');
+assert.equal(gates.phase6PreproductionDb?.workerUrlEnabled,false);
+assert.equal(gates.phase6PreproductionDb?.workerPreviewUrlEnabled,false);
 assert.equal(gates.phase6PreproductionDb?.productionWorkerConfigured,false,
-  'La base debe seguir sin Worker de producción');
+  'El Worker aislado no equivale al Worker público con acceso real');
 assert.equal(gates.phase6PreproductionDb?.publiclyAccessible,false);
-console.log('OK: D1 preproducción independiente con fotografía inicial verificada, Worker sin rutas, assets originales, 0 R2, 0 altas, 0 escrituras, OAuth deshabilitado; producción pública intacta.');
+console.log('OK: D1 preproducción independiente con fotografía inicial verificada, Worker aislado sin rutas, assets originales, 0 R2, 0 altas, 0 escrituras, OAuth deshabilitado; producción pública intacta.');
