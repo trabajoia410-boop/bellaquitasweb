@@ -43,6 +43,40 @@ try{
  assert.equal(fetched,0,'ASSETS nunca necesita proxy temporal');
 
  const range='bytes=0-255';
+
+ // Los Static Assets DIRECTOS pueden tener el mismo fallo transitorio.
+ // Nunca entregar 206 anunciando 256 bytes cuando el cuerpo llegó vacío.
+ let directCalls=0;
+ const directRangeHeaders={
+  'Content-Range':'bytes 0-255/9072277',
+  'Content-Length':'256',
+  'Content-Type':'video/mp4'
+ };
+ const directEnv={...safeEnv,ASSETS:{async fetch(request){
+  directCalls++;
+  assert.match(new URL(request.url).pathname,/^\/assets\//);
+  assert.equal(request.headers.get('Range'),range);
+  for(const header of ['cookie','authorization','origin'])
+   assert.equal(request.headers.get(header),null,'No filtrar '+header+' a ASSETS');
+  return new Response(new Uint8Array(directCalls===1?0:256),{
+   status:206,headers:directRangeHeaders
+  });
+ }}};
+ response=await mirrorRoute(req(STAGE,{headers:{
+   Range:range,Cookie:'session-forbidden',Authorization:'Bearer forbidden'
+ }}),directEnv);
+ assert.equal(response.status,206,'Static Assets reintenta un fragmento vacío');
+ assert.equal((await response.arrayBuffer()).byteLength,256);
+ assert.equal(directCalls,2,'Un único reintento de Static Assets');
+ directCalls=0;
+ directEnv.ASSETS.fetch=async()=>{
+  directCalls++;
+  return new Response(new Uint8Array(0),{status:206,headers:directRangeHeaders});
+ };
+ response=await mirrorRoute(req(STAGE,{headers:{Range:range}}),directEnv);
+ assert.equal(response.status,503,'Dos fragmentos 206 vacíos desde Static Assets son fallo');
+ assert.equal(directCalls,2,'No reintentar indefinidamente el vídeo');
+ 
  service.fetch=async(request)=>{
   serviceCalls++;
   const url=new URL(request.url);
