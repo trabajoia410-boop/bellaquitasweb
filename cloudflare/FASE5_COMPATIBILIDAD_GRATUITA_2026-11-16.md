@@ -27,3 +27,10 @@
 - [Workers Static Assets — billing and limitations](https://developers.cloudflare.com/workers/static-assets/billing-and-limitations/)\n- [Resend pricing](https://resend.com/pricing/)
 
 **Conclusión:** El despliegue de prueba y el backup aislado observados caben en los límites del plan gratuito. **No** se autoriza el dominio de producción solo por cumplir esos límites; siguen pendientes accesos de dos administradores, backup integral, clave privada, pruebas reales y QA visual.
+
+## Ensayo real de derivación de contraseñas (Worker Free, sin secretos)
+
+- 16/11/2026 a las 10:04 UTC: Worker temporal `bellaquitas-crypto-bench-qa-20261116` con WebCrypto PBKDF2 encadenado, **6 fases de 100.000 iteraciones SHA-256** y contraseña enteramente ficticia; sin DB, usuarios, tokens ni cookies.
+- GitHub Actions [ejecución de ensayo](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43845399767): **SUCCESS**; tres solicitudes `HTTP 200` con `ok:true` y `phases:6`, todas completadas. Adicionalmente 70 verificaciones HTTP de staging correctas en el mismo job.
+- `elapsedMs:0` es la hora reportada por `Date.now()` dentro de Worker y **no debe interpretarse como 0 ms de CPU real**. Lo demostrado es que el runtime finalizó las seis etapas sin devolver errores; no sustituye prueba de carga en concurrencia ni login de usuarios reales.
+- Se retirará el Worker temporal y las llamadas recurrentes una vez documentado el resultado, conservando las pruebas de contraseña sintética que ejecuta `test-admin-email-link.mjs`.
