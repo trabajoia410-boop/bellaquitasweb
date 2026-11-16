@@ -40,7 +40,9 @@ if(!config.assetsReady){
   if(head.headers.has('content-length'))assert.equal(Number(head.headers.get('content-length')),media.bytes,'HEAD informa tamaño incorrecto');
   // HEAD puede omitir Content-Length en Workers Static Assets; los Range y bytes se verifican abajo.
   const file=readFileSync('assets/'+media.path);
-  for(const [offset,length] of [[0,256],[media.bytes-256,256]]){
+  // Inicio, fotograma intermedio y final: Safari puede pedir rangos de búsqueda.
+  const mid=Math.floor((media.bytes-65536)/2);
+  for(const [offset,length] of [[0,256],[mid,65536],[media.bytes-256,256]]){
    const last=offset+length-1;
    const chunk=await read(name,{headers:{Range:'bytes='+offset+'-'+last}});
    assert.equal(chunk.status,206,'El servidor REAL debe responder 206 en Safari');
