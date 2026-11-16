@@ -25,6 +25,12 @@
     "EMAIL_REGISTRATION_ENABLED": "no",
     "EMAIL_AUTH_ENABLED": "no",
     "ADMIN_EMAIL_LINK_ENABLED": "no",
-    "SUGGESTIONS_ENABLED": "no"
+    "SUGGESTIONS_ENABLED": "no",
+    "SITE_MODE": "preproduction"
+  },
+  "assets": {
+    "directory": "./dist-static",
+    "binding": "ASSETS",
+    "run_worker_first": true
   }
 }
