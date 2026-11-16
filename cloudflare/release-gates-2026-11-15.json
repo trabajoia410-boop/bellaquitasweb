@@ -22,12 +22,12 @@
       "evidence": "cloudflare/ORIGINAL_LOGOS_RECOVERED_2026-11-15.md (3 binarios originales recuperados; tamaños/ETag MD5 y SHA-256 verificados; en assets/migrated-logos/ rama de migración)"
     },
     "originalVideosDeployedToMediaQa": {
-      "passed": false,
-      "evidence": "20 originales auditados en GitHub Actions 43775094654; subida Cloudflare Worker QA no ejecutada por ausencia de CLOUDFLARE_API_TOKEN secreto en GitHub. Intento alternativo de Cloudflare Pages QA rechazado por API HTTP 401 error 8000011 (instalación GitHub en Pages), consulta posterior confirma cero proyectos. 5 vídeos temporales confirmados HTTP 206 en 43776451180. NO se ha desplegado Static Assets propios, sigue FALSO."
+      "passed": true,
+      "evidence": "CERRADO 16/11/2026: proyecto GitHub Workers Builds separado Cloudflare media QA, rama migracion/fase5-segura-20261114; build inicial ea5578c6-a464-48fd-a91a-cc973ee9e56f SUCCESS y build 4afea7c1-15c6-4e71-8d61-772684d6f7e8 SUCCESS; Static Assets binding ASSETS sin D1/R2. GitHub Actions run 43785881578 job 133033286882: 20 recursos originales, 5 MP4 HTTP 206 y bytes inicio/fin idénticos, 3 logos íntegros, no sesiones/POST, Worker QA workers.dev. No DNS cambiado."
     },
     "realHttp206AndIosAndroidPlayback": {
       "passed": false,
-      "evidence": "GitHub Actions 43776451180: QA HTTPS de página de dispositivo más HEAD y Range 206 real de cinco MP4 de espejo staging comparando sus primeros 128 bytes con originales Git. FALTAN vídeos independientes en Cloudflare Static Assets y reproducción física iPhone/Android; sigue FALSO."
+      "evidence": "Worker media QA permanente con HTTP 206 REAL, 5 MP4 original y 3 logos intactos, GitHub Actions 43785881578 verde; test WebKit/Chromium simulado previamente aprobado. FALTA reproducción física en un iPhone y Android antes de marcar este control como pasado."
     },
     "bothRealAdminLoginsVerified": {
       "passed": false,
