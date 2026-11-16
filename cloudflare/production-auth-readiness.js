@@ -9,7 +9,8 @@
 export const CANONICAL_ORIGIN = "https://bellaquitas.fr";
 
 export function productionConfigurationReady(env) {
-  if (!env || env.SITE_MODE !== "production") return false;
+  if (!env || env.SITE_MODE !== "production" ||
+      env.PUBLISH_APPROVED !== "yes") return false;
   const has = (key, minimum) =>
     typeof env[key] === "string" && env[key].length >= minimum;
   const expectedFlags = {
