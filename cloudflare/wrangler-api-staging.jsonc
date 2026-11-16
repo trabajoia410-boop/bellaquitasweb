@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json.schemastore.org/wrangler.json",
+  "name": "bellaquitas-api-staging",
+  "main": "./bellaquitas-api-staging.js",
+  "compatibility_date": "2026-11-10",
+  "workers_dev": true,
+  "keep_vars": true,
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "bellaquitas-staging",
+      "database_id": "c7ada9c9-d397-4e22-b5b8-3fbd8d13e550"
+    }
+  ],
+  "services": [
+    {
+      "binding": "VIDEO_QA_PROXY",
+      "service": "bellaquitas-media-proxy-qa",
+      "environment": "production"
+    }
+  ]
+}
