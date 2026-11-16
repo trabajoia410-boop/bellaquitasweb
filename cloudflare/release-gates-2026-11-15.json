@@ -152,6 +152,7 @@
   "ownerPostpublicationQa": {
     "deferred": [
       "realHttp206AndIosAndroidPlayback",
+      "bothRealAdminLoginsVerified",
       "realDeviceQrDoorTest",
       "finalEsFrMobileVisualParity"
     ],
@@ -162,7 +163,7 @@
     "name": "bellaquitas-produccion-preparada-20261116",
     "id": "3d65c23d-4d03-4988-9d7f-23d4f95cbc3c",
     "jurisdiction": "eu",
-    "status": "schema-only",
+    "status": "initial-snapshot-verified",
     "schemaSource": "bellaquitas-staging",
     "schemaObjects": 44,
     "tables": 22,
@@ -170,11 +171,29 @@
     "triggers": 5,
     "verifiedSchemaDifferences": 0,
     "foreignKeyErrors": 0,
-    "realUsersImported": false,
+    "realUsersImported": true,
     "publiclyAccessible": false,
     "productionWorkerConfigured": false,
     "dnsChanged": false,
     "lastVerified": "2026-11-16",
-    "notes": "D1 creada y esquema clonada por API Cloudflare en jurisdicción eu, cero perfiles; no importa credenciales ni puntos antes de conciliación, no Worker ni domain bindings. Config de preproducción sin routes ni workers_dev."
+    "notes": "Importación de fotografía aislada verificada campo por campo contra staging; 6 usuarios de origen coinciden con restauración D1 original; 7ª cuenta email verificada conservada. No es una conciliación final, tampoco incluye contraseñas originales Google/Supabase.",
+    "initialSnapshotLoaded": true,
+    "initialSnapshotOrigin": "seis perfiles originales idénticos a staging + una cuenta email verificada conservada",
+    "initialSnapshotCopiedRows": 23,
+    "initialSnapshotComparedTables": 14,
+    "initialSnapshotDifferences": 0,
+    "profiles": 7,
+    "adminProfiles": 2,
+    "googleIdentities": 6,
+    "verifiedEmailIdentities": 1,
+    "verifiedEmailCredentials": 1,
+    "points": 1999998,
+    "lifetimePoints": 1999998,
+    "visits": 0,
+    "activeSessionsCopied": 0,
+    "ephemeralTokensCopied": 0,
+    "originalsAltered": false,
+    "finalAccountReconciliationCompleted": false,
+    "authRoutePreflightPassed": false
   }
 }
