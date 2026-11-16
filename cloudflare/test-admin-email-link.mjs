@@ -14,6 +14,7 @@ db.exec('CREATE TABLE auth_admin_sessions(token_hash TEXT PRIMARY KEY,profile_id
 db.exec("CREATE TABLE auth_identity_links(id TEXT,provider TEXT,provider_subject TEXT,profile_id TEXT REFERENCES profiles(id),PRIMARY KEY(provider,provider_subject),UNIQUE(provider,profile_id));");
 db.exec("CREATE TABLE auth_email_credentials(email TEXT PRIMARY KEY COLLATE NOCASE,profile_id TEXT UNIQUE REFERENCES profiles(id),password_hash TEXT,password_salt TEXT,password_iterations INTEGER,verified_at INTEGER,created_at INTEGER DEFAULT(unixepoch()),updated_at INTEGER DEFAULT(unixepoch()));");
 db.exec("CREATE TABLE auth_admin_email_links(token_hash TEXT PRIMARY KEY,profile_id TEXT UNIQUE REFERENCES profiles(id),email TEXT,password_hash TEXT,password_salt TEXT,password_iterations INTEGER,expires_at INTEGER,created_at INTEGER DEFAULT(unixepoch()));");
+db.exec("CREATE TABLE auth_email_tokens(token_hash TEXT PRIMARY KEY,email TEXT NOT NULL COLLATE NOCASE,purpose TEXT NOT NULL CHECK(purpose IN ('register','reset')),profile_name TEXT,password_hash TEXT,password_salt TEXT,password_iterations INTEGER,expires_at INTEGER NOT NULL,created_at INTEGER NOT NULL DEFAULT(unixepoch()));");
 db.exec("CREATE TABLE auth_email_rate_limits(key_hash TEXT PRIMARY KEY,attempts INTEGER,expires_at INTEGER);");
 const adminId='11111111-1111-4111-8111-111111111111';
 const adminId2='33333333-3333-4333-8333-333333333333';
@@ -39,7 +40,13 @@ const env={DB:d1,EMAIL_AUTH_ENABLED:'yes',EMAIL_RATE_KEY:'x'.repeat(48),
 const sent=[];
 const priorFetch=globalThis.fetch;
 globalThis.fetch=async (url,options)=>{
- assert.equal(url,'https://api.resend.com/emails','No network except intercepted email');
+ if(url==='https://challenges.cloudflare.com/turnstile/v0/siteverify'){
+  const params=options.body;
+  assert.equal(params.get('secret'),env.TURNSTILE_SECRET,'Turnstile debe usar secreto sintético');
+  assert.equal(params.get('response'),'valid-synthetic-token','Captcha de QA controlado');
+  return new Response(JSON.stringify({success:true,hostname:'qa.example.test'}),{status:200,headers:{'Content-Type':'application/json'}});
+ }
+ assert.equal(url,'https://api.resend.com/emails','No network except intercepted test email and Turnstile');
  const email=JSON.parse(options.body);
  sent.push(email);
  return new Response(JSON.stringify({id:'fake-mail'}),{status:200,headers:{'Content-Type':'application/json'}});
@@ -113,5 +120,41 @@ try{
  assert.equal((await source('/v1/auth/email/login',{email:'admin-b-qa@example.test',password:password2,admin_access:true})).status,200);
  assert.equal((await source('/v1/auth/email/login',{email:'admin-b-qa@example.test',password,admin_access:true})).status,401,'La contraseña de admin A no abre cuenta B');
  assert.equal((await source('/v1/auth/email/login',{email:'admin-qa@example.test',password,admin_access:true})).status,200,'Primera cuenta sigue accediendo');
- console.log('OK: 2 admins ficticios Google -> 2 correos verificados, credenciales aisladas, tokens no intercambiables, sin duplicados, roles y puntos intactos. Sin red ni datos reales.');
+
+ // Recuperación segura con cuentas ficticias: enlace enviado solo al titular,
+ // token de un solo uso, contraseña nueva y revocación de sesiones admin.
+ const beforeReset=db.prepare('SELECT id,role,points,lifetime_points,visits FROM profiles ORDER BY id').all();
+ const ongoingA=await createVerifiedAdminSession(adminId,env);
+ const ongoingB=await createVerifiedAdminSession(adminId2,env);
+ const resetStart=await source('/v1/auth/email/forgot',{email:'admin-qa@example.test',turnstileToken:'valid-synthetic-token'});
+ assert.equal(resetStart.status,200,'Recuperación admin A responde genéricamente');
+ const bodyReset=await resetStart.json();
+ assert.equal(bodyReset.ok,true,'No revelar información sobre existencia de correos');
+ assert.equal(sent.length,3,'Correo de recuperación A enviado solo en simulación');
+ const resetLink=sent.at(-1).text.match(/https:\/\/qa\.example\.test\/preview#reset=[A-Za-z0-9_-]{43}/)?.[0];
+ assert.ok(resetLink,'El enlace de recuperación no debe incluirse en URL enviada al servidor');
+ const resetToken=new URL(resetLink).hash.replace('#reset=','');
+ assert.equal(db.prepare("SELECT COUNT(*) AS n FROM auth_email_tokens WHERE purpose='reset'").get().n,1);
+ const invalid=await source('/v1/auth/email/reset',{token:resetToken.slice(1),password:'NuevaClaveQA-123456789012345'});
+ assert.equal(invalid.status,400,'Token manipulado no debe resetear la contraseña');
+ const newPassword='NuevaClaveQA-123456789012345';
+ const done=await source('/v1/auth/email/reset',{token:resetToken,password:newPassword});
+ assert.equal(done.status,200,'Reset real del simulacro');
+ assert.equal(db.prepare("SELECT COUNT(*) AS n FROM auth_email_tokens WHERE purpose='reset'").get().n,0,'Token de reset de un solo uso');
+ assert.equal((await source('/v1/auth/email/reset',{token:resetToken,password:newPassword})).status,400,'El token no puede reutilizarse');
+ assert.equal((await source('/v1/auth/email/login',{email:'admin-qa@example.test',password,admin_access:true})).status,401,'Contraseña antigua ya no abre la cuenta A');
+ assert.equal((await source('/v1/auth/email/login',{email:'admin-qa@example.test',password:newPassword,admin_access:true})).status,200,'Contraseña renovada abre solo admin A');
+ assert.equal((await source('/v1/auth/email/login',{email:'admin-b-qa@example.test',password:password2,admin_access:true})).status,200,'Contraseña del admin B no se afecta');
+ assert.equal((await source('/v1/auth/email/login',{email:'admin-b-qa@example.test',password:newPassword,admin_access:true})).status,401,'La nueva clave A no abre admin B');
+ assert.equal(db.prepare('SELECT COUNT(*) AS n FROM auth_sessions WHERE profile_id=?').get(adminId).n,1,'Solo nueva sesión de A permanece');
+ assert.equal(db.prepare('SELECT COUNT(*) AS n FROM auth_admin_sessions WHERE profile_id=?').get(adminId).n,1,'Sesión admin de A anterior revocada');
+ assert.equal(db.prepare('SELECT COUNT(*) AS n FROM auth_sessions WHERE profile_id=?').get(adminId2).n>=1,true,'Sesión de admin B preservada');
+ // El token desconocido recibe el mismo mensaje sin enviar correo real
+ // (proveedor mock) y sin crear ni alterar perfiles.
+ const unknown=await source('/v1/auth/email/forgot',{email:'unknown-qa@example.test',turnstileToken:'valid-synthetic-token'});
+ assert.equal(unknown.status,200,'No filtrar existencia de dirección ajena');
+ assert.equal((await unknown.json()).message,bodyReset.message,'Respuesta indistinguible');
+ assert.equal(sent.length,3,'No se envía email cuando cuenta ficticia es desconocida');
+ assert.deepEqual(db.prepare('SELECT id,role,points,lifetime_points,visits FROM profiles ORDER BY id').all(),beforeReset,'Contraseñas no deben tocar puntos, roles ni visitas');
+ console.log('OK: 2 administradores ficticios + recuperación por token único, revocación sesiones, separación de cuentas y puntos intactos. Sin red ni personas reales.');
 }finally{globalThis.fetch=priorFetch;db.close();}
