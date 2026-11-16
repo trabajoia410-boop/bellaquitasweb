@@ -215,6 +215,55 @@
     "workerHasR2Binding": false,
     "workerHasAuthSecrets": false,
     "prepublicationAuthReady": false,
-    "deploymentEvidence": "Cloudflare Workers Builds éxito; bindings DB, ASSETS, VIDEO_QA_PROXY y flags leídos por API; 0 rutas, 0 subdominio, 0 secrets; GitHub CI https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43922064532"
+    "deploymentEvidence": "Cloudflare Workers Builds éxito; bindings DB, ASSETS, VIDEO_QA_PROXY y flags leídos por API; 0 rutas, 0 subdominio, 0 secrets; GitHub CI https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43922064532",
+    "latestWorkerBuild": "ef456edb-60ce-4066-a546-f97eefd909d9",
+    "latestWorkerBuildOutcome": "success",
+    "authGuardDeployed": true,
+    "authSecretsBound": false,
+    "productionApprovalFlag": "no",
+    "realGoogleLoginTested": false,
+    "emailResetRealProviderTested": false
+  },
+  "phase6AuthCutoverPreparation": {
+    "status": "code-deployed-in-isolated-preproduction",
+    "latestPreproductionBuild": "ef456edb-60ce-4066-a546-f97eefd909d9",
+    "buildOutcome": "success",
+    "offlineAuthChecksPassed": true,
+    "stagingAuthRoutesPreserved": true,
+    "productionGoogleRedirectUsesHomepage": true,
+    "productionEmailVerifyUsesHomepage": true,
+    "productionEmailResetUsesHomepage": true,
+    "productionAdminLoginUsesSeparateTab": true,
+    "publishingRequiresExplicitRuntimeFlag": true,
+    "runtimePublishingApproved": false,
+    "realGoogleClientConfiguredOnTarget": false,
+    "realResendKeyConfiguredOnTarget": false,
+    "realTurnstileConfiguredOnTarget": false,
+    "realAdminPasswordLinksVerified": 0,
+    "testingMode": "simulated-auth-and-public-routes-only",
+    "ciPhase5": "https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43934256704",
+    "ciMigration": "https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43934256775"
+  },
+  "phase6EmailDnsVerification": {
+    "resendSendingDomainVerified": true,
+    "resendRegion": "eu-west-1",
+    "senderCapability": "enabled",
+    "requiredRecordsInPendingCloudflareZone": {
+      "MX": true,
+      "SPF_TXT": true,
+      "DKIM_TXT": true,
+      "SPF_CNAME": true,
+      "GoogleSearchConsoleTXT": true
+    },
+    "restoredMissingSenderAlias": {
+      "name": "rsend.bellaquitas.fr",
+      "type": "CNAME",
+      "content": "send.forge.rmta.net",
+      "proxied": false
+    },
+    "totalPendingZoneRecords": 10,
+    "cloudflareZoneStatus": "pending",
+    "registrarNameserversChanged": false,
+    "authEmailSendingFromPreproductionVerified": false
   }
 }
