@@ -1,43 +1,38 @@
 # Bellaquitas Fest — pruebas personales después de publicar
-**Decisión del propietario:** 16 de noviembre de 2026.
-**Rama:** `migracion/fase5-segura-20261114`.
-**Producción:** sin modificar en esta preparación.
 
-## Qué NO se le pedirá comprobar al propietario antes de publicar
-Las verificaciones manuales con su dispositivo y la revisión final se harán una vez que el nuevo sitio esté publicado en `bellaquitas.fr`. No presentarlas como realizadas anticipadamente:
+**Decisión del propietario:** 16 de noviembre de 2026. No solicitar pruebas manuales de la web antes de terminar la migración. **Rama exclusiva:** `migracion/fase5-segura-20261114`.
 
-1. Reproducción/encuadre de vídeo en **iPhone físico** y Android físico.
-2. Cámara, tarjeta QR y control de puerta en dispositivo real y dominio final, con prueba no destructiva.
-3. Revisión visual final de menús, panel, idioma ES/FR y contenido dinámico desde dispositivos reales.
+## Verificaciones PERSONALES aplazadas a la nueva web publicada
+1. Los **dos inicios de sesión reales de administrador** en la pestaña independiente `/administracion/`, reautenticación y vinculación segura de email/contraseña sin duplicar perfiles.
+2. Reproducción, calidad y encuadre de vídeo en iPhone y Android físicos.
+3. Cámara, QR y control de puerta desde dispositivo físico, sin modificar contadores reales durante pruebas.
+4. Revisión completa del diseño, editor, traducciones ES/FR y contenido dinámico en la web final.
 
-Estas tres categorías permanecen con `passed:false` hasta que haya evidencia real pospublicación. Los tests con WebKit, Chromium y 206 permiten preparar la publicación, pero NO equivalen a estas validaciones humanas.
+Estas cuatro condiciones permanecen `passed:false` en `release-gates-2026-11-15.json`; no fingir que la simulación del navegador sustituye los dispositivos o credenciales personales.
 
-## Qué NO se puede posponer sin poner en riesgo a los usuarios
-La nueva política `release-policy.mjs` separa esas tres comprobaciones de las otras **13 condiciones previas**. Publicar sigue bloqueado si falta cualquiera de las condiciones previas o la autorización explícita de producción.
+## Condiciones TÉCNICAS que siguen siendo previas y obligatorias
+- El respaldo de ocho CSV **ya fue recuperado, cifrado y restaurado** el 16/11; no repetirlo ni solicitar los archivos de nuevo. Su alcance es datos públicos, perfiles, puntos y vínculos Google; no contiene contraseñas ni una exportación integral de autenticación. Acreditar recuperación de accesos por nueva identidad y la existencia de un respaldo privado suficiente para volver atrás.
+- Rotación y custodia segura de la antigua clave de respaldo, que se entregó a través de ChatGPT; no volver a poner el secreto en un repositorio o una conversación. La rotación todavía no está certificada fuera del chat.
+- **Probar técnicamente** OAuth (incluido anti-CSRF), recuperación/vinculación de correo, permisos, seguridad y editor con usuarios sintéticos en QA. Eso sí se hace antes, sin pedir contraseñas a nadie.
+- Preservar el séptimo perfil con correo verificado, los seis originales, los dos roles de administrador, puntos/visitas y cambios tardíos. No importar saldos de una copia antigua sin comparar el delta final.
+- Disponer de la D1 de producción cargada, su Worker con rutas y autenticación precomprobadas, medios originales sin R2, DNS revisado, TLS y reversión probada.
+- Obtener autorización deliberada de producción después de pasar estas condiciones.
 
-En particular:
-- Copia **real, actual y completa** del sistema origen (incluidas identidades de acceso), cifrada con clave privada nueva, restaurable y conciliada. El respaldo de ocho CSV recuperados, aunque verificado, no incluye toda la autenticación original.
-- Rotación de la antigua clave de backup expuesta y custodia segura de clave y copia por separado fuera del chat y de GitHub.
-- Comprobar que ambos administradores podrán iniciar sesión de manera legítima en la autenticación final, sin suplantar sesiones ni duplicar perfiles. Puede hacerse por enlace verificado privado. Nunca solicitar contraseñas al usuario en el chat.
-- Conciliar altas y cambios de puntos/visitas entre el último respaldo de origen y D1; bloquear si hay divergencias sin resolver.
-- Mantener los MP4 originales sin recomprimir y sin R2; medios y panel funcionando en entorno aislado.
-- Tener zona/domino y DNS con ruta reversible, certificado TLS y un rollback probado. No crear una cuenta de pago.
-- Puesta en marcha con observación técnica y capacidad de detener escrituras ante errores críticos.
+El software impide publicar si falta alguno de esos elementos técnicos. Los accesos reales se verifican después del cambio, tal y como solicita el propietario.
 
-## Estado verificado sin manipular datos (16/11/2026)
-Cuenta Cloudflare leída mediante API:
-- `bellaquitas-staging`: 7 perfiles, 2 administradores, 1.999.998 puntos actuales, 1.999.998 históricos, 0 visitas; `foreign_key_check` sin filas.
-- `bellaquitas-origen-recuperacion-20261116`: 6 perfiles, 2 administradores, mismos puntos y visitas; `foreign_key_check` sin filas.
-- 7 Workers, 6 D1, 0 proyectos Pages, 0 Worker Domains, **sin zona activa para bellaquitas.fr**.
-- Sin cambios en datos, DNS, credenciales, rama `main` ni dominio.
+## Estado Cloudflare verificado el 16/11
+- Origen aislado: 6 perfiles originales, 6 Google, 2 administradores y 1.999.998 puntos.
+- Staging: 7 perfiles, 2 administradores, mismos puntos/visitas, una identidad email verificada.
+- **Nueva D1 independiente:** `bellaquitas-produccion-preparada-20261116` (jurisdicción EU), con esquema idéntico y una **primera copia de 23 filas en 14 tablas**; siete perfiles, dos administradores, 1.999.998 puntos, 0 visitas, cero sesiones antiguas y cero errores FK. Aún NO conectada a la web pública. Informe: `cloudflare/PREPRODUCCION_SEGURA_2026-11-16.md`.
+- Cloudflare DNS para `bellaquitas.fr`: zona Free creada en estado `pending`, nueve registros recuperados; los servidores NS de Hostinger NO se han cambiado.
+- GitHub `main`, dominio y datos originales: **sin cambios**.
 
-**Próxima condición operativa:** terminar los respaldos completos, credenciales y DNS antes de realizar el corte. La promesa de no exigir pruebas físicas al propietario antes del corte NO significa permitir un corte con riesgo de pérdida de cuentas o puntos.
-
-## Cómo comprobar el candado de publicación
-```bash
+## Candado automatizado
+```sh
+node cloudflare/test-preproduction-config.mjs
 node cloudflare/test-release-gates.mjs
 node cloudflare/check-release-gates.mjs --assert-blocked
 ```
-La simulación permite `readyForControlledPublication:true` con solo las **tres pruebas pospublicación pendientes** *si y solo si* el resto está aprobado y hay autorización final explícita. El estado real sigue bloqueado mientras falten pruebas previas.
+El gate solo admite publicación controlada si todos los controles técnicos y la preparación REAL del destino están completos y se ha dado autorización final. Las cuatro pruebas del propietario pueden permanecer pendientes hasta después de publicar, pero no se borran ni se aprueban anticipadamente.
 
-Tras publicar: acompañar la prueba iPhone/Samsung, accesos de administradores, controles QR/puerta y edición ES/FR; si algo falla, aplicar recuperación sin reescribir puntos/visitas.
+**No hace falta PowerShell ni repetir pruebas manuales por ahora.**
