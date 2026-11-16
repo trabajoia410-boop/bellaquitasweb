@@ -80,7 +80,18 @@ export function evaluateRelease(gates) {
   // Las tres condiciones deben certificarse con hechos en la ventana
   // de corte; ninguna se satisface por una prueba móvil posterior.
   const target = gates.phase6PreproductionDb;
+  // Paridad visual: el JPG original usado como fondo junto al vídeo debe
+  // estar realmente presente y verificado; no basta una cifra de medios 17/17.
+  const visualAudit = gates.phase6VisualAssetAudit;
+  const visualReady =
+    target?.visualAssetParityComplete === true &&
+    visualAudit?.repoMissing === false &&
+    visualAudit?.originalBinaryImportedToRepo === true &&
+    Array.isArray(visualAudit?.missing) &&
+    visualAudit.missing.length === 0;
+
   const targetReady =
+    visualReady &&
     target?.realUsersImported === true &&
     target?.productionWorkerConfigured === true &&
     target?.finalAccountReconciliationCompleted === true &&
@@ -101,6 +112,7 @@ export function evaluateRelease(gates) {
     pendingPrepublication,
     pendingOwnerPostpublication,
     adminTechnologyReady,
+    visualReady,
     targetReady,
     readyForControlledPublication,
     // Esta marca solo podrá ser true después de verificaciones físicas reales.
