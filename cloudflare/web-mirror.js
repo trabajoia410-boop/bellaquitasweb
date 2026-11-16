@@ -38,6 +38,40 @@ function fromOriginalStaticAssets(request,assetUrl,env){
  }));
 }
 
+// Algunos nodos Static Assets contestan 200 a una solicitud Range. Para un
+// fragmento pequeño, reabrir SIN Range, verificar Content-Length total y
+// recoger solo los bytes pedidos con un lector de stream. No se almacena el
+// vídeo completo en RAM ni se emplea R2.
+async function recoverSmallRangeFromFullAsset(env,assetUrl,start,end,total){
+ const full=await env.ASSETS.fetch(new Request(assetUrl,{
+  method:"GET",redirect:"manual"
+ }));
+ if(full.status!==200||!full.body)return null;
+ const size=full.headers.get("Content-Length");
+ if(size!==null&&Number(size)!==total)return null;
+ const mime=full.headers.get("Content-Type");
+ if(mime&&!/^video\/mp4(?:;|$)/i.test(mime))return null;
+ const output=new Uint8Array(end-start+1),reader=full.body.getReader();
+ let seen=0,collected=0;
+ try{
+  while(collected<output.length){
+   const {value,done}=await reader.read();
+   if(done)break;
+   const chunk=value instanceof Uint8Array?value:new Uint8Array(value);
+   const first=Math.max(0,start-seen);
+   const last=Math.min(chunk.byteLength,end-seen+1);
+   if(last>first){
+    const selected=chunk.subarray(first,last);
+    output.set(selected,collected);
+    collected+=selected.byteLength;
+   }
+   seen+=chunk.byteLength;
+  }
+ }catch{return null;}
+ finally{try{await reader.cancel()}catch{}}
+ return collected===output.length?output:null;
+}
+
 const PROTECTED={
  "Cache-Control":"no-store",
  "X-Content-Type-Options":"nosniff",
