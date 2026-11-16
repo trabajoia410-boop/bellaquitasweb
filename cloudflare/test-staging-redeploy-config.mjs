@@ -20,7 +20,7 @@ assert.deepEqual(cfg.d1_databases[0],{
  database_id:'c7ada9c9-d397-4e22-b5b8-3fbd8d13e550'
 });
 assert.deepEqual(cfg.services,[{
- binding:'VIDEO_QA_PROXY',service:'bellaquitas-media-proxy-qa',environment:'production'
+ binding:'VIDEO_QA_PROXY',service:'bellaquitas-media-qa',environment:'production'
 }]);
 for(const k of ['GOOGLE_CLIENT_ID','GOOGLE_CLIENT_SECRET','EMAIL_RATE_KEY','RESEND_API_KEY','TURNSTILE_SECRET']){
  assert.ok(!JSON.stringify(cfg).includes(k),'Nunca copiar secretos del Worker al repositorio');
