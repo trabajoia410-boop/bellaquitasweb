@@ -27,11 +27,11 @@
     },
     "realHttp206AndIosAndroidPlayback": {
       "passed": false,
-      "evidence": "16/11/2026: ESPEJO STAGING cambiado de proxy GitHub temporal a Cloudflare Workers Static Assets (Service Binding VIDEO_QA_PROXY ahora service bellaquitas-media-qa), build Cloudflare 536ad894-3c35-4529-ae1e-3e8c7c19cf1c success, GitHub Actions 43808936094 success: 5 MP4/10 HTTP206 con bytes originales inicio+fin, tres logos idénticos, sin R2, ni cookies. FALTA reproducir en iPhone y Android físicos, y comparar visualmente antes del corte. Ver cloudflare/FASE5_MEDIOS_DIRECTOS_Y_ROTACION_2026-11-16.md. Sigue FALSO. El responsable confirma vídeo Android y decide aplazar iPhone hasta publicación; no certificar ensayo iPhone. DECLARACIÓN DEL RESPONSABLE 16/11/2026: pruebas de usuarios comunicadas como correctas; no repetir ensayos manuales antes de la publicación. Ver cloudflare/ACTA_PRUEBAS_USUARIO_2026-11-16.md."
+      "evidence": "16/11/2026: ESPEJO STAGING cambiado de proxy GitHub temporal a Cloudflare Workers Static Assets (Service Binding VIDEO_QA_PROXY ahora service bellaquitas-media-qa), build Cloudflare 536ad894-3c35-4529-ae1e-3e8c7c19cf1c success, GitHub Actions 43808936094 success: 5 MP4/10 HTTP206 con bytes originales inicio+fin, tres logos idénticos, sin R2, ni cookies. FALTA reproducir en iPhone y Android físicos, y comparar visualmente antes del corte. Ver cloudflare/FASE5_MEDIOS_DIRECTOS_Y_ROTACION_2026-11-16.md. Sigue FALSO. El responsable confirma vídeo Android y decide aplazar iPhone hasta publicación; no certificar ensayo iPhone. DECLARACIÓN DEL RESPONSABLE 16/11/2026: pruebas de usuarios comunicadas como correctas; no repetir ensayos manuales antes de la publicación. Ver cloudflare/ACTA_PRUEBAS_USUARIO_2026-11-16.md. NUEVA QA 16/11: pipeline 43841995083 SUCCESS, 70 aserciones HTTP anónimas reales + tests offline; no reemplaza test físico ni paridad visual humana."
     },
     "bothRealAdminLoginsVerified": {
       "passed": false,
-      "evidence": "16/11 Cloudflare D1 staging con 2 administradores; 1 perfil con sesión; 1 perfil reautenticado; 0 credenciales email admin. Usuario confirmó pruebas manuales de ambas cuentas, pero no acreditan origen Cloudflare de ambas sesiones. Sin contraseñas personales ni pruebas intrusivas. Sigue falso."
+      "evidence": "16/11 Cloudflare D1 staging con 2 administradores; 1 perfil con sesión; 1 perfil reautenticado; 0 credenciales email admin. Usuario confirmó pruebas manuales de ambas cuentas, pero no acreditan origen Cloudflare de ambas sesiones. Sin contraseñas personales ni pruebas intrusivas. Sigue falso. Pipeline 43841995083 confirma denegación sin sesión de cinco rutas privadas y cinco POST. 0 contraseñas de admins vinculadas."
     },
     "productionDatabaseBackupConfirmed": {
       "passed": false,
@@ -47,11 +47,11 @@
     },
     "realDeviceQrDoorTest": {
       "passed": false,
-      "evidence": "cloudflare/FASE5_QA_FISICA_Y_ADMIN_2026-11-16.md: página real / de device QA actualizada con QR sintético reconocible localmente, prueba jsQR contra píxeles exactos (CI 43790644785) y cámara física activada sólo por usuario. CI Playwright 43791639958 pasó; sin envío de QR ni escrituras. FALTA usar cámara física y validar control de puerta autorizado con puntos/visitas intactos. DECLARACIÓN DEL RESPONSABLE 16/11/2026: pruebas de usuarios comunicadas como correctas; no repetir ensayos manuales antes de la publicación. Ver cloudflare/ACTA_PRUEBAS_USUARIO_2026-11-16.md."
+      "evidence": "cloudflare/FASE5_QA_FISICA_Y_ADMIN_2026-11-16.md: página real / de device QA actualizada con QR sintético reconocible localmente, prueba jsQR contra píxeles exactos (CI 43790644785) y cámara física activada sólo por usuario. CI Playwright 43791639958 pasó; sin envío de QR ni escrituras. FALTA usar cámara física y validar control de puerta autorizado con puntos/visitas intactos. DECLARACIÓN DEL RESPONSABLE 16/11/2026: pruebas de usuarios comunicadas como correctas; no repetir ensayos manuales antes de la publicación. Ver cloudflare/ACTA_PRUEBAS_USUARIO_2026-11-16.md. NUEVA QA 16/11: pipeline 43841995083 SUCCESS, 70 aserciones HTTP anónimas reales + tests offline; no reemplaza test físico ni paridad visual humana."
     },
     "finalEsFrMobileVisualParity": {
       "passed": false,
-      "evidence": "La interfaz real de administración de staging fue re-desplegada con ES/FR a través de Workers Builds, testeada con WebKit/Chromium HTTPS real GitHub Actions 43805946182 intento 2 PASS. QR/MP4 ES/FR y 66 rutas espejo preexistentes PASS; falta auditoría final exhaustiva de contenido dinámico y prueba física móvil. Véase cloudflare/FASE5_PANEL_ADMIN_CORREO_VERIFICADO_2026-11-16.md. Sigue FALSO. Pruebas Android/QR reportadas por el responsable; Safari iPhone físico diferido hasta publicación. Ver cloudflare/ACTA_PRUEBAS_USUARIO_2026-11-16.md."
+      "evidence": "La interfaz real de administración de staging fue re-desplegada con ES/FR a través de Workers Builds, testeada con WebKit/Chromium HTTPS real GitHub Actions 43805946182 intento 2 PASS. QR/MP4 ES/FR y 66 rutas espejo preexistentes PASS; falta auditoría final exhaustiva de contenido dinámico y prueba física móvil. Véase cloudflare/FASE5_PANEL_ADMIN_CORREO_VERIFICADO_2026-11-16.md. Sigue FALSO. Pruebas Android/QR reportadas por el responsable; Safari iPhone físico diferido hasta publicación. Ver cloudflare/ACTA_PRUEBAS_USUARIO_2026-11-16.md. NUEVA QA 16/11: pipeline 43841995083 SUCCESS, 70 aserciones HTTP anónimas reales + tests offline; no reemplaza test físico ni paridad visual humana."
     },
     "googleIdentityMappingExact": {
       "passed": true,
@@ -86,5 +86,13 @@
   "finalSignoff": {
     "explicitProductionAuthorization": false,
     "reason": "Pendientes seis comprobaciones, sin cambio de DNS o main"
+  },
+  "phase5AutomatedQA": {
+    "run": "https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43841995083",
+    "status": "success",
+    "checks": 70,
+    "source": "cloudflare/test-stage-http-phase5.mjs y .github/workflows/bellaquitas-phase5-preflight.yml",
+    "covers": "HTTP real staging, salud D1, endpoints públicos, ES/FR selector admin, CSP, anti-clickjacking, rechazos sin sesión de lecturas/escrituras, rangos 206 inicio/final de 5 MP4; seguridad y puntos sintéticos offline",
+    "limitations": "No son logins de personas reales ni pruebas físicas iPhone/Android/QR, ni activación de DNS"
   }
 }
