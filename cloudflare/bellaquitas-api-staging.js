@@ -59,14 +59,14 @@ function withJsonFields(rows) {
 }
 export default {
   async fetch(request, env) {
+    // Evaluar el cierre global ANTES de contestar OPTIONS; tampoco abrir
+    // el preflight CORS cuando se habilite producción sin credenciales.
+    const productionGate=productionAccessGate(request,env);
+    if(productionGate)return productionGate;
     if (request.method === "OPTIONS") {
       return new Response(null, {status: 204, headers: responseHeaders(request)});
     }
     try {
-      // Si se activa production sin secretos/hostname/OAuth completos, responder
-      // 503 antes de servir HTML, panel o cualquier endpoint de identidad.
-      const productionGate=productionAccessGate(request,env);
-      if(productionGate)return productionGate;
       // El diseño original vive en la raíz únicamente si el entorno está
       // explícitamente marcado como producción (staging no cambia).
       const publicSite=await productionSiteRoute(request,env);
