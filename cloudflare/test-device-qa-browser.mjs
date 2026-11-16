@@ -53,10 +53,18 @@ for(const [label,engine,settings] of environments){
   await page.locator('#media').selectOption('bellaquitas fiesta portada movil.mp4');
   assert.ok((await page.locator('#original').getAttribute('src')).includes('/assets/bellaquitas%20fiesta%20portada%20movil.mp4'));
   await page.waitForTimeout(1400); // Observación de red y vídeo; codecs WebKit Linux no son prueba física.
+  if(label.includes('Chromium')){
+   // La señal más fiable es avance real de tiempo, no solamente loadeddata.
+   await page.waitForFunction(()=>document.querySelector('#original')?.currentTime>0.4,null,{timeout:8500});
+  }
   const mediaState=await page.locator('#original').evaluate(v=>({
    readyState:v.readyState,currentTime:Number(v.currentTime.toFixed(2)),
    errorCode:v.error?.code||null
   }));
+  if(label.includes('Chromium')){
+   assert.ok(mediaState.currentTime>0.4&&mediaState.errorCode===null,
+    'Vídeo MP4 debe reproducirse realmente en Chrome/Píxel simulado');
+  }
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth),false,
    'El diagnóstico no debe tener scroll horizontal');
   assert.deepEqual(writes,[],'No hay POST ni operaciones que puedan modificar usuarios/puntos');
