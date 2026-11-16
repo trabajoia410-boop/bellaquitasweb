@@ -21,8 +21,13 @@ assert.equal(target.workers_dev,false,
   'No exponer la base de preproducción mediante una URL pública');
 assert.equal(target.keep_vars,true);
 assert.ok(!('route' in target)&&!('routes' in target)
-  &&!('assets' in target)&&!('r2_buckets' in target),
- 'No conectar DNS, cargar recursos no verificados ni introducir R2');
+  &&!('r2_buckets' in target),
+ 'No conectar DNS ni introducir R2');
+assert.deepEqual(target.assets,{
+ directory:'./dist-static',binding:'ASSETS',run_worker_first:true
+},'Servir medios originales con Workers Static Assets, no con GitHub ni R2');
+assert.equal(target.vars?.SITE_MODE,'preproduction',
+ 'Preproducción no debe habilitar el router público antes del corte');
 assert.equal(target.d1_databases?.length,1);
 assert.equal(staging.d1_databases?.length,1);
 const db=target.d1_databases[0],stageDb=staging.d1_databases[0];
@@ -64,4 +69,4 @@ assert.equal(gates.phase6PreproductionDb?.finalAccountReconciliationCompleted,fa
 assert.equal(gates.phase6PreproductionDb?.productionWorkerConfigured,false,
   'La base debe seguir sin Worker de producción');
 assert.equal(gates.phase6PreproductionDb?.publiclyAccessible,false);
-console.log('OK: D1 preproducción independiente con fotografía inicial verificada, Worker sin rutas, 0 R2, 0 altas, 0 escrituras, OAuth deshabilitado; producción pública intacta.');
+console.log('OK: D1 preproducción independiente con fotografía inicial verificada, Worker sin rutas, assets originales, 0 R2, 0 altas, 0 escrituras, OAuth deshabilitado; producción pública intacta.');
