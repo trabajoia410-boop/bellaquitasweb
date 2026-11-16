@@ -1,5 +1,6 @@
 import {MIRROR_SNAPSHOT} from "./mirror-snapshot.js";
 import {SITE_MEDIA} from "./site-media-manifest.js";
+import {ADDITIONAL_MEDIA} from "./visual-extra-media.js";
 import {MIRROR_SUGGESTIONS_UI} from "./mirror-suggestions-ui.js";
 import {MIRROR_ADMIN_NEW_TAB} from "./mirror-admin-newtab.js";
 const MIRROR_BASE="/espejo/";
@@ -108,7 +109,8 @@ export async function mirrorRoute(request,env){
      try{return js(await original("assets/"+filename));}
      catch(_){return fail(503,"No se pudo cargar el generador/lector QR");}
    }
-   const expected=SITE_MEDIA.find(f=>f.path===filename);
+   const expected=SITE_MEDIA.find(f=>f.path===filename) ||
+     (filename===ADDITIONAL_MEDIA.path?ADDITIONAL_MEDIA:null);
    if(!expected)return fail(404,"Este archivo no pertenece al diseño original");
    // Los originales se alojan en Cloudflare Static Assets, disponibles desde
    // el Worker multimedia aislado por Service Binding; nunca GitHub ni R2.
