@@ -4,11 +4,11 @@
  * de puerta real; comprueba ES/FR, QR sintético, vídeo alojado y aislamiento.
  */
 import assert from 'node:assert/strict';
-import {chromium,webKit,devices} from 'playwright';
+import {chromium,webkit,devices} from 'playwright';
 const BASE='https://bellaquitas-device-qa.bellaquitas-fest-410.workers.dev';
 const MEDIA='https://bellaquitas-media-qa.bellaquitas-fest-410.workers.dev';
 const environments=[
- ['iPhone13-WebKit',webKit,devices['iPhone 13']],
+ ['iPhone13-WebKit',webkit,devices['iPhone 13']],
  ['Pixel7-Chromium',chromium,devices['Pixel 7']],
  ['Desktop-Chromium',chromium,{viewport:{width:1440,height:900},deviceScaleFactor:1}]
 ];
