@@ -7,6 +7,12 @@ on:
     paths:
       - 'cloudflare/**'
       - '.github/workflows/bellaquitas-phase5-preflight.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'cloudflare/**'
+      - '.github/workflows/bellaquitas-phase5-preflight.yml'
   workflow_dispatch:
 
 permissions:
