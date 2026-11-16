@@ -74,3 +74,25 @@ if(missing.length){
  console.log('Logos originales certificados por tamaño y ETag: '+logos.length+'; total estáticos '+total+' bytes.');
 }
 
+
+
+// La web pública conserva su PWA/manifest original junto a los MP4 e iconos.
+// Validar el formato antes de copiar: nunca empaquetar endpoints o secretos.
+const manifestPath=resolve('manifest.webmanifest');
+const manifestText=readFileSync(manifestPath,'utf8');
+const webmanifest=JSON.parse(manifestText);
+assert.equal(webmanifest.name,'Bellaquitas Fest','Nombre original de la aplicación');
+assert.equal(webmanifest.start_url,'./','No abrir URLs externas o staging');
+assert.equal(webmanifest.scope,'./','Mantener ámbito del mismo dominio');
+assert.ok(Array.isArray(webmanifest.icons) && webmanifest.icons.length>0);
+for(const icon of webmanifest.icons){
+ assert.match(icon.src,/^assets\/[a-zA-Z0-9-]+\.(?:png|svg)$/,
+   'Los iconos PWA no deben apuntar a servidores externos');
+ assert.ok(planned.has(icon.src.slice('assets/'.length)),
+   'Icono PWA no incluido en inventario de bytes originales');
+}
+assert.ok(!/supabase|r2\.dev|workers\.dev|api[_-]?key|password/i.test(manifestText),
+ 'El manifiesto no debe filtrar servicios antiguos o secretos');
+copyFileSync(manifestPath,join(target,'manifest.webmanifest'));
+assert.equal(readFileSync(join(target,'manifest.webmanifest'),'utf8'),manifestText);
+console.log('Manifest PWA original conservado junto a los recursos multimedia.');
