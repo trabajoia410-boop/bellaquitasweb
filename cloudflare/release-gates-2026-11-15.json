@@ -1,7 +1,7 @@
 {
   "project": "Bellaquitas Fest",
   "migrationBranch": "migracion/fase5-segura-20261114",
-  "asOf": "2026-11-15",
+  "asOf": "2026-11-16",
   "productionDomain": "bellaquitas.fr",
   "productionChangesAuthorized": false,
   "readiness": {
@@ -31,15 +31,15 @@
     },
     "bothRealAdminLoginsVerified": {
       "passed": false,
-      "evidence": "16/11/2026: Cloudflare Workers Builds stage c179d627-589f-4336-bd00-e5b010b1f3fa SUCCESS (version c608e3e6-2157-43dc-8807-0b6944352458); live admin ES/FR browser 43805946182 SUCCESS. ADMIN_EMAIL_LINK_ENABLED=yes SOLO en staging, 17 bindings preservados, 5 secretos presentes, 7 perfiles/2 admins/1999998 puntos/0 visitas, 0 credenciales email admin. GitHub CI 43807285506 SUCCESS: anónimos 401, no altas. Ambas personas deben autenticar con Google y confirmar sus correos para certificar login real; no se han probado contraseñas reales. Véase cloudflare/FASE5_PANEL_ADMIN_CORREO_VERIFICADO_2026-11-16.md. Continúa FALSO. El responsable declara ambas cuentas funcionando; la D1 staging registra sesiones de un solo perfil admin, por lo que el origen de ambas pruebas no es verificable independientemente. DECLARACIÓN DEL RESPONSABLE 16/11/2026: pruebas de usuarios comunicadas como correctas; no repetir ensayos manuales antes de la publicación. Ver cloudflare/ACTA_PRUEBAS_USUARIO_2026-11-16.md."
+      "evidence": "16/11 Cloudflare D1 staging con 2 administradores; 1 perfil con sesión; 1 perfil reautenticado; 0 credenciales email admin. Usuario confirmó pruebas manuales de ambas cuentas, pero no acreditan origen Cloudflare de ambas sesiones. Sin contraseñas personales ni pruebas intrusivas. Sigue falso."
     },
     "productionDatabaseBackupConfirmed": {
       "passed": false,
-      "evidence": "Auditoría 16/11/2026 cloudflare/FASE5_RESPALDO_ORIGEN_AUDITORIA_2026-11-16.md: backup D1 STAGING 15/11 ZIP autenticado RSA/AES y restaurado en memoria SQLite, 22 tablas/44 objetos/44 filas, 7 perfiles/2 admin/1999998 puntos/0 visitas, FK0 e integrity ok. D1 staging ACTUAL tiene 46 filas vs 44 en restore (auth_sessions 3:2; auth_admin_sessions 1:0); resto de filas y esquema coinciden. En Biblioteca existía SQL de 03/11 con 7 tablas/6 INSERT, sin exportación íntegra de identidades; NO es backup actual de producción. El repositorio principal aún apunta a origen anterior, que NO se ha consultado. Se preparó herramienta offline de auditoría estructural y CI de rechazo de dumps parciales. FALTA copia auténtica actualizada del origen y restauración aislada. Sigue FALSO."
+      "evidence": "16/11 ORIGEN REAL: el responsable proporcionó 8 CSV, respaldo AES256-GCM y restauración aislada en Cloudflare D1 UE. 6 perfiles, 6 Google, 14 filas públicas, 1999998 puntos, 0 visitas; comparación campo por campo con staging verificado; 22 tablas aplicación, 17 índices, 5 triggers; 0 huérfanos. Ver cloudflare/RESTAURACION_ORIGEN_AISLADA_2026-11-16.md. Gate completo continúa falso: CSV selectivo no equivale a pg_dump de todas las tablas auth, no incluye binarios multimedia ni accesos mediante contraseña."
     },
     "exposedBackupKeyRotatedOutOfChat": {
       "passed": false,
-      "evidence": "La restauración local en memoria del ZIP cifrado de STAGING (AES256-GCM + RSA OAEP) fue verificada de nuevo 16/11/2026, sin guardar SQL claro; --rotate para formato JSON AES256-GCM v1 está ensayado con sintéticos. Ni el archivo SQL antiguo ni la copia STAGING permiten rotar la clave expuesta ligada al backup auténtico de producción; FALTA origen/clave histórica legítimos. Ver cloudflare/FASE5_RESPALDO_ORIGEN_AUDITORIA_2026-11-16.md. Sigue FALSO."
+      "evidence": "16/11 hay backup autenticado AES256-GCM verificable de 8 CSV del origen. Clave de recuperación entregada como archivo de ChatGPT; no se ha rotado de manera privada fuera del chat ni revocado clave antigua de backup D1. Sigue falso."
     },
     "cloudflareExtraProfileReviewed": {
       "passed": true,
@@ -69,5 +69,22 @@
       "passed": true,
       "evidence": "cloudflare/POLITICA_CORTE_CUENTAS_2026-11-16.md: decisión formal conservadora preservar 7ª cuenta email verificada y altas tardías; dry-run cloudflare/plan-account-cutover.mjs; 12 pruebas de colisiones/roles/puntos/identidades en cloudflare/test-account-cutover-policy.mjs y QA verde https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43775436405; API Cloudflare D1 staging y restore SELECT: 7 perfiles, 6 Google, 1 email verificado, 2 admins, 1999998 puntos, 0 duplicados, FK0. NO es conciliación final de origen ni autorización DNS."
     }
+  },
+  "phase5CoreOriginRestore": {
+    "status": "verified-isolated",
+    "changesToProduction": false,
+    "isolatedD1Name": "bellaquitas-origen-recuperacion-20261116",
+    "source": "8 CSV originales revisados el 16/11; 6 perfiles, 6 Google, 14 registros públicos",
+    "restored": "22 tablas de aplicación, 17 índices y 5 triggers en D1 EU aislada; valores de campos idénticos, sin huérfanos",
+    "originalProfiles": 6,
+    "googleIdentityLinks": 6,
+    "publicRecords": 14,
+    "points": 1999998,
+    "visits": 0,
+    "notIncluded": "sin pg_dump íntegro auth, tokens o vídeos binarios; no equivale a copia completa de proveedor"
+  },
+  "finalSignoff": {
+    "explicitProductionAuthorization": false,
+    "reason": "Pendientes seis comprobaciones, sin cambio de DNS o main"
   }
 }
