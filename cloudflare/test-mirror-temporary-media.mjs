@@ -75,7 +75,41 @@ try{
  };
  response=await mirrorRoute(req(STAGE,{headers:{Range:range}}),directEnv);
  assert.equal(response.status,503,'Dos fragmentos 206 vacíos desde Static Assets son fallo');
- assert.equal(directCalls,2,'No reintentar indefinidamente el vídeo');
+ assert.equal(directCalls,3,'Dos rangos y un fallback completo; no reintentar indefinidamente el vídeo');
+ 
+ // Static Assets puede ignorar Range y responder 200 con cuerpo recortado.
+ // Recuperar un 206 real leyendo el cuerpo COMPLETO y guardando solo 256B.
+ const fullLength=9072277,fullVideo=new Uint8Array(fullLength);
+ for(let i=0;i<256;i++){
+  fullVideo[i]=i;
+  fullVideo[fullLength-256+i]=255-i;
+ }
+ let rangeGets=0,fullGets=0;
+ const direct200={...safeEnv,ASSETS:{async fetch(request){
+  for(const h of ['cookie','authorization','origin'])
+   assert.equal(request.headers.get(h),null);
+  if(request.headers.has('Range')){
+   rangeGets++;
+   return new Response(new Uint8Array(16),{status:200,
+    headers:{'Content-Length':'16','Content-Type':'video/mp4'}});
+  }
+  fullGets++;
+  return new Response(fullVideo,{status:200,
+   headers:{'Content-Length':String(fullLength),'Content-Type':'video/mp4'}});
+ }}};
+ response=await mirrorRoute(req(STAGE,{headers:{Range:range}}),direct200);
+ assert.equal(response.status,206,'Convertir 200 a 206 válido para Safari');
+ assert.equal(response.headers.get('Content-Range'),'bytes 0-255/'+fullLength);
+ assert.equal(response.headers.get('Content-Length'),'256');
+ assert.deepEqual(new Uint8Array(await response.arrayBuffer()),fullVideo.subarray(0,256));
+ assert.equal(rangeGets,1);
+ assert.equal(fullGets,1,'ASSETS se reabre sin Range al responder 200');
+ const endRange='bytes '+(fullLength-256)+'-'+(fullLength-1);
+ response=await mirrorRoute(req(STAGE,{headers:{Range:endRange}}),direct200);
+ assert.equal(response.status,206,'Safari puede leer los últimos 256 bytes');
+ assert.deepEqual(new Uint8Array(await response.arrayBuffer()),fullVideo.subarray(fullLength-256));
+ assert.equal(rangeGets,2);
+ assert.equal(fullGets,2);
  
  service.fetch=async(request)=>{
   serviceCalls++;
