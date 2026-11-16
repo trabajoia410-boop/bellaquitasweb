@@ -8,6 +8,9 @@ const SESSION_SECONDS = 30 * 24 * 60 * 60;
 const ADMIN_SESSION_SECONDS = 12 * 60 * 60;
 const ADMIN_STEPUP_SECONDS = 2 * 60 * 60;
 const ADMIN_COOKIE = "__Host-bf_admin";
+// OAuth login CSRF: bind each Google state to the browser that initiated it.
+// SameSite=Lax allows the top-level GET return from Google after login.
+const OAUTH_COOKIE = "__Host-bf_oauth";
 const BASE = "https://bellaquitas-api-staging.bellaquitas-fest-410.workers.dev";
 const HEADER = {
   "Cache-Control": "no-store",
@@ -81,6 +84,9 @@ function readCookie(request,name) {
 }
 function clearCookie() {
   return COOKIE+"=; Path=/; Max-Age=0; Secure; HttpOnly; SameSite=Lax";
+}
+function oauthCookie(state,maxAge=600) {
+  return OAUTH_COOKIE+"="+state+"; Path=/; Max-Age="+maxAge+"; Secure; HttpOnly; SameSite=Lax";
 }
 function sessionCookie(value,maxAge=SESSION_SECONDS) {
   return COOKIE+"="+value+"; Path=/; Max-Age="+maxAge+"; Secure; HttpOnly; SameSite=Lax";
@@ -164,7 +170,8 @@ async function beginGoogle(request,env) {
   auth.searchParams.set("code_challenge_method","S256");
   auth.searchParams.set("access_type","online");
   return new Response(null,{status:302,headers:{
-    Location:auth.toString(),"Cache-Control":"no-store","Referrer-Policy":"no-referrer"
+    Location:auth.toString(),"Cache-Control":"no-store","Referrer-Policy":"no-referrer",
+    "Set-Cookie":oauthCookie(state)
   }});
 }
 async function callbackGoogle(request,env) {
@@ -175,6 +182,9 @@ async function callbackGoogle(request,env) {
     return fail("Respuesta de Google inválida",400);
   }
   if(!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET)return fail("Servicio no configurado",503);
+  // Never accept a state obtained by a different browser. This is independent
+  // of Google PKCE/nonce and prevents OAuth login CSRF and account swapping.
+  if(readCookie(request,OAUTH_COOKIE)!==state)return fail("El acceso debe iniciarse en este navegador",403);
   const stateHash=await digest(state);
   // Single-use state, even on invalid authorization codes.
   const saved=await env.DB.prepare(
@@ -241,6 +251,7 @@ async function callbackGoogle(request,env) {
     "Cache-Control":"no-store","Referrer-Policy":"no-referrer"
   });
   for(const cookie of cookies)headers.append("Set-Cookie",cookie);
+  headers.append("Set-Cookie",oauthCookie("",0));
   return new Response(null,{status:303,headers});
 }
 export async function authRoute(request,env) {
