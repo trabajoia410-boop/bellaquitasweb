@@ -27,7 +27,7 @@ export function inspectSql(text){
  const dataOf=name=>written.some(v=>basenameOf(v.table)===name);
  const hasProfiles=byBase(created,'profiles');
  const hasProfileData=dataOf('profiles');
- const hasPoints=\bpoints\b/i.test(sql),hasVisits=\bvisits\b/i.test(sql);
+ const hasPoints=/\bpoints\b/i.test(sql),hasVisits=/\bvisits\b/i.test(sql);
  const identityTables=['auth_identity_links','identities','users'].filter(x=>byBase(created,x));
  const dataIdentityTables=identityTables.filter(dataOf);
  const failures=[];
