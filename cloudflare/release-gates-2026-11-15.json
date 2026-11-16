@@ -27,11 +27,11 @@
     },
     "realHttp206AndIosAndroidPlayback": {
       "passed": false,
-      "evidence": "16/11/2026: ESPEJO STAGING cambiado de proxy GitHub temporal a Cloudflare Workers Static Assets (Service Binding VIDEO_QA_PROXY ahora service bellaquitas-media-qa), build Cloudflare 536ad894-3c35-4529-ae1e-3e8c7c19cf1c success, GitHub Actions 43808936094 success: 5 MP4/10 HTTP206 con bytes originales inicio+fin, tres logos idénticos, sin R2, ni cookies. FALTA reproducir en iPhone y Android físicos, y comparar visualmente antes del corte. Ver cloudflare/FASE5_MEDIOS_DIRECTOS_Y_ROTACION_2026-11-16.md. Sigue FALSO."
+      "evidence": "16/11/2026: ESPEJO STAGING cambiado de proxy GitHub temporal a Cloudflare Workers Static Assets (Service Binding VIDEO_QA_PROXY ahora service bellaquitas-media-qa), build Cloudflare 536ad894-3c35-4529-ae1e-3e8c7c19cf1c success, GitHub Actions 43808936094 success: 5 MP4/10 HTTP206 con bytes originales inicio+fin, tres logos idénticos, sin R2, ni cookies. FALTA reproducir en iPhone y Android físicos, y comparar visualmente antes del corte. Ver cloudflare/FASE5_MEDIOS_DIRECTOS_Y_ROTACION_2026-11-16.md. Sigue FALSO. El responsable confirma vídeo Android y decide aplazar iPhone hasta publicación; no certificar ensayo iPhone. DECLARACIÓN DEL RESPONSABLE 16/11/2026: pruebas de usuarios comunicadas como correctas; no repetir ensayos manuales antes de la publicación. Ver cloudflare/ACTA_PRUEBAS_USUARIO_2026-11-16.md."
     },
     "bothRealAdminLoginsVerified": {
       "passed": false,
-      "evidence": "16/11/2026: Cloudflare Workers Builds stage c179d627-589f-4336-bd00-e5b010b1f3fa SUCCESS (version c608e3e6-2157-43dc-8807-0b6944352458); live admin ES/FR browser 43805946182 SUCCESS. ADMIN_EMAIL_LINK_ENABLED=yes SOLO en staging, 17 bindings preservados, 5 secretos presentes, 7 perfiles/2 admins/1999998 puntos/0 visitas, 0 credenciales email admin. GitHub CI 43807285506 SUCCESS: anónimos 401, no altas. Ambas personas deben autenticar con Google y confirmar sus correos para certificar login real; no se han probado contraseñas reales. Véase cloudflare/FASE5_PANEL_ADMIN_CORREO_VERIFICADO_2026-11-16.md. Continúa FALSO."
+      "evidence": "16/11/2026: Cloudflare Workers Builds stage c179d627-589f-4336-bd00-e5b010b1f3fa SUCCESS (version c608e3e6-2157-43dc-8807-0b6944352458); live admin ES/FR browser 43805946182 SUCCESS. ADMIN_EMAIL_LINK_ENABLED=yes SOLO en staging, 17 bindings preservados, 5 secretos presentes, 7 perfiles/2 admins/1999998 puntos/0 visitas, 0 credenciales email admin. GitHub CI 43807285506 SUCCESS: anónimos 401, no altas. Ambas personas deben autenticar con Google y confirmar sus correos para certificar login real; no se han probado contraseñas reales. Véase cloudflare/FASE5_PANEL_ADMIN_CORREO_VERIFICADO_2026-11-16.md. Continúa FALSO. El responsable declara ambas cuentas funcionando; la D1 staging registra sesiones de un solo perfil admin, por lo que el origen de ambas pruebas no es verificable independientemente. DECLARACIÓN DEL RESPONSABLE 16/11/2026: pruebas de usuarios comunicadas como correctas; no repetir ensayos manuales antes de la publicación. Ver cloudflare/ACTA_PRUEBAS_USUARIO_2026-11-16.md."
     },
     "productionDatabaseBackupConfirmed": {
       "passed": false,
@@ -47,11 +47,11 @@
     },
     "realDeviceQrDoorTest": {
       "passed": false,
-      "evidence": "cloudflare/FASE5_QA_FISICA_Y_ADMIN_2026-11-16.md: página real / de device QA actualizada con QR sintético reconocible localmente, prueba jsQR contra píxeles exactos (CI 43790644785) y cámara física activada sólo por usuario. CI Playwright 43791639958 pasó; sin envío de QR ni escrituras. FALTA usar cámara física y validar control de puerta autorizado con puntos/visitas intactos."
+      "evidence": "cloudflare/FASE5_QA_FISICA_Y_ADMIN_2026-11-16.md: página real / de device QA actualizada con QR sintético reconocible localmente, prueba jsQR contra píxeles exactos (CI 43790644785) y cámara física activada sólo por usuario. CI Playwright 43791639958 pasó; sin envío de QR ni escrituras. FALTA usar cámara física y validar control de puerta autorizado con puntos/visitas intactos. DECLARACIÓN DEL RESPONSABLE 16/11/2026: pruebas de usuarios comunicadas como correctas; no repetir ensayos manuales antes de la publicación. Ver cloudflare/ACTA_PRUEBAS_USUARIO_2026-11-16.md."
     },
     "finalEsFrMobileVisualParity": {
       "passed": false,
-      "evidence": "La interfaz real de administración de staging fue re-desplegada con ES/FR a través de Workers Builds, testeada con WebKit/Chromium HTTPS real GitHub Actions 43805946182 intento 2 PASS. QR/MP4 ES/FR y 66 rutas espejo preexistentes PASS; falta auditoría final exhaustiva de contenido dinámico y prueba física móvil. Véase cloudflare/FASE5_PANEL_ADMIN_CORREO_VERIFICADO_2026-11-16.md. Sigue FALSO."
+      "evidence": "La interfaz real de administración de staging fue re-desplegada con ES/FR a través de Workers Builds, testeada con WebKit/Chromium HTTPS real GitHub Actions 43805946182 intento 2 PASS. QR/MP4 ES/FR y 66 rutas espejo preexistentes PASS; falta auditoría final exhaustiva de contenido dinámico y prueba física móvil. Véase cloudflare/FASE5_PANEL_ADMIN_CORREO_VERIFICADO_2026-11-16.md. Sigue FALSO. Pruebas Android/QR reportadas por el responsable; Safari iPhone físico diferido hasta publicación. Ver cloudflare/ACTA_PRUEBAS_USUARIO_2026-11-16.md."
     },
     "googleIdentityMappingExact": {
       "passed": true,
