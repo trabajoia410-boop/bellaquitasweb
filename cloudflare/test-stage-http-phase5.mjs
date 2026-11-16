@@ -96,6 +96,14 @@ for (const path of [
     'escritura anónima rechazada '+path);
 }
 
+// OAuth CSRF LIVE: estado artificial sin cookie del navegador debe fallar antes
+// de consultar el estado de D1 o solicitar el token a Google. No genera sesiones.
+const fakeState='A'+'z'.repeat(42);
+const fakeCallback=await get(api,'/v1/auth/google/callback?code=qa-fake-code&state='+fakeState);
+check(fakeCallback.status===403,'OAuth state sin cookie de navegador bloqueado (403)');
+check(/no-store/.test(fakeCallback.headers.get('cache-control')||''),'OAuth rechazado sin caché');
+check(!(fakeCallback.headers.get('set-cookie')||'').includes('__Host-bf_session='),'OAuth ajeno no entrega sesión');
+
 // Vídeos originales en Cloudflare Static Assets (sin R2):
 // comprobar que cada vídeo admite una petición real de 1 byte al inicio y al final.
 const manifestText=readFileSync('cloudflare/site-media-manifest.js','utf8');
