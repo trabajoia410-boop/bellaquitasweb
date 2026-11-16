@@ -157,5 +157,24 @@
     ],
     "allPassed": false,
     "source": "cloudflare/VALIDACIONES_TRAS_PUBLICACION_2026-11-16.md"
+  },
+  "phase6PreproductionDb": {
+    "name": "bellaquitas-produccion-preparada-20261116",
+    "id": "3d65c23d-4d03-4988-9d7f-23d4f95cbc3c",
+    "jurisdiction": "eu",
+    "status": "schema-only",
+    "schemaSource": "bellaquitas-staging",
+    "schemaObjects": 44,
+    "tables": 22,
+    "indexes": 17,
+    "triggers": 5,
+    "verifiedSchemaDifferences": 0,
+    "foreignKeyErrors": 0,
+    "realUsersImported": false,
+    "publiclyAccessible": false,
+    "productionWorkerConfigured": false,
+    "dnsChanged": false,
+    "lastVerified": "2026-11-16",
+    "notes": "D1 creada y esquema clonada por API Cloudflare en jurisdicción eu, cero perfiles; no importa credenciales ni puntos antes de conciliación, no Worker ni domain bindings. Config de preproducción sin routes ni workers_dev."
   }
 }
