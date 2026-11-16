@@ -222,7 +222,16 @@
     "authSecretsBound": false,
     "productionApprovalFlag": "no",
     "realGoogleLoginTested": false,
-    "emailResetRealProviderTested": false
+    "emailResetRealProviderTested": false,
+    "visualAssetParityComplete": false,
+    "visualAssetKnownMissing": [
+      "62609.jpg"
+    ],
+    "emailRateKeyStoredAsSecret": true,
+    "emailRateKeyNewUniquePerWorker": true,
+    "emailRateKeyBackupKeyRotated": false,
+    "staticMediaServedDirectly": true,
+    "videoQaServiceBindingRemoved": true
   },
   "phase6AuthCutoverPreparation": {
     "status": "code-deployed-in-isolated-preproduction",
@@ -265,5 +274,35 @@
     "cloudflareZoneStatus": "pending",
     "registrarNameserversChanged": false,
     "authEmailSendingFromPreproductionVerified": false
+  },
+  "phase6VisualAssetAudit": {
+    "status": "blocked-original-jpg-not-in-repo",
+    "snapshotReference": "cloudflare/mirror-snapshot.js",
+    "backgroundUsage": "styles.css / body.bf-neon .bf-after-marquee / background-image:url(\"assets/62609.jpg\")",
+    "allReferencedAssetNamesAudited": 14,
+    "expectedMediaManifestFiles": 17,
+    "missing": [
+      "62609.jpg"
+    ],
+    "sourceOriginalRecoveredFromUserLibrary": true,
+    "sourceOriginalFilename": "62609.jpg",
+    "sourceOriginalSize": 41544,
+    "sourceOriginalWidth": 1536,
+    "sourceOriginalHeight": 864,
+    "sourceOriginalSha256": "8132f61e31fe7a6b008e8af307c51a525e7d19c9cfd83e9ac80ff2553c0bca60",
+    "repoMissing": true,
+    "substitutionAllowed": false,
+    "originalBinaryImportedToRepo": false,
+    "releaseBlocked": true,
+    "validation": "No se altera la foto ni el diseño; el JPG real existe en Library pero no está todavía en assets/ GitHub. Auditoría de todas las referencias lista."
+  },
+  "phase6DnsVerification": {
+    "legacyGithubDnsRecordsRepointed": false,
+    "legacyARecordsDnsOnly": 4,
+    "legacyWwwDnsOnly": true,
+    "registrarNameserversChanged": false,
+    "zoneStatus": "pending",
+    "emailRecordsPreserved": true,
+    "searchConsoleRecordPreserved": true
   }
 }
