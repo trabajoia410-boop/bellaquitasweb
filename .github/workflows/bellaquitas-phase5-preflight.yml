@@ -36,6 +36,8 @@ jobs:
           node-version: '22'
       - name: Comprobar que no se han subido backups o secretos
         run: node cloudflare/test-no-private-backup-leaks.mjs
+      - name: Verificar código del panel y todas sus traducciones ES/FR
+        run: node cloudflare/test-admin-console.mjs
       - name: Probar administradores de dos cuentas con datos sintéticos
         run: node --experimental-sqlite cloudflare/test-admin-email-link.mjs
       - name: Verificar OAuth Google contra login CSRF de otro navegador
