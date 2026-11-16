@@ -31,7 +31,7 @@
     },
     "bothRealAdminLoginsVerified": {
       "passed": false,
-      "evidence": "cloudflare/FASE5_QA_FISICA_Y_ADMIN_2026-11-16.md: consulta de lectura real D1 staging/restauración: 2 administradores, ambos vinculados a identidades Google, ninguno con credencial email verificada, 0 sesiones admin step-up/links. Google OAuth secreto configurado y flujo PKCE preparado, no se han iniciado sesiones ni leído contraseñas. FALTAN ambos inicios reales y, si se pide acceso email+password, vinculación verificada por las personas administradoras. Sigue FALSO."
+      "evidence": "16/11/2026: Cloudflare Workers Builds stage c179d627-589f-4336-bd00-e5b010b1f3fa SUCCESS (version c608e3e6-2157-43dc-8807-0b6944352458); live admin ES/FR browser 43805946182 SUCCESS. ADMIN_EMAIL_LINK_ENABLED=yes SOLO en staging, 17 bindings preservados, 5 secretos presentes, 7 perfiles/2 admins/1999998 puntos/0 visitas, 0 credenciales email admin. GitHub CI 43807285506 SUCCESS: anónimos 401, no altas. Ambas personas deben autenticar con Google y confirmar sus correos para certificar login real; no se han probado contraseñas reales. Véase cloudflare/FASE5_PANEL_ADMIN_CORREO_VERIFICADO_2026-11-16.md. Continúa FALSO."
     },
     "productionDatabaseBackupConfirmed": {
       "passed": false,
@@ -39,7 +39,7 @@
     },
     "exposedBackupKeyRotatedOutOfChat": {
       "passed": false,
-      "evidence": "Copia staging con nueva clave privada fuera de repo disponible, pero antiguo backup D1 protegido devolvió SQLITE_AUTH en intento de leer metadatos (16/11/2026). No se alteró ni rotó clave histórica de producción. Sigue FALSO."
+      "evidence": "16/11/2026: GitHub QA tiene preventivo cloudflare/test-no-private-backup-leaks.mjs y .gitignore para evitar subir claves privadas PEM, bases locales y backups; tests validan archivos versionados. NO se rotó la clave histórica ni se probó restauración usando clave nueva sobre copia original de producción; sigue FALSO."
     },
     "cloudflareExtraProfileReviewed": {
       "passed": true,
@@ -51,7 +51,7 @@
     },
     "finalEsFrMobileVisualParity": {
       "passed": false,
-      "evidence": "QA 66 rutas ES/FR WebKit/Chromium (43770712164), QR sintético y diagnóstico ES/FR incluyendo etiquetas de 5 MP4 e informe local (43791639958), revalidación Chromium real readyState4. Por probar en móviles físicos y completar revisión exhaustiva del contenido dinámico; sigue FALSO. Ver cloudflare/FASE5_QA_FISICA_Y_ADMIN_2026-11-16.md."
+      "evidence": "La interfaz real de administración de staging fue re-desplegada con ES/FR a través de Workers Builds, testeada con WebKit/Chromium HTTPS real GitHub Actions 43805946182 intento 2 PASS. QR/MP4 ES/FR y 66 rutas espejo preexistentes PASS; falta auditoría final exhaustiva de contenido dinámico y prueba física móvil. Véase cloudflare/FASE5_PANEL_ADMIN_CORREO_VERIFICADO_2026-11-16.md. Sigue FALSO."
     },
     "googleIdentityMappingExact": {
       "passed": true,
