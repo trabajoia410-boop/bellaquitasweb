@@ -1,7 +1,7 @@
 // Media originales del repositorio GitHub. SHA1 en formato Git blob,
-// tamaños y MIME para verificar exactamente las copias a Cloudflare R2.
+// tamaños y MIME para verificar exactamente las copias en Cloudflare Workers Static Assets.
 // No transcodificar, recortar, convertir o reemplazar videos/fotos.
-// La copia R2 usa prefijo site-original/ para no tocar medios de socios.
+// No depende de R2; los archivos públicos originales se sirven desde Workers Static Assets y no incluyen medios privados de socios.
 export const SITE_MEDIA=[
   {
     "path": "Bellaquitas Fest para móvil.mp4",
