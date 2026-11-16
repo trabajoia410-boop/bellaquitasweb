@@ -1,4 +1,5 @@
 import {authRoute} from "./auth-routes.js";
+import {productionSiteRoute} from "./production-site-route.js";
 import {adminConsoleRoute} from "./admin-console.js";
 import {previewRoute} from "./preview-page.js";
 import {mirrorRoute} from "./web-mirror.js";
@@ -61,6 +62,10 @@ export default {
       return new Response(null, {status: 204, headers: responseHeaders(request)});
     }
     try {
+      // El diseño original vive en la raíz únicamente si el entorno está
+      // explícitamente marcado como producción (staging no cambia).
+      const publicSite=await productionSiteRoute(request,env);
+      if(publicSite)return publicSite;
       // Consola en ruta separada, sin cambiar la portada ni la API pública.
       const adminPage = adminConsoleRoute(request);
       if (adminPage) return adminPage;
