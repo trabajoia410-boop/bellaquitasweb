@@ -1,3 +1,4 @@
+import {googleLanding} from "./production-auth-redirects.js";
 /* Bellaquitas Fest staging: verified Google OAuth with PKCE, nonce and opaque sessions.
  * Secrets GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET must be stored on Cloudflare,
  * never in the repo. Google authentication fails CLOSED until configured.
@@ -247,7 +248,7 @@ async function callbackGoogle(request,env) {
     cookies=[sessionCookie(session,ttl)];
   }
   const headers=new Headers({
-    "Location":base(env)+(state.startsWith("A")?"/administracion/":state.startsWith("M")?"/espejo/#/mi-espacio":"/preview"),
+    "Location":base(env)+googleLanding(state,env),
     "Cache-Control":"no-store","Referrer-Policy":"no-referrer"
   });
   for(const cookie of cookies)headers.append("Set-Cookie",cookie);
