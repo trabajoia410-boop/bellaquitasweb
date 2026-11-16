@@ -46,6 +46,7 @@ if(!config.assetsReady){
    assert.equal(chunk.status,206,'El servidor REAL debe responder 206 en Safari');
    assert.equal(chunk.headers.get('content-range'),'bytes '+offset+'-'+last+'/'+media.bytes);
    assert.equal(chunk.headers.get('content-type'),'video/mp4');
+   assert.equal(chunk.headers.get('cross-origin-resource-policy'),'cross-origin','Safari/Chrome deben permitir vídeo desde Worker distinto');
    assert.equal(chunk.headers.get('set-cookie'),null);
    const data=Buffer.from(await chunk.arrayBuffer());
    assert.deepEqual(data,file.subarray(offset,last+1),'Bytes originales deben coincidir al inicio/final');
@@ -62,6 +63,7 @@ if(!config.assetsReady){
   const head=await read(path,{method:'HEAD'});
   assert.equal(head.status,200,'Logo original no accesible en QA');
   assert.equal(head.headers.get('content-type'),logo.type);
+  assert.equal(head.headers.get('cross-origin-resource-policy'),'cross-origin','Logos públicos deben poder utilizarse desde web de pruebas');
   if(head.headers.has('content-length'))assert.equal(Number(head.headers.get('content-length')),logo.bytes,'HEAD informa tamaño de logo incorrecto');
   // GET completo y comparación SHA/bytes al final prueban que no se ha recodificado.
   const got=await read(path);
