@@ -8,6 +8,7 @@ on:
       - .github/workflows/qa-mobile-mirror-browser.yml
       - cloudflare/test-mobile-mirror-browser.mjs
       - cloudflare/test-admin-i18n-browser.mjs
+      - cloudflare/test-admin-live-browser.mjs
       - cloudflare/test-public-routes-browser.mjs
       - cloudflare/test-device-qa-browser.mjs
       - cloudflare/device-qa-worker.js
@@ -36,6 +37,8 @@ jobs:
         run: node cloudflare/test-admin-i18n-browser.mjs
       - name: Recorrer once rutas públicas ES y FR sin datos de usuarios
         run: node cloudflare/test-public-routes-browser.mjs
+      - name: Probar el panel real publicado ES/FR en Safari y Chrome simulados sin sesiones
+        run: node cloudflare/test-admin-live-browser.mjs
       - name: Probar en WebKit iPhone y Chrome Pixel el diagnóstico QR ficticio bilingüe sin escrituras
         run: node cloudflare/test-device-qa-browser.mjs
       - name: Guardar capturas anónimas de preparación
