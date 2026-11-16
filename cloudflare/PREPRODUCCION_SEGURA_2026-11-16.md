@@ -36,3 +36,19 @@ No se ha reactivado R2 ni Supabase para hosting. No se crearon cuentas de pago.
 Inicio real de ambos administradores, QR/control de puerta, vídeo en iPhone/Samsung y revisión visual ES/FR. No repetirlas ahora ni declararlas aprobadas sin haberlas realizado.
 
 **Seguridad:** `bellaquitas.fr`, GitHub `main`, el DNS del registrador, puntos y visitas de las bases previas permanecen sin cambios. La PR #3 continúa en borrador.
+
+## Actualización — Worker de preproducción DESPLEGADO (16/11/2026, 17:50 UTC)
+
+La preparación descrita arriba progresó hasta el despliegue **aislado** real:
+
+- Worker `bellaquitas-api-preproduccion`, Cloudflare Workers Builds `7ae72945-db80-4f7e-ade9-9fe99378feb6`: **SUCCESS**.
+- Trigger manual conectado a la rama de migración; no tiene disparador automático sobre `main`. El Worker ejecuta el código de la API y del nuevo router de portada, sin que esté activo el modo público.
+- Enlace D1 `DB` al ID `3d65c23d-4d03-4988-9d7f-23d4f95cbc3c` confirmado por la API de Cloudflare; recurso `ASSETS` y servicio de medios `VIDEO_QA_PROXY` confirmados.
+- El build verificó **17 archivos multimedia originales**, tres logos por tamaño/ETag y el manifiesto PWA, conservando los vídeos sin recomprimir.
+- Variables remotas comprobadas: `SITE_MODE=preproduction`, `STAGING_MUTATIONS=disabled`, `ALLOW_NEW_ACCOUNTS=no`, `EMAIL_AUTH_ENABLED=no`, `ADMIN_EMAIL_LINK_ENABLED=no`, `EMAIL_REGISTRATION_ENABLED=no`, `SUGGESTIONS_ENABLED=no`. No se copiaron secretos del staging.
+- **workers.dev deshabilitado**, URLs de preview deshabilitadas, cero dominios Worker vinculados, zona `bellaquitas.fr` todavía `pending`.
+- Datos reconsultados después del despliegue: preproducción 7 perfiles / 2 administradores / 1.999.998 puntos / 0 visitas. Staging y origen aislado conservan sus cifras originales.
+- Se añadió `cloudflare/production-site-route.js` para mostrar la portada original en `/`, los recursos en sus rutas normales y los vídeos por Cloudflare Static Assets cuando se active expresamente `SITE_MODE=production`. En preproducción **esa ruta permanece desactivada**.
+- El test `cloudflare/test-production-site-route.mjs` comprueba offline que el HTML original no tiene aviso de staging ni enlaces al proveedor antiguo, y que CSS, app JS, francés, QR, PWA, vídeo Range 206 y el acceso independiente al panel tienen rutas coherentes. GitHub CI **SUCCESS**: [Fase 5 - seguridad y preparación](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43922064532) y [migración sin despliegue](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43922074351).
+
+**Aún no es producción:** no hay secretos reales de Google/Resend/Turnstile vinculados al Worker nuevo, no se habilitaron altas/escrituras, no se ha conciliado el delta desde el origen anterior ni se ha cambiado DNS. El estado `productionWorkerConfigured` debe seguir **false** hasta acreditar el inicio de sesión con el backend definitivo y completar los controles previos. La clave de recuperación del respaldo cifrado creada el 16/11 no se ha vuelto a compartir.
