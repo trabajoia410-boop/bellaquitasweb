@@ -29,14 +29,25 @@ for(const [id,name,role,points,historic,visits] of [
  [m,'Socio ficticio','socio',16,18,1]
 ])db.prepare("INSERT INTO profiles(id,name,role,member_code,points,lifetime_points,visits) VALUES (?,?,?,?,?,?,?)").run(id,name,role,'QA-'+id.slice(0,8),points,historic,visits);
 
-const env={DB:{
- prepare(sql){return{bind(...values){return{
-   async first(){return db.prepare(sql).get(...values)||null;},
-   async run(){return db.prepare(sql).run(...values);},
-   async all(){return {results:db.prepare(sql).all(...values)}}
- }};}},
- async batch(stmts){db.exec('BEGIN');try{const result=[];for(const q of stmts)result.push(await q.run());db.exec('COMMIT');return result}catch(e){db.exec('ROLLBACK');throw e}}
-},PUBLIC_ORIGIN:'https://staging-qa.example.test',STAGING_MUTATIONS:'disabled'};
+const adapter={
+ prepare(sql){
+  return {
+   bind(...values){
+    return {
+     async first(){return db.prepare(sql).get(...values)||null;},
+     async run(){return db.prepare(sql).run(...values);},
+     async all(){return {results:db.prepare(sql).all(...values)};}
+    };
+   }
+  };
+ },
+ async batch(stmts){
+  db.exec('BEGIN');
+  try{const results=[];for(const q of stmts)results.push(await q.run());db.exec('COMMIT');return results;}
+  catch(e){db.exec('ROLLBACK');throw e;}
+ }
+};
+const env={DB:adapter,PUBLIC_ORIGIN:'https://staging-qa.example.test',STAGING_MUTATIONS:'disabled'};
 const [sa,sb]=await Promise.all([createVerifiedAdminSession(a,env),createVerifiedAdminSession(b,env)]);
 const memberCookie=await createAuthSession(m,env);
 const cookies=x=>(Array.isArray(x)?x:[x]).map(y=>y.split(';')[0]).join('; ');
