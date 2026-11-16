@@ -1,0 +1,34 @@
+name: Bellaquitas - comprobar coste criptografico gratuito
+on:
+  push:
+    branches:
+      - migracion/fase5-segura-20261114
+    paths:
+      - '.github/workflows/bellaquitas-crypto-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  worker-crypto:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Evaluar hash sintetico contra Worker aislado y sin secretos
+        shell: bash
+        run: |
+          node --input-type=module <<'EOF'
+          const url='https://bellaquitas-crypto-bench-qa-20261116.bellaquitas-fest-410.workers.dev/test';
+          const results=[];
+          for(let i=0;i<3;i++){
+            try {
+              const r=await fetch(url,{headers:{'Cache-Control':'no-store'},signal:AbortSignal.timeout(25000)});
+              const body=await r.text();
+              results.push({status:r.status,ok:r.ok,payload:body.slice(0,200)});
+            } catch(error) {results.push({error:String(error).slice(0,200)})}
+          }
+          console.log(JSON.stringify({results},null,2));
+          if(!results.some(x=>x.ok && /"ok":true/.test(x.payload)))process.exitCode=1;
+          EOF
