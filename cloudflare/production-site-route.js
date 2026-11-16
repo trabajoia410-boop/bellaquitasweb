@@ -1,0 +1,92 @@
+/**
+ * Bellaquitas Fest — entrada pública definitiva SIN rediseño.
+ * El espejo usa la fotografía exacta del sitio original, sin Supabase o R2.
+ * Esta capa usa rutas /, /styles.css, /app.js y /assets/*
+ * y preserva /administracion/ en el backend.
+ * Solo entra en vigor con SITE_MODE=production.
+ */
+import {mirrorRoute} from "./web-mirror.js";
+
+const ASSET_SOURCE = /^\/(?:styles\.css|app\.js|config\.js|locale-fr\.js)$/;
+const SINGLE_ASSET = /^\/assets\/[^/]+$/;
+const MIRROR_PAGE = /^\/espejo(?:\/|\/index\.html)?$/;
+const SITE_ROOT = new Set(["/","/index.html"]);
+const BLOCKED_SERVICE_WORKER = "self.addEventListener('install',()=>self.skipWaiting());"+
+  "self.addEventListener('activate',event=>{event.waitUntil((async()=>{"+
+  "try{await self.registration.unregister()}catch(_){}"+
+  "})())});";
+
+const response = (body,status,contentType) => new Response(body,{status,headers:{
+  "Content-Type":contentType,
+  "X-Content-Type-Options":"nosniff",
+  "Referrer-Policy":"no-referrer",
+  "Cache-Control":"no-store"
+}});
+
+const BADGE=/<div role="status" aria-label="Copia de pruebas Cloudflare"[^>]*>PRUEBAS · SOLO LECTURA<\/div>/;
+
+export async function productionSiteRoute(request,env) {
+  if(env?.SITE_MODE!=="production")return null;
+  const u=new URL(request.url);
+  const path=u.pathname;
+  // No abrir públicamente el preview ni el espejo como segunda portada.
+  if(path==="/preview"||path.startsWith("/preview/"))
+    return response("No encontrado",404,"text/plain; charset=utf-8");
+  if(MIRROR_PAGE.test(path))
+    return Response.redirect(u.origin+"/"+u.search+u.hash,308);
+
+  if(request.method!=="GET"&&request.method!=="HEAD"){
+    if(SITE_ROOT.has(path)||ASSET_SOURCE.test(path)||SINGLE_ASSET.test(path))
+      return response("Método no permitido",405,"text/plain; charset=utf-8");
+    return null;
+  }
+
+  if(path==="/sw.js")return response(
+    request.method==="HEAD"?null:BLOCKED_SERVICE_WORKER,
+    200,"application/javascript; charset=utf-8"
+  );
+
+  if(path==="/manifest.webmanifest"){
+    if(!env.ASSETS?.fetch)
+      return response("Recursos no preparados",503,"text/plain; charset=utf-8");
+    const fileUrl=new URL("/manifest.webmanifest",u.origin);
+    const served=await env.ASSETS.fetch(new Request(fileUrl,{method:request.method}));
+    if(served.status!==200)return response("Recurso no disponible",503,"text/plain; charset=utf-8");
+    return new Response(request.method==="HEAD"?null:served.body,{
+      status:200,headers:{
+       "Content-Type":"application/manifest+json",
+       "Cache-Control":"public,max-age=3600",
+       "X-Content-Type-Options":"nosniff"
+      }
+    });
+  }
+
+  const page=SITE_ROOT.has(path);
+  if(!page&&!ASSET_SOURCE.test(path)&&!SINGLE_ASSET.test(path))return null;
+  // No redireccionar: Safari y el renderer conservan la URL normal.
+  const mirrorUrl=new URL(u);
+  mirrorUrl.pathname=page?"/espejo/":"/espejo"+path;
+  const mirrorRequest=new Request(mirrorUrl,request);
+  const served=await mirrorRoute(mirrorRequest,env);
+  if(!served)return response("Recurso no disponible",503,"text/plain; charset=utf-8");
+  if(!page)return served;
+  if(served.status!==200)return served;
+  if(request.method==="HEAD"){
+    const headers=new Headers(served.headers);
+    headers.set("X-Robots-Tag","index, follow");
+    return new Response(null,{status:200,headers});
+  }
+  const original=await served.text();
+  if(!BADGE.test(original))return response("Página no verificada",503,"text/plain; charset=utf-8");
+  const html=original
+    .replace(BADGE,"")
+    .replace(/content="noindex,nofollow"/g,'content="index,follow"');
+  if(!html.includes('id="app"')||html.includes('PRUEBAS · SOLO LECTURA')||
+    html.includes("vlsipvngvxcgnwrhpjgg.supabase.co"))
+    return response("Página no verificada",503,"text/plain; charset=utf-8");
+  const headers=new Headers(served.headers);
+  headers.set("X-Robots-Tag","index, follow");
+  headers.set("Cache-Control","public,max-age=120");
+  headers.delete("Content-Length");
+  return new Response(html,{status:200,headers});
+}
