@@ -44,16 +44,29 @@ if(!config.assetsReady){
   const mid=Math.floor((media.bytes-65536)/2);
   for(const [offset,length] of [[0,256],[mid,65536],[media.bytes-256,256]]){
    const last=offset+length-1;
-   const chunk=await read(name,{headers:{Range:'bytes='+offset+'-'+last}});
-   assert.equal(chunk.status,206,'El servidor REAL debe responder 206 en Safari');
-   assert.equal(chunk.headers.get('content-range'),'bytes '+offset+'-'+last+'/'+media.bytes);
-   assert.equal(chunk.headers.get('content-type'),'video/mp4');
-   assert.equal(chunk.headers.get('cross-origin-resource-policy'),'cross-origin','Safari/Chrome deben permitir vídeo desde Worker distinto');
-   assert.equal(chunk.headers.get('set-cookie'),null);
-   const data=Buffer.from(await chunk.arrayBuffer());
    const expected=file.subarray(offset,last+1);
-   console.log('MEDIA-RANGE',JSON.stringify({file:media.path,offset,status:chunk.status,length:data.length,expected:length,range:chunk.headers.get('content-range'),encoding:chunk.headers.get('content-encoding'),cache:chunk.headers.get('cf-cache-status')}));
-   assert.deepEqual(data,expected,'Bytes originales deben coincidir: '+media.path+' @'+offset+' ('+data.length+'/'+length+')');
+   let verified=false;
+   // Cloudflare puede anunciar 206 correcto pero entregar un cuerpo vacío
+   // durante un fallo transitorio en el borde. Repetimos como máximo dos veces.
+   // Nunca aceptar un 206 sin bytes; un fallo persistente deja el CI rojo.
+   for(let attempt=1;attempt<=3;attempt++){
+    const chunk=await read(name,{headers:{Range:'bytes='+offset+'-'+last}});
+    assert.equal(chunk.status,206,'El servidor REAL debe responder 206 en Safari');
+    assert.equal(chunk.headers.get('content-range'),'bytes '+offset+'-'+last+'/'+media.bytes);
+    assert.equal(chunk.headers.get('content-type'),'video/mp4');
+    assert.equal(chunk.headers.get('cross-origin-resource-policy'),'cross-origin','Safari/Chrome deben permitir vídeo desde Worker distinto');
+    assert.equal(chunk.headers.get('set-cookie'),null);
+    const data=Buffer.from(await chunk.arrayBuffer());
+    console.log('MEDIA-RANGE',JSON.stringify({file:media.path,offset,attempt,status:chunk.status,length:data.length,expected:length,range:chunk.headers.get('content-range'),encoding:chunk.headers.get('content-encoding'),cache:chunk.headers.get('cf-cache-status')}));
+    if(data.length===length){
+      assert.deepEqual(data,expected,'Bytes originales deben coincidir: '+media.path+' @'+offset);
+      verified=true;
+      break;
+    }
+    if(data.length!==0)assert.fail('Fragmento 206 parcial no vacío: '+data.length+'/'+length);
+    if(attempt<3)console.warn('Reintentando 206 vacío (fallo transitorio de Cloudflare): '+media.path+' @'+offset);
+   }
+   assert.equal(verified,true,'Tres intentos devolvieron 206 incompleto: '+media.path+' @'+offset);
   }
  }
  const logos=JSON.parse(readFileSync('cloudflare/legacy-logos-manifest.json','utf8')).files;
