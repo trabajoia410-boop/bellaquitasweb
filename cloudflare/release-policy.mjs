@@ -30,6 +30,7 @@ export const REQUIRED_KEYS = Object.freeze([
 // A pesar de aplazarse, deben figurar como pendientes y nunca como aprobadas.
 export const DEFERRED_OWNER_CHECKS = Object.freeze([
   'realHttp206AndIosAndroidPlayback',
+  'bothRealAdminLoginsVerified',
   'realDeviceQrDoorTest',
   'finalEsFrMobileVisualParity'
 ]);
@@ -64,9 +65,34 @@ export function evaluateRelease(gates) {
   );
   const authorized = gates.productionChangesAuthorized === true &&
     gates.finalSignoff?.explicitProductionAuthorization === true;
-  // La autorización nunca basta sin respaldo, acceso admin y datos íntegros.
+
+  // El propietario probará físicamente ambos accesos admin DESPUÉS de
+  // publicar. Pero hay que demostrar ANTES que OAuth, reautenticación,
+  // recuperación y el editor funcionan en QA con usuarios ficticios.
+  const adminTechnologyReady =
+    gates.phase5EditorSyntheticQA?.status === 'success' &&
+    gates.phase5AdminRecovery?.status === 'deployed-to-staging-and-synthetically-tested' &&
+    gates.phase5OAuthCsrfHardening?.status === 'deployed-to-staging-and-verified' &&
+    readiness.googleIdentityMappingExact.passed &&
+    readiness.stagingAdminStepupSchemaApplied.passed;
+
+  // Nunca cambiar el dominio a una D1 vacía o a un Worker sin conexión.
+  // Las tres condiciones deben certificarse con hechos en la ventana
+  // de corte; ninguna se satisface por una prueba móvil posterior.
+  const target = gates.phase6PreproductionDb;
+  const targetReady =
+    target?.realUsersImported === true &&
+    target?.productionWorkerConfigured === true &&
+    target?.finalAccountReconciliationCompleted === true &&
+    target?.authRoutePreflightPassed === true &&
+    target?.schemaObjects === 44 &&
+    target?.verifiedSchemaDifferences === 0;
+
+  // La autorización nunca basta sin respaldo, credenciales recuperables,
+  // integridad de datos y entorno final realmente preparado.
   const readyForControlledPublication =
-    authorized && pendingPrepublication.length === 0;
+    authorized && pendingPrepublication.length === 0 &&
+    adminTechnologyReady && targetReady;
   return {
     authorized,
     passed: REQUIRED_KEYS.length - pending.length,
@@ -74,6 +100,8 @@ export function evaluateRelease(gates) {
     pending,
     pendingPrepublication,
     pendingOwnerPostpublication,
+    adminTechnologyReady,
+    targetReady,
     readyForControlledPublication,
     // Esta marca solo podrá ser true después de verificaciones físicas reales.
     fullyVerified: readyForControlledPublication &&
