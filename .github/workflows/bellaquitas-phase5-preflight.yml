@@ -1,0 +1,55 @@
+name: Bellaquitas Fase 5 - prepublicacion y seguridad
+
+on:
+  push:
+    branches:
+      - migracion/fase5-segura-20261114
+    paths:
+      - 'cloudflare/**'
+      - '.github/workflows/bellaquitas-phase5-preflight.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bellaquitas-phase5
+  cancel-in-progress: true
+
+jobs:
+  offline-security:
+    name: Seguridad y fidelidad (sin acceso a datos reales)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Comprobar que no se han subido backups o secretos
+        run: node cloudflare/test-no-private-backup-leaks.mjs
+      - name: Probar administradores de dos cuentas con datos sintéticos
+        run: node --experimental-sqlite cloudflare/test-admin-email-link.mjs
+      - name: Probar fusión de cuentas y puntos sin escritura real
+        run: node cloudflare/test-account-cutover-policy.mjs
+      - name: Probar auditor de exportaciones originales
+        run: node cloudflare/test-audit-production-export.mjs
+      - name: Verificar bloqueo de publicación antes de las pruebas pendientes
+        run: node cloudflare/test-release-gates.mjs
+
+  staging-http-security:
+    name: HTTP real de staging - sin sesiones ni mutaciones
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: offline-security
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Seguridad de panel, API pública y vídeos MP4
+        run: node cloudflare/test-stage-http-phase5.mjs
