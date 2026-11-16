@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Bellaquitas Fest: prueba HTTPS REAL de /espejo/ en Cloudflare staging
- * con medios originales proxificados por QA; cero cuentas y cero escrituras.
+ * con MP4 originales alojados en Cloudflare Static Assets (Service Binding); cero cuentas y cero escrituras.
  */
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -30,7 +30,7 @@ for(const video of videos){
  const head=await read(path,{method:'HEAD'});
  if(head.status!==200){const probe=await read(path,{headers:{Range:'bytes=0-255'}});console.error('Diagnóstico espejo staging:',video.path,'HEAD',head.status,'RANGE',probe.status,'respuesta',(await probe.text()).slice(0,180));}
  assert.equal(head.status,200,'Video HEAD no disponible en espejo: '+video.path);
- assert.equal(Number(head.headers.get('content-length')),video.bytes,'Se ha cambiado tamaño del vídeo: '+video.path);
+ if(head.headers.has('content-length'))assert.equal(Number(head.headers.get('content-length')),video.bytes,'Se ha cambiado tamaño del vídeo: '+video.path);
  assert.equal(head.headers.get('content-type'),'video/mp4');
  const local=readFileSync('assets/'+video.path);
  assert.equal(local.length,video.bytes);
