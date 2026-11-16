@@ -3,6 +3,7 @@
  * Asegura rutas raíz, CSS/JS, ES/FR, vídeo original, QR y admin separado.
  */
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {productionSiteRoute} from './production-site-route.js';
 import {SITE_MEDIA} from './site-media-manifest.js';
 
@@ -12,6 +13,10 @@ const env={
  SITE_MODE:'production',
  ASSETS:{async fetch(req){
    const url=new URL(req.url);calls.push(url.pathname);
+   if(['/robots.txt','/sitemap.xml'].includes(url.pathname))
+     return new Response(readFileSync(url.pathname.slice(1),'utf8'),{
+       status:200,headers:{'Content-Type':url.pathname.endsWith('.xml')?'application/xml':'text/plain'}
+     });
    if(url.pathname==='/manifest.webmanifest')
      return new Response(JSON.stringify(manifest),{status:200,headers:{'Content-Type':'application/manifest+json'}});
    if(url.pathname.startsWith('/assets/')){
@@ -90,6 +95,19 @@ const appManifest=await get('/manifest.webmanifest');
 assert.equal(appManifest.status,200);
 assert.deepEqual((await appManifest.json()).name,'Bellaquitas Fest');
 
+for(const [path,mime] of [
+ ['/robots.txt','text/plain'],
+ ['/sitemap.xml','application/xml']
+]){
+ const r=await get(path);
+ assert.equal(r.status,200,'SEO original: '+path);
+ assert.match(r.headers.get('Content-Type'),new RegExp(mime));
+ assert.equal(await r.text(),readFileSync(path.slice(1),'utf8'),
+   'El SEO tiene que ser idéntico byte a byte al original');
+ const head=await get(path,{method:'HEAD'});
+ assert.equal(head.status,200);
+ assert.equal((await head.arrayBuffer()).byteLength,0);
+}
 const sw=await get('/sw.js');
 assert.equal(sw.status,200);
 assert.match(await sw.text(),/registration\.unregister/);
