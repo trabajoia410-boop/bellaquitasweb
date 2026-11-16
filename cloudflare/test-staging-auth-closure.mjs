@@ -16,7 +16,7 @@ assert.equal((await health.json()).database,'connected');
 assert.equal(status.status,200);
 const features=await status.json();
 assert.equal(features.registration,false,'Registro en staging TIENE QUE estar cerrado');
-assert.notEqual(features.adminLink,true,'La vinculación de administrador no debe estar habilitada');
+assert.equal(features.adminLink,true,'Vinculación disponible SOLO tras reautenticación del administrador y confirmación email');
 assert.equal(features.login,true,'No cortar el login existente involuntariamente');
 assert.ok([200,404].includes(panel.status),'El staging legado no debe devolver error 500 del panel');
 if(panel.status===200){
@@ -29,7 +29,7 @@ assert.ok([401,404].includes(session.status),'No existe una sesión admin sin re
 assert.ok([200,404].includes(profile.status),'El perfil anónimo no debe lanzar 500');
 if(profile.status===200)assert.equal((await profile.json()).authenticated,false);
 assert.equal(registration.status,503,'No permitir crear nuevas cuentas por correo');
-assert.ok([401,403,404,405,503].includes(linkStart.status),'La ruta de vinculación no puede activarse sin autorización');
+assert.equal(linkStart.status,401,'Ningún visitante anónimo puede iniciar vinculación de credenciales admin');
 assert.ok([401,403,404,405].includes(unauthorizedEdit.status),'Edición de socios requiere admin');
 for(const item of [health,status,panel,session,profile,registration,linkStart,unauthorizedEdit]){
  assert.equal(item.headers.get('set-cookie'),null,'Un visitante anónimo no debe recibir sesión');
