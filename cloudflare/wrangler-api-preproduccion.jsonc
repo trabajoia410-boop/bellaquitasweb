@@ -12,13 +12,6 @@
       "database_id": "3d65c23d-4d03-4988-9d7f-23d4f95cbc3c"
     }
   ],
-  "services": [
-    {
-      "binding": "VIDEO_QA_PROXY",
-      "service": "bellaquitas-media-qa",
-      "environment": "production"
-    }
-  ],
   "vars": {
     "STAGING_MUTATIONS": "disabled",
     "ALLOW_NEW_ACCOUNTS": "no",
