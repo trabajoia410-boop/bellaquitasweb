@@ -9,6 +9,8 @@ on:
       - cloudflare/test-mobile-mirror-browser.mjs
       - cloudflare/test-admin-i18n-browser.mjs
       - cloudflare/test-public-routes-browser.mjs
+      - cloudflare/test-device-qa-browser.mjs
+      - cloudflare/device-qa-worker.js
       - cloudflare/admin-console.js
 permissions:
   contents: read
@@ -34,6 +36,8 @@ jobs:
         run: node cloudflare/test-admin-i18n-browser.mjs
       - name: Recorrer once rutas públicas ES y FR sin datos de usuarios
         run: node cloudflare/test-public-routes-browser.mjs
+      - name: Probar en WebKit iPhone y Chrome Pixel el diagnóstico QR ficticio bilingüe sin escrituras
+        run: node cloudflare/test-device-qa-browser.mjs
       - name: Guardar capturas anónimas de preparación
         if: always()
         uses: actions/upload-artifact@v4
