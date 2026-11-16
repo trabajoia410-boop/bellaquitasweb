@@ -185,6 +185,16 @@ export async function mirrorRoute(request,env){
            if(attempt>0)served=useProxy
              ?await fromTemporaryMedia(request,filename,env)
              :await fromOriginalStaticAssets(request,assetUrl,env);
+           if(served.status===200&&!useProxy){
+             // Static Assets ignoró Range; recuperar el fragmento desde
+             // una solicitud sin Range y comprobar los bytes recibidos.
+             try{body=await recoverSmallRangeFromFullAsset(
+               env,assetUrl,start,end,expected.bytes
+             );}catch{body=null;}
+             if(body&&body.byteLength===length)break;
+             console.warn("Fragmento completo de ASSETS incompleto, intento "+(attempt+1));
+             continue;
+           }
            if(served.status!==206||
                served.headers.get("Content-Range")!==correctRange||
                Number(served.headers.get("Content-Length"))!==length){
@@ -195,9 +205,21 @@ export async function mirrorRoute(request,env){
            if(body&&body.byteLength===length)break;
            console.warn("Fragmento multimedia incompleto, intento "+(attempt+1));
          }
+         // Última vía únicamente para ASSETS directos: si dos rangos 206
+         // llegaron vacíos, probar representación COMPLETA sin Range.
+         if((!body||body.byteLength!==length)&&!useProxy){
+           try{body=await recoverSmallRangeFromFullAsset(
+             env,assetUrl,start,end,expected.bytes
+           );}catch{body=null;}
+         }
          if(!body||body.byteLength!==length)
            return fail(503,"Fragmento de vídeo temporalmente no disponible");
-         served=new Response(body,{status:206,headers:served.headers});
+         const verifiedHeaders=new Headers(served.headers);
+         verifiedHeaders.set("Content-Range",correctRange);
+         verifiedHeaders.set("Content-Length",String(length));
+         verifiedHeaders.set("Content-Type",expected.type);
+         verifiedHeaders.delete("Content-Encoding");
+         served=new Response(body,{status:206,headers:verifiedHeaders});
        }
      }
      const headers=new Headers(served.headers);
