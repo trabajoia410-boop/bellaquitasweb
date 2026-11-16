@@ -8,7 +8,7 @@ const data = JSON.parse(readFileSync('cloudflare/release-gates-2026-11-15.json',
 const actual = evaluateRelease(data);
 assert.equal(actual.total, 16);
 assert.equal(REQUIRED_KEYS.length, 16);
-assert.equal(DEFERRED_OWNER_CHECKS.length, 3);
+assert.equal(DEFERRED_OWNER_CHECKS.length, 4);
 assert.deepEqual([...new Set(DEFERRED_OWNER_CHECKS)].sort(), [...DEFERRED_OWNER_CHECKS].sort());
 assert.equal(data.phase5CoreOriginRestore?.status, 'verified-isolated',
   'La restauración core original no es un respaldo integral de auth');
@@ -26,6 +26,11 @@ for (const key of REQUIRED_KEYS) fake.readiness[key].passed = true;
 for (const key of DEFERRED_OWNER_CHECKS) fake.readiness[key].passed = false;
 fake.productionChangesAuthorized = true;
 fake.finalSignoff.explicitProductionAuthorization = true;
+// Simulación: solo en un corte real se podrán marcar estas cuatro evidencias.
+fake.phase6PreproductionDb.realUsersImported = true;
+fake.phase6PreproductionDb.productionWorkerConfigured = true;
+fake.phase6PreproductionDb.finalAccountReconciliationCompleted = true;
+fake.phase6PreproductionDb.authRoutePreflightPassed = true;
 const releaseWithPhysicalQaPending = evaluateRelease(fake);
 assert.equal(releaseWithPhysicalQaPending.readyForControlledPublication, true,
   'La QA física no debe impedir una publicación con seguridad previa completa');
@@ -37,7 +42,6 @@ assert.deepEqual(releaseWithPhysicalQaPending.pendingPrepublication, []);
 for (const critical of [
   'productionDatabaseBackupConfirmed',
   'exposedBackupKeyRotatedOutOfChat',
-  'bothRealAdminLoginsVerified',
   'originalVideosDeployedToMediaQa',
   'stagingOnlyAccountCutoverPolicyApproved'
 ]) {
@@ -45,6 +49,27 @@ for (const critical of [
   blocked.readiness[critical].passed = false;
   assert.equal(evaluateRelease(blocked).readyForControlledPublication, false,
     'Nunca publicar faltando la protección previa: ' + critical);
+}
+// Los logins personales quedan para DESPUÉS, pero la técnica no.
+assert.ok(fake.readiness.bothRealAdminLoginsVerified.passed===false);
+assert.equal(releaseWithPhysicalQaPending.adminTechnologyReady,true);
+const noOAuthProtection=structuredClone(fake);
+noOAuthProtection.phase5OAuthCsrfHardening.status='not-verified';
+assert.equal(evaluateRelease(noOAuthProtection).readyForControlledPublication,false,
+  'Nunca permitir lanzamiento con CSRF OAuth sin verificar');
+const noAdminQA=structuredClone(fake);
+noAdminQA.phase5AdminRecovery.status='not-tested';
+assert.equal(evaluateRelease(noAdminQA).readyForControlledPublication,false,
+  'Debe estar listo el flujo de recuperación antes de publicar');
+
+for(const requirement of [
+ 'realUsersImported','productionWorkerConfigured',
+ 'finalAccountReconciliationCompleted','authRoutePreflightPassed'
+]){
+ const notReady=structuredClone(fake);
+ notReady.phase6PreproductionDb[requirement]=false;
+ assert.equal(evaluateRelease(notReady).readyForControlledPublication,false,
+  'No publicar a producción si falta '+requirement);
 }
 const noConsent = structuredClone(fake);
 noConsent.productionChangesAuthorized = false;
