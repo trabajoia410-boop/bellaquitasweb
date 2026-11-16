@@ -3,10 +3,11 @@ import {SITE_MEDIA} from "./site-media-manifest.js";
 import {MIRROR_SUGGESTIONS_UI} from "./mirror-suggestions-ui.js";
 import {MIRROR_ADMIN_NEW_TAB} from "./mirror-admin-newtab.js";
 const MIRROR_BASE="/espejo/";
-const QA_MEDIA_PROXY="https://bellaquitas-media-proxy-qa.bellaquitas-fest-410.workers.dev";
+const QA_MEDIA_PROXY="https://bellaquitas-media-qa.bellaquitas-fest-410.workers.dev";
 const STAGING_HOSTNAME="bellaquitas-api-staging.bellaquitas-fest-410.workers.dev";
-// Fallback EXCLUSIVO del espejo en staging: nunca activar en bellaquitas.fr ni QA pública.
-// El proxy no es alojamiento definitivo. Cuando se vincule ASSETS, se usará ASSETS.
+// En staging, el Service Binding VIDEO_QA_PROXY apunta a Static Assets Cloudflare,
+// no al proxy temporal GitHub. No activar este acceso en bellaquitas.fr.
+// Cuando el backend tenga ASSETS directo, se preferirá ese binding.
 function temporaryMediaAllowed(request,env){
  return !env?.ASSETS&&typeof env?.VIDEO_QA_PROXY?.fetch==="function"&&
   env?.STAGING_MUTATIONS==="disabled"&&
@@ -109,8 +110,8 @@ export async function mirrorRoute(request,env){
    }
    const expected=SITE_MEDIA.find(f=>f.path===filename);
    if(!expected)return fail(404,"Este archivo no pertenece al diseño original");
-   // Static Assets es el destino definitivo. Mientras no esté configurado,
-   // solo el host de staging de Bellaquitas puede usar el proxy QA verificado.
+   // Los originales se alojan en Cloudflare Static Assets, disponibles desde
+   // el Worker multimedia aislado por Service Binding; nunca GitHub ni R2.
    const useProxy=temporaryMediaAllowed(request,env);
    if(!env?.ASSETS&&!useProxy)return fail(503,"Los medios estáticos aún no están desplegados");
    const assetUrl=new URL(request.url);
