@@ -49,7 +49,9 @@ if(!config.assetsReady){
    assert.equal(chunk.headers.get('cross-origin-resource-policy'),'cross-origin','Safari/Chrome deben permitir vídeo desde Worker distinto');
    assert.equal(chunk.headers.get('set-cookie'),null);
    const data=Buffer.from(await chunk.arrayBuffer());
-   assert.deepEqual(data,file.subarray(offset,last+1),'Bytes originales deben coincidir al inicio/final');
+   const expected=file.subarray(offset,last+1);
+   console.log('MEDIA-RANGE',JSON.stringify({file:media.path,offset,status:chunk.status,length:data.length,expected:length,range:chunk.headers.get('content-range'),encoding:chunk.headers.get('content-encoding'),cache:chunk.headers.get('cf-cache-status')}));
+   assert.deepEqual(data,expected,'Bytes originales deben coincidir: '+media.path+' @'+offset+' ('+data.length+'/'+length+')');
   }
  }
  const logos=JSON.parse(readFileSync('cloudflare/legacy-logos-manifest.json','utf8')).files;
