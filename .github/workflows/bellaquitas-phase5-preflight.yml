@@ -52,6 +52,8 @@ jobs:
         run: node cloudflare/test-production-auth-cutover.mjs
       - name: Bloquear tambien OPTIONS CORS del Worker real sin aprobacion
         run: node cloudflare/test-production-worker-options-gate.mjs
+      - name: Auditar fondo lateral y todos los assets del diseño original
+        run: node cloudflare/audit-visual-assets.mjs
       - name: Verificar portada final original, PWA, vídeos y ES/FR sin desplegar
         run: node cloudflare/test-production-site-route.mjs
       - name: Verificar que D1 preproducción está aislada, sin DNS ni escrituras
