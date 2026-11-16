@@ -128,5 +128,34 @@
     "function": "admin login recuperar contraseña ES/FR en nueva pestaña; tokens de un solo uso, revocación de sesiones anteriores",
     "verified": "2 administradores ficticios, reset email con Turnstile y Resend interceptados; roles, puntos, visitas intactos",
     "realAdminLinkedEmailAccounts": 0
+  },
+  "phase6ZonePreparation": {
+    "status": "pending-nameservers",
+    "zoneId": "2db206b4c20dd4a8a76692f7ddf0a70a",
+    "plan": "Free Website",
+    "price": 0,
+    "importedDnsRecordCounts": {
+      "A": 4,
+      "CNAME": 1,
+      "MX": 1,
+      "TXT": 3
+    },
+    "nameservers": [
+      "donald.ns.cloudflare.com",
+      "tricia.ns.cloudflare.com"
+    ],
+    "registrarDelegationChanged": false,
+    "customDomainConfigured": false,
+    "productionChanged": false,
+    "source": "cloudflare/DNS_PREPARADO_SIN_CORTE_2026-11-16.md"
+  },
+  "ownerPostpublicationQa": {
+    "deferred": [
+      "realHttp206AndIosAndroidPlayback",
+      "realDeviceQrDoorTest",
+      "finalEsFrMobileVisualParity"
+    ],
+    "allPassed": false,
+    "source": "cloudflare/VALIDACIONES_TRAS_PUBLICACION_2026-11-16.md"
   }
 }
