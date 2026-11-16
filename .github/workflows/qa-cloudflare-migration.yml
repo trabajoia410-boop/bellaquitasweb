@@ -22,6 +22,8 @@ jobs:
           done
       - name: Validar configuración para redeploy staging sin tocar DNS ni secretos
         run: node cloudflare/test-staging-redeploy-config.mjs
+      - name: Auditar que el SQL original tenga identidades, usuarios y puntos sin datos personales
+        run: node cloudflare/test-audit-production-export.mjs
       - name: Prohibir claves privadas y respaldos personales en Git
         run: node cloudflare/test-no-private-backup-leaks.mjs
       - name: Verificar bytes, SHA Git y ausencia de R2
