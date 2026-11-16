@@ -68,6 +68,30 @@ try{
  assert.equal((await response.arrayBuffer()).byteLength,256);
  assert.equal(serviceCalls,1);
  assert.equal(fetched,0,'Service Binding evita fetch público');
+
+ // Un upstream puede anunciar 206/256 bytes y transferir 0: Safari falla.
+ // El espejo reintenta sólo un rango pequeño y nunca devuelve 206 vacío.
+ const rangeHeaders={'Content-Range':'bytes 0-255/9072277',
+   'Content-Length':'256','Content-Type':'video/mp4'};
+ let retries=0;
+ service.fetch=async()=>{
+  retries++;
+  return new Response(new Uint8Array(retries===1?0:256),
+    {status:206,headers:rangeHeaders});
+ };
+ response=await mirrorRoute(req(STAGE,{headers:{Range:range}}),proxyEnv);
+ assert.equal(response.status,206,'Reintento interno recupera 206 incompleto');
+ assert.equal((await response.arrayBuffer()).byteLength,256);
+ assert.equal(retries,2,'Se hizo un solo reintento con los mismos bytes');
+ retries=0;
+ service.fetch=async()=>{
+  retries++;
+  return new Response(new Uint8Array(0),{status:206,headers:rangeHeaders});
+ };
+ response=await mirrorRoute(req(STAGE,{headers:{Range:range}}),proxyEnv);
+ assert.equal(response.status,503,'Dos 206 vacíos NO son éxito');
+ assert.equal(retries,2,'La recuperación no debe generar bucles ilimitados');
+
  service.fetch=async()=>new Response(null,{status:503});
  response=await mirrorRoute(req(),proxyEnv);
  assert.equal(response.status,503,'Error upstream no debe mostrar secretos ni cambiar de origen');
