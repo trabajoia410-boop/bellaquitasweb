@@ -96,3 +96,28 @@ assert.ok(!/supabase|r2\.dev|workers\.dev|api[_-]?key|password/i.test(manifestTe
 copyFileSync(manifestPath,join(target,'manifest.webmanifest'));
 assert.equal(readFileSync(join(target,'manifest.webmanifest'),'utf8'),manifestText);
 console.log('Manifest PWA original conservado junto a los recursos multimedia.');
+
+
+// Mantener robots.txt y sitemap.xml ORIGINALES: Google Search Console ya
+// verifica este dominio. Workers debe responderlos en raíz tras el corte.
+for (const name of ['robots.txt','sitemap.xml']) {
+ const content=readFileSync(resolve(name),'utf8');
+ assert.ok(content.length>40 && content.length<32000,
+   'SEO original ausente o anormal: '+name);
+ assert.ok(content.includes('https://bellaquitas.fr/'),
+   'SEO no apunta al dominio público original: '+name);
+ assert.ok(!/supabase|r2\.dev|workers\.dev|github\.io/i.test(content),
+   'El archivo SEO no debe indexar plataformas de migración: '+name);
+ if(name==='robots.txt') {
+  assert.match(content,/User-agent:\s*\*/i);
+  assert.match(content,/Sitemap:\s*https:\/\/bellaquitas\.fr\/sitemap\.xml/i);
+ } else {
+  assert.match(content,/<urlset\s+xmlns="http:\/\/www\.sitemaps\.org\/schemas\/sitemap\/0\.9">/);
+  assert.match(content,/<loc>https:\/\/bellaquitas\.fr\/<\/loc>/);
+ }
+ const output=join(target,name);
+ copyFileSync(resolve(name),output);
+ assert.equal(readFileSync(output,'utf8'),content,
+  'SEO no se copió idéntico al original: '+name);
+}
+console.log('SEO original conservado: robots.txt y sitemap.xml con misma URL de Google Search Console.');
