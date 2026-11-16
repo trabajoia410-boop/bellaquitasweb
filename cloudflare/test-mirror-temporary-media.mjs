@@ -46,7 +46,7 @@ try{
  service.fetch=async(request)=>{
   serviceCalls++;
   const url=new URL(request.url);
-  assert.equal(url.origin,'https://bellaquitas-media-proxy-qa.bellaquitas-fest-410.workers.dev');
+  assert.equal(url.origin,'https://bellaquitas-media-qa.bellaquitas-fest-410.workers.dev');
   assert.equal(url.pathname,'/assets/'+encodeURIComponent(video));
   assert.equal(request.method,'GET');
   assert.equal(request.redirect,'manual');
