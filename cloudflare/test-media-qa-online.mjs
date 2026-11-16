@@ -37,7 +37,8 @@ if(!config.assetsReady){
   const head=await read(name,{method:'HEAD'});
   assert.equal(head.status,200,'El vídeo debe existir en Static Assets');
   assert.equal(head.headers.get('content-type'),'video/mp4');
-  assert.equal(Number(head.headers.get('content-length')),media.bytes,'No se debe recomprimir el vídeo');
+  if(head.headers.has('content-length'))assert.equal(Number(head.headers.get('content-length')),media.bytes,'HEAD informa tamaño incorrecto');
+  // HEAD puede omitir Content-Length en Workers Static Assets; los Range y bytes se verifican abajo.
   const file=readFileSync('assets/'+media.path);
   for(const [offset,length] of [[0,256],[media.bytes-256,256]]){
    const last=offset+length-1;
@@ -61,7 +62,8 @@ if(!config.assetsReady){
   const head=await read(path,{method:'HEAD'});
   assert.equal(head.status,200,'Logo original no accesible en QA');
   assert.equal(head.headers.get('content-type'),logo.type);
-  assert.equal(Number(head.headers.get('content-length')),logo.bytes,'No recodificar logo');
+  if(head.headers.has('content-length'))assert.equal(Number(head.headers.get('content-length')),logo.bytes,'HEAD informa tamaño de logo incorrecto');
+  // GET completo y comparación SHA/bytes al final prueban que no se ha recodificado.
   const got=await read(path);
   assert.equal(got.status,200,'No se pudo leer el logo en QA');
   assert.equal(got.headers.get('set-cookie'),null);
