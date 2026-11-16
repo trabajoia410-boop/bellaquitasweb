@@ -35,11 +35,11 @@
     },
     "productionDatabaseBackupConfirmed": {
       "passed": false,
-      "evidence": "cloudflare/FASE5_BACKUP_Y_PANEL_BILINGUE_2026-11-15.md: copia lógica cifrada de D1 STAGING descargable, autenticada y restaurada en SQLite RAM (22 tablas/44 objetos/44 filas, FK0, integrity ok); NO es exportación oficial ni respaldo de producción. Sigue FALSO."
+      "evidence": "Auditoría 16/11/2026 cloudflare/FASE5_RESPALDO_ORIGEN_AUDITORIA_2026-11-16.md: backup D1 STAGING 15/11 ZIP autenticado RSA/AES y restaurado en memoria SQLite, 22 tablas/44 objetos/44 filas, 7 perfiles/2 admin/1999998 puntos/0 visitas, FK0 e integrity ok. D1 staging ACTUAL tiene 46 filas vs 44 en restore (auth_sessions 3:2; auth_admin_sessions 1:0); resto de filas y esquema coinciden. En Biblioteca existía SQL de 03/11 con 7 tablas/6 INSERT, sin exportación íntegra de identidades; NO es backup actual de producción. El repositorio principal aún apunta a origen anterior, que NO se ha consultado. Se preparó herramienta offline de auditoría estructural y CI de rechazo de dumps parciales. FALTA copia auténtica actualizada del origen y restauración aislada. Sigue FALSO."
     },
     "exposedBackupKeyRotatedOutOfChat": {
       "passed": false,
-      "evidence": "16/11/2026: herramienta nueva --rotate en cloudflare/offsite-d1-backup.mjs para recifrar backups JSON AES256-GCM v1 en memoria, clave/nonce nuevos, prueba sintética 43808681874 success. NO admite ZIP RSA, no ha rotado la clave histórica expuesta ni renovado copia original de producción (archivos/credenciales de origen no disponibles). Ver cloudflare/FASE5_MEDIOS_DIRECTOS_Y_ROTACION_2026-11-16.md. Sigue FALSO."
+      "evidence": "La restauración local en memoria del ZIP cifrado de STAGING (AES256-GCM + RSA OAEP) fue verificada de nuevo 16/11/2026, sin guardar SQL claro; --rotate para formato JSON AES256-GCM v1 está ensayado con sintéticos. Ni el archivo SQL antiguo ni la copia STAGING permiten rotar la clave expuesta ligada al backup auténtico de producción; FALTA origen/clave histórica legítimos. Ver cloudflare/FASE5_RESPALDO_ORIGEN_AUDITORIA_2026-11-16.md. Sigue FALSO."
     },
     "cloudflareExtraProfileReviewed": {
       "passed": true,
