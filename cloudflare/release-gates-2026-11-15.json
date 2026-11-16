@@ -31,7 +31,7 @@
     },
     "bothRealAdminLoginsVerified": {
       "passed": false,
-      "evidence": "16/11 Cloudflare D1 staging con 2 administradores; 1 perfil con sesión; 1 perfil reautenticado; 0 credenciales email admin. Usuario confirmó pruebas manuales de ambas cuentas, pero no acreditan origen Cloudflare de ambas sesiones. Sin contraseñas personales ni pruebas intrusivas. Sigue falso. Pipeline 43841995083 confirma denegación sin sesión de cinco rutas privadas y cinco POST. 0 contraseñas de admins vinculadas. 16/11: OAuth state ahora está ligado a cookie Secure/HttpOnly/SameSite=Lax del navegador; Worker staging versión a3b872f7, pruebas CI sintéticas y denegación 403 real. D1 una sesión admin y cero contraseñas vinculadas; faltan dos sesiones reales acreditadas."
+      "evidence": "16/11 Cloudflare D1 staging con 2 administradores; 1 perfil con sesión; 1 perfil reautenticado; 0 credenciales email admin. Usuario confirmó pruebas manuales de ambas cuentas, pero no acreditan origen Cloudflare de ambas sesiones. Sin contraseñas personales ni pruebas intrusivas. Sigue falso. Pipeline 43841995083 confirma denegación sin sesión de cinco rutas privadas y cinco POST. 0 contraseñas de admins vinculadas. 16/11: OAuth state ahora está ligado a cookie Secure/HttpOnly/SameSite=Lax del navegador; Worker staging versión a3b872f7, pruebas CI sintéticas y denegación 403 real. D1 una sesión admin y cero contraseñas vinculadas; faltan dos sesiones reales acreditadas. CI 16/11 run 43860259762: editor íntegro con 2 administradores ficticios y sesión segregada; no es acceso de personas reales, 0 contraseñas admin vinculadas. Mantener false."
     },
     "productionDatabaseBackupConfirmed": {
       "passed": false,
@@ -88,7 +88,7 @@
     "reason": "Pendientes seis comprobaciones, sin cambio de DNS o main"
   },
   "phase5AutomatedQA": {
-    "run": "https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43859059479",
+    "run": "https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43860259762",
     "status": "success",
     "checks": 73,
     "browserCases": 66,
@@ -102,5 +102,14 @@
     "build": "75608538-ac1c-4ebf-938f-ce370d172110",
     "evidence": "cloudflare/FASE5_OAUTH_Y_PARIDAD_ESFR_2026-11-16.md",
     "changesToProduction": false
+  },
+  "phase5EditorSyntheticQA": {
+    "status": "success",
+    "test": "cloudflare/test-editor-admin-offline.mjs",
+    "run": "https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43860259762",
+    "accounts": "2 administradores ficticios, 1 socio ficticio, SQLite en RAM",
+    "verified": "eventos crear/editar/toggle/borrar, recompensas, promociones, borradores, publicación ES/FR, denegaciones 401/403/409/423, sin modificaciones de roles/puntos/visitas",
+    "actualStagingMutationStatus": "disabled",
+    "productionUnchanged": true
   }
 }
