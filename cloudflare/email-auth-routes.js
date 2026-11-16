@@ -1,3 +1,4 @@
+import {emailLink} from "./production-auth-redirects.js";
 /* Bellaquitas staging: correo/contraseña opcional. FAIL-CLOSED por defecto.
  * No se activa sin correo verificado, Turnstile, límites y secretos.
  * Las cuentas importadas de Google no reciben contraseñas ni se vinculan por email.
@@ -137,7 +138,7 @@ async function registration(request,env,data){
      .bind(tokenHash,address,name,hash,salt,ITERATIONS)
  ]);
  const origin=(env.PUBLIC_ORIGIN||new URL(request.url).origin).replace(/\/+$/,"");
- const target=data.return_to==="espejo"?origin+"/espejo/?verify="+rawToken+"#/acceso":origin+"/preview#verify="+rawToken;
+ const target=emailLink(origin,rawToken,"verify",data.return_to,env);
  const sent=await sendMail(env,address,"Confirma tu cuenta Bellaquitas Fest",
    "Para confirmar tu correo, abre este enlace antes de 30 minutos:\n"+target+"\nSi no has solicitado una cuenta, ignora este mensaje.");
  if(!sent){
@@ -199,7 +200,7 @@ async function forgot(request,env,data){
     env.DB.prepare("INSERT INTO auth_email_tokens(token_hash,email,purpose,expires_at) VALUES (?,?,'reset',unixepoch()+1200)").bind(tokenHash,address)
    ]);
    const origin=(env.PUBLIC_ORIGIN||new URL(request.url).origin).replace(/\/+$/,"");
-   const target=data.return_to==="espejo"?origin+"/espejo/?reset_token="+rawToken+"#/restablecer":origin+"/preview#reset="+rawToken;
+   const target=emailLink(origin,rawToken,"reset",data.return_to,env);
    const sent=await sendMail(env,address,"Recuperar acceso Bellaquitas Fest",
      "Para restablecer tu contraseña abre este enlace en los próximos 20 minutos:\n"+target+"\nSi no lo solicitaste, ignora el mensaje.");
    if(!sent)console.error("Email provider failed to send password reset");
