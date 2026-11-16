@@ -48,9 +48,9 @@ assert.equal(status.status,200);
 const features=await status.json();
 assert.equal(features.login,true,'No romper login de cuentas existentes');
 assert.equal(features.registration,false,'Altas cerradas');
-assert.equal(features.adminLink,false,'No vincular correo admin hasta verificación');
+assert.equal(features.adminLink,true,'Solo admin Google verificado puede iniciar su propia vinculación de correo');
 assert.equal(signup.status,503,'Altas de email denegadas antes de D1');
-assert.equal(link.status,503,'Enlace admin cerrado');
+assert.equal(link.status,401,'Un visitante anónimo NO puede vincular contraseñas de administradores');
 assert.equal(member.status,401,'Usuarios sin login no cambian socios');
 assert.equal(write.status,401,'Sin admin no se edita la web');
 // El backend exige sesión primero (401), y verifica Origin (403) cuando la sesión es válida.
