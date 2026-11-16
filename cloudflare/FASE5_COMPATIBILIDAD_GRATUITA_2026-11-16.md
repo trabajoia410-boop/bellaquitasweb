@@ -34,3 +34,9 @@
 - GitHub Actions [ejecución de ensayo](https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43845399767): **SUCCESS**; tres solicitudes `HTTP 200` con `ok:true` y `phases:6`, todas completadas. Adicionalmente 70 verificaciones HTTP de staging correctas en el mismo job.
 - `elapsedMs:0` es la hora reportada por `Date.now()` dentro de Worker y **no debe interpretarse como 0 ms de CPU real**. Lo demostrado es que el runtime finalizó las seis etapas sin devolver errores; no sustituye prueba de carga en concurrencia ni login de usuarios reales.
 - Se retirará el Worker temporal y las llamadas recurrentes una vez documentado el resultado, conservando las pruebas de contraseña sintética que ejecuta `test-admin-email-link.mjs`.
+
+## Verificación real del proveedor de correo conectado
+
+- Resend cuenta conectada, **lectura no destructiva del 16/11/2026**: dominio de envío `bellaquitas.fr` en estado **verified**, región `eu-west-1`, envío **enabled**, recepción disabled (no requerida para restablecimiento saliente).
+- Consumo verificado: **0/100** correos hoy; **3/3.000** correos este ciclo mensual; **1/3** dominios. Se conservan límites sin pasar a plan de pago.
+- No se enviaron correos de prueba a cuentas reales ni se modificaron DNS o dominios en esta auditoría. Tener remitente verificado no confirma una entrega a cada destinatario real.
