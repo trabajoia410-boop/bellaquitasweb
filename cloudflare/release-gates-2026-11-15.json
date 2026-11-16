@@ -194,6 +194,27 @@
     "ephemeralTokensCopied": 0,
     "originalsAltered": false,
     "finalAccountReconciliationCompleted": false,
-    "authRoutePreflightPassed": false
+    "authRoutePreflightPassed": false,
+    "preproductionWorkerDeployed": true,
+    "preproductionWorkerName": "bellaquitas-api-preproduccion",
+    "preproductionWorkerBuild": "7ae72945-db80-4f7e-ade9-9fe99378feb6",
+    "preproductionWorkerBuildStatus": "success",
+    "deployedAt": "2026-11-16T17:50:30Z",
+    "staticAssetsBuildVerified": true,
+    "originalMediaGitShaVerified": true,
+    "originalLogosEtagsVerified": true,
+    "pwaManifestIncluded": true,
+    "publicRouteCodePrepared": true,
+    "publicRouteMode": "preproduction",
+    "workerUrlEnabled": false,
+    "workerPreviewUrlEnabled": false,
+    "workerDomainAttached": false,
+    "workerHasDbBinding": true,
+    "workerDbBindingId": "3d65c23d-4d03-4988-9d7f-23d4f95cbc3c",
+    "workerHasAssetsBinding": true,
+    "workerHasR2Binding": false,
+    "workerHasAuthSecrets": false,
+    "prepublicationAuthReady": false,
+    "deploymentEvidence": "Cloudflare Workers Builds éxito; bindings DB, ASSETS, VIDEO_QA_PROXY y flags leídos por API; 0 rutas, 0 subdominio, 0 secrets; GitHub CI https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43922064532"
   }
 }
