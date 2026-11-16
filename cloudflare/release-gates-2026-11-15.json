@@ -27,11 +27,11 @@
     },
     "realHttp206AndIosAndroidPlayback": {
       "passed": false,
-      "evidence": "16/11/2026: ESPEJO STAGING cambiado de proxy GitHub temporal a Cloudflare Workers Static Assets (Service Binding VIDEO_QA_PROXY ahora service bellaquitas-media-qa), build Cloudflare 536ad894-3c35-4529-ae1e-3e8c7c19cf1c success, GitHub Actions 43808936094 success: 5 MP4/10 HTTP206 con bytes originales inicio+fin, tres logos idénticos, sin R2, ni cookies. FALTA reproducir en iPhone y Android físicos, y comparar visualmente antes del corte. Ver cloudflare/FASE5_MEDIOS_DIRECTOS_Y_ROTACION_2026-11-16.md. Sigue FALSO. El responsable confirma vídeo Android y decide aplazar iPhone hasta publicación; no certificar ensayo iPhone. DECLARACIÓN DEL RESPONSABLE 16/11/2026: pruebas de usuarios comunicadas como correctas; no repetir ensayos manuales antes de la publicación. Ver cloudflare/ACTA_PRUEBAS_USUARIO_2026-11-16.md. NUEVA QA 16/11: pipeline 43841995083 SUCCESS, 70 aserciones HTTP anónimas reales + tests offline; no reemplaza test físico ni paridad visual humana. 16/11: CI 43859059479 73 comprobaciones HTTP staging (incluidos MP4 206) y 66 rutas visuales simuladas PASS; iPhone físico diferido y por eso no se certifica reproducción real."
+      "evidence": "16/11/2026: ESPEJO STAGING cambiado de proxy GitHub temporal a Cloudflare Workers Static Assets (Service Binding VIDEO_QA_PROXY ahora service bellaquitas-media-qa), build Cloudflare 536ad894-3c35-4529-ae1e-3e8c7c19cf1c success, GitHub Actions 43808936094 success: 5 MP4/10 HTTP206 con bytes originales inicio+fin, tres logos idénticos, sin R2, ni cookies. FALTA reproducir en iPhone y Android físicos, y comparar visualmente antes del corte. Ver cloudflare/FASE5_MEDIOS_DIRECTOS_Y_ROTACION_2026-11-16.md. Sigue FALSO. El responsable confirma vídeo Android y decide aplazar iPhone hasta publicación; no certificar ensayo iPhone. DECLARACIÓN DEL RESPONSABLE 16/11/2026: pruebas de usuarios comunicadas como correctas; no repetir ensayos manuales antes de la publicación. Ver cloudflare/ACTA_PRUEBAS_USUARIO_2026-11-16.md. NUEVA QA 16/11: pipeline 43841995083 SUCCESS, 70 aserciones HTTP anónimas reales + tests offline; no reemplaza test físico ni paridad visual humana. 16/11: CI 43859059479 73 comprobaciones HTTP staging (incluidos MP4 206) y 66 rutas visuales simuladas PASS; iPhone físico diferido y por eso no se certifica reproducción real. 16/11: CORREGIDO fallo REAL de 206 vacío a final de Bellaquitas Fest para móvil.mp4 (antes 0/256 con Content-Range), fix media-qa-worker.js elimina Range al consultar Static Assets. Cloudflare build deb88acf SUCCESS; GitHub QA 43866120453 SUCCESS 15 rangos reales exactos (5 MP4 x inicio/64KiB medio/final) y CI 43866243768 SUCCESS 10 rangos originales también desde /espejo/assets. iPhone físico sigue diferido a fase 6, gate completo NO superado."
     },
     "bothRealAdminLoginsVerified": {
       "passed": false,
-      "evidence": "16/11 Cloudflare D1 staging con 2 administradores; 1 perfil con sesión; 1 perfil reautenticado; 0 credenciales email admin. Usuario confirmó pruebas manuales de ambas cuentas, pero no acreditan origen Cloudflare de ambas sesiones. Sin contraseñas personales ni pruebas intrusivas. Sigue falso. Pipeline 43841995083 confirma denegación sin sesión de cinco rutas privadas y cinco POST. 0 contraseñas de admins vinculadas. 16/11: OAuth state ahora está ligado a cookie Secure/HttpOnly/SameSite=Lax del navegador; Worker staging versión a3b872f7, pruebas CI sintéticas y denegación 403 real. D1 una sesión admin y cero contraseñas vinculadas; faltan dos sesiones reales acreditadas. CI 16/11 run 43860259762: editor íntegro con 2 administradores ficticios y sesión segregada; no es acceso de personas reales, 0 contraseñas admin vinculadas. Mantener false."
+      "evidence": "16/11 Cloudflare D1 staging con 2 administradores; 1 perfil con sesión; 1 perfil reautenticado; 0 credenciales email admin. Usuario confirmó pruebas manuales de ambas cuentas, pero no acreditan origen Cloudflare de ambas sesiones. Sin contraseñas personales ni pruebas intrusivas. Sigue falso. Pipeline 43841995083 confirma denegación sin sesión de cinco rutas privadas y cinco POST. 0 contraseñas de admins vinculadas. 16/11: OAuth state ahora está ligado a cookie Secure/HttpOnly/SameSite=Lax del navegador; Worker staging versión a3b872f7, pruebas CI sintéticas y denegación 403 real. D1 una sesión admin y cero contraseñas vinculadas; faltan dos sesiones reales acreditadas. CI 16/11 run 43860259762: editor íntegro con 2 administradores ficticios y sesión segregada; no es acceso de personas reales, 0 contraseñas admin vinculadas. Mantener false. 16/11: enlace de recuperación de contraseña ES/FR en panel independiente staging desplegado build 7b726c2b SUCCESS. CI prueba 2 administradores sintéticos, tokens reset de uso único, sesiones revocadas y puntos intactos. D1 no registra vinculación email de 2 administradores reales; gate queda false."
     },
     "productionDatabaseBackupConfirmed": {
       "passed": false,
@@ -51,7 +51,7 @@
     },
     "finalEsFrMobileVisualParity": {
       "passed": false,
-      "evidence": "La interfaz real de administración de staging fue re-desplegada con ES/FR a través de Workers Builds, testeada con WebKit/Chromium HTTPS real GitHub Actions 43805946182 intento 2 PASS. QR/MP4 ES/FR y 66 rutas espejo preexistentes PASS; falta auditoría final exhaustiva de contenido dinámico y prueba física móvil. Véase cloudflare/FASE5_PANEL_ADMIN_CORREO_VERIFICADO_2026-11-16.md. Sigue FALSO. Pruebas Android/QR reportadas por el responsable; Safari iPhone físico diferido hasta publicación. Ver cloudflare/ACTA_PRUEBAS_USUARIO_2026-11-16.md. NUEVA QA 16/11: pipeline 43841995083 SUCCESS, 70 aserciones HTTP anónimas reales + tests offline; no reemplaza test físico ni paridad visual humana. 16/11: nuevo CI 43859059479 SUCCESS en navegador: 66 combinaciones de 11 rutas × 2 idiomas × 3 motores/dispositivos, menú y cabecera traducidos y sin solicitudes a Supabase/R2/esm.sh. Admin ES/FR + CSP en WebKit, Android y PC; Safari iPhone físico sigue diferido, gate estricto falso."
+      "evidence": "La interfaz real de administración de staging fue re-desplegada con ES/FR a través de Workers Builds, testeada con WebKit/Chromium HTTPS real GitHub Actions 43805946182 intento 2 PASS. QR/MP4 ES/FR y 66 rutas espejo preexistentes PASS; falta auditoría final exhaustiva de contenido dinámico y prueba física móvil. Véase cloudflare/FASE5_PANEL_ADMIN_CORREO_VERIFICADO_2026-11-16.md. Sigue FALSO. Pruebas Android/QR reportadas por el responsable; Safari iPhone físico diferido hasta publicación. Ver cloudflare/ACTA_PRUEBAS_USUARIO_2026-11-16.md. NUEVA QA 16/11: pipeline 43841995083 SUCCESS, 70 aserciones HTTP anónimas reales + tests offline; no reemplaza test físico ni paridad visual humana. 16/11: nuevo CI 43859059479 SUCCESS en navegador: 66 combinaciones de 11 rutas × 2 idiomas × 3 motores/dispositivos, menú y cabecera traducidos y sin solicitudes a Supabase/R2/esm.sh. Admin ES/FR + CSP en WebKit, Android y PC; Safari iPhone físico sigue diferido, gate estricto falso. 16/11: recuperación de contraseña disponible también en francés y panel independiente, fuente admin-console.js con 67 etiquetas ES/FR y browser QA 43866243768 SUCCESS (66 rutas combinadas + panel ES/FR en WebKit/Android/PC). iPhone físico por propietario diferido a fase6, gate true no autorizado."
     },
     "googleIdentityMappingExact": {
       "passed": true,
@@ -111,5 +111,22 @@
     "verified": "eventos crear/editar/toggle/borrar, recompensas, promociones, borradores, publicación ES/FR, denegaciones 401/403/409/423, sin modificaciones de roles/puntos/visitas",
     "actualStagingMutationStatus": "disabled",
     "productionUnchanged": true
+  },
+  "phase5MediaHttp206": {
+    "status": "verified-in-cloudflare-qa-and-mirror",
+    "build": "deb88acf-72da-49c7-b151-67ba4831b2a7",
+    "directRun": "https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43866120453",
+    "mirrorRun": "https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43866243768",
+    "tests": "5 MP4 * 3 ranges per file (256 bytes start, 65536 midpoint, 256 end) = 15 real HTTP206, exact bytes; mirror tests 5 MP4 * 2 ranges = 10 more real HTTP206; 3 logos identical",
+    "failureFixed": "range al final de Bellaquitas Fest para móvil.mp4 anunciaba 206 con 0 bytes, reproducido en GitHub CI, corregido eliminando Range antes de env.ASSETS.fetch y regenerando stream",
+    "iphonePhysicalPlayback": "not-tested-as-requested-deferred-to-phase6",
+    "originalFilesReencoded": false
+  },
+  "phase5AdminRecovery": {
+    "status": "deployed-to-staging-and-synthetically-tested",
+    "stagingBuild": "7b726c2b-6684-4441-bb02-95eee298a070",
+    "function": "admin login recuperar contraseña ES/FR en nueva pestaña; tokens de un solo uso, revocación de sesiones anteriores",
+    "verified": "2 administradores ficticios, reset email con Turnstile y Resend interceptados; roles, puntos, visitas intactos",
+    "realAdminLinkedEmailAccounts": 0
   }
 }
