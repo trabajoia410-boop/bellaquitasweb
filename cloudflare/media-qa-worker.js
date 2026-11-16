@@ -132,7 +132,7 @@ export default {
   if(request.method==="HEAD"&&range){
    return new Response(null,{status:206,headers:{...headers,
     "Content-Type":expected,"Content-Range":"bytes "+range.start+"-"+range.end+"/"+total,
-    "Content-Length":String(range.length),"Accept-Ranges":"bytes","Cache-Control":"public,max-age=3600"
+    "Content-Length":String(range.length),"Accept-Ranges":"bytes","Cross-Origin-Resource-Policy":"cross-origin","Cache-Control":"public,max-age=3600"
    }});
   }
   const response=await env.ASSETS.fetch(request);
@@ -141,6 +141,10 @@ export default {
   const outgoing=new Headers(response.headers);
   for(const [k,v] of Object.entries(headers))outgoing.set(k,v);
   outgoing.set("Content-Type",expected);
+  // Archivos multimedia públicos: utilizados por la web/QA desde otro Worker.
+  // CORP same-origin bloquea <video> en Safari/Chrome aunque Range 206 funcione.
+  // Esto NO abre D1, R2, cookies, ni endpoints privados.
+  outgoing.set("Cross-Origin-Resource-Policy","cross-origin");
   outgoing.set("Accept-Ranges","bytes");
   outgoing.set("Cache-Control","public,max-age=3600");
   if(range&&response.status===200){
