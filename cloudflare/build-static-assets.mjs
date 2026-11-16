@@ -5,6 +5,7 @@ import {readFileSync,statSync,mkdirSync,copyFileSync,rmSync,existsSync,lstatSync
 import {join,resolve,basename} from 'node:path';
 import {createHash} from 'node:crypto';
 import assert from 'node:assert/strict';
+import {ADDITIONAL_MEDIA} from './visual-extra-media.js';
 const src=resolve('assets');
 const target=resolve('cloudflare/dist-static');
 const manifest=readFileSync('cloudflare/site-media-manifest.js','utf8').match(/export const SITE_MEDIA\s*=\s*(\[[\s\S]*?\]);/);
@@ -121,3 +122,31 @@ for (const name of ['robots.txt','sitemap.xml']) {
   'SEO no se copió idéntico al original: '+name);
 }
 console.log('SEO original conservado: robots.txt y sitemap.xml con misma URL de Google Search Console.');
+
+
+// Esta foto JPG se utilizó realmente como RELLENO LATERAL del vídeo.
+// El propietario la entregó el 05/11 y la recuperamos de su Library.
+// No publicar una sustitución. Hasta disponer del binario en GitHub, la
+// preproducción sigue privada y el gate visual impide el corte.
+const extraPath=join(src,ADDITIONAL_MEDIA.path);
+if(!existsSync(extraPath)){
+ const msg='FONDO ORIGINAL PENDIENTE: assets/'+ADDITIONAL_MEDIA.path+
+   ' (recuperado de Library, todavía no integrado en GitHub).';
+ if(process.argv.includes('--require-complete-design'))throw new Error(msg);
+ console.warn(msg);
+}else{
+ assert.ok(lstatSync(extraPath).isFile()&&!lstatSync(extraPath).isSymbolicLink());
+ const bytes=readFileSync(extraPath);
+ assert.equal(bytes.byteLength,ADDITIONAL_MEDIA.bytes,'Fotografía original modificada');
+ const sha256=createHash('sha256').update(bytes).digest('hex');
+ assert.equal(sha256,ADDITIONAL_MEDIA.sha256,'Huella SHA256 distinta: imagen no original');
+ const gitSha1=createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex');
+ assert.equal(gitSha1,ADDITIONAL_MEDIA.gitSha1,'Huella Git distinta: imagen no original');
+ assert.ok(bytes[0]===255&&bytes[1]===216&&bytes.at(-2)===255&&bytes.at(-1)===217,
+   'La foto original debe permanecer JPEG');
+ const copied=join(target,'assets',ADDITIONAL_MEDIA.path);
+ copyFileSync(extraPath,copied);
+ assert.equal(createHash('sha256').update(readFileSync(copied)).digest('hex'),
+   ADDITIONAL_MEDIA.sha256,'Copia JPEG original incompleta');
+ console.log('Fondo de vídeo ORIGINAL copiado sin cambiar un byte: '+ADDITIONAL_MEDIA.path);
+}
