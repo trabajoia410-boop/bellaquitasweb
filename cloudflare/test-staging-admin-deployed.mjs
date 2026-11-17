@@ -24,7 +24,7 @@ const [health,admin,adminHead,redirect,adminPost,session,me,status,signup,link,m
 assert.equal(health.status,200,'La D1 debe continuar accesible');
 const alive=await health.json();
 assert.equal(alive.database,'connected');
-assert.equal(alive.storage,'not-configured','No declarar vídeos R2 inexistentes');
+assert.equal(alive.storage,'static-assets','Staging debe servir vídeos y JPG originales desde Static Assets, nunca R2');
 assert.equal(admin.status,200,'El panel de administración DEBE estar publicado en staging');
 assert.equal(adminHead.status,200,'HEAD del panel');
 assert.equal(redirect.status,308,'/administracion redirige a /administracion/');
