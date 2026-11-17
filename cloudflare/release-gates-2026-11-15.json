@@ -216,7 +216,7 @@
     "workerHasAuthSecrets": false,
     "prepublicationAuthReady": false,
     "deploymentEvidence": "Cloudflare Workers Builds éxito; bindings DB, ASSETS, VIDEO_QA_PROXY y flags leídos por API; 0 rutas, 0 subdominio, 0 secrets; GitHub CI https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43922064532",
-    "latestWorkerBuild": "ef456edb-60ce-4066-a546-f97eefd909d9",
+    "latestWorkerBuild": "6c7e58a8-653d-4b77-8f9a-4ae8c3f4b083",
     "latestWorkerBuildOutcome": "success",
     "authGuardDeployed": true,
     "authSecretsBound": false,
@@ -254,7 +254,11 @@
     },
     "visualAssetJpgCommitted": true,
     "visualAssetJpgSHA256Verified": true,
-    "visualAssetJpgDeployedInWorker": false
+    "visualAssetJpgDeployedInWorker": true,
+    "visualAssetJpgDeploymentVerified": true,
+    "visualAssetJpgDeploymentBuildId": "6c7e58a8-653d-4b77-8f9a-4ae8c3f4b083",
+    "visualAssetBuildOutcome": "success",
+    "visualAssetGitHubSHA256": "8132f61e31fe7a6b008e8af307c51a525e7d19c9cfd83e9ac80ff2553c0bca60"
   },
   "phase6AuthCutoverPreparation": {
     "status": "code-deployed-in-isolated-preproduction",
@@ -321,7 +325,10 @@
     "releaseBlocked": false,
     "validation": "JPG original recuperado de Library, SHA-256 verificado, creado como blob GitHub de 41544 bytes con SHA-1 Git idéntico y publicado únicamente en la rama de migración. CI debe volver a validar contenido y diseño antes del corte.",
     "originalGitBlobSHA": "65a47c0f9284f7baa4eaacc4b48acd1157cdb363",
-    "originalGitCommit": "2f1a373407669a11848a426d36e248717f8d045d"
+    "originalGitCommit": "2f1a373407669a11848a426d36e248717f8d045d",
+    "preproductionWorkerBuildLog": "Fondo de vídeo ORIGINAL copiado sin cambiar un byte: 62609.jpg",
+    "preproductionUploadedAsset": "/assets/62609.jpg",
+    "stagingHTTPByteParityTestStatus": "pending-deploy-and-HTTP-test"
   },
   "phase6DnsVerification": {
     "legacyGithubDnsRecordsRepointed": false,
