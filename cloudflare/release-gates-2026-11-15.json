@@ -346,7 +346,17 @@
     "registrarNameserversChanged": false,
     "zoneStatus": "pending",
     "emailRecordsPreserved": true,
-    "searchConsoleRecordPreserved": true
+    "searchConsoleRecordPreserved": true,
+    "zonePlan": "Free Website",
+    "pendingZoneDnsRecordCount": 10,
+    "pendingZoneRecordsCrossChecked": "2026-11-17",
+    "dnsDelegationRunbook": "cloudflare/FASE5_DNS_DELEGACION_SEPARADA_2026-11-17.md",
+    "registrarNameServersPlanned": [
+      "donald.ns.cloudflare.com",
+      "tricia.ns.cloudflare.com"
+    ],
+    "authoritativeDelegationVerified": false,
+    "productionWorkerRoutesAttached": 0
   },
   "phase6TurnstileProduction": {
     "status": "provisioned-but-disabled",
@@ -424,6 +434,23 @@
     "newestOriginalProviderExportRead": false,
     "originalProviderDeltaCertified": false,
     "writesToD1": 0,
-    "readyForProduction": false
+    "readyForProduction": false,
+    "notes": "D1 a D1 son 16/16 tablas de datos replicables exactas y 3 tablas operativas excluidas; NO demuestra cambios posteriores al CSV en el origen"
+  },
+  "phase6BackupSecretCustody": {
+    "originalEightCsvEncryptedBackupCreated": true,
+    "originalSourceRestoreVerified": true,
+    "originalEncryptedBackupSha256": "57b6e0f513fbe76bdc502afe95420fb79d806eae21ba727d525014d00a6ecfcb",
+    "originalEncryptedArchiveAccessibleForRekeyInCurrentSession": false,
+    "originalKeyRecordExistsButDoNotLogOrCopy": true,
+    "oldKeyWasPreviouslySharedInConversation": true,
+    "privateRotationOutsideChatConfirmed": false,
+    "newD1ExportRequestedForBackup": true,
+    "newD1ExportFileDurablyStored": false,
+    "newIndependentRecoveryKeyDelivered": false,
+    "recoveryVerifiedWithNewKey": false,
+    "authNativeBackupComplete": false,
+    "blockReleaseUntilAllVerified": true,
+    "notes": "El respaldo original se hizo; el recifrado exige sus bytes y custodia privada. El export SQL temporal D1 no pudo guardarse por bloqueo de URL firmada y no es copia externa."
   }
 }
