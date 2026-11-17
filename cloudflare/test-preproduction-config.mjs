@@ -80,6 +80,18 @@ assert.equal(gates.phase6PreproductionDb?.preproductionWorkerBuildStatus,'succes
 assert.equal(gates.phase6PreproductionDb?.workerHasDbBinding,true);
 assert.equal(gates.phase6PreproductionDb?.workerDbBindingId,db.database_id);
 assert.equal(gates.phase6PreproductionDb?.workerHasAssetsBinding,true);
+assert.equal(gates.phase6TurnstileProduction?.status,'provisioned-but-disabled');
+assert.equal(gates.phase6TurnstileProduction?.setupOnCloudflareFree,true);
+assert.equal(gates.phase6TurnstileProduction?.stagingWidgetPreserved,true);
+assert.equal(gates.phase6TurnstileProduction?.realChallengeCompleted,false);
+assert.deepEqual(gates.phase6TurnstileProduction?.domains,[
+ 'bellaquitas.fr','www.bellaquitas.fr']);
+assert.ok(gates.phase6TurnstileProduction?.secretsBoundToPrivateWorker?.includes('TURNSTILE_SECRET'));
+assert.equal(gates.phase6AuthCutoverPreparation?.realTurnstileConfiguredOnTarget,true);
+assert.equal(gates.phase6AuthCutoverPreparation?.realGoogleClientConfiguredOnTarget,false);
+assert.equal(gates.phase6AuthCutoverPreparation?.realResendKeyConfiguredOnTarget,false);
+assert.equal(gates.phase6PreproductionDb?.lastDatabaseParityVerification?.tablesIdentical,14);
+assert.equal(gates.phase6PreproductionDb?.lastDatabaseParityVerification?.foreignKeyErrors,0);
 assert.equal(gates.phase6PreproductionDb?.staticAssetsBuildVerified,true);
 assert.equal(gates.phase6PreproductionDb?.workerHasAuthSecrets,false,
  'No declarar autenticación lista si faltan secretos en preproducción');
