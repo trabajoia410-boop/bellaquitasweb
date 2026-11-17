@@ -38,13 +38,20 @@ export function productionConfigurationReady(env) {
 }
 
 export function productionAccessGate(request, env) {
-  if (env?.SITE_MODE !== "production") return null;
+  // Si alguien añade una ruta o workers.dev a la PREPRODUCCIÓN por error,
+  // NUNCA servir API, datos públicos, login ni HTML: HTTP 503 en toda ruta.
+  // Solo staging, sin SITE_MODE, conserva su comportamiento anterior.
+  if (env?.SITE_MODE !== "production" && env?.SITE_MODE !== "preproduction") return null;
   const headers = {
     "Cache-Control": "no-store",
     "X-Robots-Tag": "noindex,nofollow",
     "Referrer-Policy": "no-referrer",
     "X-Content-Type-Options": "nosniff"
   };
+  if (env.SITE_MODE === "preproduction")
+    return new Response("Entorno privado sin acceso público.",{
+      status:503,headers:{"Content-Type":"text/plain; charset=utf-8",...headers}
+    });
   // Dejar fallar cerrado sin publicar qué secreto o proveedor falta.
   if (!productionConfigurationReady(env))
     return new Response("Bellaquitas Fest no está preparado para publicar.",{
