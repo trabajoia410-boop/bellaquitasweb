@@ -47,14 +47,15 @@ for(const video of videos){
   checkedRanges++;
  }
 }
-const small=['logo-navbar.png','logo-bellaquitas.webp','favicon.svg'];
+const small=['logo-navbar.png','logo-bellaquitas.webp','favicon.svg','62609.jpg'];
 for(const filename of small){
  const r=await read('/espejo/assets/'+encodeURIComponent(filename));
  assert.equal(r.status,200,'Imagen original no servida por el espejo: '+filename);
  assert.equal(r.headers.get('set-cookie'),null);
+ if(filename==='62609.jpg')assert.equal(r.headers.get('content-type'),'image/jpeg');
  assert.deepEqual(Buffer.from(await r.arrayBuffer()),readFileSync('assets/'+filename),
   'Imagen original modificada: '+filename);
 }
 assert.equal((await read('/espejo/assets/fake-sensitive.env')).status,404);
 assert.equal((await read('/espejo/assets/logo-navbar.png',{method:'POST'})).status,405);
-console.log('OK: espejo staging real: HTML/CSS/FR/JS, 5 MP4 con '+checkedRanges+' HTTP 206 y bytes intactos, 3 recursos de marca idénticos, sin cookies ni R2. NO es prueba física Safari.');
+console.log('OK: espejo staging real: HTML/CSS/FR/JS, 5 MP4 con '+checkedRanges+' HTTP 206 y bytes intactos, 3 recursos de marca y 1 fondo lateral original idénticos, sin cookies ni R2. NO es prueba física Safari.');
