@@ -216,7 +216,7 @@
     "workerHasAuthSecrets": false,
     "prepublicationAuthReady": false,
     "deploymentEvidence": "Cloudflare Workers Builds éxito; bindings DB, ASSETS, VIDEO_QA_PROXY y flags leídos por API; 0 rutas, 0 subdominio, 0 secrets; GitHub CI https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43922064532",
-    "latestWorkerBuild": "6c7e58a8-653d-4b77-8f9a-4ae8c3f4b083",
+    "latestWorkerBuild": "bb7849c2-38c6-4c62-a012-8c3d6666f996",
     "latestWorkerBuildOutcome": "success",
     "authGuardDeployed": true,
     "authSecretsBound": false,
@@ -261,7 +261,8 @@
     "visualAssetJpgDeploymentVerified": true,
     "visualAssetJpgDeploymentBuildId": "6c7e58a8-653d-4b77-8f9a-4ae8c3f4b083",
     "visualAssetBuildOutcome": "success",
-    "visualAssetGitHubSHA256": "8132f61e31fe7a6b008e8af307c51a525e7d19c9cfd83e9ac80ff2553c0bca60"
+    "visualAssetGitHubSHA256": "8132f61e31fe7a6b008e8af307c51a525e7d19c9cfd83e9ac80ff2553c0bca60",
+    "preproductionFailClosedDeployed": true
   },
   "phase6AuthCutoverPreparation": {
     "status": "code-deployed-in-isolated-preproduction",
@@ -452,5 +453,26 @@
     "authNativeBackupComplete": false,
     "blockReleaseUntilAllVerified": true,
     "notes": "El respaldo original se hizo; el recifrado exige sus bytes y custodia privada. El export SQL temporal D1 no pudo guardarse por bloqueo de URL firmada y no es copia externa."
+  },
+  "phase6PrivateWorkerFailClosed": {
+    "status": "deployed-private",
+    "buildId": "bb7849c2-38c6-4c62-a012-8c3d6666f996",
+    "buildOutcome": "success",
+    "date": "2026-11-17",
+    "mechanism": "cloudflare/production-auth-readiness.js returns HTTP 503 for all routes when SITE_MODE=preproduction, before OPTIONS/CORS, including admin and auth",
+    "tests": [
+      "cloudflare/test-production-auth-cutover.mjs",
+      "cloudflare/test-production-worker-options-gate.mjs"
+    ],
+    "realPublicEndpointTested": false,
+    "reasonPublicUrlNotTested": "Workers.dev and preview URLs intentionally disabled; test is synthetic plus verified private deploy",
+    "urlEnabled": false,
+    "previewEnabled": false,
+    "siteMode": "preproduction",
+    "publishApproved": "no",
+    "preprodD1BindingVerified": true,
+    "staticAssetsBindingVerified": true,
+    "googleAndResendStillMissing": true,
+    "legacySiteUnchanged": true
   }
 }
