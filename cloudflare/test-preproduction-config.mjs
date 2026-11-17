@@ -55,8 +55,12 @@ for(const key of [
  assert.equal(target.vars?.[key],key==='STAGING_MUTATIONS'?'disabled':'no',
   'Bloqueo obligatorio ausente: '+key);
 }
-assert.ok(!('PUBLIC_ORIGIN' in target.vars),
- 'No vincular OAuth ni correo de producción antes del corte');
+assert.equal(target.vars?.PUBLIC_ORIGIN,'https://bellaquitas.fr',
+ 'El origen OAuth final debe coincidir con la URL canónica');
+assert.equal(target.vars?.RESEND_FROM,'no-reply@bellaquitas.fr',
+ 'Conservar el remitente ya verificado en el sistema anterior');
+assert.equal(target.vars?.PUBLISH_APPROVED,'no',
+ 'El origen canónico no debe habilitar la web ni la autenticación');
 assert.equal(gates.productionChangesAuthorized,false);
 assert.equal(gates.finalSignoff?.explicitProductionAuthorization,false);
 assert.equal(gates.phase6PreproductionDb?.name,db.database_name);
