@@ -90,8 +90,26 @@ export function evaluateRelease(gates) {
     Array.isArray(visualAudit?.missing) &&
     visualAudit.missing.length === 0;
 
+  // El staging puede tener OAuth/correo completos mientras el Worker final
+  // siga sin las claves: NO permitir el corte usando la evidencia de staging.
+  const auth = gates.phase6AuthCutoverPreparation;
+  const authProvidersReady =
+    auth?.realGoogleClientConfiguredOnTarget === true &&
+    auth?.realResendKeyConfiguredOnTarget === true &&
+    auth?.realTurnstileConfiguredOnTarget === true &&
+    gates.phase6TurnstileProduction?.secretsBoundToPrivateWorker?.includes('TURNSTILE_SECRET') === true;
+
+  // Mantener los registros DNS originales hasta tener la zona activa;
+  // una zona pending no puede considerarse alojamiento definitivo.
+  const dnsReady =
+    gates.phase6DnsVerification?.zoneStatus === 'active' &&
+    gates.phase6EmailDnsVerification?.requiredRecordsInPendingCloudflareZone?.MX === true &&
+    gates.phase6EmailDnsVerification?.requiredRecordsInPendingCloudflareZone?.DKIM_TXT === true &&
+    gates.phase6EmailDnsVerification?.requiredRecordsInPendingCloudflareZone?.SPF_TXT === true &&
+    gates.phase6EmailDnsVerification?.requiredRecordsInPendingCloudflareZone?.SPF_CNAME === true;
+
   const targetReady =
-    visualReady &&
+    visualReady && authProvidersReady && dnsReady &&
     target?.realUsersImported === true &&
     target?.productionWorkerConfigured === true &&
     target?.finalAccountReconciliationCompleted === true &&
@@ -113,6 +131,8 @@ export function evaluateRelease(gates) {
     pendingOwnerPostpublication,
     adminTechnologyReady,
     visualReady,
+    authProvidersReady,
+    dnsReady,
     targetReady,
     readyForControlledPublication,
     // Esta marca solo podrá ser true después de verificaciones físicas reales.
