@@ -30,6 +30,7 @@ fake.finalSignoff.explicitProductionAuthorization = true;
 fake.phase6PreproductionDb.realUsersImported = true;
 fake.phase6PreproductionDb.productionWorkerConfigured = true;
 fake.phase6PreproductionDb.finalAccountReconciliationCompleted = true;
+fake.phase6ReconciliationAudit.originalProviderDeltaCertified = true;
 fake.phase6PreproductionDb.authRoutePreflightPassed = true;
 fake.phase6PreproductionDb.visualAssetParityComplete = true;
 fake.phase6VisualAssetAudit.repoMissing = false;
@@ -39,6 +40,7 @@ fake.phase6AuthCutoverPreparation.realGoogleClientConfiguredOnTarget=true;
 fake.phase6AuthCutoverPreparation.realResendKeyConfiguredOnTarget=true;
 fake.phase6AuthCutoverPreparation.realTurnstileConfiguredOnTarget=true;
 fake.phase6DnsVerification.zoneStatus='active';
+fake.phase6DnsVerification.registrarNameserversChanged=true;
 const releaseWithPhysicalQaPending = evaluateRelease(fake);
 assert.equal(releaseWithPhysicalQaPending.readyForControlledPublication, true,
   'La QA física no debe impedir una publicación con seguridad previa completa');
@@ -61,6 +63,9 @@ for (const critical of [
 // El JPG original 62609.jpg ya está en GitHub (SHA verificada). La prueba
 // de paridad visual se cumple, pero producción sigue bloqueada por otros gates.
 assert.equal(actual.visualReady,true);
+assert.equal(actual.dnsRecordsPrepared,true);
+assert.equal(actual.finalOriginDeltaVerified,false);
+assert.equal(actual.readyForNameserverDelegation,false,'No alterar DNS sin backup/delta/credenciales/consentimiento');
 const noRecoveredBackground=structuredClone(fake);
 noRecoveredBackground.phase6VisualAssetAudit.missing=['62609.jpg'];
 assert.equal(evaluateRelease(noRecoveredBackground).readyForControlledPublication,false,
@@ -80,6 +85,29 @@ for(const prop of ['realGoogleClientConfiguredOnTarget','realResendKeyConfigured
  assert.equal(evaluateRelease(lacking).readyForControlledPublication,false,
   'No publicar sin '+prop+' en Cloudflare de producción');
 }
+// Una zona PENDIENTE no puede lanzar el Worker, pero después de que estén
+// completos respaldo, proveedores, reconciliación y autorización expresa,
+// puede delegarse conservando exactamente GitHub Pages y DNS de correo.
+const controlledDelegation=structuredClone(fake);
+controlledDelegation.phase6DnsVerification.zoneStatus='pending';
+controlledDelegation.phase6DnsVerification.registrarNameserversChanged=false;
+assert.equal(evaluateRelease(controlledDelegation).readyForNameserverDelegation,true,
+ 'Permitir delegación segura previa solo con todos los requisitos y firma');
+assert.equal(evaluateRelease(controlledDelegation).readyForControlledPublication,false,
+ 'Una zona pendiente NUNCA permite activar Worker en el dominio');
+const missingMX=structuredClone(controlledDelegation);
+missingMX.phase6EmailDnsVerification.requiredRecordsInPendingCloudflareZone.MX=false;
+assert.equal(evaluateRelease(missingMX).readyForNameserverDelegation,false,
+ 'No delegar si falta correo de recuperación');
+const lostGitHubA=structuredClone(controlledDelegation);
+lostGitHubA.phase6DnsVerification.legacyARecordsDnsOnly=3;
+assert.equal(evaluateRelease(lostGitHubA).readyForNameserverDelegation,false,
+ 'No delegar si una IP original de GitHub Pages falta');
+const noExternalDelta=structuredClone(fake);
+noExternalDelta.phase6ReconciliationAudit.originalProviderDeltaCertified=false;
+assert.equal(evaluateRelease(noExternalDelta).readyForControlledPublication,false,
+ 'Una foto D1 exacta NO sustituye el delta del proveedor original');
+assert.equal(evaluateRelease(noExternalDelta).readyForNameserverDelegation,false);
 const inactiveDns=structuredClone(fake);
 inactiveDns.phase6DnsVerification.zoneStatus='pending';
 assert.equal(evaluateRelease(inactiveDns).readyForControlledPublication,false,
