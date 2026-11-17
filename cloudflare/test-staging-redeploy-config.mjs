@@ -12,7 +12,8 @@ assert.equal(cfg.workers_dev,true);
 assert.equal(cfg.keep_vars,true,'No sobrescribir variables existentes');
 assert.deepEqual(cfg.vars,{ADMIN_EMAIL_LINK_ENABLED:'yes'},'Solo habilitar auto-vinculación admin tras Google + correo; no versionar secretos');
 assert.ok(!Object.hasOwn(cfg,'routes')&&!Object.hasOwn(cfg,'route'),'No cambiar DNS ni rutas de producción');
-assert.ok(!Object.hasOwn(cfg,'assets'),'El backend no debe reemplazar ASSETS de vídeo ya publicados');
+assert.deepEqual(cfg.assets,{directory:'./dist-static',binding:'ASSETS',run_worker_first:true},
+ 'Staging debe servir la copia original directamente, sin depender del Worker multimedia QA');
 assert.ok(!Object.hasOwn(cfg,'r2_buckets'),'No volver a R2');
 assert.equal(cfg.d1_databases.length,1);
 assert.deepEqual(cfg.d1_databases[0],{
@@ -29,4 +30,4 @@ const api=readFileSync('cloudflare/bellaquitas-api-staging.js','utf8');
 assert.ok(api.includes("from \"./admin-console.js\""),'Bilingüismo administrativo debe formar parte del bundle');
 const admin=readFileSync('cloudflare/admin-console.js','utf8');
 assert.ok(admin.includes('bq-admin-language'),'Selector ES/FR ausente del código a desplegar');
-console.log('OK: Worker STAGING, 1 D1, service binding original, keep_vars, 0 R2, 0 rutas DNS, admin ES/FR y secretos no versionados.');
+console.log('OK: Worker STAGING, 1 D1, Static Assets directos, servicio QA solo fallback, keep_vars, 0 R2, 0 rutas DNS, admin ES/FR y secretos no versionados.');
