@@ -20,7 +20,9 @@
     "ADMIN_EMAIL_LINK_ENABLED": "no",
     "SUGGESTIONS_ENABLED": "no",
     "SITE_MODE": "preproduction",
-    "PUBLISH_APPROVED": "no"
+    "PUBLISH_APPROVED": "no",
+    "PUBLIC_ORIGIN": "https://bellaquitas.fr",
+    "RESEND_FROM": "no-reply@bellaquitas.fr"
   },
   "assets": {
     "directory": "./dist-static",
