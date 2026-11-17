@@ -99,23 +99,52 @@ export function evaluateRelease(gates) {
     auth?.realTurnstileConfiguredOnTarget === true &&
     gates.phase6TurnstileProduction?.secretsBoundToPrivateWorker?.includes('TURNSTILE_SECRET') === true;
 
-  // Mantener los registros DNS originales hasta tener la zona activa;
-  // una zona pending no puede considerarse alojamiento definitivo.
-  const dnsReady =
-    gates.phase6DnsVerification?.zoneStatus === 'active' &&
-    gates.phase6EmailDnsVerification?.requiredRecordsInPendingCloudflareZone?.MX === true &&
-    gates.phase6EmailDnsVerification?.requiredRecordsInPendingCloudflareZone?.DKIM_TXT === true &&
-    gates.phase6EmailDnsVerification?.requiredRecordsInPendingCloudflareZone?.SPF_TXT === true &&
-    gates.phase6EmailDnsVerification?.requiredRecordsInPendingCloudflareZone?.SPF_CNAME === true;
+  // Dos operaciones DIFERENTES: (A) delegar nameservers a una zona que
+  // sigue sirviendo GitHub Pages, y (B) publicar rutas Worker en la zona ya
+  // activa. Exigir zona activa ANTES de permitir el propio cambio de NS creaba
+  // un bloqueo circular. No ejecutar ninguna de las dos automáticamente.
+  const d = gates.phase6DnsVerification;
+  const email = gates.phase6EmailDnsVerification;
+  const dnsRequirements = email?.requiredRecordsInPendingCloudflareZone;
+  const dnsRecordsPrepared =
+    d?.legacyARecordsDnsOnly === 4 &&
+    d?.legacyWwwDnsOnly === true &&
+    d?.emailRecordsPreserved === true &&
+    d?.searchConsoleRecordPreserved === true &&
+    dnsRequirements?.MX === true &&
+    dnsRequirements?.SPF_TXT === true &&
+    dnsRequirements?.DKIM_TXT === true &&
+    dnsRequirements?.SPF_CNAME === true &&
+    dnsRequirements?.GoogleSearchConsoleTXT === true;
 
-  const targetReady =
-    visualReady && authProvidersReady && dnsReady &&
+  // Antes de pasar a fase 6 se exige la conciliación real con el proveedor
+  // anterior, NO solo que dos D1 bajo Cloudflare sean idénticas.
+  const finalOriginDeltaVerified =
+    gates.phase6ReconciliationAudit?.originalProviderDeltaCertified === true &&
+    target?.finalAccountReconciliationCompleted === true;
+
+  const targetPreDnsReady =
+    visualReady && authProvidersReady && finalOriginDeltaVerified &&
     target?.realUsersImported === true &&
     target?.productionWorkerConfigured === true &&
-    target?.finalAccountReconciliationCompleted === true &&
     target?.authRoutePreflightPassed === true &&
     target?.schemaObjects === 44 &&
     target?.verifiedSchemaDifferences === 0;
+
+  // Esta fase solo habilitaría (tras firma expresa) copiar la delegación
+  // exacta de Hostinger a Cloudflare SIN añadir rutas ni cambiar el A/www.
+  const readyForNameserverDelegation =
+    authorized && pendingPrepublication.length === 0 &&
+    adminTechnologyReady && targetPreDnsReady && dnsRecordsPrepared &&
+    d?.zoneStatus === 'pending' &&
+    d?.registrarNameserversChanged === false;
+
+  // La siguiente fase requiere una zona Cloudflare YA activa y una
+  // delegación confirmada; no basta con registros preparados en pendiente.
+  const dnsReady =
+    dnsRecordsPrepared && d?.zoneStatus === 'active' &&
+    d?.registrarNameserversChanged === true;
+  const targetReady = targetPreDnsReady && dnsReady;
 
   // La autorización nunca basta sin respaldo, credenciales recuperables,
   // integridad de datos y entorno final realmente preparado.
@@ -132,6 +161,10 @@ export function evaluateRelease(gates) {
     adminTechnologyReady,
     visualReady,
     authProvidersReady,
+    dnsRecordsPrepared,
+    finalOriginDeltaVerified,
+    targetPreDnsReady,
+    readyForNameserverDelegation,
     dnsReady,
     targetReady,
     readyForControlledPublication,
