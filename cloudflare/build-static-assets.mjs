@@ -132,8 +132,9 @@ const extraPath=join(src,ADDITIONAL_MEDIA.path);
 if(!existsSync(extraPath)){
  const msg='FONDO ORIGINAL PENDIENTE: assets/'+ADDITIONAL_MEDIA.path+
    ' (recuperado de Library, todavía no integrado en GitHub).';
- if(process.argv.includes('--require-complete-design'))throw new Error(msg);
- console.warn(msg);
+ // Con el JPG auténtico ya recuperado, cualquier ausencia futura vuelve a
+ // bloquear TODOS los builds: no publicar sin el fondo visual original.
+ throw new Error(msg);
 }else{
  assert.ok(lstatSync(extraPath).isFile()&&!lstatSync(extraPath).isSymbolicLink());
  const bytes=readFileSync(extraPath);
