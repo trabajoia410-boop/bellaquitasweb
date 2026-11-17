@@ -71,7 +71,9 @@ assert.equal(productionAccessGate(req("https://www.bellaquitas.fr/v1/auth/me?x=1
 assert.equal(productionAccessGate(req("https://www.bellaquitas.fr/v1/auth/me?x=1"),ok).headers.get("Location"),
  origin+"/v1/auth/me?x=1");
 assert.equal(productionAccessGate(req("https://www.bellaquitas.fr/v1/auth/logout","POST"),ok).status,403);
-assert.equal(productionAccessGate(req(),{...ok,SITE_MODE:"preproduction"}),null);
+const privateResponse=productionAccessGate(req(),{...ok,SITE_MODE:"preproduction"});
+assert.equal(privateResponse.status,503,'Preproducción cerrada incluso con credenciales sintéticas');
+assert.equal(privateResponse.headers.get('X-Robots-Tag'),'noindex,nofollow');
 assert.equal(productionAccessGate(req(),{...ok,SITE_MODE:undefined}),null);
 
 // Google nunca debe volver al /preview cerrado tras el cambio de dominio.
