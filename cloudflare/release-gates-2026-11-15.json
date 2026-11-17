@@ -223,10 +223,8 @@
     "productionApprovalFlag": "no",
     "realGoogleLoginTested": false,
     "emailResetRealProviderTested": false,
-    "visualAssetParityComplete": false,
-    "visualAssetKnownMissing": [
-      "62609.jpg"
-    ],
+    "visualAssetParityComplete": true,
+    "visualAssetKnownMissing": [],
     "emailRateKeyStoredAsSecret": true,
     "emailRateKeyNewUniquePerWorker": true,
     "emailRateKeyBackupKeyRotated": false,
@@ -253,7 +251,10 @@
         "preproduccion"
       ],
       "sourceProviderDeltaStillUnknown": true
-    }
+    },
+    "visualAssetJpgCommitted": true,
+    "visualAssetJpgSHA256Verified": true,
+    "visualAssetJpgDeployedInWorker": false
   },
   "phase6AuthCutoverPreparation": {
     "status": "code-deployed-in-isolated-preproduction",
@@ -302,25 +303,25 @@
     "authEmailSendingFromPreproductionVerified": false
   },
   "phase6VisualAssetAudit": {
-    "status": "blocked-original-jpg-not-in-repo",
+    "status": "original-jpg-committed-and-hash-verified",
     "snapshotReference": "cloudflare/mirror-snapshot.js",
     "backgroundUsage": "styles.css / body.bf-neon .bf-after-marquee / background-image:url(\"assets/62609.jpg\")",
     "allReferencedAssetNamesAudited": 14,
     "expectedMediaManifestFiles": 17,
-    "missing": [
-      "62609.jpg"
-    ],
+    "missing": [],
     "sourceOriginalRecoveredFromUserLibrary": true,
     "sourceOriginalFilename": "62609.jpg",
     "sourceOriginalSize": 41544,
     "sourceOriginalWidth": 1536,
     "sourceOriginalHeight": 864,
     "sourceOriginalSha256": "8132f61e31fe7a6b008e8af307c51a525e7d19c9cfd83e9ac80ff2553c0bca60",
-    "repoMissing": true,
+    "repoMissing": false,
     "substitutionAllowed": false,
-    "originalBinaryImportedToRepo": false,
-    "releaseBlocked": true,
-    "validation": "No se altera la foto ni el diseño; el JPG real existe en Library pero no está todavía en assets/ GitHub. Auditoría de todas las referencias lista."
+    "originalBinaryImportedToRepo": true,
+    "releaseBlocked": false,
+    "validation": "JPG original recuperado de Library, SHA-256 verificado, creado como blob GitHub de 41544 bytes con SHA-1 Git idéntico y publicado únicamente en la rama de migración. CI debe volver a validar contenido y diseño antes del corte.",
+    "originalGitBlobSHA": "65a47c0f9284f7baa4eaacc4b48acd1157cdb363",
+    "originalGitCommit": "2f1a373407669a11848a426d36e248717f8d045d"
   },
   "phase6DnsVerification": {
     "legacyGithubDnsRecordsRepointed": false,
