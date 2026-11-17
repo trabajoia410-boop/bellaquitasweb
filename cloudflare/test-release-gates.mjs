@@ -58,8 +58,9 @@ for (const critical of [
   assert.equal(evaluateRelease(blocked).readyForControlledPublication, false,
     'Nunca publicar faltando la protección previa: ' + critical);
 }
-// No se puede certificar paridad visual mientras falta la foto 62609.jpg.
-assert.equal(actual.visualReady,false);
+// El JPG original 62609.jpg ya está en GitHub (SHA verificada). La prueba
+// de paridad visual se cumple, pero producción sigue bloqueada por otros gates.
+assert.equal(actual.visualReady,true);
 const noRecoveredBackground=structuredClone(fake);
 noRecoveredBackground.phase6VisualAssetAudit.missing=['62609.jpg'];
 assert.equal(evaluateRelease(noRecoveredBackground).readyForControlledPublication,false,
