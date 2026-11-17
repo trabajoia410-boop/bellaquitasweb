@@ -6,12 +6,28 @@ on:
       - migracion/fase5-segura-20261114
     paths:
       - 'cloudflare/**'
+      - 'assets/**'
+      - 'index.html'
+      - 'styles.css'
+      - 'app.js'
+      - 'locale-fr.js'
+      - 'robots.txt'
+      - 'sitemap.xml'
+      - 'manifest.webmanifest'
       - '.github/workflows/bellaquitas-phase5-preflight.yml'
   pull_request:
     branches:
       - main
     paths:
       - 'cloudflare/**'
+      - 'assets/**'
+      - 'index.html'
+      - 'styles.css'
+      - 'app.js'
+      - 'locale-fr.js'
+      - 'robots.txt'
+      - 'sitemap.xml'
+      - 'manifest.webmanifest'
       - '.github/workflows/bellaquitas-phase5-preflight.yml'
   workflow_dispatch:
 
