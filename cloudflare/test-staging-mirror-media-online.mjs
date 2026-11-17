@@ -40,7 +40,8 @@ for(const video of videos){
   assert.equal(r.status,206,'El espejo no admite 206: '+video.path);
   assert.equal(r.headers.get('content-range'),'bytes '+start+'-'+last+'/'+video.bytes);
   assert.equal(r.headers.get('content-type'),'video/mp4');
-  assert.equal(r.headers.get('cache-control'),'no-store');
+  assert.match(r.headers.get('cache-control')||'',/public,max-age=86400/,
+   'Vídeos originales de Static Assets directos pueden usar caché pública sin cookies');
   assert.equal(r.headers.get('set-cookie'),null);
   const buf=Buffer.from(await r.arrayBuffer());
   assert.deepEqual(buf,local.subarray(start,last+1),'Bytes diferentes al original: '+video.path);
