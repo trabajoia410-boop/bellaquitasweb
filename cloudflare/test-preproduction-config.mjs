@@ -90,7 +90,15 @@ assert.ok(gates.phase6TurnstileProduction?.secretsBoundToPrivateWorker?.includes
 assert.equal(gates.phase6AuthCutoverPreparation?.realTurnstileConfiguredOnTarget,true);
 assert.equal(gates.phase6AuthCutoverPreparation?.realGoogleClientConfiguredOnTarget,false);
 assert.equal(gates.phase6AuthCutoverPreparation?.realResendKeyConfiguredOnTarget,false);
-assert.equal(gates.phase6PreproductionDb?.lastDatabaseParityVerification?.tablesIdentical,14);
+assert.equal(gates.phase6PreproductionDb?.lastDatabaseParityVerification?.tablesCompared,19);
+assert.equal(gates.phase6PreproductionDb?.lastDatabaseParityVerification?.tablesIdentical,16);
+assert.equal(gates.phase6PreproductionDb?.lastDatabaseParityVerification?.expectedOperationalDifferences,3);
+assert.equal(gates.phase6ReconciliationAudit?.originalProfiles,6);
+assert.equal(gates.phase6ReconciliationAudit?.destinationProfiles,7);
+assert.equal(gates.phase6ReconciliationAudit?.emailCredentialsExact,true);
+assert.equal(gates.phase6ReconciliationAudit?.originalProviderDeltaCertified,false,
+ 'La paridad D1 no demuestra cambios posteriores de la plataforma anterior');
+assert.equal(gates.phase6PreproductionDb?.finalAccountReconciliationCompleted,false);
 assert.equal(gates.phase6PreproductionDb?.lastDatabaseParityVerification?.foreignKeyErrors,0);
 assert.equal(gates.phase6PreproductionDb?.staticAssetsBuildVerified,true);
 assert.equal(gates.phase6PreproductionDb?.workerHasAuthSecrets,false,
