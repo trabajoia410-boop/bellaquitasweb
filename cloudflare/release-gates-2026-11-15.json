@@ -175,7 +175,7 @@
     "publiclyAccessible": false,
     "productionWorkerConfigured": false,
     "dnsChanged": false,
-    "lastVerified": "2026-11-16",
+    "lastVerified": "2026-11-17",
     "notes": "Importación de fotografía aislada verificada campo por campo contra staging; 6 usuarios de origen coinciden con restauración D1 original; 7ª cuenta email verificada conservada. No es una conciliación final, tampoco incluye contraseñas originales Google/Supabase.",
     "initialSnapshotLoaded": true,
     "initialSnapshotOrigin": "seis perfiles originales idénticos a staging + una cuenta email verificada conservada",
@@ -231,7 +231,29 @@
     "emailRateKeyNewUniquePerWorker": true,
     "emailRateKeyBackupKeyRotated": false,
     "staticMediaServedDirectly": true,
-    "videoQaServiceBindingRemoved": true
+    "videoQaServiceBindingRemoved": true,
+    "turnstileProductionConfigured": true,
+    "turnstileLiveChallengeVerified": false,
+    "verifiedSenderPrepared": true,
+    "canonicalOriginPrepared": true,
+    "lastDatabaseParityVerification": {
+      "tablesCompared": 14,
+      "tablesIdentical": 14,
+      "originalProfilesPresent": 6,
+      "originalGoogleLinksPresent": 6,
+      "stagingProfilesPreserved": 7,
+      "admins": 2,
+      "points": 1999998,
+      "visits": 0,
+      "foreignKeyErrors": 0,
+      "verifiedOn": "2026-11-17",
+      "sources": [
+        "staging",
+        "origen-recuperacion",
+        "preproduccion"
+      ],
+      "sourceProviderDeltaStillUnknown": true
+    }
   },
   "phase6AuthCutoverPreparation": {
     "status": "code-deployed-in-isolated-preproduction",
@@ -247,11 +269,15 @@
     "runtimePublishingApproved": false,
     "realGoogleClientConfiguredOnTarget": false,
     "realResendKeyConfiguredOnTarget": false,
-    "realTurnstileConfiguredOnTarget": false,
+    "realTurnstileConfiguredOnTarget": true,
     "realAdminPasswordLinksVerified": 0,
     "testingMode": "simulated-auth-and-public-routes-only",
     "ciPhase5": "https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43934256704",
-    "ciMigration": "https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43934256775"
+    "ciMigration": "https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43934256775",
+    "turnstileRealTokenSiteverifyTested": false,
+    "canonicalPublicOriginConfiguredOnTarget": true,
+    "resendVerifiedSenderConfiguredOnTarget": true,
+    "emailSender": "no-reply@bellaquitas.fr"
   },
   "phase6EmailDnsVerification": {
     "resendSendingDomainVerified": true,
@@ -304,5 +330,27 @@
     "zoneStatus": "pending",
     "emailRecordsPreserved": true,
     "searchConsoleRecordPreserved": true
+  },
+  "phase6TurnstileProduction": {
+    "status": "provisioned-but-disabled",
+    "widgetName": "Bellaquitas Fest - Produccion bellaquitas.fr",
+    "widgetSiteKey": "0x4AAAAAAGEzSCq-jnpavqcu",
+    "mode": "managed",
+    "domains": [
+      "bellaquitas.fr",
+      "www.bellaquitas.fr"
+    ],
+    "hasDedicatedProductionWidget": true,
+    "stagingWidgetPreserved": true,
+    "secretsBoundToPrivateWorker": [
+      "TURNSTILE_SECRET",
+      "TURNSTILE_SITE_KEY",
+      "TURNSTILE_EXPECTED_HOSTNAME"
+    ],
+    "secretPlaintextNeverCommitted": true,
+    "setupOnCloudflareFree": true,
+    "publicDomainEnabled": false,
+    "realChallengeCompleted": false,
+    "notes": "Widget Turnstile de producción creado para hostnames canónicos, sin cambiar el original de staging ni abrir el Worker."
   }
 }
