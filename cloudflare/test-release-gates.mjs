@@ -35,6 +35,10 @@ fake.phase6PreproductionDb.visualAssetParityComplete = true;
 fake.phase6VisualAssetAudit.repoMissing = false;
 fake.phase6VisualAssetAudit.originalBinaryImportedToRepo = true;
 fake.phase6VisualAssetAudit.missing = [];
+fake.phase6AuthCutoverPreparation.realGoogleClientConfiguredOnTarget=true;
+fake.phase6AuthCutoverPreparation.realResendKeyConfiguredOnTarget=true;
+fake.phase6AuthCutoverPreparation.realTurnstileConfiguredOnTarget=true;
+fake.phase6DnsVerification.zoneStatus='active';
 const releaseWithPhysicalQaPending = evaluateRelease(fake);
 assert.equal(releaseWithPhysicalQaPending.readyForControlledPublication, true,
   'La QA física no debe impedir una publicación con seguridad previa completa');
@@ -66,6 +70,19 @@ assert.equal(evaluateRelease(noVisualState).readyForControlledPublication,false)
 const noBinary=structuredClone(fake);
 noBinary.phase6VisualAssetAudit.originalBinaryImportedToRepo=false;
 assert.equal(evaluateRelease(noBinary).readyForControlledPublication,false);
+// Un proveedor configurado en staging NO basta para publicar el Worker final.
+assert.equal(actual.authProvidersReady,false);
+assert.equal(actual.dnsReady,false);
+for(const prop of ['realGoogleClientConfiguredOnTarget','realResendKeyConfiguredOnTarget','realTurnstileConfiguredOnTarget']){
+ const lacking=structuredClone(fake);
+ lacking.phase6AuthCutoverPreparation[prop]=false;
+ assert.equal(evaluateRelease(lacking).readyForControlledPublication,false,
+  'No publicar sin '+prop+' en Cloudflare de producción');
+}
+const inactiveDns=structuredClone(fake);
+inactiveDns.phase6DnsVerification.zoneStatus='pending';
+assert.equal(evaluateRelease(inactiveDns).readyForControlledPublication,false,
+ 'No publicar ni redirigir DNS desde una zona Cloudflare aún pendiente');
 // Los logins personales quedan para DESPUÉS, pero la técnica no.
 assert.ok(fake.readiness.bothRealAdminLoginsVerified.passed===false);
 assert.equal(releaseWithPhysicalQaPending.adminTechnologyReady,true);
