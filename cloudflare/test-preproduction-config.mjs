@@ -98,6 +98,21 @@ assert.equal(gates.phase6ReconciliationAudit?.destinationProfiles,7);
 assert.equal(gates.phase6ReconciliationAudit?.emailCredentialsExact,true);
 assert.equal(gates.phase6ReconciliationAudit?.originalProviderDeltaCertified,false,
  'La paridad D1 no demuestra cambios posteriores de la plataforma anterior');
+assert.equal(gates.phase6BackupSecretCustody?.originalEightCsvEncryptedBackupCreated,true,
+ 'No borrar de la historia el respaldo original ya completado');
+assert.equal(gates.phase6BackupSecretCustody?.originalSourceRestoreVerified,true,
+ 'El origen se restauró en D1 y SQLite aislados');
+assert.equal(gates.phase6BackupSecretCustody?.privateRotationOutsideChatConfirmed,false,
+ 'No declarar rotación secreta sin nuevo archivo restaurado y clave custodiada');
+assert.equal(gates.phase6BackupSecretCustody?.newD1ExportFileDurablyStored,false,
+ 'Una URL firmada de exportación NO es un backup independiente');
+assert.equal(gates.phase6DnsVerification?.zoneStatus,'pending',
+ 'La zona no puede presentarse como activa antes del registrador');
+assert.equal(gates.phase6DnsVerification?.registrarNameserversChanged,false);
+assert.equal(gates.phase6DnsVerification?.pendingZoneDnsRecordCount,10);
+assert.equal(gates.phase6DnsVerification?.legacyARecordsDnsOnly,4);
+assert.equal(gates.phase6DnsVerification?.legacyWwwDnsOnly,true);
+assert.equal(gates.phase6PreproductionDb?.productionWorkerConfigured,false);
 assert.equal(gates.phase6PreproductionDb?.finalAccountReconciliationCompleted,false);
 assert.equal(gates.phase6PreproductionDb?.lastDatabaseParityVerification?.foreignKeyErrors,0);
 assert.equal(gates.phase6PreproductionDb?.staticAssetsBuildVerified,true);
