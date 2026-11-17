@@ -21,5 +21,10 @@
   ],
   "vars": {
     "ADMIN_EMAIL_LINK_ENABLED": "yes"
+  },
+  "assets": {
+    "directory": "./dist-static",
+    "binding": "ASSETS",
+    "run_worker_first": true
   }
 }
