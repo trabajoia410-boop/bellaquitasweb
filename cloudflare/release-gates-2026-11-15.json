@@ -235,8 +235,8 @@
     "verifiedSenderPrepared": true,
     "canonicalOriginPrepared": true,
     "lastDatabaseParityVerification": {
-      "tablesCompared": 14,
-      "tablesIdentical": 14,
+      "tablesCompared": 19,
+      "tablesIdentical": 16,
       "originalProfilesPresent": 6,
       "originalGoogleLinksPresent": 6,
       "stagingProfilesPreserved": 7,
@@ -250,7 +250,10 @@
         "origen-recuperacion",
         "preproduccion"
       ],
-      "sourceProviderDeltaStillUnknown": true
+      "sourceProviderDeltaStillUnknown": true,
+      "expectedOperationalDifferences": 3,
+      "schemaObjectsIdentical": 44,
+      "originalProviderDeltaStillUnknown": true
     },
     "visualAssetJpgCommitted": true,
     "visualAssetJpgSHA256Verified": true,
@@ -380,5 +383,47 @@
     "videosHttp206TestCount": 10,
     "liveProductionChanges": false,
     "remoteD1Mutations": false
+  },
+  "phase6ReconciliationAudit": {
+    "verifiedDate": "2026-11-17",
+    "type": "read-only-three-d1-comparison",
+    "source": "cloudflare/FASE5_CONCILIACION_CLOUD_D1_2026-11-17.md",
+    "tablesExamined": 19,
+    "businessAndAuthTablesExactlyMatched": 16,
+    "excludedOperationalTables": {
+      "auth_admin_sessions": {
+        "staging": 1,
+        "destination": 0,
+        "reason": "sesiones no portables"
+      },
+      "media_migration_log": {
+        "staging": 3,
+        "destination": 0,
+        "reason": "log de migración operativo"
+      },
+      "migration_audit": {
+        "staging": 9,
+        "destination": 0,
+        "reason": "auditoría de despliegues antigua"
+      }
+    },
+    "schemaObjectsCompared": 44,
+    "schemaObjectsIdentical": true,
+    "foreignKeyErrors": 0,
+    "originalProfiles": 6,
+    "originalGoogleIdentityLinks": 6,
+    "originalIdentitiesPreserved": true,
+    "stagingProfiles": 7,
+    "destinationProfiles": 7,
+    "allStagingProfilesExact": true,
+    "emailCredentialsExact": true,
+    "twoAdminRolesPreserved": true,
+    "currentPoints": 1999998,
+    "lifetimePoints": 1999998,
+    "visits": 0,
+    "newestOriginalProviderExportRead": false,
+    "originalProviderDeltaCertified": false,
+    "writesToD1": 0,
+    "readyForProduction": false
   }
 }
