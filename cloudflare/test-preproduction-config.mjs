@@ -28,6 +28,10 @@ assert.deepEqual(target.assets,{
 },'Servir medios originales con Workers Static Assets, no con GitHub ni R2');
 assert.equal(target.vars?.SITE_MODE,'preproduction',
  'Preproducción no debe habilitar el router público antes del corte');
+assert.equal(target.vars?.FINAL_ORIGIN_RECONCILED,'no',
+ 'No certificar datos nuevos del origen sin comparar el proveedor anterior');
+assert.equal(target.vars?.BACKUP_KEY_CUSTODIED,'no',
+ 'No declarar custodia offline sin prueba del propietario');
 assert.equal(target.vars?.PUBLISH_APPROVED,'no',
  'La aprobación final de producción nunca se versiona como sí');
 assert.equal(target.d1_databases?.length,1);
