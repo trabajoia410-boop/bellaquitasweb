@@ -10,6 +10,8 @@ const origin="https://bellaquitas.fr", token="A".repeat(43);
 const ok={
  SITE_MODE:"production",
  PUBLISH_APPROVED:"yes",
+ FINAL_ORIGIN_RECONCILED:"yes",
+ BACKUP_KEY_CUSTODIED:"yes",
  PUBLIC_ORIGIN:origin,
  TURNSTILE_EXPECTED_HOSTNAME:"bellaquitas.fr",
  STAGING_MUTATIONS:"enabled",
@@ -49,6 +51,8 @@ for(const [key,bad] of [
  ["SUGGESTIONS_ENABLED","no"],
  ["SITE_MODE","unknown"],
  ["PUBLISH_APPROVED","no"],
+ ["FINAL_ORIGIN_RECONCILED","no"],
+ ["BACKUP_KEY_CUSTODIED","no"],
  ["TURNSTILE_EXPECTED_HOSTNAME","example.invalid"],
  ["DB",null],
  ["ASSETS",null]
@@ -101,4 +105,4 @@ assert.equal(emailLink(origin,token,"verify",undefined,{SITE_MODE:"preproduction
 assert.equal(emailLink(origin,token,"reset",undefined,{SITE_MODE:"preproduction"}),
  origin+"/preview#reset="+token);
 assert.throws(()=>emailLink(origin,"invalid","reset","",ok));
-console.log("PASS: OAuth, correo y admin finales; 18 condiciones de protección y URLs canónicas, 0 credenciales/usuarios reales.");
+console.log("PASS: OAuth, correo, origen y custodia; 20 condiciones de protección y URLs canónicas sin usuarios ni secretos reales.");
