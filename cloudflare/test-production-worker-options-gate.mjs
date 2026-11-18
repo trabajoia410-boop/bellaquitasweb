@@ -78,6 +78,25 @@ const legacyStaging=await worker.fetch(new Request(
 assert.equal(legacyStaging.status,204);
 assert.equal(legacyStaging.headers.get("Access-Control-Allow-Origin"),
  "https://trabajoia410-boop.github.io","Staging debe mantener integración heredada");
-const stage=await worker.fetch(preflight(),{SITE_MODE:undefined,PUBLISH_APPROVED:"no"});
+// Si el DNS definitivo se conectara por error a un Worker que todavía
+// carga configuración staging, responder 503 en TODAS las rutas/métodos.
+for(const host of [DOMAIN,"https://www.bellaquitas.fr"]){
+ for(const mode of [undefined,"staging","invalid"]){
+  for(const pathname of ["/","/administracion/","/v1/auth/me","/v1/events"]){
+   for(const method of ["GET","OPTIONS"]){
+    const url=host+pathname;
+    const request=method==="OPTIONS"?preflight(url):new Request(url);
+    const result=await worker.fetch(request,{SITE_MODE:mode,PUBLISH_APPROVED:"no"});
+    assert.equal(result.status,503,"No exponer "+host+pathname+" en "+mode);
+    assert.equal(result.headers.get("Access-Control-Allow-Origin"),null);
+    assert.equal(result.headers.get("Set-Cookie"),null);
+    assert.equal(result.headers.get("Cache-Control"),"no-store");
+   }
+  }
+ }
+}
+const stageUrl="https://bellaquitas-api-staging.bellaquitas-fest-410.workers.dev/v1/auth/email/login";
+const stage=await worker.fetch(preflight(stageUrl),{SITE_MODE:undefined,PUBLISH_APPROVED:"no"});
 assert.equal(stage.status,204,"No cambiar el preflight de staging");
+assert.equal(stage.headers.get("Access-Control-Allow-Origin"),DOMAIN);
 console.log("OK: 10 rutas, preflight fail-closed y CORS canónico final; staging sigue intacto; sin datos ni cuentas reales.");
