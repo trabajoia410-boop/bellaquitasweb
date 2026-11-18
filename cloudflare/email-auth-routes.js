@@ -1,4 +1,5 @@
 import {emailLink} from "./production-auth-redirects.js";
+import {providerBrokerAvailable,providerBrokerCall} from "./provider-broker.js";
 /* Bellaquitas staging: correo/contraseña opcional. FAIL-CLOSED por defecto.
  * No se activa sin correo verificado, Turnstile, límites y secretos.
  * Las cuentas importadas de Google no reciben contraseñas ni se vinculan por email.
@@ -12,7 +13,8 @@ const ITERATIONS=600000;
 const emailLoginReady=env=>env.EMAIL_AUTH_ENABLED==="yes"&&typeof env.EMAIL_RATE_KEY==="string"&&env.EMAIL_RATE_KEY.length>=32;
 // La alta por email se controla independientemente de las altas nuevas de Google.
 const emailDeliveryReady=env=>emailLoginReady(env)&&
-  typeof env.RESEND_API_KEY==="string"&&env.RESEND_API_KEY.length>8&&
+  ((typeof env.RESEND_API_KEY==="string"&&env.RESEND_API_KEY.length>8)||
+    (env.PROVIDER_BROKER_ENABLED==="yes"&&providerBrokerAvailable(env)))&&
   typeof env.RESEND_FROM==="string"&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(env.RESEND_FROM)&&
   typeof env.TURNSTILE_SECRET==="string"&&env.TURNSTILE_SECRET.length>8&&
   typeof env.TURNSTILE_SITE_KEY==="string"&&env.TURNSTILE_SITE_KEY.length>8;
@@ -115,6 +117,19 @@ async function turnstile(env,request,token){
  return result.success===true&&result.hostname===expected;
 }
 async function sendMail(env,to,subject,message){
+ if(typeof env.RESEND_API_KEY!=="string"||env.RESEND_API_KEY.length<=8){
+   // Service Binding autenticada: Resend API key nunca sale del Worker
+   // original que el propietario ya configuró.
+   if(env.PROVIDER_BROKER_ENABLED!=="yes"||!providerBrokerAvailable(env))
+     return false;
+   try{
+     const result=await providerBrokerCall(env,"resend_send",{to,subject,message});
+     return result.sent===true;
+   }catch(e){
+     console.error("Resend private provider unavailable");
+     return false;
+   }
+ }
  const response=await fetch("https://api.resend.com/emails",{
    method:"POST",headers:{Authorization:"Bearer "+env.RESEND_API_KEY,"Content-Type":"application/json"},
    body:JSON.stringify({from:env.RESEND_FROM,to:[to],subject,text:message})
