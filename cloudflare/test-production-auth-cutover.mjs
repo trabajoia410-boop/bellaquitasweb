@@ -60,14 +60,10 @@ for(const [key,bad] of [
  const changed={...ok,[key]:bad};
  assert.equal(productionConfigurationReady(changed),false,"Bloquear "+key);
  const result=productionAccessGate(req(),changed);
- if(changed.SITE_MODE==="production"){
-   assert.equal(result.status,503,"Sin "+key+" NO publicar portada ni API");
-   const message=await result.text();
-   assert.equal(message.includes(key),false,"No exponer nombre de secreto faltante");
-   assert.equal(result.headers.get("Cache-Control"),"no-store");
- }else{
-   assert.equal(result,null,"Staging no puede activarse por accidente");
- }
+ assert.equal(result?.status,503,"Sin "+key+" NO publicar portada ni API");
+ const message=await result.text();
+ assert.equal(message.includes(key),false,"No exponer nombre de secreto faltante");
+ assert.equal(result.headers.get("Cache-Control"),"no-store");
 }
 assert.equal(productionAccessGate(req("http://bellaquitas.fr/"),ok).status,403);
 assert.equal(productionAccessGate(req("https://example.com/"),ok).status,403);
@@ -78,7 +74,20 @@ assert.equal(productionAccessGate(req("https://www.bellaquitas.fr/v1/auth/logout
 const privateResponse=productionAccessGate(req(),{...ok,SITE_MODE:"preproduction"});
 assert.equal(privateResponse.status,503,'Preproducción cerrada incluso con credenciales sintéticas');
 assert.equal(privateResponse.headers.get('X-Robots-Tag'),'noindex,nofollow');
-assert.equal(productionAccessGate(req(),{...ok,SITE_MODE:undefined}),null);
+// Un DNS apuntado accidentalmente al Worker con SITE_MODE ausente
+// NUNCA puede servir el backend antiguo de staging desde el dominio final.
+for(const mode of [undefined,"staging","invalid","preproduction"]){
+ for(const host of ["bellaquitas.fr","www.bellaquitas.fr"]){
+   const result=productionAccessGate(req("https://"+host+"/v1/auth/me"),{...ok,SITE_MODE:mode});
+   assert.equal(result?.status,503,"Modo "+mode+" en "+host+" debe cerrar API");
+   assert.equal(result.headers.get("Access-Control-Allow-Origin"),null);
+   assert.equal(result.headers.get("Set-Cookie"),null);
+ }
+}
+assert.equal(productionAccessGate(
+ req("https://bellaquitas-api-staging.bellaquitas-fest-410.workers.dev/"),
+ {...ok,SITE_MODE:undefined}),null,
+ "Staging real debe conservarse funcional fuera del dominio canónico");
 
 // Google nunca debe volver al /preview cerrado tras el cambio de dominio.
 assert.equal(googleLanding("P"+token.slice(1),ok),"/#/mi-espacio");
