@@ -44,8 +44,19 @@ assert.notEqual(db.database_id,stageDb.database_id,
   'NUNCA utilizar D1 staging como base futura de producción');
 assert.notEqual(db.database_id,'2642aff7-11da-4dc6-b359-9bc9417eda31',
   'NUNCA utilizar la restauración aislada como base editable');
-assert.equal(target.services,undefined,
-  'El Worker de preproducción debe servir medios directamente, sin Service Binding a QA');
+assert.deepEqual(target.services,[{
+ binding:'PROVIDER_BROKER',
+ service:'bellaquitas-api-staging',
+ environment:'production'
+}], 'La única conexión interna autorizada es al Worker que ya conserva Google y Resend');
+assert.equal(target.vars?.PROVIDER_BROKER_ENABLED,'yes',
+ 'La conexión de proveedores debe activarse solo por Service Binding firmada');
+assert.equal(target.vars?.SITE_MODE,'preproduction',
+ 'Reutilizar Google/Resend no puede habilitar publicación');
+assert.ok(!JSON.stringify(target).includes('GOOGLE_CLIENT_SECRET'),
+ 'Nunca subir los secretos Google al repositorio');
+assert.ok(!JSON.stringify(target).includes('RESEND_API_KEY'),
+ 'Nunca subir el token Resend al repositorio');
 assert.ok(Array.isArray(staging.services) && staging.services.length===1,
   'No se cambia el servidor multimedia de staging existente');
 for(const key of [
