@@ -9,6 +9,7 @@ import {mirrorWriteRoute} from "./mirror-write-routes.js";
 import {suggestionRoute} from "./suggestion-routes.js";
 import {protectedRoute} from "./protected-routes.js";
 import {emailAuthRoute} from "./email-auth-routes.js";
+import {providerBrokerRoute} from "./provider-broker.js";
 /**
  * Bellaquitas Fest — API de lectura para entorno de pruebas en Cloudflare.
  * No usar para gestionar usuarios, puntos, visitas ni permisos.
@@ -67,6 +68,10 @@ export default {
     // el preflight CORS cuando se habilite producción sin credenciales.
     const productionGate=productionAccessGate(request,env);
     if(productionGate)return productionGate;
+    // Los secretos OAuth/Resend siguen en este Worker. Este RPC privado
+    // exige HMAC y no devuelve sus valores; no cambia el API público.
+    const broker=await providerBrokerRoute(request,env);
+    if(broker)return broker;
     if (request.method === "OPTIONS") {
       return new Response(null, {status: 204, headers: responseHeaders(request)});
     }
