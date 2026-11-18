@@ -113,6 +113,22 @@ for (const path of [
     'escritura anónima rechazada '+path);
 }
 
+// El intermediario privado NO debe admitir correos ni OAuth desde Internet.
+// Este POST está deliberadamente sin firma HMAC y se rechaza antes de
+// cualquier envío a Resend, contacto Google o escritura D1.
+const unauthorizedBroker=await fetch(new URL('/__internal/providers',api),{
+ method:'POST',headers:{'Content-Type':'application/json'},
+ body:JSON.stringify({operation:'google_client_id'}),
+ redirect:'manual',signal:AbortSignal.timeout(25000)
+});
+check(unauthorizedBroker.status===401,
+ 'el broker de Google/Resend rechaza POST exterior sin firma HMAC');
+check(unauthorizedBroker.headers.get('Access-Control-Allow-Origin')===null,
+ 'el broker no autoriza CORS de páginas externas');
+check(unauthorizedBroker.headers.get('Set-Cookie')===null,
+ 'el broker no genera sesiones');
+check((await unauthorizedBroker.text()).includes('Unauthorized'),
+ 'el rechazo externo no revela credenciales');
 // OAuth CSRF LIVE: estado artificial sin cookie del navegador debe fallar antes
 // de consultar el estado de D1 o solicitar el token a Google. No genera sesiones.
 const fakeState='A'+'z'.repeat(42);
