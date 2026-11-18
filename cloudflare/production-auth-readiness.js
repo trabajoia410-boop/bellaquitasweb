@@ -45,7 +45,9 @@ export function productionConfigurationReady(env) {
 
 export function productionAccessGate(request, env) {
   const url = new URL(request.url);
-  const canonicalHost = ["bellaquitas.fr","www.bellaquitas.fr"].includes(url.hostname);
+  // Un punto final DNS no debe esquivar el bloqueo: bellaquitas.fr.
+  // es el mismo hostname en la jerarquía DNS que bellaquitas.fr.
+  const canonicalHost = ["bellaquitas.fr","www.bellaquitas.fr"].includes(url.hostname.replace(/\.+$/,""));
   const headers = {
     "Cache-Control": "no-store",
     "X-Robots-Tag": "noindex,nofollow",
