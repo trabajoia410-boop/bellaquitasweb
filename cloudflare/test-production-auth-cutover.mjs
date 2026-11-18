@@ -33,6 +33,27 @@ const ok={
 const req=(url=origin+"/",method="GET")=>new Request(url,{method});
 assert.equal(productionConfigurationReady(ok),true);
 assert.equal(productionAccessGate(req(),ok),null);
+// Variante segura para reutilizar Google y Resend ya configurados en
+// otro Worker del mismo propietario SIN importar sus secretos.
+const bridged={
+ ...ok,GOOGLE_CLIENT_ID:"",GOOGLE_CLIENT_SECRET:"",RESEND_API_KEY:"",
+ PROVIDER_BROKER_ENABLED:"yes",PROVIDER_BROKER_KEY:"z".repeat(64),
+ PROVIDER_BROKER:{fetch(){}}
+};
+assert.equal(productionConfigurationReady(bridged),true,
+ "Service Binding firmada reemplaza solo las credenciales de proveedores");
+for(const [key,bad] of [
+ ["PROVIDER_BROKER_ENABLED","no"],
+ ["PROVIDER_BROKER_KEY",""],
+ ["PROVIDER_BROKER",null],
+ ["FINAL_ORIGIN_RECONCILED","no"],
+ ["BACKUP_KEY_CUSTODIED","no"]
+]){
+ const altered={...bridged,[key]:bad};
+ assert.equal(productionConfigurationReady(altered),false,
+  "Fallar cerrado cuando falta "+key);
+ assert.equal(productionAccessGate(req(),altered)?.status,503);
+}
 
 for(const [key,bad] of [
  ["PUBLIC_ORIGIN","https://example.invalid"],
