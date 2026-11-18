@@ -9,8 +9,14 @@
 export const CANONICAL_ORIGIN = "https://bellaquitas.fr";
 
 export function productionConfigurationReady(env) {
+  // Una bandera de despliegue y secretos válidos no bastan: la copia
+  // restaurable debe estar bajo custodia y el delta del origen conciliado.
+  // Estas dos verificaciones son independientes y se mantienen cerradas
+  // en la configuración de preproducción.
   if (!env || env.SITE_MODE !== "production" ||
-      env.PUBLISH_APPROVED !== "yes") return false;
+      env.PUBLISH_APPROVED !== "yes" ||
+      env.FINAL_ORIGIN_RECONCILED !== "yes" ||
+      env.BACKUP_KEY_CUSTODIED !== "yes") return false;
   const has = (key, minimum) =>
     typeof env[key] === "string" && env[key].length >= minimum;
   const expectedFlags = {
