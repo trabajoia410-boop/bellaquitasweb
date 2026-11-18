@@ -90,14 +90,37 @@ export function evaluateRelease(gates) {
     Array.isArray(visualAudit?.missing) &&
     visualAudit.missing.length === 0;
 
-  // El staging puede tener OAuth/correo completos mientras el Worker final
-  // siga sin las claves: NO permitir el corte usando la evidencia de staging.
+  // Google y Resend YA EXISTEN en el Worker staging. Pueden utilizarse
+  // mediante un Service Binding privada, firmada con HMAC y sin exportar
+  // ningún secreto. Dos vías: credenciales directas O conexión interna
+  // verificable. No confundir configuración del puente con login real.
   const auth = gates.phase6AuthCutoverPreparation;
-  const authProvidersReady =
+  const bridge = gates.phase6ExistingProviderBridge;
+  const directProviderBindings =
     auth?.realGoogleClientConfiguredOnTarget === true &&
-    auth?.realResendKeyConfiguredOnTarget === true &&
+    auth?.realResendKeyConfiguredOnTarget === true;
+  const brokerProviderBindings =
+    bridge?.status === 'deployed-private-bindings-verified' &&
+    bridge?.stagingGoogleAndResendSecretsPreserved === true &&
+    bridge?.targetServiceBindingVerified === true &&
+    bridge?.sharedAuthenticationSecretBoundBothWorkers === true &&
+    bridge?.offlineSignedRoundTripPassed === true &&
+    bridge?.noProviderSecretsExported === true;
+  const providerBindingsReady =
+    (directProviderBindings || brokerProviderBindings) &&
     auth?.realTurnstileConfiguredOnTarget === true &&
     gates.phase6TurnstileProduction?.secretsBoundToPrivateWorker?.includes('TURNSTILE_SECRET') === true;
+
+  // Antes del cambio de nameservers basta con verificar la integración de
+  // secretos; el test REAL final de Google/correo requiere el dominio
+  // autorizado, por lo que es una puerta separada DESPUÉS de activar DNS.
+  const liveProvidersReady = directProviderBindings
+    ? auth?.realGoogleLoginTestedOnCanonicalDomain === true &&
+      auth?.realResendDeliveryTestedOnCanonicalDomain === true
+    : brokerProviderBindings &&
+      bridge?.realGoogleCallbackTestedOnCanonicalDomain === true &&
+      bridge?.realResendDeliveryTestedOnCanonicalDomain === true;
+  const authProvidersReady = providerBindingsReady && liveProvidersReady;
 
   // Dos operaciones DIFERENTES: (A) delegar nameservers a una zona que
   // sigue sirviendo GitHub Pages, y (B) publicar rutas Worker en la zona ya
@@ -124,7 +147,7 @@ export function evaluateRelease(gates) {
     target?.finalAccountReconciliationCompleted === true;
 
   const targetPreDnsReady =
-    visualReady && authProvidersReady && finalOriginDeltaVerified &&
+    visualReady && providerBindingsReady && finalOriginDeltaVerified &&
     target?.realUsersImported === true &&
     target?.productionWorkerConfigured === true &&
     target?.authRoutePreflightPassed === true &&
@@ -144,7 +167,7 @@ export function evaluateRelease(gates) {
   const dnsReady =
     dnsRecordsPrepared && d?.zoneStatus === 'active' &&
     d?.registrarNameserversChanged === true;
-  const targetReady = targetPreDnsReady && dnsReady;
+  const targetReady = targetPreDnsReady && dnsReady && authProvidersReady;
 
   // La autorización nunca basta sin respaldo, credenciales recuperables,
   // integridad de datos y entorno final realmente preparado.
@@ -160,6 +183,8 @@ export function evaluateRelease(gates) {
     pendingOwnerPostpublication,
     adminTechnologyReady,
     visualReady,
+    providerBindingsReady,
+    liveProvidersReady,
     authProvidersReady,
     dnsRecordsPrepared,
     finalOriginDeltaVerified,
