@@ -25,6 +25,9 @@ for(const path of ["/","/v1/auth/email/login","/v1/auth/google/start","/v1/admin
   assert.equal(response.headers.get("Set-Cookie"),null);
  }
 }
+const withFakeSecrets={SITE_MODE:"production",PUBLISH_APPROVED:"yes",FINAL_ORIGIN_RECONCILED:"no",BACKUP_KEY_CUSTODIED:"no"};
+assert.equal((await worker.fetch(preflight(),withFakeSecrets)).status,503,
+ "Sin conciliación y clave bajo custodia, incluso una aprobación no habilita CORS");
 const noApproval=await worker.fetch(preflight(),{SITE_MODE:"production",PUBLISH_APPROVED:"yes"});
 assert.equal(noApproval.status,503,"Una aprobación sin claves completas también debe bloquear");
 
