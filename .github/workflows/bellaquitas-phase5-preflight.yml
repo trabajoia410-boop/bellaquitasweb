@@ -56,6 +56,8 @@ jobs:
         run: node cloudflare/test-admin-console.mjs
       - name: Probar administradores de dos cuentas con datos sintéticos
         run: node --experimental-sqlite cloudflare/test-admin-email-link.mjs
+      - name: Validar conexión privada a Google y Resend sin copiar credenciales
+        run: node cloudflare/test-provider-broker.mjs
       - name: Verificar OAuth Google contra login CSRF de otro navegador
         run: node cloudflare/test-oauth-browser-bound-state.mjs
       - name: Probar editor completo con 2 administradores ficticios y D1 en memoria
