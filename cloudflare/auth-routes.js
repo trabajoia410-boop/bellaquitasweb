@@ -1,4 +1,5 @@
 import {googleLanding} from "./production-auth-redirects.js";
+import {providerBrokerAvailable,providerBrokerCall} from "./provider-broker.js";
 /* Bellaquitas Fest staging: verified Google OAuth with PKCE, nonce and opaque sessions.
  * Secrets GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET must be stored on Cloudflare,
  * never in the repo. Google authentication fails CLOSED until configured.
@@ -144,8 +145,16 @@ function strictOrigin(request,env) {
   const site=request.headers.get("Sec-Fetch-Site");
   return origin===base(env) && (!site||site==="same-origin");
 }
+const directGoogleReady=env=>!!(env.GOOGLE_CLIENT_ID&&env.GOOGLE_CLIENT_SECRET);
+async function publicGoogleClientId(env){
+ if(directGoogleReady(env))return env.GOOGLE_CLIENT_ID;
+ if(env.PROVIDER_BROKER_ENABLED!=="yes"||!providerBrokerAvailable(env))return null;
+ const result=await providerBrokerCall(env,"google_client_id");
+ return typeof result.clientId==="string"&&result.clientId.length>=10?result.clientId:null;
+}
 async function beginGoogle(request,env) {
-  if(!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET)return fail(
+  if(!directGoogleReady(env)&&
+     (env.PROVIDER_BROKER_ENABLED!=="yes"||!providerBrokerAvailable(env)))return fail(
     "Google OAuth no está configurado en Cloudflare",503);
   if(request.method!=="GET")return fail("Método no permitido",405);
   // Estado de 43 caracteres: ruta de retorno autenticada y ligada al state.
@@ -160,8 +169,10 @@ async function beginGoogle(request,env) {
     "INSERT INTO auth_oauth_states(state_hash,pkce_verifier,nonce,expires_at) "+
     "VALUES (?,?,?,unixepoch()+600)"
   ).bind(stateHash,verifier,nonce).run();
+  const clientId=await publicGoogleClientId(env);
+  if(!clientId)return fail("Google no está disponible",503);
   const auth=new URL("https://accounts.google.com/o/oauth2/v2/auth");
-  auth.searchParams.set("client_id",env.GOOGLE_CLIENT_ID);
+  auth.searchParams.set("client_id",clientId);
   auth.searchParams.set("redirect_uri",base(env)+"/v1/auth/google/callback");
   auth.searchParams.set("response_type","code");
   auth.searchParams.set("scope","openid email profile");
@@ -182,7 +193,9 @@ async function callbackGoogle(request,env) {
   if(!code || code.length>2500 || !state || !/^[A-Za-z0-9_-]{43}$/.test(state)){
     return fail("Respuesta de Google inválida",400);
   }
-  if(!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET)return fail("Servicio no configurado",503);
+  if(!directGoogleReady(env)&&
+     (env.PROVIDER_BROKER_ENABLED!=="yes"||!providerBrokerAvailable(env)))
+    return fail("Servicio no configurado",503);
   // Never accept a state obtained by a different browser. This is independent
   // of Google PKCE/nonce and prevents OAuth login CSRF and account swapping.
   if(readCookie(request,OAUTH_COOKIE)!==state)return fail("El acceso debe iniciarse en este navegador",403);
@@ -193,20 +206,36 @@ async function callbackGoogle(request,env) {
     "RETURNING pkce_verifier,nonce"
   ).bind(stateHash).first();
   if(!saved)return fail("La sesión OAuth ha caducado",401);
-  const form=new URLSearchParams({
-    client_id:env.GOOGLE_CLIENT_ID,client_secret:env.GOOGLE_CLIENT_SECRET,
-    grant_type:"authorization_code",code,
-    code_verifier:saved.pkce_verifier,
-    redirect_uri:base(env)+"/v1/auth/google/callback"
-  });
-  const result=await fetch("https://oauth2.googleapis.com/token",{
-    method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},
-    body:form.toString()
-  });
-  if(!result.ok)return fail("No se pudo completar el acceso con Google",401);
-  const payload=await result.json();
+  let clientId,payload;
+  try{
+    clientId=await publicGoogleClientId(env);
+    if(!clientId)throw Error("Google client unavailable");
+    if(directGoogleReady(env)){
+      const form=new URLSearchParams({
+        client_id:clientId,client_secret:env.GOOGLE_CLIENT_SECRET,
+        grant_type:"authorization_code",code,
+        code_verifier:saved.pkce_verifier,
+        redirect_uri:base(env)+"/v1/auth/google/callback"
+      });
+      const result=await fetch("https://oauth2.googleapis.com/token",{
+        method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},
+        body:form.toString()
+      });
+      if(!result.ok)return fail("No se pudo completar el acceso con Google",401);
+      payload=await result.json();
+    }else{
+      const result=await providerBrokerCall(env,"google_exchange",{
+        code,verifier:saved.pkce_verifier,
+        redirectUri:base(env)+"/v1/auth/google/callback"
+      });
+      payload={id_token:result.idToken};
+    }
+  }catch(e){
+    console.error("Google private provider unavailable");
+    return fail("No se pudo completar el acceso con Google",503);
+  }
   let google;
-  try{google=await verifyGoogleJwt(payload.id_token,env,saved.nonce);}
+  try{google=await verifyGoogleJwt(payload.id_token,{...env,GOOGLE_CLIENT_ID:clientId},saved.nonce);}
   catch(e){console.error("Google verification:",e?.message);return fail("Identidad no verificada",401);}
   let link=await env.DB.prepare(
     "SELECT profile_id FROM auth_identity_links "+
