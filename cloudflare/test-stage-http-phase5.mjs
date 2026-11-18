@@ -25,10 +25,13 @@ const get = async (base, path, headers={}) => {
       });
     } catch (error) {
       const cause = error?.cause?.code || error?.code || '';
-      if (attempt === 2 || !['ECONNRESET','ETIMEDOUT','UND_ERR_CONNECT_TIMEOUT'].includes(cause)) {
-        throw error;
-      }
-      console.warn('QA: conexión GET interrumpida, reintento '+(attempt+1)+'/2 en '+target.pathname+' ('+cause+')');
+      // Undici en Node 22 lanza DOMException TimeoutError para
+      // AbortSignal.timeout, sin error.cause.code. Eso también es
+      // fallo DE RED, no respuesta HTTP inválida ni fallo de permisos.
+      const retryable = error?.name === 'TimeoutError' ||
+        ['ECONNRESET','ETIMEDOUT','UND_ERR_CONNECT_TIMEOUT'].includes(cause);
+      if (attempt === 2 || !retryable) throw error;
+      console.warn('QA: conexión GET interrumpida, reintento '+(attempt+1)+'/2 en '+target.pathname+' ('+(cause||error?.name||'network')+')');
       await new Promise(resolve => setTimeout(resolve, 300 * (attempt+1)));
     }
   }
