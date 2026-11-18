@@ -80,7 +80,7 @@ assert.equal(legacyStaging.headers.get("Access-Control-Allow-Origin"),
  "https://trabajoia410-boop.github.io","Staging debe mantener integración heredada");
 // Si el DNS definitivo se conectara por error a un Worker que todavía
 // carga configuración staging, responder 503 en TODAS las rutas/métodos.
-for(const host of [DOMAIN,"https://www.bellaquitas.fr"]){
+for(const host of [DOMAIN,"https://www.bellaquitas.fr","https://bellaquitas.fr.","https://www.bellaquitas.fr."]){
  for(const mode of [undefined,"staging","invalid"]){
   for(const pathname of ["/","/administracion/","/v1/auth/me","/v1/events"]){
    for(const method of ["GET","OPTIONS"]){
