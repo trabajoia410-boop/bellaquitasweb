@@ -216,7 +216,7 @@
     "workerHasAuthSecrets": false,
     "prepublicationAuthReady": false,
     "deploymentEvidence": "Cloudflare Workers Builds éxito; bindings DB, ASSETS, VIDEO_QA_PROXY y flags leídos por API; 0 rutas, 0 subdominio, 0 secrets; GitHub CI https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43922064532",
-    "latestWorkerBuild": "bb7849c2-38c6-4c62-a012-8c3d6666f996",
+    "latestWorkerBuild": "a8189ab3-0738-4c6b-ba43-ff1c80f6a141",
     "latestWorkerBuildOutcome": "success",
     "authGuardDeployed": true,
     "authSecretsBound": false,
@@ -438,7 +438,10 @@
     "originalProviderDeltaCertified": false,
     "writesToD1": 0,
     "readyForProduction": false,
-    "notes": "D1 a D1 son 16/16 tablas de datos replicables exactas y 3 tablas operativas excluidas; NO demuestra cambios posteriores al CSV en el origen"
+    "notes": "D1 a D1 son 16/16 tablas de datos replicables exactas y 3 tablas operativas excluidas; NO demuestra cambios posteriores al CSV en el origen",
+    "lastReadOnlyCheck": "2026-11-18",
+    "tablesRecentlyCompared": 16,
+    "tablesRecentlyIdentical": 16
   },
   "phase6BackupSecretCustody": {
     "originalEightCsvEncryptedBackupCreated": true,
@@ -527,7 +530,11 @@
     "encryptedSelfContainedHtmlLibraryFileId": "libfile_1937f99aa6c08191b21d7d319e273ce3",
     "offlineBrowserEngineTests": "WebCrypto with Node VM; real browser not installed",
     "negativeSecurityTests": "wrong RSA key rejected; tampered AES ciphertext rejected",
-    "privateKeyDownloadedAndStoredOfflineByOwnerVerified": false
+    "privateKeyDownloadedAndStoredOfflineByOwnerVerified": false,
+    "revalidatedOn": "2026-11-18",
+    "verifiedUsing": "RSA-OAEP SHA256; AES-256-GCM; gzip; in-memory SQLite",
+    "latestLocalRestoreIntegrity": "ok",
+    "latestLocalRestoreForeignKeyErrors": 0
   },
   "phase6LegacyRewrapPrepared": {
     "date": "2026-11-18",
@@ -577,5 +584,28 @@
     "points": 1999998,
     "visits": 0,
     "sourceProviderChangesSinceCsvUnknown": true
+  },
+  "phase6RuntimeCutoverAttestation": {
+    "updatedOn": "2026-11-18",
+    "status": "deployed-and-fail-closed",
+    "buildId": "a8189ab3-0738-4c6b-ba43-ff1c80f6a141",
+    "buildOutcome": "success",
+    "worker": "bellaquitas-api-preproduccion",
+    "requiresExplicitApproval": true,
+    "requiresOriginalProviderReconciliation": true,
+    "requiresIndependentBackupCustody": true,
+    "realOriginalProviderReconciliationComplete": false,
+    "backupPrivateKeyStoredOutsideChatVerified": false,
+    "preproductionFlags": {
+      "SITE_MODE": "preproduction",
+      "PUBLISH_APPROVED": "no",
+      "FINAL_ORIGIN_RECONCILED": "no",
+      "BACKUP_KEY_CUSTODIED": "no"
+    },
+    "publicDomainChanged": false,
+    "localBackupRestoreVerifiedNow": true,
+    "testSecurityRun": "https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/44246262396",
+    "testCloudflareRun": "https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/44246262386",
+    "testMigrationRun": "https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/44246262378"
   }
 }
