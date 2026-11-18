@@ -104,6 +104,19 @@ assert.equal(gates.phase6BackupSecretCustody?.originalSourceRestoreVerified,true
  'El origen se restauró en D1 y SQLite aislados');
 assert.equal(gates.phase6BackupSecretCustody?.privateRotationOutsideChatConfirmed,false,
  'No declarar rotación secreta sin nuevo archivo restaurado y clave custodiada');
+assert.equal(gates.phase6IndependentEncryptedD1Backup?.status,'encrypted-and-verified-local-restore');
+assert.equal(gates.phase6IndependentEncryptedD1Backup?.tablesRestoredInMemory,22);
+assert.equal(gates.phase6IndependentEncryptedD1Backup?.schemaObjectsRestoredInMemory,44);
+assert.equal(gates.phase6IndependentEncryptedD1Backup?.profilesRestored,7);
+assert.equal(gates.phase6IndependentEncryptedD1Backup?.pointsRestored,1999998);
+assert.equal(gates.phase6IndependentEncryptedD1Backup?.foreignKeyCheckErrors,0);
+assert.equal(gates.phase6IndependentEncryptedD1Backup?.privateRecoveryKeyNotCommittedToGitHub,true);
+assert.equal(gates.phase6IndependentEncryptedD1Backup?.archiveNotCommittedToGitHub,true);
+assert.equal(gates.phase6IndependentEncryptedD1Backup?.originalLegacyBackupRekeyed,false,
+ 'La copia D1 independiente no es rotación del respaldo heredado');
+assert.equal(gates.phase6IndependentEncryptedD1Backup?.sourceNativeAuthComplete,false,
+ 'La nueva D1 no prueba hashes/sesiones del proveedor anterior');
+assert.equal(gates.phase6IndependentEncryptedD1Backup?.privateKeyStoredOfflineByOwnerVerified,false);
 assert.equal(gates.phase6BackupSecretCustody?.newD1ExportFileDurablyStored,false,
  'Una URL firmada de exportación NO es un backup independiente');
 assert.equal(gates.phase6DnsVerification?.zoneStatus,'pending',
