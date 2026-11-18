@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {Script} from 'node:vm';
+import {adminConsoleRoute} from './admin-console.js';
 const file=readFileSync('cloudflare/admin-console.js','utf8');
 // Extraer exclusivamente el literal JSON del HTML; otros módulos constantes
 // pueden aparecer entre el HTML y la función de enrutamiento.
@@ -45,4 +46,20 @@ const dynamic=[...new Set([...script[1].matchAll(/(?:status\(|textContent\s*=|th
 assert.deepEqual(dynamic.filter(x=>!Object.hasOwn(dictionary,x)),[],
  'Todos los estados admin literales deben tener traducción');
 console.log('OK: cobertura completa de '+visible.length+' etiquetas visibles y '+dynamic.length+' avisos ES/FR.');
+// Los enlaces del panel recuperan contraseña desde la página que
+// realmente existe en cada alojamiento, sin redirigir a un espejo cerrado.
+const stagingPage=adminConsoleRoute(new Request('https://bellaquitas-api-staging.example/administracion/'),{SITE_MODE:'staging'});
+assert.equal(stagingPage.status,200);
+assert.match(await stagingPage.text(),/id="adminPasswordRecovery"/);
+const finalPage=adminConsoleRoute(new Request('https://bellaquitas.fr/administracion/'),{SITE_MODE:'production'});
+assert.equal(finalPage.status,200);
+const finalHTML=await finalPage.text();
+assert.match(finalHTML,/href="\/#\/recuperar"[^>]*id="adminPasswordRecovery"/);
+assert.ok(!finalHTML.includes('href="/espejo/#/recuperar"'),
+ 'El dominio final no debe abrir el espejo retirado');
+assert.equal(finalPage.headers.get('X-Robots-Tag'),'noindex, nofollow');
+assert.match(finalPage.headers.get('Content-Security-Policy'),/script-src 'nonce-/);
+const preprodPage=adminConsoleRoute(new Request('https://bellaquitas.fr/administracion/'),{SITE_MODE:'preproduction'});
+assert.ok((await preprodPage.text()).includes('href="/espejo/#/recuperar"'),
+ 'Un modo no-productivo no puede adelantar rutas canónicas');
 console.log('OK: panel independiente, JS válido, CSP nonce, reautenticación y API protegida.');
