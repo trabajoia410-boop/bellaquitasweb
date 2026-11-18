@@ -38,6 +38,8 @@ fake.phase6VisualAssetAudit.originalBinaryImportedToRepo = true;
 fake.phase6VisualAssetAudit.missing = [];
 fake.phase6AuthCutoverPreparation.realGoogleClientConfiguredOnTarget=true;
 fake.phase6AuthCutoverPreparation.realResendKeyConfiguredOnTarget=true;
+fake.phase6AuthCutoverPreparation.realGoogleLoginTestedOnCanonicalDomain=true;
+fake.phase6AuthCutoverPreparation.realResendDeliveryTestedOnCanonicalDomain=true;
 fake.phase6AuthCutoverPreparation.realTurnstileConfiguredOnTarget=true;
 fake.phase6DnsVerification.zoneStatus='active';
 fake.phase6DnsVerification.registrarNameserversChanged=true;
@@ -77,8 +79,30 @@ const noBinary=structuredClone(fake);
 noBinary.phase6VisualAssetAudit.originalBinaryImportedToRepo=false;
 assert.equal(evaluateRelease(noBinary).readyForControlledPublication,false);
 // Un proveedor configurado en staging NO basta para publicar el Worker final.
+assert.equal(actual.providerBindingsReady,true,
+ 'Google y Resend existentes deben reconocerse por la Service Binding privada');
+assert.equal(actual.liveProvidersReady,false,
+ 'La existencia del puente NO equivale a login/entrega probados en dominio final');
 assert.equal(actual.authProvidersReady,false);
 assert.equal(actual.dnsReady,false);
+// Variante: reutilizar las claves existentes en staging en vez de pedirlas
+// de nuevo. No hay secretos directos en el Worker final.
+const bridged=structuredClone(fake);
+bridged.phase6AuthCutoverPreparation.realGoogleClientConfiguredOnTarget=false;
+bridged.phase6AuthCutoverPreparation.realResendKeyConfiguredOnTarget=false;
+bridged.phase6ExistingProviderBridge.realGoogleCallbackTestedOnCanonicalDomain=true;
+bridged.phase6ExistingProviderBridge.realResendDeliveryTestedOnCanonicalDomain=true;
+assert.equal(evaluateRelease(bridged).providerBindingsReady,true);
+assert.equal(evaluateRelease(bridged).readyForControlledPublication,true,
+ 'La Service Binding con pruebas reales sustituye las claves duplicadas');
+const noBridgeLogin=structuredClone(bridged);
+noBridgeLogin.phase6ExistingProviderBridge.realGoogleCallbackTestedOnCanonicalDomain=false;
+assert.equal(evaluateRelease(noBridgeLogin).readyForControlledPublication,false,
+ 'Una Service Binding sin OAuth real en dominio final no autoriza publicación');
+const noBridgeKey=structuredClone(bridged);
+noBridgeKey.phase6ExistingProviderBridge.sharedAuthenticationSecretBoundBothWorkers=false;
+assert.equal(evaluateRelease(noBridgeKey).readyForNameserverDelegation,false,
+ 'No delegar DNS cuando la conexión privada carece de HMAC compartida');
 for(const prop of ['realGoogleClientConfiguredOnTarget','realResendKeyConfiguredOnTarget','realTurnstileConfiguredOnTarget']){
  const lacking=structuredClone(fake);
  lacking.phase6AuthCutoverPreparation[prop]=false;
