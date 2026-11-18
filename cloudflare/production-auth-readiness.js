@@ -34,8 +34,18 @@ export function productionConfigurationReady(env) {
       env.TURNSTILE_EXPECTED_HOSTNAME !== "bellaquitas.fr") return false;
   if (typeof env.DB?.prepare !== "function" ||
       typeof env.ASSETS?.fetch !== "function") return false;
-  if (!has("GOOGLE_CLIENT_ID", 10) || !has("GOOGLE_CLIENT_SECRET", 12) ||
-      !has("EMAIL_RATE_KEY", 32) || !has("RESEND_API_KEY", 9) ||
+  // Reutilizar las credenciales reales de staging mediante Service Binding
+  // autenticada con HMAC, SIN duplicar Google/Resend en el Worker nuevo.
+  // También admitir secretos directos si en el futuro se provisionan
+  // explícitamente. Ninguno de los dos modos evita los gates de datos/backup.
+  const privateBridgeReady=env.PROVIDER_BROKER_ENABLED==="yes" &&
+    has("PROVIDER_BROKER_KEY",43) &&
+    typeof env.PROVIDER_BROKER?.fetch==="function";
+  const googleReady=(has("GOOGLE_CLIENT_ID",10)&&
+    has("GOOGLE_CLIENT_SECRET",12))||privateBridgeReady;
+  const resendReady=has("RESEND_API_KEY",9)||privateBridgeReady;
+  if (!googleReady || !resendReady ||
+      !has("EMAIL_RATE_KEY", 32) ||
       !has("TURNSTILE_SECRET", 9) || !has("TURNSTILE_SITE_KEY", 9))
     return false;
   if (typeof env.RESEND_FROM !== "string" ||
