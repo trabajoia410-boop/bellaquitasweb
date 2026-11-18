@@ -77,7 +77,7 @@ assert.equal(privateResponse.headers.get('X-Robots-Tag'),'noindex,nofollow');
 // Un DNS apuntado accidentalmente al Worker con SITE_MODE ausente
 // NUNCA puede servir el backend antiguo de staging desde el dominio final.
 for(const mode of [undefined,"staging","invalid","preproduction"]){
- for(const host of ["bellaquitas.fr","www.bellaquitas.fr"]){
+ for(const host of ["bellaquitas.fr","www.bellaquitas.fr","bellaquitas.fr.","www.bellaquitas.fr."]){
    const result=productionAccessGate(req("https://"+host+"/v1/auth/me"),{...ok,SITE_MODE:mode});
    assert.equal(result?.status,503,"Modo "+mode+" en "+host+" debe cerrar API");
    assert.equal(result.headers.get("Access-Control-Allow-Origin"),null);
