@@ -22,7 +22,9 @@
     "SITE_MODE": "preproduction",
     "PUBLISH_APPROVED": "no",
     "PUBLIC_ORIGIN": "https://bellaquitas.fr",
-    "RESEND_FROM": "no-reply@bellaquitas.fr"
+    "RESEND_FROM": "no-reply@bellaquitas.fr",
+    "FINAL_ORIGIN_RECONCILED": "no",
+    "BACKUP_KEY_CUSTODIED": "no"
   },
   "assets": {
     "directory": "./dist-static",
