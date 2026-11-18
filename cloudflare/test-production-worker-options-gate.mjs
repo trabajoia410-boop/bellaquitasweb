@@ -40,6 +40,44 @@ for(const path of ["/","/v1/auth/me","/administracion/","/v1/events"]){
   assert.equal(response.headers.get("X-Robots-Tag"),"noindex,nofollow");
  }
 }
+const safeProduction={
+ SITE_MODE:"production",PUBLISH_APPROVED:"yes",
+ FINAL_ORIGIN_RECONCILED:"yes",BACKUP_KEY_CUSTODIED:"yes",
+ PUBLIC_ORIGIN:DOMAIN,TURNSTILE_EXPECTED_HOSTNAME:"bellaquitas.fr",
+ STAGING_MUTATIONS:"enabled",ALLOW_NEW_ACCOUNTS:"yes",
+ EMAIL_AUTH_ENABLED:"yes",EMAIL_REGISTRATION_ENABLED:"yes",
+ ADMIN_EMAIL_LINK_ENABLED:"yes",SUGGESTIONS_ENABLED:"yes",
+ DB:{prepare(){}},ASSETS:{fetch(){}},
+ GOOGLE_CLIENT_ID:"fake-google-client-id",GOOGLE_CLIENT_SECRET:"fake-google-client-secret",
+ EMAIL_RATE_KEY:"x".repeat(48),RESEND_API_KEY:"fake-resend-key",
+ RESEND_FROM:"no-reply@bellaquitas.fr",
+ TURNSTILE_SECRET:"fake-turnstile-secret",TURNSTILE_SITE_KEY:"fake-site-key"
+};
+// La API final no autoriza al origen GitHub Pages ni a www a
+// inspeccionar respuestas con CORS; staging conserva esas excepciones.
+for(const origin of ["https://trabajoia410-boop.github.io","https://www.bellaquitas.fr","https://example.invalid"]){
+ const r=await worker.fetch(new Request(DOMAIN+"/v1/events",{
+   method:"OPTIONS",headers:{"Origin":origin,
+     "Access-Control-Request-Method":"GET"}
+ }),safeProduction);
+ assert.equal(r.status,204);
+ assert.equal(r.headers.get("Access-Control-Allow-Origin"),null,
+  "Producción no debe reutilizar CORS de "+origin);
+ assert.equal(r.headers.get("Vary"),"Origin");
+}
+const canonical=await worker.fetch(new Request(DOMAIN+"/v1/events",{
+ method:"OPTIONS",headers:{"Origin":DOMAIN,"Access-Control-Request-Method":"GET"}
+}),safeProduction);
+assert.equal(canonical.status,204);
+assert.equal(canonical.headers.get("Access-Control-Allow-Origin"),DOMAIN);
+const legacyStaging=await worker.fetch(new Request(
+ "https://bellaquitas-api-staging.bellaquitas-fest-410.workers.dev/v1/events",{
+ method:"OPTIONS",headers:{"Origin":"https://trabajoia410-boop.github.io",
+ "Access-Control-Request-Method":"GET"}
+}),{SITE_MODE:undefined,PUBLISH_APPROVED:"no"});
+assert.equal(legacyStaging.status,204);
+assert.equal(legacyStaging.headers.get("Access-Control-Allow-Origin"),
+ "https://trabajoia410-boop.github.io","Staging debe mantener integración heredada");
 const stage=await worker.fetch(preflight(),{SITE_MODE:undefined,PUBLISH_APPROVED:"no"});
 assert.equal(stage.status,204,"No cambiar el preflight de staging");
-console.log("OK: 10 rutas y preflight CORS fail-closed; staging intacto; cero datos, usuarios y credenciales usados.");
+console.log("OK: 10 rutas, preflight fail-closed y CORS canónico final; staging sigue intacto; sin datos ni cuentas reales.");
