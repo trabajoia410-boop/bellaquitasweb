@@ -216,7 +216,7 @@
     "workerHasAuthSecrets": false,
     "prepublicationAuthReady": false,
     "deploymentEvidence": "Cloudflare Workers Builds éxito; bindings DB, ASSETS, VIDEO_QA_PROXY y flags leídos por API; 0 rutas, 0 subdominio, 0 secrets; GitHub CI https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43922064532",
-    "latestWorkerBuild": "a8189ab3-0738-4c6b-ba43-ff1c80f6a141",
+    "latestWorkerBuild": "371d45f2-8972-47b5-87d9-84c3e0e7d010",
     "latestWorkerBuildOutcome": "success",
     "authGuardDeployed": true,
     "authSecretsBound": false,
@@ -607,5 +607,37 @@
     "testSecurityRun": "https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/44246262396",
     "testCloudflareRun": "https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/44246262386",
     "testMigrationRun": "https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/44246262378"
+  },
+  "phase6HostFailClosed": {
+    "date": "2026-11-18",
+    "status": "deployed-private-and-ci-passed",
+    "commit": "ebc637955c74769f8ca27f75dd397cbb8c9e1982",
+    "cloudflareBuildId": "371d45f2-8972-47b5-87d9-84c3e0e7d010",
+    "cloudflareBuildOutcome": "success",
+    "domainsProtected": [
+      "bellaquitas.fr",
+      "www.bellaquitas.fr"
+    ],
+    "missingSiteModeFailsClosed": true,
+    "stagingModeOnCanonicalHostFailsClosed": true,
+    "preproductionModeOnCanonicalHostFailsClosed": true,
+    "blockedPaths": [
+      "/",
+      "/administracion/",
+      "/v1/auth/me",
+      "/v1/events"
+    ],
+    "blockedMethods": [
+      "GET",
+      "OPTIONS"
+    ],
+    "responsesWhenMisconfigured": 503,
+    "stagingWorkersDevPreserved": true,
+    "securityWorkflow": "https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/44379475971",
+    "migrationWorkflow": "https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/44379475865",
+    "cloudflareQaWorkflow": "https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/44379475841",
+    "realAdminLoginsVerified": false,
+    "realPublicRoutesTested": false,
+    "domainCutoverAuthorized": false
   }
 }
