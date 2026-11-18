@@ -105,6 +105,22 @@ assert.ok(gates.phase6TurnstileProduction?.secretsBoundToPrivateWorker?.includes
 assert.equal(gates.phase6AuthCutoverPreparation?.realTurnstileConfiguredOnTarget,true);
 assert.equal(gates.phase6AuthCutoverPreparation?.realGoogleClientConfiguredOnTarget,false);
 assert.equal(gates.phase6AuthCutoverPreparation?.realResendKeyConfiguredOnTarget,false);
+// Google y Resend no se copian: se utilizan por Service Binding HMAC
+// al Worker original que conserva los tres secretos configurados por el dueño.
+assert.equal(gates.phase6AuthCutoverPreparation?.providerBridgeConfiguredOnTarget,true);
+assert.equal(gates.phase6AuthCutoverPreparation?.stagingProviderSecretsReusedWithoutCopy,true);
+assert.equal(gates.phase6ExistingProviderBridge?.status,'deployed-private-bindings-verified');
+assert.equal(gates.phase6ExistingProviderBridge?.stagingGoogleAndResendSecretsPreserved,true);
+assert.equal(gates.phase6ExistingProviderBridge?.targetServiceBindingVerified,true);
+assert.equal(gates.phase6ExistingProviderBridge?.sharedAuthenticationSecretBoundBothWorkers,true);
+assert.equal(gates.phase6ExistingProviderBridge?.noProviderSecretsExported,true);
+assert.equal(gates.phase6ExistingProviderBridge?.offlineSignedRoundTripPassed,true);
+assert.equal(gates.phase6ExistingProviderBridge?.realGoogleCallbackTestedOnCanonicalDomain,false,
+ 'Los tests sintéticos no son un login Google real');
+assert.equal(gates.phase6ExistingProviderBridge?.realResendDeliveryTestedOnCanonicalDomain,false,
+ 'El usuario no debe recibir un correo de prueba no solicitado');
+assert.equal(gates.phase6ExistingProviderBridge?.productionReleaseEnabled,false);
+
 assert.equal(gates.phase6PreproductionDb?.lastDatabaseParityVerification?.tablesCompared,19);
 assert.equal(gates.phase6PreproductionDb?.lastDatabaseParityVerification?.tablesIdentical,16);
 assert.equal(gates.phase6PreproductionDb?.lastDatabaseParityVerification?.expectedOperationalDifferences,3);
