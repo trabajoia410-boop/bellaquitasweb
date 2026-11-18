@@ -44,16 +44,24 @@ export function productionConfigurationReady(env) {
 }
 
 export function productionAccessGate(request, env) {
-  // Si alguien añade una ruta o workers.dev a la PREPRODUCCIÓN por error,
-  // NUNCA servir API, datos públicos, login ni HTML: HTTP 503 en toda ruta.
-  // Solo staging, sin SITE_MODE, conserva su comportamiento anterior.
-  if (env?.SITE_MODE !== "production" && env?.SITE_MODE !== "preproduction") return null;
+  const url = new URL(request.url);
+  const canonicalHost = ["bellaquitas.fr","www.bellaquitas.fr"].includes(url.hostname);
   const headers = {
     "Cache-Control": "no-store",
     "X-Robots-Tag": "noindex,nofollow",
     "Referrer-Policy": "no-referrer",
     "X-Content-Type-Options": "nosniff"
   };
+  // Defensa contra un error de configuración: si alguien conecta una ruta
+  // pública antes de definir SITE_MODE=production, NO servir el backend
+  // de staging ni su panel ni responder OPTIONS con CORS permisivo.
+  if (canonicalHost && env?.SITE_MODE !== "production")
+    return new Response("Bellaquitas Fest todavía no está habilitado.",{
+      status:503,headers:{"Content-Type":"text/plain; charset=utf-8",...headers}
+    });
+  // La preproducción está cerrada incluso en workers.dev o preview.
+  // Staging conserva su API antigua solo en sus propios hostnames.
+  if (env?.SITE_MODE !== "production" && env?.SITE_MODE !== "preproduction") return null;
   if (env.SITE_MODE === "preproduction")
     return new Response("Entorno privado sin acceso público.",{
       status:503,headers:{"Content-Type":"text/plain; charset=utf-8",...headers}
@@ -63,7 +71,6 @@ export function productionAccessGate(request, env) {
     return new Response("Bellaquitas Fest no está preparado para publicar.",{
       status:503,headers:{"Content-Type":"text/plain; charset=utf-8",...headers}
     });
-  const url = new URL(request.url);
   if (url.protocol !== "https:" ||
       !["bellaquitas.fr","www.bellaquitas.fr"].includes(url.hostname) ||
       (url.port && url.port !== "443"))
