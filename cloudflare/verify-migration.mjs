@@ -35,7 +35,10 @@ for(const file of runtime){
  const body=read(file);
  assert.ok(!body.includes('env.MEDIA'),'Dependencia R2 todavía activa: '+file);
 }
-assert.ok(read('cloudflare/bellaquitas-api-staging.js').includes('adminConsoleRoute(request)'),'Panel no integrado en Worker');
+assert.ok(read('cloudflare/bellaquitas-api-staging.js').includes('adminConsoleRoute(request,env)'),
+ 'El Worker debe pasar el entorno al panel para recuperación canónica');
+assert.ok(read('cloudflare/admin-console.js').includes('export function adminConsoleRoute(request,env)'),
+ 'El panel debe distinguir staging del host de producción');
 assert.ok(read('cloudflare/auth-routes.js').includes('returnDestination==="admin"'),'Retorno OAuth admin ausente');
 assert.ok(read('cloudflare/admin-console.js').includes('/administracion/'),'No existe la URL admin');
 console.log('QA aprobada: '+list.length+' archivos originales / '+videos+' vídeos / '+bytes+' bytes exactos.');
