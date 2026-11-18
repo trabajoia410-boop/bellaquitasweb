@@ -454,7 +454,11 @@
     "blockReleaseUntilAllVerified": true,
     "notes": "El respaldo original se hizo; el recifrado exige sus bytes y custodia privada. El export SQL temporal D1 no pudo guardarse por bloqueo de URL firmada y no es copia externa.",
     "newIndependentEncryptedD1BackupCreated": true,
-    "newIndependentD1BackupRestoredAndVerified": true
+    "newIndependentD1BackupRestoredAndVerified": true,
+    "independentEncryptedD1BackupDurablyStoredInPrivateLibrary": true,
+    "independentEncryptedD1BackupSelfContained": true,
+    "privateRecoveryKeyStoredOfflineByOwnerVerified": false,
+    "originalEncryptedBackupRotated": false
   },
   "phase6PrivateWorkerFailClosed": {
     "status": "deployed-private",
@@ -509,6 +513,15 @@
     "sourceNativeAuthComplete": false,
     "originalLegacyBackupRekeyed": false,
     "originalSourceProviderDeltaReconciled": false,
-    "disclaimer": "La nueva copia D1 es independiente y restaurable, pero no sustituye pg_dump de autenticación original ni prueba la rotación de la clave antigua. Los dos archivos deben conservarse offline por separado."
+    "disclaimer": "La nueva copia D1 es independiente y restaurable, pero no sustituye pg_dump de autenticación original ni prueba la rotación de la clave antigua. Los dos archivos deben conservarse offline por separado.",
+    "encryptedSelfContainedHtmlCreated": true,
+    "encryptedSelfContainedHtmlRestoredWithSeparatePrivateKey": true,
+    "encryptedSelfContainedHtmlHasNoPrivateKey": true,
+    "encryptedSelfContainedHtmlStoredInUserPrivateLibrary": true,
+    "encryptedSelfContainedHtmlLibraryName": "BELLAQUITAS_RECUPERACION_CIFRADA_2026-11-18.html",
+    "encryptedSelfContainedHtmlLibraryFileId": "libfile_1937f99aa6c08191b21d7d319e273ce3",
+    "offlineBrowserEngineTests": "WebCrypto with Node VM; real browser not installed",
+    "negativeSecurityTests": "wrong RSA key rejected; tampered AES ciphertext rejected",
+    "privateKeyDownloadedAndStoredOfflineByOwnerVerified": false
   }
 }
