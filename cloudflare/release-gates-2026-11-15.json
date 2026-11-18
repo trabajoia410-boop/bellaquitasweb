@@ -452,7 +452,9 @@
     "recoveryVerifiedWithNewKey": false,
     "authNativeBackupComplete": false,
     "blockReleaseUntilAllVerified": true,
-    "notes": "El respaldo original se hizo; el recifrado exige sus bytes y custodia privada. El export SQL temporal D1 no pudo guardarse por bloqueo de URL firmada y no es copia externa."
+    "notes": "El respaldo original se hizo; el recifrado exige sus bytes y custodia privada. El export SQL temporal D1 no pudo guardarse por bloqueo de URL firmada y no es copia externa.",
+    "newIndependentEncryptedD1BackupCreated": true,
+    "newIndependentD1BackupRestoredAndVerified": true
   },
   "phase6PrivateWorkerFailClosed": {
     "status": "deployed-private",
@@ -474,5 +476,39 @@
     "staticAssetsBindingVerified": true,
     "googleAndResendStillMissing": true,
     "legacySiteUnchanged": true
+  },
+  "phase6IndependentEncryptedD1Backup": {
+    "date": "2026-11-18",
+    "status": "encrypted-and-verified-local-restore",
+    "sourceDatabase": "bellaquitas-produccion-preparada-20261116",
+    "sourceD1Id": "3d65c23d-4d03-4988-9d7f-23d4f95cbc3c",
+    "exportMethod": "Cloudflare D1 SELECT read-only, encrypted before returning backup data",
+    "encryption": "AES-256-GCM with RSA-OAEP-3072-SHA256 key encapsulation",
+    "compression": "gzip",
+    "archiveBytes": 9590,
+    "encryptedPayloadBytes": 6536,
+    "ciphertextSHA256": "65ea99d27f4f8132758d5a80cdffb6649c0405bdcdbd123ca490e0438bebce8f",
+    "archiveSHA256": "c4f3e2003329336015d949a3a45f3bf29b7f9c03b5124d358707000be7c4b456",
+    "schemaObjectsRestoredInMemory": 44,
+    "tablesRestoredInMemory": 22,
+    "profilesRestored": 7,
+    "adminsRestored": 2,
+    "pointsRestored": 1999998,
+    "lifetimePointsRestored": 1999998,
+    "visitsRestored": 0,
+    "foreignKeyCheckErrors": 0,
+    "sqliteIntegrityCheck": "ok",
+    "ciphertextIntegrityAuthenticated": true,
+    "privateKeyGeneratedSeparately": true,
+    "plaintextUserDataPrinted": false,
+    "privateRecoveryKeyNotCommittedToGitHub": true,
+    "archiveNotCommittedToGitHub": true,
+    "backupAttachedToCurrentChatSandbox": true,
+    "privateKeyAvailableForOwnerDownload": true,
+    "privateKeyStoredOfflineByOwnerVerified": false,
+    "sourceNativeAuthComplete": false,
+    "originalLegacyBackupRekeyed": false,
+    "originalSourceProviderDeltaReconciled": false,
+    "disclaimer": "La nueva copia D1 es independiente y restaurable, pero no sustituye pg_dump de autenticación original ni prueba la rotación de la clave antigua. Los dos archivos deben conservarse offline por separado."
   }
 }
