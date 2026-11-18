@@ -30,7 +30,11 @@ const COMMON_HEADERS = {
 function responseHeaders(request, extra = {}) {
   const origin = request.headers.get("Origin");
   const headers = new Headers(COMMON_HEADERS);
-  if (origin && ALLOWED_ORIGINS.has(origin)) {
+  // Las excepciones CORS antiguas solo son válidas para el dominio de
+  // staging. En producción las cookies y API operan en un único origen.
+  const onCanonicalSite = new URL(request.url).origin === "https://bellaquitas.fr";
+  if (origin && ALLOWED_ORIGINS.has(origin) &&
+      (!onCanonicalSite || origin === "https://bellaquitas.fr")) {
     headers.set("Access-Control-Allow-Origin", origin);
     headers.set("Access-Control-Allow-Methods", "GET, OPTIONS");
     headers.set("Access-Control-Allow-Headers", "Accept, Content-Type");
