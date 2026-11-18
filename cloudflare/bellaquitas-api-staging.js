@@ -72,7 +72,7 @@ export default {
       const publicSite=await productionSiteRoute(request,env);
       if(publicSite)return publicSite;
       // Consola en ruta separada, sin cambiar la portada ni la API pública.
-      const adminPage = adminConsoleRoute(request);
+      const adminPage = adminConsoleRoute(request,env);
       if (adminPage) return adminPage;
       const mirrorResponse = await mirrorRoute(request, env);
       if (mirrorResponse) return mirrorResponse;
