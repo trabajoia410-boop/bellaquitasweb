@@ -57,6 +57,21 @@ assert.match(html,/id="app"/);
 assert.match(html,/styles\.css/);
 assert.match(html,/app\.js/);
 assert.match(html,/\/espejo\/auth-ui\.js/);
+// La portada final debe poder atender los enlaces enviados por correo,
+// no solo emitir una URL aparentemente correcta.
+const verifyPage=await get('/?verify='+('A'.repeat(43))+'#/acceso');
+assert.equal(verifyPage.status,200);
+const resetPage=await get('/?reset_token='+('B'.repeat(43))+'#/restablecer');
+assert.equal(resetPage.status,200);
+const authUi=await import('./web-mirror.js').then(m=>
+ m.mirrorRoute(new Request(BASE+'/espejo/auth-ui.js'),env)
+);
+assert.equal(authUi.status,200,'El script de recuperación existe en producción');
+const authUiSource=await authUi.text();
+for(const fragment of ['reset_token','verify','/v1/auth/email/reset','/v1/auth/email/verify','location.pathname+location.hash']){
+ assert.ok(authUiSource.includes(fragment),'El UI de correo debe conservar '+fragment);
+}
+// La navegación de recuperación se sirve en el mismo origen final.
 assert.match(html,/\/espejo\/admin-newtab\.js/);
 assert.ok(!html.includes('PRUEBAS · SOLO LECTURA'),'Sin badge de staging');
 assert.ok(!html.includes('vlsipvngvxcgnwrhpjgg.supabase.co'),'Sin backend anterior');
