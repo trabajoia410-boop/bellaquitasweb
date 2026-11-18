@@ -216,7 +216,7 @@
     "workerHasAuthSecrets": false,
     "prepublicationAuthReady": false,
     "deploymentEvidence": "Cloudflare Workers Builds éxito; bindings DB, ASSETS, VIDEO_QA_PROXY y flags leídos por API; 0 rutas, 0 subdominio, 0 secrets; GitHub CI https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/43922064532",
-    "latestWorkerBuild": "371d45f2-8972-47b5-87d9-84c3e0e7d010",
+    "latestWorkerBuild": "783373e2-e35b-4faf-9353-a3f602483e4d",
     "latestWorkerBuildOutcome": "success",
     "authGuardDeployed": true,
     "authSecretsBound": false,
@@ -262,7 +262,9 @@
     "visualAssetJpgDeploymentBuildId": "6c7e58a8-653d-4b77-8f9a-4ae8c3f4b083",
     "visualAssetBuildOutcome": "success",
     "visualAssetGitHubSHA256": "8132f61e31fe7a6b008e8af307c51a525e7d19c9cfd83e9ac80ff2553c0bca60",
-    "preproductionFailClosedDeployed": true
+    "preproductionFailClosedDeployed": true,
+    "providerBridgeServiceBindingConfigured": true,
+    "providerBridgeHmacSecretBound": true
   },
   "phase6AuthCutoverPreparation": {
     "status": "code-deployed-in-isolated-preproduction",
@@ -288,7 +290,13 @@
     "resendVerifiedSenderConfiguredOnTarget": true,
     "emailSender": "no-reply@bellaquitas.fr",
     "adminEmailCredentialsInPreproduction": 0,
-    "adminsHaveOriginalGoogleIdentity": true
+    "adminsHaveOriginalGoogleIdentity": true,
+    "providerIntegrationMode": "internal-hmac-service-binding",
+    "providerBridgeConfiguredOnTarget": true,
+    "providerBridgeTestsSyntheticPassed": true,
+    "stagingProviderSecretsReusedWithoutCopy": true,
+    "realGoogleLoginTestedOnCanonicalDomain": false,
+    "realResendDeliveryTestedOnCanonicalDomain": false
   },
   "phase6EmailDnsVerification": {
     "resendSendingDomainVerified": true,
@@ -639,5 +647,38 @@
     "realAdminLoginsVerified": false,
     "realPublicRoutesTested": false,
     "domainCutoverAuthorized": false
+  },
+  "phase6ExistingProviderBridge": {
+    "status": "deployed-private-bindings-verified",
+    "configuredDate": "2026-11-18",
+    "sourceWorker": "bellaquitas-api-staging",
+    "targetWorker": "bellaquitas-api-preproduccion",
+    "architecture": "Cloudflare Service Binding fetch with HMAC signed private /__internal/providers",
+    "serviceBindingName": "PROVIDER_BROKER",
+    "stagingGoogleAndResendSecretsPreserved": true,
+    "stagingGoogleClientIdSecret": true,
+    "stagingGoogleClientSecret": true,
+    "stagingResendApiKeySecret": true,
+    "targetServiceBindingVerified": true,
+    "sharedAuthenticationSecretBoundBothWorkers": true,
+    "noProviderSecretsExported": true,
+    "privateSigningSecretNotPrinted": true,
+    "offlineSignedRoundTripPassed": true,
+    "stagingBuildId": "b57f6cd3-6c65-47a4-ae07-230cbf76a96a",
+    "stagingBuildOutcome": "success",
+    "targetBuildId": "783373e2-e35b-4faf-9353-a3f602483e4d",
+    "targetBuildOutcome": "success",
+    "realGoogleCallbackTestedOnCanonicalDomain": false,
+    "realResendDeliveryTestedOnCanonicalDomain": false,
+    "realPublicUnauthenticatedBrokerRejectionVerified": false,
+    "canonicalGoogleOAuthRedirectAuthorizedVerified": false,
+    "sourceDatabaseUnchanged": true,
+    "targetDatabaseUnchanged": true,
+    "stagingPublicUrlUnchanged": true,
+    "targetPublicUrlEnabled": false,
+    "targetDomainRoutes": 0,
+    "originalSecretsNeverCopied": true,
+    "reuseExistingProviderAccounts": true,
+    "productionReleaseEnabled": false
   }
 }
