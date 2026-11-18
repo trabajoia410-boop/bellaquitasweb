@@ -286,7 +286,9 @@
     "turnstileRealTokenSiteverifyTested": false,
     "canonicalPublicOriginConfiguredOnTarget": true,
     "resendVerifiedSenderConfiguredOnTarget": true,
-    "emailSender": "no-reply@bellaquitas.fr"
+    "emailSender": "no-reply@bellaquitas.fr",
+    "adminEmailCredentialsInPreproduction": 0,
+    "adminsHaveOriginalGoogleIdentity": true
   },
   "phase6EmailDnsVerification": {
     "resendSendingDomainVerified": true,
@@ -458,7 +460,10 @@
     "independentEncryptedD1BackupDurablyStoredInPrivateLibrary": true,
     "independentEncryptedD1BackupSelfContained": true,
     "privateRecoveryKeyStoredOfflineByOwnerVerified": false,
-    "originalEncryptedBackupRotated": false
+    "originalEncryptedBackupRotated": false,
+    "originalEncryptedBackupLocatedInPersonalLibrary": true,
+    "originalRecoveryKeyLocatedInPersonalLibrary": true,
+    "legacyOfflineRewrapToolPrepared": true
   },
   "phase6PrivateWorkerFailClosed": {
     "status": "deployed-private",
@@ -523,5 +528,54 @@
     "offlineBrowserEngineTests": "WebCrypto with Node VM; real browser not installed",
     "negativeSecurityTests": "wrong RSA key rejected; tampered AES ciphertext rejected",
     "privateKeyDownloadedAndStoredOfflineByOwnerVerified": false
+  },
+  "phase6LegacyRewrapPrepared": {
+    "date": "2026-11-18",
+    "status": "offline-tool-prepared-not-run-with-original",
+    "document": "cloudflare/FASE5_REENVOLTURA_OFFLINE_Y_INTEGRIDAD_2026-11-18.md",
+    "originalBackupLocatedInLibrary": true,
+    "originalBackupSizeBytes": 22659,
+    "oldKeyLocatedInLibrary": true,
+    "oldKeySizeBytes": 180,
+    "rawByteMaterializationPermitted": false,
+    "offlineToolCreated": true,
+    "offlineToolUploadedToPrivateLibrary": true,
+    "offlineToolFilename": "BELLAQUITAS_REENVOLVER_RESPALDO_ANTIGUO_SIN_INSTALAR.html",
+    "onlineCallsFromTool": 0,
+    "algorithm": "AES-256-GCM",
+    "newKeyBits": 256,
+    "originalBackupSha256Check": true,
+    "syntheticRoundTripVerified": true,
+    "wrongKeyRejected": true,
+    "tamperRejected": true,
+    "wrongOriginalRejected": true,
+    "originalBackupActuallyRewrapped": false,
+    "newRecoveryKeyStoredOutsideChat": false,
+    "originalCompromisedKeyCryptographicallyRevocable": false,
+    "publicationBlocked": true
+  },
+  "phase6AccountIdentityIntegrity": {
+    "date": "2026-11-18",
+    "readOnlyQueries": true,
+    "originalProfiles": 6,
+    "stagingProfiles": 7,
+    "preprodProfiles": 7,
+    "originalGoogleIdentities": 6,
+    "preprodGoogleIdentities": 6,
+    "stagingAndPreprodEmailIdentities": 1,
+    "verifiedEmailCredentialsInDestination": 1,
+    "adminProfiles": 2,
+    "adminEmailCredentialsInDestination": 0,
+    "doorProfiles": 1,
+    "memberProfilesInDestination": 4,
+    "negativeOrInconsistentBalances": 0,
+    "duplicateMemberCodes": 0,
+    "orphanIdentityLinks": 0,
+    "orphanEmailCredentials": 0,
+    "duplicateProviderSubjects": 0,
+    "foreignKeyErrors": 0,
+    "points": 1999998,
+    "visits": 0,
+    "sourceProviderChangesSinceCsvUnknown": true
   }
 }
