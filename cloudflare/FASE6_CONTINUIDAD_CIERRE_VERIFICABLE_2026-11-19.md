@@ -59,3 +59,14 @@ F. QA físico acordado de iPhone, QR/puerta y 2 administradores reales **despué
 6. **Archivos de claves**: existe en Biblioteca un fichero que describe la clave original y la herramienta autónoma HTML de recifrado sin instalación; NO se ha encontrado por el buscador el fichero original `BELLAQUITAS_RESPALDO_CIFRADO_2026-11-16.bqbk` para recifrarlo directamente. La copia nueva `BELLAQUITAS_D1_COPIA_CIFRADA_2026-11-18.bqbk` está disponible para lectura de su contenedor y tiene checksum cifrado verificado, pero no prueba custodia offline de la clave privada. No copiar, leer ni publicar material privado de recuperación.
 
 **NO SE HAN CERRADO:** factura integral de Cloudflare, clave privada fuera de chat y reenvuelta, despliegue/medición CPU de API staging, congelación/delta del corte, DNS/callback Google y envío real Resend canónico. Dejar los flags bloqueados para evitar publicación insegura.
+
+## Protección DNS/Resend y consumo: comprobación ampliada del 19/11
+
+- Resend devuelve dominio `bellaquitas.fr` como `verified`, `sending=enabled`, `region=eu-west-1`. **Comparación de contenido DNS exacta** Resend `get_domain` vs Cloudflare `GET /dns_records`: 4/4 registros (DKIM TXT, SPF MX prioridad 10, SPF TXT, SPF CNAME) idénticos, sin copiar valor DKIM a GitHub.
+- Control del corte: `phase6-dns-fingerprints-20261119.json` conserva solo hashes SHA-256 de las 10 entradas de Cloudflare y nameservers requeridos, `test-phase6-dns-fingerprints.mjs` verifica 4 A, 2 CNAME, 1 MX y 3 TXT y que no se publican contenidos de registros.
+- Cloudflare GraphQL `workersInvocationsAdaptive`: **17.311 invocaciones observadas** el 19/11 en 7 grupos de estado/Worker frente a 100.000 diarias de Free; muestra de telemetría, NO medidor de facturación definitivo ni garantía sobre tráfico futuro.
+- Resend `get_usage` devuelve 3/3000 correos mensuales, 0/100 del día (cuotas), sin nuevos envíos. No se deduce de aquí la ausencia total de cuotas pagadas.
+- El benchmark GitHub Actions con Node WebCrypto sintético de PBKDF2 6×100000 iteraciones dura **107,212 ms wall** en Node 22.23.4 (job 135400295219). No es CPU de Cloudflare Worker; **justifica el perfilado real en Worker** antes de habilitar contraseñas email, sin reducir seguridad ni cambiar credenciales.
+- Las suites QA, seguridad y HTTP de fase 6 del commit `d85ce4e7fa47100e8e2d74863fff6698f818a4eb` terminaron correctamente. Los siguientes commits con DNS se auditan por su propio SHA, no heredan automáticamente success.
+
+Sigue bloqueada la certificación integral de facturación (HTTP 403) y la custodia de clave fuera del chat. No cambiar DNS ni afirmar cierre de fase 6.
