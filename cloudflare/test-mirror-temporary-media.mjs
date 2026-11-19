@@ -121,7 +121,8 @@ try{
   assert.equal(request.headers.get('Range'),range);
   for(const header of ['cookie','authorization','origin'])assert.equal(request.headers.get(header),null);
   return new Response(new Uint8Array(256),{status:206,headers:{
-   'Content-Range':'bytes 0-255/9072277','Content-Length':'256','Content-Type':'video/mp4'
+   'Content-Range':'bytes 0-255/9072277','Content-Length':'256','Content-Type':'video/mp4',
+   'Set-Cookie':'synthetic=should-not-leak; Path=/'
   }});
  };
  response=await mirrorRoute(req(STAGE,{headers:{
@@ -130,7 +131,8 @@ try{
  assert.equal(response.status,206);
  assert.equal(response.headers.get('content-range'),'bytes 0-255/9072277');
  assert.equal(response.headers.get('content-type'),'video/mp4');
- assert.equal(response.headers.get('cache-control'),'no-store');
+ assert.equal(response.headers.get('cache-control'),'public,max-age=86400',
+  'Vídeos originales públicos cacheables; ningún dato del socio se reenvía');
  assert.equal(response.headers.get('x-robots-tag'),'noindex, nofollow');
  assert.equal(response.headers.get('set-cookie'),null);
  assert.equal((await response.arrayBuffer()).byteLength,256);
