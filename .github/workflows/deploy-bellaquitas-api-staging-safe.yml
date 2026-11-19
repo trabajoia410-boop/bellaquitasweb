@@ -1,0 +1,169 @@
+name: Bellaquitas fase 6 — despliegue controlado SOLO staging
+
+on:
+  push:
+    branches:
+      - migracion/fase5-segura-20261114
+    paths:
+      - .github/workflows/deploy-bellaquitas-api-staging-safe.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bellaquitas-staging-api-safe-deploy
+  cancel-in-progress: false
+
+jobs:
+  staging-only:
+    if: github.repository == 'trabajoia410-boop/bellaquitasweb' && github.ref == 'refs/heads/migracion/fase5-segura-20261114'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Clonar exclusivamente rama de migración, sin token persistente
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Usar Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verificar prohibición de producción, seguridad, CPU y copia visual
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = "refs/heads/migracion/fase5-segura-20261114"
+          node cloudflare/check-release-gates.mjs --assert-blocked
+          node cloudflare/test-no-private-backup-leaks.mjs
+          node cloudflare/test-production-worker-options-gate.mjs
+          node cloudflare/test-preproduction-config.mjs
+          node cloudflare/test-free-cpu-policy.mjs
+          node cloudflare/verify-migration.mjs
+          node cloudflare/build-static-assets.mjs --require-logos
+          node cloudflare/test-original-logos-guard.mjs
+          node cloudflare/test-media-build-config.mjs
+          node cloudflare/test-media-qa-deploy.mjs
+      - name: Comprobar configuración inmutable del destino y credencial GitHub existente
+        id: verify
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: 7698bb24db010350ba4b02c36c0fbeb5
+        run: |
+          set -euo pipefail
+          echo "DEPLOY_QA=false" >> "$GITHUB_ENV"
+          if [ -z "${CLOUDFLARE_API_TOKEN:-}" ]; then
+            echo "::warning::No existe token privado Cloudflare en GitHub. Se conserva staging sin cambios y se bloquea esta prueba remota."
+            exit 0
+          fi
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          const account=process.env.CLOUDFLARE_ACCOUNT_ID,token=process.env.CLOUDFLARE_API_TOKEN;
+          const base='https://api.cloudflare.com/client/v4';
+          async function get(path){
+            const r=await fetch(base+path,{headers:{Authorization:'Bearer '+token},signal:AbortSignal.timeout(25000)});
+            const body=await r.json();
+            assert.ok(r.ok&&body.success,'Consulta Cloudflare denegada: HTTP '+r.status);
+            return body.result;
+          }
+          const worker='bellaquitas-api-staging';
+          const settings=await get('/accounts/'+account+'/workers/scripts/'+worker+'/settings');
+          const b=settings.bindings||[];
+          const val=n=>b.find(x=>x.type==='plain_text'&&x.name===n)?.text;
+          assert.equal(val('STAGING_MUTATIONS'),'disabled','Staging debe seguir sin mutaciones');
+          assert.equal(val('ALLOW_NEW_ACCOUNTS'),'no','No permitir nuevas cuentas');
+          assert.notEqual(val('SITE_MODE'),'production','No desplegar staging como producción');
+          const db=b.find(x=>x.name==='DB'&&x.type==='d1');
+          assert.ok(db&&(db.id||db.database_id)==='c7ada9c9-d397-4e22-b5b8-3fbd8d13e550',
+            'No utilizar D1 destino ni cambiar DB staging');
+          assert.ok(b.some(x=>x.type==='assets'&&x.name==='ASSETS'),'Falta Static Assets');
+          assert.ok(b.some(x=>x.type==='service'&&x.name==='VIDEO_QA_PROXY'&&x.service==='bellaquitas-media-qa'),
+            'Falta Service Binding multimedia');
+          for(const name of ['GOOGLE_CLIENT_ID','GOOGLE_CLIENT_SECRET','RESEND_API_KEY','PROVIDER_BROKER_KEY'])
+            assert.ok(b.some(x=>x.name===name),'No repetir ni borrar secreto '+name);
+          const zone=await get('/zones/2db206b4c20dd4a8a76692f7ddf0a70a');
+          assert.equal(zone.status,'pending','No cambiar DNS durante QA');
+          const routes=await get('/zones/2db206b4c20dd4a8a76692f7ddf0a70a/workers/routes');
+          assert.equal(routes.length,0,'Ninguna ruta pública permitida');
+          const deployments=await get('/accounts/'+account+'/workers/scripts/'+worker+'/deployments');
+          const latest=(deployments.deployments||deployments)[0];
+          const oldVersion=latest?.versions?.[0]?.version_id;
+          assert.match(oldVersion||'',/^[0-9a-f-]{36}$/i,'No hay versión segura para rollback');
+          const fs=await import('node:fs');
+          fs.appendFileSync(process.env.GITHUB_ENV,'OLD_QA_VERSION='+oldVersion+'\n');
+          console.log('Preflight Cloudflare real superado; credenciales antiguas presentes sin leer valores; rollback preparado.');
+          NODE
+          echo "DEPLOY_QA=true" >> "$GITHUB_ENV"
+      - name: Ensamblar y validar Wrangler sin publicar
+        if: env.DEPLOY_QA == 'true'
+        run: npx --yes wrangler@4.160.0 deploy --dry-run --config cloudflare/wrangler-api-staging.jsonc
+      - name: Desplegar únicamente API STAGING; conservar variables y secretos
+        if: env.DEPLOY_QA == 'true'
+        id: upload
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: 7698bb24db010350ba4b02c36c0fbeb5
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4.160.0 deploy --config cloudflare/wrangler-api-staging.jsonc
+      - name: Comprobar que todos los secretos continúan existentes
+        if: env.DEPLOY_QA == 'true' && steps.upload.outcome == 'success'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: 7698bb24db010350ba4b02c36c0fbeb5
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          const r=await fetch('https://api.cloudflare.com/client/v4/accounts/'+
+            process.env.CLOUDFLARE_ACCOUNT_ID+'/workers/scripts/bellaquitas-api-staging/settings',
+            {headers:{Authorization:'Bearer '+process.env.CLOUDFLARE_API_TOKEN}});
+          const data=await r.json();assert.ok(r.ok&&data.success);
+          const b=data.result?.bindings||[];
+          for(const name of ['GOOGLE_CLIENT_ID','GOOGLE_CLIENT_SECRET','RESEND_API_KEY','PROVIDER_BROKER_KEY'])
+            assert.ok(b.some(x=>x.name===name),'Se perdió secreto '+name);
+          const val=n=>b.find(x=>x.type==='plain_text'&&x.name===n)?.text;
+          assert.equal(val('STAGING_MUTATIONS'),'disabled');
+          assert.equal(val('ALLOW_NEW_ACCOUNTS'),'no');
+          assert.ok(b.some(x=>x.name==='DB'&&x.type==='d1'&&
+            (x.id||x.database_id)==='c7ada9c9-d397-4e22-b5b8-3fbd8d13e550'));
+          assert.ok(b.some(x=>x.type==='service'&&x.name==='VIDEO_QA_PROXY'&&x.service==='bellaquitas-media-qa'));
+          console.log('Staging estable: secretos preservados, DB aislada y puente de vídeo activo.');
+          NODE
+      - name: Pruebas HTTP reales en staging; sin login ni escrituras
+        if: env.DEPLOY_QA == 'true' && steps.upload.outcome == 'success'
+        run: |
+          set -euo pipefail
+          node cloudflare/test-stage-http-phase5.mjs
+          node cloudflare/test-staging-mirror-media-online.mjs
+          node cloudflare/check-release-gates.mjs --assert-blocked
+      - name: Revertir versión QA si falla cualquier paso posterior al despliegue
+        if: failure() && steps.upload.outcome == 'success' && env.OLD_QA_VERSION != ''
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: 7698bb24db010350ba4b02c36c0fbeb5
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          const uuid=process.env.OLD_QA_VERSION;
+          assert.match(uuid,/^[0-9a-f-]{36}$/i);
+          const body={strategy:'percentage',versions:[{version_id:uuid,percentage:100}],
+            annotations:{'workers/message':'Rollback automático: QA fase 6 no superó comprobaciones'}};
+          const r=await fetch('https://api.cloudflare.com/client/v4/accounts/'+
+            process.env.CLOUDFLARE_ACCOUNT_ID+'/workers/scripts/bellaquitas-api-staging/deployments',
+            {method:'POST',headers:{
+              Authorization:'Bearer '+process.env.CLOUDFLARE_API_TOKEN,
+              'Content-Type':'application/json'
+            },body:JSON.stringify(body)});
+          const data=await r.json();
+          assert.ok(r.ok&&data.success,'ALERTA: rollback staging falló, HTTP '+r.status);
+          console.log('QA staging revertido a la versión anterior verificada.');
+          NODE
+      - name: Reportar sin exponer secretos
+        if: always()
+        run: |
+          echo "## Fase 6 — QA staging controlada" >> "$GITHUB_STEP_SUMMARY"
+          echo "Worker único: bellaquitas-api-staging. No hay DNS, PR merge ni cambios en producción." >> "$GITHUB_STEP_SUMMARY"
+          if [ "${DEPLOY_QA:-false}" = "true" ]; then
+            echo "Credencial existente encontrada; consulta el estado de despliegue, HTTP 206 y rollback de esta ejecución." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "NO DESPLEGADO: credencial GitHub ausente o preflight no completado; staging conservado intacto." >> "$GITHUB_STEP_SUMMARY"
+          fi
