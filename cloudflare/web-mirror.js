@@ -133,6 +133,11 @@ function sameDesignJS(source){
    .replace(live,"const live = true; // Catálogos y sesiones de Cloudflare, sin Supabase.")
    .replace(anchor,select+"\n"+anchor);
 }
+// La copia visual es INMUTABLE por versión de Worker: transformar HTML y JS
+// una sola vez por isolate evita repetir regex/reemplazos para cada visita.
+// Los datos privados, sesiones y permisos siguen pasando siempre por la API.
+let cachedMirrorHtml = null;
+let cachedMirrorJs = null;
 export async function mirrorRoute(request,env){
  const url=new URL(request.url),path=url.pathname;
  if(path==="/espejo")return Response.redirect(url.origin+MIRROR_BASE,302);
@@ -235,14 +240,14 @@ export async function mirrorRoute(request,env){
  }
  try{
   if(path==="/espejo/"||path==="/espejo/index.html"){
-   const html=sameDesignHTML(await original("index.html"));
+   const html=cachedMirrorHtml??(cachedMirrorHtml=sameDesignHTML(await original("index.html")));
    return new Response(request.method==="HEAD"?null:html,{headers:{...PROTECTED,
     "Content-Type":"text/html; charset=utf-8",
     "Content-Security-Policy":"default-src 'self'; script-src 'self' https://challenges.cloudflare.com; script-src-attr 'none'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://challenges.cloudflare.com; frame-src 'self' blob: about: https://challenges.cloudflare.com; media-src 'self' blob: https:; worker-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests"}}); 
   }
   if(path==="/espejo/app.js"){
-   const originalCode=await original("app.js");
-   return js(sameDesignJS(originalCode));
+   const code=cachedMirrorJs??(cachedMirrorJs=sameDesignJS(await original("app.js")));
+   return js(code);
   }
   if(path==="/espejo/auth-ui.js"){
    return js(MIRROR_AUTH_UI);
