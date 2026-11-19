@@ -24,9 +24,23 @@ db.prepare("INSERT INTO profiles(id,name,role,member_code,points,lifetime_points
 db.prepare("INSERT INTO auth_identity_links(id,provider,provider_subject,profile_id) VALUES (?,'google','1234567890',?)").run('google-identity',adminId);
 db.prepare("INSERT INTO profiles(id,name,role,member_code,points,lifetime_points,visits) VALUES(?,'Admin ficticio B','admin','MBR-FAKE3',29,35,4)").run(adminId2);
 db.prepare("INSERT INTO auth_identity_links(id,provider,provider_subject,profile_id) VALUES (?,'google','0987654321',?)").run('google-identity-2',adminId2);
+let injectResetDatabaseFailure=false;
 const d1={prepare(sql){return {bind(...values){return {
+ sql,
  async first(){return db.prepare(sql).get(...values)||null;},
- async run(){return db.prepare(sql).run(...values);},
+ async run(){
+  if(injectResetDatabaseFailure && sql.includes("UPDATE auth_email_credentials SET password_hash=")){
+   injectResetDatabaseFailure=false;
+   throw Error("Synthetic database interruption before password reset");
+  }
+  const st=db.prepare(sql);
+  if(/\\bRETURNING\\b/i.test(sql)){
+   const results=st.all(...values);
+   return {success:true,meta:{changes:db.prepare("SELECT changes() AS n").get().n},results};
+  }
+  const meta=st.run(...values);
+  return {success:true,meta:{changes:meta.changes},results:[]};
+ },
  async all(){return {results:db.prepare(sql).all(...values)}}
 };}}},async batch(queries){
  db.exec('BEGIN');
@@ -138,6 +152,27 @@ try{
  const invalid=await source('/v1/auth/email/reset',{token:resetToken.slice(1),password:'NuevaClaveQA-123456789012345'});
  assert.equal(invalid.status,400,'Token manipulado no debe resetear la contraseña');
  const newPassword='NuevaClaveQA-123456789012345';
+ const originalHash=db.prepare("SELECT password_hash FROM auth_email_credentials WHERE email='admin-qa@example.test'").get().password_hash;
+ // Si PBKDF2/CPU falla, conservar el enlace y las sesiones.
+ const cryptoSubtle=globalThis.crypto.subtle;
+ const hadOwn=Object.prototype.hasOwnProperty.call(cryptoSubtle,'deriveBits');
+ const own=Object.getOwnPropertyDescriptor(cryptoSubtle,'deriveBits');
+ Object.defineProperty(cryptoSubtle,'deriveBits',{configurable:true,value:async()=>{throw Error('Synthetic CPU interruption')}});
+ try{
+  const failure=await source('/v1/auth/email/reset',{token:resetToken,password:newPassword});
+  assert.equal(failure.status,503,'Fallo de CPU/KDF no puede consumir el token');
+  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM auth_email_tokens WHERE purpose='reset'").get().n,1);
+  assert.equal(db.prepare("SELECT password_hash FROM auth_email_credentials WHERE email='admin-qa@example.test'").get().password_hash,originalHash);
+ }finally{
+  if(hadOwn)Object.defineProperty(cryptoSubtle,'deriveBits',own);
+  else delete cryptoSubtle.deriveBits;
+ }
+ // Si D1 falla a mitad de la transacción, todo debe revertirse.
+ injectResetDatabaseFailure=true;
+ const interrupted=await source('/v1/auth/email/reset',{token:resetToken,password:newPassword});
+ assert.equal(interrupted.status,503,'Rollback del reset incompleto');
+ assert.equal(db.prepare("SELECT COUNT(*) AS n FROM auth_email_tokens WHERE purpose='reset'").get().n,1);
+ assert.equal(db.prepare("SELECT password_hash FROM auth_email_credentials WHERE email='admin-qa@example.test'").get().password_hash,originalHash);
  const done=await source('/v1/auth/email/reset',{token:resetToken,password:newPassword});
  assert.equal(done.status,200,'Reset real del simulacro');
  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM auth_email_tokens WHERE purpose='reset'").get().n,0,'Token de reset de un solo uso');
@@ -156,5 +191,5 @@ try{
  assert.equal((await unknown.json()).message,bodyReset.message,'Respuesta indistinguible');
  assert.equal(sent.length,3,'No se envía email cuando cuenta ficticia es desconocida');
  assert.deepEqual(db.prepare('SELECT id,role,points,lifetime_points,visits FROM profiles ORDER BY id').all(),beforeReset,'Contraseñas no deben tocar puntos, roles ni visitas');
- console.log('OK: 2 administradores ficticios + recuperación por token único, revocación sesiones, separación de cuentas y puntos intactos. Sin red ni personas reales.');
+ console.log('OK: 2 administradores ficticios + reset transaccional tras fallo CPU/KDF y D1, token único, sesiones, separación de cuentas y puntos intactos. Sin red ni personas reales.');
 }finally{globalThis.fetch=priorFetch;db.close();}
