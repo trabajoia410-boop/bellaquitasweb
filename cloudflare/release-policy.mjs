@@ -75,7 +75,10 @@ export function evaluateRelease(gates) {
     cpu?.realStagingCpuP99Below10ms === true &&
     cpu?.realStagingCpuMaxBelow10ms === true &&
     cpu?.realStagingExceededCpuCountVerifiedZero === true &&
-    cpu?.realPasswordKdfAndVideo206Profiled === true;
+    cpu?.realPasswordKdfAndVideo206Profiled === true &&
+    // La medición de KDF debe demostrar compatibilidad real con 10 ms,
+    // no solo indicar que se ejecutó. Prueba 19/11: 136,424 ms -> false.
+    cpu?.realPasswordKdfFreeCompatible === true;
   const budget = gates.phase6ZeroSpend;
   const freeOnlyVerified =
     budget?.zoneFreeVerified === true &&
