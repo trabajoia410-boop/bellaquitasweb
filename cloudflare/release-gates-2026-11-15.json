@@ -198,6 +198,21 @@
       "billingHistoryReadAllowed": false,
       "cloudflareZoneFreeVerified": true,
       "note": "La ausencia de estos 5 recursos por API no prueba que no existan otros productos facturables. No marcar billingAuditComplete hasta inspección legítima con Billing Read."
+    },
+    "resendUsageAudit": {
+      "verifiedDate": "2026-11-19",
+      "source": "Connected Resend account get_usage API, read-only",
+      "emailSentToday": 0,
+      "dailyEmailLimit": 100,
+      "monthlyEmailsUsed": 3,
+      "monthlyEmailLimit": 3000,
+      "currentDomains": 1,
+      "domainLimit": 3,
+      "currentContacts": 0,
+      "contactLimit": 1000,
+      "apiRateLimitRequestsPerSecond": 10,
+      "paidSubscriptionNotIndependentlyAudited": true,
+      "note": "Datos reales de cuotas disponibles en Resend sin enviar correo. Es una cuota compatible con el plan Free, no una factura ni certificación de cobros futuros."
     }
   },
   "finalSignoff": {
