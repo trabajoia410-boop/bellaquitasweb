@@ -92,7 +92,7 @@
     "realStagingExceededCpuCountVerifiedZero": false,
     "realPasswordKdfAndVideo206Profiled": false,
     "publishBlockedUntilProfileVerified": true,
-    "note": "Cloudflare Worker multimedia QA se desplegó automáticamente 19/11 03:25Z y la versión nueva observa 40 solicitudes, P99 2,042ms y 0 errores. La versión anterior mostró 2.368 solicitudes, P99 222,455ms. No se sabe si caching estaba activo antes de los commits. API staging no redeployada; su P99 histórico sigue >10ms. No aprobar publicación.",
+    "note": "CPU historico de API staging identificado por tipo HTTP: 206 Range multimedia P99 280,65 ms; 200 P99 5,875 ms; 401 P99 4,041 ms. La optimización de video mediante Service Binding está comprometida en rama pero no desplegada en API staging. Control de 10ms sigue bloqueado hasta medir candidato real y KDF.",
     "graphqlMeasurement": {
       "date": "2026-11-19",
       "windowUtc": "2026-11-19T00:00:00Z to 2026-11-20T00:00:00Z",
@@ -138,6 +138,26 @@
       "previousVersionSuccessRequestsMeasured": 2368,
       "previousVersionCpuP99Us": 222455,
       "note": "Muestra nueva 40 peticiones sin error; versión staging API permanece antigua y no está acreditado máximo <10ms en todos los endpoints. Resultados entre versiones no garantizan misma mezcla de peticiones."
+    },
+    "httpStatusProfiling": {
+      "source": "Cloudflare GraphQL workersInvocationsAdaptive, 2026-11-19 UTC, bellaquitas-api-staging",
+      "status200": {
+        "requests": 5220,
+        "cpuP99Us": 5875
+      },
+      "status401": {
+        "requests": 972,
+        "cpuP99Us": 4041
+      },
+      "status206": {
+        "requests": 1082,
+        "cpuP99Us": 280650
+      },
+      "primaryHighCpuCause": "HTTP 206 multimedia byte ranges",
+      "proofIsHistorical": true,
+      "apiProxyOptimizationCommitted": true,
+      "apiProxyOptimizationLiveMeasured": false,
+      "caution": "El P99 de 200 y 401 inferior a 10 ms NO demuestra que rutas de contraseña login/reset fueron ejercitadas ni el CPU máximo."
     }
   },
   "phase6ZeroSpend": {
