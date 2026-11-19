@@ -24,6 +24,10 @@ const response = (body,status,contentType) => new Response(body,{status,headers:
 }});
 
 const BADGE=/<div role="status" aria-label="Copia de pruebas Cloudflare"[^>]*>PRUEBAS · SOLO LECTURA<\/div>/;
+// Solo HTML público inmutable: sin cookies, tokens, nombres ni contenido de D1.
+// La protección global de producción se ejecuta ANTES en el router principal.
+let cachedPublicHtml=null;
+let cachedPublicHeaders=null;
 
 export async function productionSiteRoute(request,env) {
   if(env?.SITE_MODE!=="production")return null;
@@ -78,6 +82,11 @@ export async function productionSiteRoute(request,env) {
 
   const page=SITE_ROOT.has(path);
   if(!page&&!ASSET_SOURCE.test(path)&&!SINGLE_ASSET.test(path))return null;
+  if(page&&cachedPublicHtml!==null){
+    return new Response(request.method==="HEAD"?null:cachedPublicHtml,{
+      status:200,headers:new Headers(cachedPublicHeaders)
+    });
+  }
   // No redireccionar: Safari y el renderer conservan la URL normal.
   const mirrorUrl=new URL(u);
   mirrorUrl.pathname=page?"/espejo/":"/espejo"+path;
@@ -103,5 +112,7 @@ export async function productionSiteRoute(request,env) {
   headers.set("X-Robots-Tag","index, follow");
   headers.set("Cache-Control","public,max-age=120");
   headers.delete("Content-Length");
+  cachedPublicHtml=html;
+  cachedPublicHeaders=[...headers.entries()];
   return new Response(html,{status:200,headers});
 }
