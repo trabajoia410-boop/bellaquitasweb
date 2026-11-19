@@ -93,8 +93,7 @@ jobs:
           console.log('Preflight Cloudflare real superado; credenciales antiguas presentes sin leer valores; rollback preparado.');
           NODE
           echo "DEPLOY_QA=true" >> "$GITHUB_ENV"
-      - name: Ensamblar y validar Wrangler sin publicar
-        if: env.DEPLOY_QA == 'true'
+      - name: Ensamblar y validar Wrangler sin publicar, incluso sin token
         run: npx --yes wrangler@4.160.0 deploy --dry-run --config cloudflare/wrangler-api-staging.jsonc
       - name: Desplegar únicamente API STAGING; conservar variables y secretos
         if: env.DEPLOY_QA == 'true'
