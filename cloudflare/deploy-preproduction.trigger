@@ -9,3 +9,6 @@ Google/Resend: Service Binding PROVIDER_BROKER al staging existente sin copiar s
 Prohibido: DNS, registrar, public routes, R2, main, privilegios de admin, sesiones, puntuaciones o publicaciones.
 Comprobaciones requeridas antes del deploy: test-preproduction-config, test-production-site-route, test-no-private-backup-leaks, check-release-gates --assert-blocked, build-static-assets --require-logos, Wrangler --dry-run.
 Control post-deploy: binding D1 correcto, secretos preservados, 0 rutas, 0 exposición workers.dev, cuentas/puntos iguales, CI.
+
+Revisión de defensa en profundidad 19/11/2026: código de preproducción actual incorpora la condición FREE_TIER_CPU_VERIFIED=yes SOLO para producción. El entorno privado mantiene FREE_TIER_CPU_VERIFIED=no y las otras cuatro puertas no; jamás habilitar producción aquí.
+CI del último commit de implementación: 3 de 3 flujos SUCCESS. Sin exposición Workers.dev, sin rutas DNS, sin modificaciones D1, sin paid plan.
