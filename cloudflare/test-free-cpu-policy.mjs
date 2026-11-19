@@ -121,7 +121,9 @@ const proxyEnv={
    return new Response(body,{status:206,headers:{
      "Content-Range":selected.replace("bytes=","bytes ") + "/25437525",
      "Content-Length":"11",
-     "Content-Type":"video/mp4"
+     "Content-Type":"video/mp4",
+     "Set-Cookie":"LEAK-SYNTHETIC=forbidden; Path=/",
+     "Cache-Control":"no-store"
    }});
  }}
 };
@@ -131,6 +133,10 @@ const videoFromApi=await mirrorRoute(new Request(qaHost+videoPath,{
 }),proxyEnv);
 assert.equal(videoFromApi.status,206,
  "Safari conserva 206 por Service Binding multimedia");
+assert.equal(videoFromApi.headers.get("Set-Cookie"),null,
+ "No publicar ni guardar una cookie de un Worker multimedia");
+assert.equal(videoFromApi.headers.get("Cache-Control"),"public,max-age=86400",
+ "Solo medios públicos originales y sin cookies pueden almacenarse en navegador");
 assert.deepEqual(new Uint8Array(await videoFromApi.arrayBuffer()),bytes.slice(0,11));
 assert.equal(mediaServiceCalls,1);
 assert.equal(assetsDirectCalls,0,
