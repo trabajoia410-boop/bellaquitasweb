@@ -92,7 +92,7 @@
     "realStagingExceededCpuCountVerifiedZero": false,
     "realPasswordKdfAndVideo206Profiled": false,
     "publishBlockedUntilProfileVerified": true,
-    "note": "Staging con 206 sin cookies y MP4 originales cacheables; 3/3 CI OK. Nueva versión: 1.178 éxitos, P99 4,462 ms y máximo observado 9,179 ms en GraphQL; aún falta verificar KDF de contraseña, cache fría y cobertura de rutas. Flags de publicación general siguen cerrados.",
+    "note": "Prueba real del 19/11: KDF PBKDF2 sintético idéntico al algoritmo de correo de la web consumió 136.424 ms CPU en Workers Free, >10 ms. Aunque HTTP 200 y vector correcto, es INCOMPATIBLE con nuestro requisito de 10 ms. Worker temporal borrado. Mantener FREE_TIER_CPU_VERIFIED=no, sin pago ni reducción criptográfica.",
     "graphqlMeasurement": {
       "date": "2026-11-19",
       "windowUtc": "2026-11-19T00:00:00Z to 2026-11-20T00:00:00Z",
@@ -276,6 +276,39 @@
         "cloudflare/test-kdf-workerd-local-only.mjs",
         "cloudflare/wrangler-kdf-local-only.jsonc"
       ]
+    },
+    "realPasswordKdfFreeCompatible": false,
+    "remoteSyntheticKdfProfile": {
+      "dateUtc": "2026-11-19",
+      "source": "Cloudflare GraphQL workersInvocationsAdaptive by scriptName, using live Free Workers account",
+      "probeScriptName": "bellaquitas-kdf-synthetic-once-20261119",
+      "probeWorkerVersion": "5e50ff70-f057-4fb8-9bcb-24942ee03cdc",
+      "requests": 1,
+      "successfulHttpResponse": 200,
+      "expectedSyntheticVectorMatches": true,
+      "passwordSource": "synthetic only",
+      "method": "six sequential WebCrypto PBKDF2 SHA-256 deriveBits stages of 100000 iterations, exactly as email-auth-routes.js",
+      "totalIterations": 600000,
+      "maxObservedCpuMs": 136.424,
+      "freeCpuLimitMs": 10,
+      "freeCpuCompatible": false,
+      "cpuMsAboveFreeLimit": 126.424,
+      "stillReturned200": true,
+      "interpretation": "A successful HTTP 200 does not imply Free 10 ms compliance. Cloudflare GraphQL measured 136.424 ms CPU on real synthetic KDF, above limit. Reject production password auth until a secure compatible design is verified.",
+      "cost": "Workers Free test invocation only; no database, account, R2, storage, provider, or real credential",
+      "cleanup": {
+        "workerSubdomainDisabled": true,
+        "workerDeleted": true,
+        "workerGoneFromCloudflareList": true,
+        "ephemeralGithubWorkflowDeleted": true,
+        "publicRoutesCreated": 0
+      },
+      "githubEvidence": {
+        "workflowRun": 44544536646,
+        "job": 135631451750,
+        "probePassed": true
+      },
+      "runtimeGateRemainsNo": true
     }
   },
   "phase6ZeroSpend": {
@@ -302,7 +335,19 @@
       "billingUsageReadAllowed": false,
       "billingHistoryReadAllowed": false,
       "cloudflareZoneFreeVerified": true,
-      "note": "Inventario API sin buckets R2/KV/Queues/Vectorize/DO y pantallazos del propietario aceptados como pruebas válidas de Workers Free y uso $0. Billing Read por API NO es requisito obligatorio; no solicitarlo de nuevo. Mantener productos no observados o cancelación R2 como elementos no verificados."
+      "note": "Inventario API sin buckets R2/KV/Queues/Vectorize/DO y pantallazos del propietario aceptados como pruebas válidas de Workers Free y uso $0. Billing Read por API NO es requisito obligatorio; no solicitarlo de nuevo. Mantener productos no observados o cancelación R2 como elementos no verificados.",
+      "workersCount": 8,
+      "workersFreeMaxScripts": 100,
+      "d1DatabaseCount": 7,
+      "d1FreeMaximumDatabases": 10,
+      "d1TotalDatabaseBytes": 1867776,
+      "d1FreeAccountStorageBytes": 5368709120,
+      "imagesCount": 0,
+      "workerCustomDomains": 0,
+      "workerPublicZoneRoutes": 0,
+      "observedOtherPaidProductsWithoutApiPermission": "unknown",
+      "dispatchAccess": "403 insufficient access",
+      "noR2Buckets": true
     },
     "resendUsageAudit": {
       "verifiedDate": "2026-11-19",
@@ -865,6 +910,16 @@
       "publicGitHubSecretsUploaded": false,
       "ownerActionDeferred": true,
       "productionReleaseGateMaintained": true
+    },
+    "legacyRewrapLimitations": {
+      "verifiedOn": "2026-11-19",
+      "offlineHtmlExists": true,
+      "wrapsOriginalEncryptedArchiveAndOriginalKeyInsideSecondCiphertext": true,
+      "cryptographicRotationOfOldArchiveKey": false,
+      "reason": "Rewrapping protects the newly wrapped copy but does not revoke the exposed old key or secure pre-existing copies of the old ciphertext. Do not describe it as actual key rotation.",
+      "legacyArchiveRawAccessDenied": true,
+      "newIndependentD1ArchiveConfirmed": true,
+      "doNotDeleteOldCopiesWithoutVerifiedCompleteness": true
     }
   },
   "phase6PrivateWorkerFailClosed": {
