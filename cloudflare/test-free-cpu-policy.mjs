@@ -8,6 +8,7 @@
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {evaluateRelease} from "./release-policy.mjs";
+import mediaWorker from "./media-qa-worker.js";
 
 const load = path => JSON.parse(readFileSync(path,"utf8"));
 const read = path => readFileSync(path,"utf8");
@@ -65,6 +66,37 @@ const email=read("cloudflare/email-auth-routes.js");
 assert.match(email,/const ITERATIONS=600000;/);
 assert.match(email,/for\(let phase=0;phase<6;phase\+\+\)/);
 assert.match(email,/iterations:100000/);
+
+// Solo rutas publicas media son cacheables (200); 206 de respaldo conserva
+// compatibilidad Safari si el Workers Cache todavia no esta en el edge.
+const bytes=Uint8Array.from({length:128},(_,i)=>i);
+let lastAssetRequest=null;
+const mediaEnv={ASSETS:{async fetch(r){
+ lastAssetRequest=r;
+ return new Response(bytes,{status:200,headers:{
+  "Content-Type":"video/mp4","Content-Length":String(bytes.byteLength)
+ }});
+}}};
+const base="https://qa.invalid/assets/bellaquitas%20fiesta%20portada.mp4";
+const publicMedia=await mediaWorker.fetch(new Request(base),mediaEnv);
+assert.equal(publicMedia.status,200);
+assert.match(publicMedia.headers.get("Cache-Control")||"",/public,max-age=/);
+assert.equal(publicMedia.headers.get("Set-Cookie"),null);
+assert.equal(publicMedia.headers.get("Content-Type"),"video/mp4");
+const range=await mediaWorker.fetch(new Request(base,{
+ headers:{Range:"bytes=7-17"}
+}),mediaEnv);
+assert.equal(range.status,206);
+assert.equal(range.headers.get("Content-Range"),"bytes 7-17/25437525");
+assert.equal(range.headers.get("Content-Length"),"11");
+assert.equal(lastAssetRequest.headers.get("Range"),null,
+ "No reenviar Range a ASSETS si ignora fragmentos");
+assert.deepEqual(new Uint8Array(await range.arrayBuffer()),bytes.slice(7,18));
+const health=await mediaWorker.fetch(new Request("https://qa.invalid/health"),mediaEnv);
+assert.equal(health.headers.get("Cache-Control"),"no-store");
+const hidden=await mediaWorker.fetch(new Request("https://qa.invalid/v1/auth/me"),mediaEnv);
+assert.equal(hidden.status,404);
+assert.equal(hidden.headers.get("Cache-Control"),"no-store");
 
 const gates=load("cloudflare/release-gates-2026-11-15.json");
 assert.equal(gates.phase6CpuSafety?.freeWorkersCpuLimitMs,10);
