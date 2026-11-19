@@ -16,6 +16,8 @@ assert.equal(data.phase5CoreOriginRestore?.changesToProduction, false);
 assert.equal(data.productionChangesAuthorized, false,
   'NO cambiar producción automáticamente desde una prueba CI');
 assert.equal(actual.readyForControlledPublication, false);
+assert.equal(actual.freeOnlyVerified,false,
+  'No afirmar facturación gratuita sin permiso de consultar suscripciones');
 // Cierre del TRABAJO TÉCNICO fase 5 distinto del permiso para publicar.
 assert.equal(data.phase5TechnicalHandoff?.status,
  'technical-delivery-complete-production-gates-blocked');
@@ -39,6 +41,11 @@ for (const key of REQUIRED_KEYS) fake.readiness[key].passed = true;
 for (const key of DEFERRED_OWNER_CHECKS) fake.readiness[key].passed = false;
 fake.productionChangesAuthorized = true;
 fake.finalSignoff.explicitProductionAuthorization = true;
+// Simular comprobación positiva de factura SOLO en memoria: nunca autorizar el sistema real.
+fake.phase6ZeroSpend.zoneFreeVerified = true;
+fake.phase6ZeroSpend.workersFreePlanVerified = true;
+fake.phase6ZeroSpend.otherPaidProductsAbsentVerified = true;
+fake.phase6ZeroSpend.billingAuditComplete = true;
 // Simulación: solo en un corte real se podrán marcar estas cuatro evidencias.
 fake.phase6PreproductionDb.realUsersImported = true;
 fake.phase6PreproductionDb.productionWorkerConfigured = true;
@@ -170,6 +177,14 @@ for(const requirement of [
  assert.equal(evaluateRelease(notReady).readyForControlledPublication,false,
   'No publicar a producción si falta '+requirement);
 }
+const noBudget = structuredClone(fake);
+noBudget.phase6ZeroSpend.workersFreePlanVerified = false;
+assert.equal(evaluateRelease(noBudget).readyForControlledPublication, false,
+  'Jamás publicar con plan Workers no verificado como gratuito');
+const noBudgetForDns = structuredClone(controlledDelegation);
+noBudgetForDns.phase6ZeroSpend.billingAuditComplete = false;
+assert.equal(evaluateRelease(noBudgetForDns).readyForNameserverDelegation, false,
+  'No delegar DNS con presupuesto cero sin verificación');
 const noConsent = structuredClone(fake);
 noConsent.productionChangesAuthorized = false;
 assert.equal(evaluateRelease(noConsent).readyForControlledPublication, false);
