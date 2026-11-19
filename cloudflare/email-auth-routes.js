@@ -228,15 +228,35 @@ async function reset(request,env,data){
  if(!emailDeliveryReady(env))return unavailable();
  if(typeof data.token!=="string"||!/^[A-Za-z0-9_-]{43}$/.test(data.token)||!validPassword(data.password))return bad("Enlace o contraseña inválidos");
  const tokenHash=await sha256(data.token);
+ // Un hash KDF puede fallar o agotar CPU: NO consumir el token antes
+ // de completar todo el trabajo criptográfico.
  const pending=await env.DB.prepare(
- "DELETE FROM auth_email_tokens WHERE token_hash=? AND purpose='reset' AND expires_at>unixepoch() RETURNING email"
+   "SELECT t.email FROM auth_email_tokens t "+
+   "JOIN auth_email_credentials c ON c.email=t.email "+
+   "WHERE t.token_hash=? AND t.purpose='reset' AND t.expires_at>unixepoch()"
  ).bind(tokenHash).first();
  if(!pending)return bad("Enlace caducado o utilizado");
  const salt=random(),hash=await passwordHash(data.password,salt);
- await env.DB.batch([
-   env.DB.prepare("UPDATE auth_email_credentials SET password_hash=?,password_salt=?,password_iterations=?,updated_at=unixepoch() WHERE email=?").bind(hash,salt,ITERATIONS,pending.email),
-   env.DB.prepare("DELETE FROM auth_sessions WHERE profile_id=(SELECT profile_id FROM auth_email_credentials WHERE email=?)").bind(pending.email)
+ // Una única transacción D1: actualizar hash, invalidar sesiones y
+ // consumir el token solo si sigue siendo válido. Rollback si algo falla.
+ // También impide que dos solicitudes simultáneas usen el mismo enlace.
+ const changes=await env.DB.batch([
+   env.DB.prepare(
+     "UPDATE auth_email_credentials SET password_hash=?,password_salt=?,password_iterations=?,updated_at=unixepoch() "+
+     "WHERE email=? AND EXISTS(SELECT 1 FROM auth_email_tokens "+
+     "WHERE token_hash=? AND purpose='reset' AND email=? AND expires_at>unixepoch())"
+   ).bind(hash,salt,ITERATIONS,pending.email,tokenHash,pending.email),
+   env.DB.prepare(
+     "DELETE FROM auth_sessions WHERE profile_id=(SELECT profile_id FROM auth_email_credentials WHERE email=?) "+
+     "AND EXISTS(SELECT 1 FROM auth_email_tokens "+
+     "WHERE token_hash=? AND purpose='reset' AND email=? AND expires_at>unixepoch())"
+   ).bind(pending.email,tokenHash,pending.email),
+   env.DB.prepare(
+     "DELETE FROM auth_email_tokens WHERE token_hash=? AND purpose='reset' AND email=? AND expires_at>unixepoch() RETURNING email"
+   ).bind(tokenHash,pending.email)
  ]);
+ if(changes?.[0]?.meta?.changes!==1||changes?.[2]?.results?.length!==1)
+   return bad("Enlace caducado o utilizado");
  return json({ok:true,message:"Contraseña actualizada. Vuelve a iniciar sesión."});
 }
 // Un administrador ya identificado con Google puede vincular SU correo, tras comprobar
