@@ -70,3 +70,13 @@ F. QA físico acordado de iPhone, QR/puerta y 2 administradores reales **despué
 - Las suites QA, seguridad y HTTP de fase 6 del commit `d85ce4e7fa47100e8e2d74863fff6698f818a4eb` terminaron correctamente. Los siguientes commits con DNS se auditan por su propio SHA, no heredan automáticamente success.
 
 Sigue bloqueada la certificación integral de facturación (HTTP 403) y la custodia de clave fuera del chat. No cambiar DNS ni afirmar cierre de fase 6.
+
+## Corrección basada en capturas previas — 19/11/2026
+
+El propietario ya entregó las fotografías de Cloudflare en los chats anteriores. **Se aceptan expresamente como evidencias documentales**; la API OAuth devuelve 403 para Billing Read de manera normal. No exigir otro permiso API ni volver a pedir las mismas fotos.
+
+- **Workers Free** confirmado por captura: precio 0 €/mes, cuota gratuita de 100.000 invocaciones diarias; no aparece Workers Paid contratado.
+- **D1 y R2** muestran **$0,00** de consumo facturable en las capturas. D1 permanece bajo sus límites gratuitos; API confirma **0 buckets de R2**.
+- **Suscripción R2**: la cancelación ya fue solicitada según historial; el panel la muestra activa hasta el **10/12/2026**. Se respeta su plazo, no se reactiva ni se contrata otro producto.
+- **Estado contable**: estas imágenes confirman lo visible, pero no prueban ausencia de cualquier cargo futuro o de suscripciones ajenas a lo fotografiado. El gate `otherPaidProductsAbsentVerified=false` y `billingAuditComplete=false` queda conservado solo por ese riesgo pendiente, **NO porque falte Billing Read**.
+- La comprobación de ausencia de cargos adicionales puede acreditarse con capturas/panel del titular y comprobación final de R2; **no depende de conseguir Billing Read API**.
