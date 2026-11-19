@@ -1,21 +1,6 @@
 name: Bellaquitas Fase 5 - prepublicacion y seguridad
 
 on:
-  push:
-    branches:
-      - migracion/fase5-segura-20261114
-    paths:
-      - 'cloudflare/**'
-      - '!cloudflare/**/*.md'
-      - 'assets/**'
-      - 'index.html'
-      - 'styles.css'
-      - 'app.js'
-      - 'locale-fr.js'
-      - 'robots.txt'
-      - 'sitemap.xml'
-      - 'manifest.webmanifest'
-      - '.github/workflows/bellaquitas-phase5-preflight.yml'
   pull_request:
     branches:
       - main
