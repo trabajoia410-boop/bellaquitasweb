@@ -60,6 +60,11 @@ const safeProduction={
 const noFreeBilling=await worker.fetch(preflight(),{...safeProduction,FREE_TIER_BILLING_VERIFIED:"no"});
 assert.equal(noFreeBilling.status,503,"La API debe cerrarse si el plan gratuito no está verificado");
 assert.equal(noFreeBilling.headers.get("Access-Control-Allow-Origin"),null);
+const noCpuEvidence=await worker.fetch(preflight(),{...safeProduction,FREE_TIER_CPU_VERIFIED:"no"});
+assert.equal(noCpuEvidence.status,503,
+ "Sin prueba de CPU bajo Workers Free, no se permite CORS ni autenticar usuarios");
+assert.equal(noCpuEvidence.headers.get("Access-Control-Allow-Origin"),null);
+assert.equal(noCpuEvidence.headers.get("Set-Cookie"),null);
 // La API final no autoriza al origen GitHub Pages ni a www a
 // inspeccionar respuestas con CORS; staging conserva esas excepciones.
 for(const origin of ["https://trabajoia410-boop.github.io","https://www.bellaquitas.fr","https://example.invalid"]){
