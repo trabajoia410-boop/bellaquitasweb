@@ -39,7 +39,9 @@ async function parseJson(request){
 // The stored scheme prefix prevents treating a chained digest as standard PBKDF2.
 // This stays staging-only pending independent security review.
 const HASH_SCHEME="pbkdf2-chain6-sha256-v1$";
-async function passwordHash(password,salt,iterations=ITERATIONS){
+// Exportar únicamente el cálculo puro para comparar Workerd LOCAL con el algoritmo real.
+// No crea rutas de red, ni exporta claves, credenciales o saldos.
+export async function passwordHash(password,salt,iterations=ITERATIONS){
  if(!validPassword(password)||iterations!==600000)throw Error("Invalid password parameters");
  const baseSalt=decode(salt);
  if(baseSalt.length!==32)throw Error("Invalid salt");
