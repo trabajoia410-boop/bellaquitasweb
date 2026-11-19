@@ -466,7 +466,22 @@
     "totalPendingZoneRecords": 10,
     "cloudflareZoneStatus": "pending",
     "registrarNameserversChanged": false,
-    "authEmailSendingFromPreproductionVerified": false
+    "authEmailSendingFromPreproductionVerified": false,
+    "directResendAuthoritativeParity": {
+      "checkedUTCDate": "2026-11-19",
+      "source": "Resend get_domain live (verified) vs Cloudflare zone pending DNS API live GET",
+      "verifiedResendDomain": true,
+      "sendingEnabled": true,
+      "requiredResendRecords": 4,
+      "exactRecordsMatching": 4,
+      "DKIM_TXT": true,
+      "MX": true,
+      "SPF_TXT": true,
+      "SPF_CNAME": true,
+      "dnsValuesStoredInRepository": false,
+      "canonicalDeliveryAfterNameserverDelegationTested": false,
+      "note": "Resend live DNS requirement names, values and MX priority matched Cloudflare pending zone. DNS has NOT been delegated. Canonical sending remains a post-delegation, pre-route test."
+    }
   },
   "phase6VisualAssetAudit": {
     "status": "original-jpg-committed-and-hash-verified",
