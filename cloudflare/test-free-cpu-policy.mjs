@@ -26,8 +26,12 @@ for(const file of files){
   file+": prohibido declarar límite CPU superior a Workers Free");
  assert.ok(!cfg.usage_model || cfg.usage_model!=="unbound",
   file+": prohibido forzar un modelo no auditado");
- assert.ok(!cfg.r2_buckets && !cfg.durable_objects && !cfg.queues,
-  file+": no introducir recursos adicionales de pago");
+ for(const k of ["r2_buckets","durable_objects","queues","kv_namespaces",
+  "vectorize","ai","images","hyperdrive","browser","workflows",
+  "analytics_engine_datasets","mtls_certificates"]){
+   assert.ok(!cfg[k] || (Array.isArray(cfg[k]) && cfg[k].length===0),
+     file+": prohibido añadir recursos facturables adicionales sin auditoría: "+k);
+  }
 }
 const apiCfg=load(files[0]);
 // Workers Cache se limita al Worker QA de medios públicos: jamás a endpoints
