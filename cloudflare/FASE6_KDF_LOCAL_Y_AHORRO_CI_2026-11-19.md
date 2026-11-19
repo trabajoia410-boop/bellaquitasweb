@@ -30,7 +30,11 @@ Se actualizaron los disparadores de tres workflows:
 - `.github/workflows/cloudflare-migration-qa.yml`: excluye documentación Markdown, conserva la auditoría de permisos y paridad.
 - `.github/workflows/qa-cloudflare-migration.yml`: ahora limita los `push` y `pull_request` a código, configuraciones, assets y cambios de workflow, excluyendo los informes `.md` de `cloudflare/`.
 
-El repositorio es **público** según la API GitHub. Reducir ejecuciones redundantes disminuye peticiones a los Workers de staging y trabajo innecesario en CI. No se atribuye ninguna cantidad de ahorro sin observarla.
+Además, se eliminaron los disparadores `push` duplicados de `bellaquitas-phase5-preflight.yml` y `qa-cloudflare-migration.yml`: mantienen `pull_request` y `workflow_dispatch`, así que no se pierde la auditoría del PR #3 ni la posibilidad de ejecutarla manualmente.
+
+**Matiz de GitHub Actions:** los filtros `paths` de `pull_request` pueden tener en cuenta el diff **completo** del PR, no solo el último commit. Por tanto, un informe `.md` añadido a este PR con cambios de código anteriores **puede activar** de nuevo la QA; no es correcto afirmar que las pruebas ya no se ejecutarán nunca por documentación.
+
+El repositorio es **público** según la API GitHub. Evitar el doble disparo push/PR disminuye trabajo redundante en CI y solicitudes a staging. No se atribuye ningún ahorro numérico sin medirlo.
 
 ## 3. Decisión de seguridad y gasto cero
 
