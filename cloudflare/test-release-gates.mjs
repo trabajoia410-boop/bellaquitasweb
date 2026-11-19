@@ -18,6 +18,8 @@ assert.equal(data.productionChangesAuthorized, false,
 assert.equal(actual.readyForControlledPublication, false);
 assert.equal(actual.freeOnlyVerified,false,
   'No afirmar facturación gratuita sin permiso de consultar suscripciones');
+assert.equal(actual.cpu10msVerified,false,
+  'No fingir que rutas KDF y vídeo ya están por debajo de 10ms sin perfil real');
 // Cierre del TRABAJO TÉCNICO fase 5 distinto del permiso para publicar.
 assert.equal(data.phase5TechnicalHandoff?.status,
  'technical-delivery-complete-production-gates-blocked');
@@ -46,6 +48,11 @@ fake.phase6ZeroSpend.zoneFreeVerified = true;
 fake.phase6ZeroSpend.workersFreePlanVerified = true;
 fake.phase6ZeroSpend.otherPaidProductsAbsentVerified = true;
 fake.phase6ZeroSpend.billingAuditComplete = true;
+// Datos sintéticos: el test simula la medición; no acredita CPU real de producción.
+fake.phase6CpuSafety.realStagingCpuP99Below10ms = true;
+fake.phase6CpuSafety.realStagingCpuMaxBelow10ms = true;
+fake.phase6CpuSafety.realStagingExceededCpuCountVerifiedZero = true;
+fake.phase6CpuSafety.realPasswordKdfAndVideo206Profiled = true;
 // Simulación: solo en un corte real se podrán marcar estas cuatro evidencias.
 fake.phase6PreproductionDb.realUsersImported = true;
 fake.phase6PreproductionDb.productionWorkerConfigured = true;
@@ -177,6 +184,14 @@ for(const requirement of [
  assert.equal(evaluateRelease(notReady).readyForControlledPublication,false,
   'No publicar a producción si falta '+requirement);
 }
+const noCpu = structuredClone(fake);
+noCpu.phase6CpuSafety.realStagingCpuMaxBelow10ms = false;
+assert.equal(evaluateRelease(noCpu).readyForControlledPublication,false,
+ 'Sin medición CPU no publicar, aunque DNS y presupuesto estén aprobados');
+const noCpuForDns=structuredClone(controlledDelegation);
+noCpuForDns.phase6CpuSafety.realPasswordKdfAndVideo206Profiled=false;
+assert.equal(evaluateRelease(noCpuForDns).readyForNameserverDelegation,false,
+ 'Sin prueba de CPU de KDF y vídeo no cambiar NS');
 const noBudget = structuredClone(fake);
 noBudget.phase6ZeroSpend.workersFreePlanVerified = false;
 assert.equal(evaluateRelease(noBudget).readyForControlledPublication, false,
