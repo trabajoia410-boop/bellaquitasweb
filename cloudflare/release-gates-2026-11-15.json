@@ -651,16 +651,16 @@
     "privateRotationOutsideChatConfirmed": false,
     "newD1ExportRequestedForBackup": true,
     "newD1ExportFileDurablyStored": false,
-    "newIndependentRecoveryKeyDelivered": false,
+    "newIndependentRecoveryKeyDelivered": true,
     "recoveryVerifiedWithNewKey": false,
     "authNativeBackupComplete": false,
     "blockReleaseUntilAllVerified": true,
-    "notes": "Biblioteca: backup bqbk JSON leído, se decodificó ciphertext AES-256-GCM y se recalculó SHA-256 de los 6.536 bytes cifrados, coincidente con sha256Encrypted. La clave privada sigue sin acreditar custodia offline; el recifrado legacy no está certificado. Nunca exponer claves ni contraseña en GitHub.",
+    "notes": "La copia D1 cifrada del 18/11 fue restaurada y sus bytes cifrados tienen checksum SHA-256 verificado. Clave privada RSA de recuperación entregada el 18/11 y custodia en ordenador confirmada explícitamente por el propietario el 19/11; NO pedirla ni subirla. Recifrado del respaldo antiguo 16/11 aún no certificado de forma separada.",
     "newIndependentEncryptedD1BackupCreated": true,
     "newIndependentD1BackupRestoredAndVerified": true,
     "independentEncryptedD1BackupDurablyStoredInPrivateLibrary": true,
     "independentEncryptedD1BackupSelfContained": true,
-    "privateRecoveryKeyStoredOfflineByOwnerVerified": false,
+    "privateRecoveryKeyStoredOfflineByOwnerVerified": true,
     "originalEncryptedBackupRotated": false,
     "originalEncryptedBackupLocatedInPersonalLibrary": true,
     "originalRecoveryKeyLocatedInPersonalLibrary": true,
@@ -679,6 +679,15 @@
       "verifiedEmails": 6,
       "nativePasswordHashesToTransfer": 0,
       "note": "6 Google account identifiers preserved in D1. No native password hashes in source; this does not certify offline private key custody or complete restoration of all authentication history and settings."
+    },
+    "ownerOfflineCustodyAttestation": {
+      "date": "2026-11-19",
+      "confirmation": "El propietario confirma explícitamente que ya guarda en su ordenador la clave privada de recuperación del respaldo D1 de 18/11/2026 y que este paso estaba hecho anteriormente.",
+      "evidenceType": "direct owner confirmation in migration phase 6 conversation",
+      "privateKeyContentsAccessed": false,
+      "recoveryKeyMustNotBeRequestedAgain": true,
+      "independentDecryptionWithOfflineFileNotReperformed": true,
+      "caveat": "La custodia en ordenador queda confirmada por su propietario. No confirma la rotación/recifrado del respaldo antiguo del 16/11."
     }
   },
   "phase6PrivateWorkerFailClosed": {
@@ -808,7 +817,7 @@
     "requiresOriginalProviderReconciliation": true,
     "requiresIndependentBackupCustody": true,
     "realOriginalProviderReconciliationComplete": false,
-    "backupPrivateKeyStoredOutsideChatVerified": false,
+    "backupPrivateKeyStoredOutsideChatVerified": true,
     "preproductionFlags": {
       "SITE_MODE": "preproduction",
       "PUBLISH_APPROVED": "no",
@@ -819,7 +828,8 @@
     "localBackupRestoreVerifiedNow": true,
     "testSecurityRun": "https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/44246262396",
     "testCloudflareRun": "https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/44246262386",
-    "testMigrationRun": "https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/44246262378"
+    "testMigrationRun": "https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/44246262378",
+    "backupPrivateKeyStoredOutsideChatEvidence": "Owner confirmation 2026-11-19; physical file contents not accessed by assistant"
   },
   "phase6HostFailClosed": {
     "date": "2026-11-18",
