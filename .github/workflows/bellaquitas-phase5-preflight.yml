@@ -78,6 +78,8 @@ jobs:
         run: node cloudflare/test-preproduction-config.mjs
       - name: Comprobar optimizaciones CPU 10 ms sin reducir seguridad ni mediatización 206
         run: node cloudflare/test-free-cpu-policy.mjs
+      - name: Medir KDF con valores sintéticos; solo aviso Node, no certificado Workers
+        run: node cloudflare/test-password-kdf-node-advisory.mjs
       - name: Verificar bloqueo de publicación antes de las pruebas pendientes
         run: node cloudflare/test-release-gates.mjs
 
