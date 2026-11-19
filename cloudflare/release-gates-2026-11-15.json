@@ -83,6 +83,17 @@
     "visits": 0,
     "notIncluded": "sin pg_dump íntegro auth, tokens o vídeos binarios; no equivale a copia completa de proveedor"
   },
+  "phase6CpuSafety": {
+    "freeWorkersCpuLimitMs": 10,
+    "nativeHardLimitDocumented": true,
+    "staticSnapshotOptimizationCommitted": true,
+    "realStagingCpuP99Below10ms": false,
+    "realStagingCpuMaxBelow10ms": false,
+    "realStagingExceededCpuCountVerifiedZero": false,
+    "realPasswordKdfAndVideo206Profiled": false,
+    "publishBlockedUntilProfileVerified": true,
+    "note": "Cloudflare Workers Free aplica 10 ms de CPU por invocación. Cero issues activas en staging/media no certifica percentiles ni máximos. Se ha cacheado el HTML y JS originales sin cambiar seguridad, puntos ni vídeos. Exigir métricas reales de rutas costosas antes del corte."
+  },
   "phase6ZeroSpend": {
     "zoneFreeVerified": true,
     "workersFreePlanVerified": true,
