@@ -171,9 +171,14 @@ assert.equal(gates.phase6CpuSafety?.realStagingCpuP99Below10ms,false);
 assert.equal(gates.phase6CpuSafety?.realStagingCpuMaxBelow10ms,false);
 assert.equal(gates.phase6CpuSafety?.realStagingExceededCpuCountVerifiedZero,false);
 assert.equal(gates.phase6CpuSafety?.realPasswordKdfAndVideo206Profiled,false);
+assert.equal(gates.phase6CpuSafety?.realPasswordKdfFreeCompatible,false);
+assert.ok(gates.phase6CpuSafety?.remoteSyntheticKdfProfile?.maxObservedCpuMs > 10,
+ "La medición REAL de KDF por Cloudflare supera los 10ms de Workers Free");
+assert.equal(gates.phase6CpuSafety?.remoteSyntheticKdfProfile?.cleanup?.workerDeleted,true,
+ "El Worker de prueba temporal no debe quedar activo");
 const status=evaluateRelease(gates);
 assert.equal(status.cpu10msVerified,false);
 assert.equal(status.readyForNameserverDelegation,false);
 assert.equal(status.readyForControlledPublication,false);
 
-console.log("OK: Workers Free 10ms por diseño, caché estática, streaming Range, KDF intacto y puertas CPU cerradas. Profiling real pendiente.");
+console.log("OK: Workers Free 10ms por diseño, caché estática, streaming Range, KDF intacto y puertas CPU cerradas. Perfil KDF real demuestra CPU demasiado alta; publicación bloqueada.");
