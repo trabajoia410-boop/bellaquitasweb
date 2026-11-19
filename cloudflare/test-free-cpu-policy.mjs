@@ -46,6 +46,7 @@ assert.ok(apiCfg.cache?.enabled!==true,
 assert.equal(apiCfg.vars?.PUBLISH_APPROVED,"no");
 assert.equal(apiCfg.vars?.BACKUP_KEY_CUSTODIED,"no");
 assert.equal(apiCfg.vars?.FREE_TIER_BILLING_VERIFIED,"no");
+assert.equal(apiCfg.vars?.FREE_TIER_CPU_VERIFIED,"no");
 assert.equal(apiCfg.vars?.SITE_MODE,"preproduction");
 assert.equal(apiCfg.workers_dev,false);
 
