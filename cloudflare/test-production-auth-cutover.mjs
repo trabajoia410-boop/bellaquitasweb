@@ -48,7 +48,8 @@ for(const [key,bad] of [
  ["PROVIDER_BROKER_KEY",""],
  ["PROVIDER_BROKER",null],
  ["FINAL_ORIGIN_RECONCILED","no"],
- ["BACKUP_KEY_CUSTODIED","no"]
+ ["BACKUP_KEY_CUSTODIED","no"],
+ ["FREE_TIER_BILLING_VERIFIED","no"]
 ]){
  const altered={...bridged,[key]:bad};
  assert.equal(productionConfigurationReady(altered),false,
@@ -75,6 +76,7 @@ for(const [key,bad] of [
  ["PUBLISH_APPROVED","no"],
  ["FINAL_ORIGIN_RECONCILED","no"],
  ["BACKUP_KEY_CUSTODIED","no"],
+ ["FREE_TIER_BILLING_VERIFIED","no"],
  ["TURNSTILE_EXPECTED_HOSTNAME","example.invalid"],
  ["DB",null],
  ["ASSETS",null]
