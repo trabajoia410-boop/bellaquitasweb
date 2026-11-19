@@ -53,6 +53,7 @@ fake.phase6CpuSafety.realStagingCpuP99Below10ms = true;
 fake.phase6CpuSafety.realStagingCpuMaxBelow10ms = true;
 fake.phase6CpuSafety.realStagingExceededCpuCountVerifiedZero = true;
 fake.phase6CpuSafety.realPasswordKdfAndVideo206Profiled = true;
+fake.phase6CpuSafety.realPasswordKdfFreeCompatible = true;
 // Simulación: solo en un corte real se podrán marcar estas cuatro evidencias.
 fake.phase6PreproductionDb.realUsersImported = true;
 fake.phase6PreproductionDb.productionWorkerConfigured = true;
@@ -188,6 +189,10 @@ const noCpu = structuredClone(fake);
 noCpu.phase6CpuSafety.realStagingCpuMaxBelow10ms = false;
 assert.equal(evaluateRelease(noCpu).readyForControlledPublication,false,
  'Sin medición CPU no publicar, aunque DNS y presupuesto estén aprobados');
+const kdfOverBudget=structuredClone(fake);
+kdfOverBudget.phase6CpuSafety.realPasswordKdfFreeCompatible=false;
+assert.equal(evaluateRelease(kdfOverBudget).readyForControlledPublication,false,
+  "Aunque se marquen todos los demás gates, un KDF de 136ms NO puede aprobar Workers Free");
 const noCpuForDns=structuredClone(controlledDelegation);
 noCpuForDns.phase6CpuSafety.realPasswordKdfAndVideo206Profiled=false;
 assert.equal(evaluateRelease(noCpuForDns).readyForNameserverDelegation,false,
