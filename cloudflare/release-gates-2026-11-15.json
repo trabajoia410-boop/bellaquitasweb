@@ -92,7 +92,7 @@
     "realStagingExceededCpuCountVerifiedZero": false,
     "realPasswordKdfAndVideo206Profiled": false,
     "publishBlockedUntilProfileVerified": true,
-    "note": "CPU real 19/11 supera 10ms en P95/P99 para API staging y media QA. La caché del multimedia ya estaba habilitada en Cloudflare. Se ha preparado en GitHub priorizar el proxy multimedia de Service Binding para MP4 de staging, sin cookies ni permisos D1. Aún no desplegado ni medido. Mantener publicación y DNS bloqueados.",
+    "note": "Cloudflare Worker multimedia QA se desplegó automáticamente 19/11 03:25Z y la versión nueva observa 40 solicitudes, P99 2,042ms y 0 errores. La versión anterior mostró 2.368 solicitudes, P99 222,455ms. No se sabe si caching estaba activo antes de los commits. API staging no redeployada; su P99 histórico sigue >10ms. No aprobar publicación.",
     "graphqlMeasurement": {
       "date": "2026-11-19",
       "windowUtc": "2026-11-19T00:00:00Z to 2026-11-20T00:00:00Z",
@@ -120,10 +120,25 @@
       },
       "note": "P99 del día 19 supera 10.000 µs. Caching multimedia ya figuraba enabled=true en el Worker desplegado; cache explícito en repo no prueba mejora por sí mismo. No existen aún perfiles por ruta ni un benchmark sobre código nuevo."
     },
-    "mediaCacheAlreadyEnabledInCloudflare": true,
     "mediaCacheDeclaredInRepository": true,
     "stagingVideoServiceBindingOptimizationCommitted": true,
-    "stagingVideoServiceBindingOptimizationDeployed": false
+    "stagingVideoServiceBindingOptimizationDeployed": false,
+    "mediaCacheObservedEnabledAfterQaDeployment": true,
+    "mediaCacheEnabledPriorToNov19Change": "not_verified",
+    "mediaQaAutoDeployment": {
+      "deployedAtUTC": "2026-11-19T03:25:24.602191Z",
+      "deployedVersion": "9589f76c-b33c-440d-9547-ad6aa5032bcd",
+      "previousVersion": "774cd03e-53b3-4ef9-b78c-fa7909c09757",
+      "source": "Cloudflare Worker deployments API and GraphQL worker metrics",
+      "currentVersionSuccessRequestsMeasured": 40,
+      "currentVersionCpuP50Us": 591,
+      "currentVersionCpuP95Us": 1376,
+      "currentVersionCpuP99Us": 2042,
+      "currentVersionReportedErrors": 0,
+      "previousVersionSuccessRequestsMeasured": 2368,
+      "previousVersionCpuP99Us": 222455,
+      "note": "Muestra nueva 40 peticiones sin error; versión staging API permanece antigua y no está acreditado máximo <10ms en todos los endpoints. Resultados entre versiones no garantizan misma mezcla de peticiones."
+    }
   },
   "phase6ZeroSpend": {
     "zoneFreeVerified": true,
