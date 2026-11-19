@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 import {readFileSync,statSync} from 'node:fs';
 const files=execFileSync('git',['ls-files','-z'],{encoding:'utf8'}).split('\0').filter(Boolean);
-const forbiddenPath=/(^|\/)(?:\.env(?:\.[^/]+)?|[^/]+\.(?:pem|p12|pfx|key|kdbx|sqlite|sqlite3|db|db-journal|db-wal|age|gpg|asc)|[^/]*(?:private[-_]?key|clave[-_]?privada|backup[-_]?encrypted|respaldo[-_]?cifrado)[^/]*\.(?:zip|tar|gz|json))$/i;
+const forbiddenPath=/(^|\/)(?:\.env(?:\.[^/]+)?|[^/]+\.(?:pem|p12|pfx|key|kdbx|sqlite|sqlite3|db|db-journal|db-wal|age|gpg|asc|bqbk)|[^/]*(?:private[-_]?key|clave[-_]?privada|clave[-_]?recuperacion|recovery[-_]?key|backup[-_]?encrypted|respaldo[-_]?cifrado)[^/]*\.(?:zip|tar|gz|json|txt)|[^/]*(?:backup|respaldo|recuperacion)[^/]*\.(?:sql|sqlite|zip|csv))$/i;
 const begin=/-----BEGIN\s+(?:RSA\s+|EC\s+|OPENSSH\s+|ENCRYPTED\s+|PGP\s+)?PRIVATE\s+KEY(?:\s+BLOCK)?-----/;
 const verified=[];
 for(const path of files){
