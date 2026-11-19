@@ -16,7 +16,9 @@ export function productionConfigurationReady(env) {
   if (!env || env.SITE_MODE !== "production" ||
       env.PUBLISH_APPROVED !== "yes" ||
       env.FINAL_ORIGIN_RECONCILED !== "yes" ||
-      env.BACKUP_KEY_CUSTODIED !== "yes") return false;
+      env.BACKUP_KEY_CUSTODIED !== "yes" ||
+      // Exigir verificación real de la facturación: zona Free no demuestra Workers Free.
+      env.FREE_TIER_BILLING_VERIFIED !== "yes") return false;
   const has = (key, minimum) =>
     typeof env[key] === "string" && env[key].length >= minimum;
   const expectedFlags = {
