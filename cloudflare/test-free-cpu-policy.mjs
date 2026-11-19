@@ -109,8 +109,13 @@ const proxyEnv={
  ASSETS:{async fetch(){assetsDirectCalls++;return new Response(null,{status:503});}},
  VIDEO_QA_PROXY:{async fetch(req){
    mediaServiceCalls++;requestSeen=req;
-   return new Response(bytes.slice(0,11),{status:206,headers:{
-     "Content-Range":"bytes 0-10/25437525",
+   const selected=req.headers.get("Range");
+   const eof=selected==="bytes=25437514-25437524";
+   assert.ok(eof||selected==="bytes=0-10",
+     "No se pueden pedir rangos de vídeo no previstos en esta prueba");
+   const body=eof?Uint8Array.from({length:11},(_,i)=>255-i):bytes.slice(0,11);
+   return new Response(body,{status:206,headers:{
+     "Content-Range":selected.replace("bytes=","bytes ") + "/25437525",
      "Content-Length":"11",
      "Content-Type":"video/mp4"
    }});
@@ -127,6 +132,25 @@ assert.equal(mediaServiceCalls,1);
 assert.equal(assetsDirectCalls,0,
  "La API staging no debe escanear MP4 si existe un proxy cacheable");
 assert.equal(requestSeen.headers.get("Range"),"bytes=0-10");
+assert.equal(requestSeen.headers.get("Cookie"),null);
+assert.equal(requestSeen.headers.get("Authorization"),null);
+
+// Regresión del coste: cerca del EOF no permitir escanear >25 MB desde
+// la API con las identidades y la base D1. Solo un GET interno multimedia.
+const eofRange="bytes=25437514-25437524";
+const eof=await mirrorRoute(new Request(qaHost+videoPath,{
+ headers:{Range:eofRange,Cookie:"member=synthetic",
+ Authorization:"Bearer private-synthetic"}
+}),proxyEnv);
+assert.equal(eof.status,206);
+assert.equal(eof.headers.get("Content-Range"),"bytes 25437514-25437524/25437525");
+assert.equal(eof.headers.get("Content-Length"),"11");
+assert.deepEqual(new Uint8Array(await eof.arrayBuffer()),
+ Uint8Array.from({length:11},(_,i)=>255-i));
+assert.equal(mediaServiceCalls,2);
+assert.equal(assetsDirectCalls,0,
+ "La API no puede escanear el vídeo hasta el final para responder 206");
+assert.equal(requestSeen.headers.get("Range"),eofRange);
 assert.equal(requestSeen.headers.get("Cookie"),null);
 assert.equal(requestSeen.headers.get("Authorization"),null);
 
