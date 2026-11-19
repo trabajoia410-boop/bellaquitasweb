@@ -9,6 +9,7 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {evaluateRelease} from "./release-policy.mjs";
 import mediaWorker from "./media-qa-worker.js";
+import {mirrorRoute} from "./web-mirror.js";
 
 const load = path => JSON.parse(readFileSync(path,"utf8"));
 const read = path => readFileSync(path,"utf8");
@@ -97,6 +98,37 @@ assert.equal(health.headers.get("Cache-Control"),"no-store");
 const hidden=await mediaWorker.fetch(new Request("https://qa.invalid/v1/auth/me"),mediaEnv);
 assert.equal(hidden.status,404);
 assert.equal(hidden.headers.get("Cache-Control"),"no-store");
+
+// Los MP4 públicos de staging usan el Service Binding multimedia; no se
+// vuelven a recortar desde la API con permisos sobre D1. Las cookies no viajan.
+const qaHost="https://bellaquitas-api-staging.bellaquitas-fest-410.workers.dev";
+const videoPath="/espejo/assets/bellaquitas%20fiesta%20portada.mp4";
+let mediaServiceCalls=0,assetsDirectCalls=0,requestSeen=null;
+const proxyEnv={
+ SITE_MODE:"staging",STAGING_MUTATIONS:"disabled",ALLOW_NEW_ACCOUNTS:"no",
+ ASSETS:{async fetch(){assetsDirectCalls++;return new Response(null,{status:503});}},
+ VIDEO_QA_PROXY:{async fetch(req){
+   mediaServiceCalls++;requestSeen=req;
+   return new Response(bytes.slice(0,11),{status:206,headers:{
+     "Content-Range":"bytes 0-10/25437525",
+     "Content-Length":"11",
+     "Content-Type":"video/mp4"
+   }});
+ }}
+};
+const videoFromApi=await mirrorRoute(new Request(qaHost+videoPath,{
+ headers:{Range:"bytes=0-10",Cookie:"private=synthetic",
+ Authorization:"Bearer synthetic"}
+}),proxyEnv);
+assert.equal(videoFromApi.status,206,
+ "Safari conserva 206 por Service Binding multimedia");
+assert.deepEqual(new Uint8Array(await videoFromApi.arrayBuffer()),bytes.slice(0,11));
+assert.equal(mediaServiceCalls,1);
+assert.equal(assetsDirectCalls,0,
+ "La API staging no debe escanear MP4 si existe un proxy cacheable");
+assert.equal(requestSeen.headers.get("Range"),"bytes=0-10");
+assert.equal(requestSeen.headers.get("Cookie"),null);
+assert.equal(requestSeen.headers.get("Authorization"),null);
 
 const gates=load("cloudflare/release-gates-2026-11-15.json");
 assert.equal(gates.phase6CpuSafety?.freeWorkersCpuLimitMs,10);
