@@ -227,6 +227,30 @@
       "maxBelow10msInObservedSample": true,
       "maxCpuVerifiedForAllRoutes": false,
       "interpretation": "El máximo observado en telemetría de esta muestra es 9,179 ms, no demuestra la máxima CPU bajo cualquier carga/ruta futura."
+    },
+    "productionRuntimeCpuGuard": {
+      "releaseFlag": "FREE_TIER_CPU_VERIFIED",
+      "requiredValueToServeProduction": "yes",
+      "currentPrivateWorkerValue": "no",
+      "safeByDefault": true,
+      "checkedOn": "2026-11-19",
+      "privateWorkerDeployment": {
+        "buildId": "bb024188-d3da-49f5-a20b-8b322345914b",
+        "buildOutcome": "success",
+        "version": "2bf4e735-87f9-4ba0-97dc-92bbd4383802",
+        "deployedAt": "2026-11-19T10:11:34.261384Z",
+        "privateSubdomainEnabled": false,
+        "privatePreviewEnabled": false,
+        "publicRoutes": 0,
+        "siteMode": "preproduction"
+      },
+      "configSource": "cloudflare/production-auth-readiness.js; cloudflare/wrangler-api-preproduccion.jsonc",
+      "tests": "test-production-auth-cutover.mjs, test-production-worker-options-gate.mjs, test-free-cpu-policy.mjs, test-preproduction-config.mjs",
+      "noSecretsDuplicated": true,
+      "noProductionChanges": true,
+      "noAccountWrites": true,
+      "verifiedBy": "Cloudflare API GET Worker settings, deployments, bindings, zone routes, D1 SELECT",
+      "cpuProfileComplete": false
     }
   },
   "phase6ZeroSpend": {
@@ -300,6 +324,21 @@
       "noR2BucketsConfirmedByApi": true,
       "scope": "Fotografías de panel Cloudflare ya facilitadas por el propietario en chats de fase 5/6, contrastadas con consultas API de inventario. No pedir capturas repetidas.",
       "limits": "La imagen acredita el plan Workers Free y cargos mostrados de los servicios retratados, no una garantía sobre cualquier otro servicio o cargo futuro."
+    },
+    "latestReadOnlyUsageSnapshot": {
+      "dateUTC": "2026-11-19",
+      "source": "Cloudflare GraphQL workersInvocationsAdaptive by scriptName and status",
+      "observedRequests": 26662,
+      "freeRequestLimit": 100000,
+      "quotaRatioApprox": 0.26662,
+      "belowLimitAtObservation": true,
+      "notRealTimeBillingCounter": true,
+      "noFutureCostGuarantee": true,
+      "resendUsageDaily": "0/100",
+      "resendUsageMonthly": "3/3000",
+      "r2Buckets": 0,
+      "confirmedNoPaidProducts": false,
+      "billingAuditComplete": false
     }
   },
   "finalSignoff": {
