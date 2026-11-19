@@ -65,6 +65,15 @@ export function evaluateRelease(gates) {
   );
   const authorized = gates.productionChangesAuthorized === true &&
     gates.finalSignoff?.explicitProductionAuthorization === true;
+  // Presupuesto obligatorio de 0 EUR: la zona Free NO certifica que la
+  // suscripción Workers ni otros productos de la cuenta sean gratuitos.
+  // Nunca permitir delegar/publicar hasta obtener evidencia de facturación.
+  const budget = gates.phase6ZeroSpend;
+  const freeOnlyVerified =
+    budget?.zoneFreeVerified === true &&
+    budget?.workersFreePlanVerified === true &&
+    budget?.otherPaidProductsAbsentVerified === true &&
+    budget?.billingAuditComplete === true;
 
   // El propietario probará físicamente ambos accesos admin DESPUÉS de
   // publicar. Pero hay que demostrar ANTES que OAuth, reautenticación,
@@ -157,7 +166,7 @@ export function evaluateRelease(gates) {
   // Esta fase solo habilitaría (tras firma expresa) copiar la delegación
   // exacta de Hostinger a Cloudflare SIN añadir rutas ni cambiar el A/www.
   const readyForNameserverDelegation =
-    authorized && pendingPrepublication.length === 0 &&
+    authorized && freeOnlyVerified && pendingPrepublication.length === 0 &&
     adminTechnologyReady && targetPreDnsReady && dnsRecordsPrepared &&
     d?.zoneStatus === 'pending' &&
     d?.registrarNameserversChanged === false;
@@ -172,10 +181,11 @@ export function evaluateRelease(gates) {
   // La autorización nunca basta sin respaldo, credenciales recuperables,
   // integridad de datos y entorno final realmente preparado.
   const readyForControlledPublication =
-    authorized && pendingPrepublication.length === 0 &&
+    authorized && freeOnlyVerified && pendingPrepublication.length === 0 &&
     adminTechnologyReady && targetReady;
   return {
     authorized,
+    freeOnlyVerified,
     passed: REQUIRED_KEYS.length - pending.length,
     total: REQUIRED_KEYS.length,
     pending,
