@@ -213,6 +213,22 @@
       "apiRateLimitRequestsPerSecond": 10,
       "paidSubscriptionNotIndependentlyAudited": true,
       "note": "Datos reales de cuotas disponibles en Resend sin enviar correo. Es una cuota compatible con el plan Free, no una factura ni certificación de cobros futuros."
+    },
+    "workersGraphqlDailyUsage": {
+      "dateUTC": "2026-11-19",
+      "source": "Cloudflare GraphQL workersInvocationsAdaptive, all scriptName/status groups, read-only",
+      "observedRequests": 17311,
+      "freePlanDailyRequestLimit": 100000,
+      "scriptGroups": 7,
+      "accountAggregateOnlyForQueriedDataset": true,
+      "breakdown": {
+        "bellaquitas-api-staging": 12017,
+        "bellaquitas-api-qa": 1354,
+        "bellaquitas-device-qa": 681,
+        "bellaquitas-admin-visual-preview": 669,
+        "bellaquitas-media-qa": 2590
+      },
+      "warning": "Snapshot de métricas, no contador exacto de facturación. No garantiza ausencia de picos futuros ni habilita Workers Paid. No cambia el gate de Billing Read."
     }
   },
   "finalSignoff": {
