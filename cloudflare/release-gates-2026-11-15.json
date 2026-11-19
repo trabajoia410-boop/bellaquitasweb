@@ -178,7 +178,7 @@
     "workersFreePlanVerified": true,
     "otherPaidProductsAbsentVerified": false,
     "billingAuditComplete": false,
-    "reason": "Workers Free confirmado por captura del propietario (19/11). La misma vista presenta R2 Plan en Almacenamiento y bases de datos con cancelación futura (10/12/2026, según historial y panel). Uso facturable mostrado 0 en columnas de consumo facturable, pero no se han auditado todos los productos, facturas ni consumo futuro. Mantener presupuesto cero y DNS/producción bloqueados hasta certeza de servicios sin gastos.",
+    "reason": "Capturas YA RECIBIDAS y aceptadas: Workers Free 0 €/mes; D1/R2 consumo facturable $0; R2 cancelación programada hasta 10/12/2026 y 0 buckets. NO solicitar de nuevo Billing Read ni las mismas fotografías: la API OAuth no tiene ese permiso y no es condición técnica obligatoria. La única parte no certificada es la ausencia de otros cargos no mostrados y cierre administrativo efectivo de R2. Mantener el control de gasto cero sin forzar flags.",
     "workersFreePlanEvidence": "Captura del panel Cloudflare aportada por el propietario el 19/11/2026: Suscripciones > Workers Free, plan 0/mes; no se muestra Workers Paid.",
     "readOnlyServiceInventory": {
       "verifiedDate": "2026-11-19",
@@ -197,7 +197,7 @@
       "billingUsageReadAllowed": false,
       "billingHistoryReadAllowed": false,
       "cloudflareZoneFreeVerified": true,
-      "note": "La ausencia de estos 5 recursos por API no prueba que no existan otros productos facturables. No marcar billingAuditComplete hasta inspección legítima con Billing Read."
+      "note": "Inventario API sin buckets R2/KV/Queues/Vectorize/DO y pantallazos del propietario aceptados como pruebas válidas de Workers Free y uso $0. Billing Read por API NO es requisito obligatorio; no solicitarlo de nuevo. Mantener productos no observados o cancelación R2 como elementos no verificados."
     },
     "resendUsageAudit": {
       "verifiedDate": "2026-11-19",
@@ -228,7 +228,22 @@
         "bellaquitas-admin-visual-preview": 669,
         "bellaquitas-media-qa": 2590
       },
-      "warning": "Snapshot de métricas, no contador exacto de facturación. No garantiza ausencia de picos futuros ni habilita Workers Paid. No cambia el gate de Billing Read."
+      "warning": "Instantánea de telemetría; no es contador exacto de facturación ni predice picos. Workers Free y facturable $0 ya están acreditados mediante capturas del propietario, sin depender de Billing Read."
+    },
+    "ownerScreenshotReview": {
+      "reviewedDate": "2026-11-19",
+      "acceptedAsEvidence": true,
+      "workersPlan": "Workers Free (0 €/mes)",
+      "workersPaidObserved": false,
+      "freeDailyRequests": 100000,
+      "cloudflareD1BillableUsageShown": "$0.00",
+      "cloudflareR2BillableUsageShown": "$0.00",
+      "screenshotsBillingOverviewShown": "$0.00 in observed usage views",
+      "r2SubscriptionShown": "R2 Plan - cancellation previously requested",
+      "r2ScheduledExpiry": "2026-12-10",
+      "noR2BucketsConfirmedByApi": true,
+      "scope": "Fotografías de panel Cloudflare ya facilitadas por el propietario en chats de fase 5/6, contrastadas con consultas API de inventario. No pedir capturas repetidas.",
+      "limits": "La imagen acredita el plan Workers Free y cargos mostrados de los servicios retratados, no una garantía sobre cualquier otro servicio o cargo futuro."
     }
   },
   "finalSignoff": {
