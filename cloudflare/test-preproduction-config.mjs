@@ -34,6 +34,8 @@ assert.equal(target.vars?.BACKUP_KEY_CUSTODIED,'no',
  'No declarar custodia offline sin prueba del propietario');
 assert.equal(target.vars?.FREE_TIER_BILLING_VERIFIED,'no',
  'No publicar sin acreditar que Workers y servicios vinculados siguen en plan gratuito');
+assert.equal(target.vars?.FREE_TIER_CPU_VERIFIED,'no',
+ 'No publicar sin perfil CPU real de contraseña y streaming dentro de Workers Free');
 assert.equal(target.vars?.PUBLISH_APPROVED,'no',
  'La aprobación final de producción nunca se versiona como sí');
 assert.equal(target.d1_databases?.length,1);
