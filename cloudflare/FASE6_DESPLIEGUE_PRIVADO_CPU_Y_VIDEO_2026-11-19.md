@@ -32,11 +32,11 @@ El Worker API staging anterior consumía CPU excesiva al recuperar fragmentos HT
 
 Cloudflare GraphQL `workersInvocationsAdaptive` tras desplegar la versión corregida de staging:
 
-- **570 solicitudes exitosas; CPU P99 = 4,663 ms**, inferior a 10 ms en esta muestra.
+- **1.178 solicitudes exitosas; CPU P99 = 4,462 ms; máximo de CPU observado = 9,179 ms**, todos por debajo de 10 ms en esta muestra de la versión corregida. Se excluyen de este recuento 4 peticiones `responseStreamDisconnected` y 10 `clientDisconnected` (también sin máximos CPU superiores a 10 ms observados).
 - Nuevo Worker multimedia `bellaquitas-media-qa`: 401 peticiones exitosas observadas anteriormente; CPU P99 = 1,377 ms.
 - Versión API antigua `55945671-...`: P99 alrededor de 137 ms con los vídeos antiguos, y versión multimedia antigua hasta 222 ms, razón de la optimización.
 
-**No confundir P99 con máximo:** no está demostrado que todas las solicitudes estén debajo de 10 ms ni que KDF de contraseña (600.000 iteraciones), cache fría y todas las rutas de 206 puedan funcionar siempre en Workers Free. Los cuatro booleanos estrictos de `phase6CpuSafety` siguen **false**. No elevar `limits.cpu_ms` ni activar modalidad de pago.
+**No confundir máximo observado con garantía universal:** GraphQL permite calcular `max.cpuTime` para las peticiones observadas, pero no garantiza una cobertura completa de futuras solicitudes; tampoco demuestra KDF de contraseña (600.000 iteraciones), caché fría y todas las variantes de 206 bajo condiciones adversas. Los cuatro booleanos estrictos de `phase6CpuSafety` siguen **false**. No elevar `limits.cpu_ms` ni activar modalidad de pago.
 
 ## 4. CI y seguridad
 
