@@ -5,3 +5,6 @@ Motivo: desplegar el Service Binding VIDEO_QA_PROXY para vídeo MP4 en /espejo/a
 Requisitos: test-staging-redeploy-config.mjs, test-no-private-backup-leaks.mjs, check-release-gates.mjs --assert-blocked, build-static-assets --require-logos, wrangler --dry-run.
 Sin escrituras de D1, sin rutas a bellaquitas.fr, sin DNS, sin R2, sin activar registro ni edición de puntos. Mantener keep_vars=true y secretos Google/Resend/Turnstile existentes.
 Validación postbuild: 5 MP4 originales HTTP 206 inicio y final + bytes exactos, 2 admins sintéticos, OAuth/Broker no expuesto, métricas CPU por versión y sin fallos de recursos.
+
+Corrección validada 2026-11-19: caché pública únicamente para MP4 original permitido; cookies eliminadas de la respuesta multimedia. Test sintético de inyección Set-Cookie aprobado antes de publicar esta revisión.
+Cambios excluidos: producción, DNS, punto, visitas, cuentas y secretos. Build staging debe mantener la D1 original y el Service Binding VIDEO_QA_PROXY.
