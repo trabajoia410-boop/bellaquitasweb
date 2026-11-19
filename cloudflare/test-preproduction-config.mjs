@@ -32,6 +32,8 @@ assert.equal(target.vars?.FINAL_ORIGIN_RECONCILED,'no',
  'No certificar datos nuevos del origen sin comparar el proveedor anterior');
 assert.equal(target.vars?.BACKUP_KEY_CUSTODIED,'no',
  'No declarar custodia offline sin prueba del propietario');
+assert.equal(target.vars?.FREE_TIER_BILLING_VERIFIED,'no',
+ 'No publicar sin acreditar que Workers y servicios vinculados siguen en plan gratuito');
 assert.equal(target.vars?.PUBLISH_APPROVED,'no',
  'La aprobación final de producción nunca se versiona como sí');
 assert.equal(target.d1_databases?.length,1);
