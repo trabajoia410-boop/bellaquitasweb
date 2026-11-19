@@ -92,7 +92,7 @@
     "realStagingExceededCpuCountVerifiedZero": false,
     "realPasswordKdfAndVideo206Profiled": false,
     "publishBlockedUntilProfileVerified": true,
-    "note": "CPU historico de API staging identificado por tipo HTTP: 206 Range multimedia P99 280,65 ms; 200 P99 5,875 ms; 401 P99 4,041 ms. La optimización de video mediante Service Binding está comprometida en rama pero no desplegada en API staging. Control de 10ms sigue bloqueado hasta medir candidato real y KDF.",
+    "note": "QA MEDIA HTTP 206: 15 fragmentos de 5 MP4 (inicio, centro, EOF) comprobados con bytes exactos y CF-Cache-Status=HIT en todos (workflow 44471196855, job 135381006685). Buen resultado para ahorro de CPU de media QA, pero staging API aún no redeployada y P99 HTTP 206 histórico 280,65ms. Mantener cpu10msVerified=false.",
     "graphqlMeasurement": {
       "date": "2026-11-19",
       "windowUtc": "2026-11-19T00:00:00Z to 2026-11-20T00:00:00Z",
@@ -158,6 +158,19 @@
       "apiProxyOptimizationCommitted": true,
       "apiProxyOptimizationLiveMeasured": false,
       "caution": "El P99 de 200 y 401 inferior a 10 ms NO demuestra que rutas de contraseña login/reset fueron ejercitadas ni el CPU máximo."
+    },
+    "realQaMediaRangeCacheHits": {
+      "observedAtUTC": "2026-11-19T06:19:10Z",
+      "source": "GitHub Actions job 135381006685, workflow run 44471196855, test-media-qa-online.mjs --require-assets",
+      "rangeTests": 15,
+      "mp4FilesTested": 5,
+      "cacheHitResponses": 15,
+      "status206Responses": 15,
+      "originalBytesMatched": true,
+      "beginMiddleEndOfEachFile": true,
+      "qaCacheEffectiveForSample": true,
+      "doesNotProveColdCachePerformance": true,
+      "doesNotProveApiStagingUnder10ms": true
     }
   },
   "phase6ZeroSpend": {
