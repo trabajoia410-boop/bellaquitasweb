@@ -92,7 +92,7 @@
     "realStagingExceededCpuCountVerifiedZero": false,
     "realPasswordKdfAndVideo206Profiled": false,
     "publishBlockedUntilProfileVerified": true,
-    "note": "Staging desplegado con Service Binding, MP4 públicos cacheados y cookies filtradas. 3/3 flujos CI correctos. Nueva versión: 570 peticiones exitosas, CPU P99 4,663 ms. Falta CPU máximo, KDF y rangos con caché fría. Puerta de publicación cerrada.",
+    "note": "Staging con 206 sin cookies y MP4 originales cacheables; 3/3 CI OK. Nueva versión: 1.178 éxitos, P99 4,462 ms y máximo observado 9,179 ms en GraphQL; aún falta verificar KDF de contraseña, cache fría y cobertura de rutas. Flags de publicación general siguen cerrados.",
     "graphqlMeasurement": {
       "date": "2026-11-19",
       "windowUtc": "2026-11-19T00:00:00Z to 2026-11-20T00:00:00Z",
@@ -211,13 +211,22 @@
     "latestStagingVersionCpuSample": {
       "observedDateUtc": "2026-11-19",
       "version": "667b56f5-cb02-40ff-b1e1-88a4fa2ff0f9",
-      "successfulRequests": 570,
-      "cpuP99ms": 4.663,
+      "successfulRequests": 1178,
+      "cpuP99ms": 4.462,
       "p99Below10msInSample": true,
       "maxCpuVerified": false,
       "passwordKdfProfiled": false,
       "coldCacheRangeProfiled": false,
-      "source": "Cloudflare GraphQL workersInvocationsAdaptive, por scriptVersion, posterior a 09:48:22 UTC"
+      "source": "Cloudflare GraphQL workersInvocationsAdaptive grouped by scriptVersion/status; max.cpuTime + quantiles; after 09:48:22 UTC, 19/11/2026",
+      "maxObservedCpuMs": 9.179,
+      "observedFailureStatuses": {
+        "responseStreamDisconnected": 4,
+        "clientDisconnected": 10
+      },
+      "observedExceededResources": 0,
+      "maxBelow10msInObservedSample": true,
+      "maxCpuVerifiedForAllRoutes": false,
+      "interpretation": "El máximo observado en telemetría de esta muestra es 9,179 ms, no demuestra la máxima CPU bajo cualquier carga/ruta futura."
     }
   },
   "phase6ZeroSpend": {
