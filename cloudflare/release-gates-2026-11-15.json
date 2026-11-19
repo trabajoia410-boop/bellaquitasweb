@@ -688,6 +688,25 @@
       "recoveryKeyMustNotBeRequestedAgain": true,
       "independentDecryptionWithOfflineFileNotReperformed": true,
       "caveat": "La custodia en ordenador queda confirmada por su propietario. No confirma la rotación/recifrado del respaldo antiguo del 16/11."
+    },
+    "legacyRawAccessVerification": {
+      "checkedOn": "2026-11-19",
+      "locatedInPrivateLibrary": true,
+      "originalArchiveName": "BELLAQUITAS_RESPALDO_CIFRADO_2026-11-16.bqbk",
+      "originalKeyFileName": "CLAVE_RECUPERACION_BELLAQUITAS_2026-11-16.txt",
+      "archiveAndKeyMaterializationAttempted": true,
+      "archiveMaterializationAllowed": false,
+      "keyMaterializationAllowed": false,
+      "archiveReadAttempted": true,
+      "archiveReadAllowed": false,
+      "reason": "El acceso al archivo bruto no está autorizado en este proyecto; herramientas Files devolvieron una denegación de materialización. No se extrajeron ni transmitieron secretos.",
+      "existingLegacyRewrapToolAvailable": true,
+      "legacyBackupRotated": false,
+      "keyCustodyOfNewRsaBackupAlreadyConfirmed": true,
+      "newPrivatePemNotRequestedOrAccessed": true,
+      "publicGitHubSecretsUploaded": false,
+      "ownerActionDeferred": true,
+      "productionReleaseGateMaintained": true
     }
   },
   "phase6PrivateWorkerFailClosed": {
