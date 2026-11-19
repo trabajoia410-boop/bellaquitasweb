@@ -83,6 +83,13 @@
     "visits": 0,
     "notIncluded": "sin pg_dump íntegro auth, tokens o vídeos binarios; no equivale a copia completa de proveedor"
   },
+  "phase6ZeroSpend": {
+    "zoneFreeVerified": true,
+    "workersFreePlanVerified": false,
+    "otherPaidProductsAbsentVerified": false,
+    "billingAuditComplete": false,
+    "reason": "La zona Cloudflare Free está verificada, pero la API de facturación devuelve 403. Ningún plan de pago o compromiso monetario se considera descartado hasta auditoría autorizada. No publicar ni cambiar DNS."
+  },
   "finalSignoff": {
     "explicitProductionAuthorization": false,
     "reason": "Pendientes seis comprobaciones, sin cambio de DNS o main"
