@@ -12,3 +12,5 @@ Control post-deploy: binding D1 correcto, secretos preservados, 0 rutas, 0 expos
 
 Revisión de defensa en profundidad 19/11/2026: código de preproducción actual incorpora la condición FREE_TIER_CPU_VERIFIED=yes SOLO para producción. El entorno privado mantiene FREE_TIER_CPU_VERIFIED=no y las otras cuatro puertas no; jamás habilitar producción aquí.
 CI del último commit de implementación: 3 de 3 flujos SUCCESS. Sin exposición Workers.dev, sin rutas DNS, sin modificaciones D1, sin paid plan.
+
+Revisión Fase 6: corregido reset transaccional D1 después de hash PBKDF2 (token NO se pierde por fallo CPU, D1.batch atómico con rollback, sesiones revocadas solo al confirmar). Datos sintéticos de dos admins: fallo KDF, fallo SQL tras UPDATE y retorno de token único comprobados. Actualizar Worker privado para concordar con staging y mantener workers_dev=false, FREE_TIER_CPU_VERIFIED=no, PUBLISH_APPROVED=no, DNS y D1 sin cambios. Build sólo si se preservan los controles GitHub de migración.
