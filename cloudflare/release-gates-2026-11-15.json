@@ -376,7 +376,13 @@
       "keepCodeAndAssetsTesting": true,
       "noCloudflareWorkersDeployment": true,
       "reason": "Avoid redundant browser/HTTP 206 tests and Workers invocations for documentation-only changes",
-      "freeTierSavingsExactNotMeasured": true
+      "freeTierSavingsExactNotMeasured": true,
+      "duplicatePushAndPullRequestRunsRemoved": true,
+      "fullQaRunsOnPullRequest": true,
+      "manualWorkflowDispatchPreserved": true,
+      "docOnlyCommitOnExistingBroadPrMayStillTrigger": true,
+      "noCallsSavedQuantified": false,
+      "note": "No doble ejecución de QA pesado push + PR; se conservan PR y workflow_dispatch. Los filtros paths de PR evalúan todo el diff del PR y pueden activar CI por commits solo documentales; no afirmar ahorro medido sin telemetría."
     }
   },
   "finalSignoff": {
