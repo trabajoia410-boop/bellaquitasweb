@@ -6,6 +6,7 @@ on:
       - migracion/fase5-segura-20261114
     paths:
       - 'cloudflare/**'
+      - '!cloudflare/**/*.md'
       - 'assets/**'
       - 'index.html'
       - 'styles.css'
@@ -20,6 +21,7 @@ on:
       - main
     paths:
       - 'cloudflare/**'
+      - '!cloudflare/**/*.md'
       - 'assets/**'
       - 'index.html'
       - 'styles.css'
