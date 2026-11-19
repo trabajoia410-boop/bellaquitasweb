@@ -11,18 +11,6 @@ on:
       - 'app.js'
       - 'locale-fr.js'
       - '.github/workflows/qa-cloudflare-migration.yml'
-  push:
-    branches:
-      - migracion/fase5-segura-20261114
-    paths:
-      - 'cloudflare/**'
-      - '!cloudflare/**/*.md'
-      - 'assets/**'
-      - 'index.html'
-      - 'styles.css'
-      - 'app.js'
-      - 'locale-fr.js'
-      - '.github/workflows/qa-cloudflare-migration.yml'
 jobs:
   static-migration-audit:
     runs-on: ubuntu-latest
