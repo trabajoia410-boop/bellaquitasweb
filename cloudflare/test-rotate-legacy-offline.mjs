@@ -18,7 +18,7 @@ const ctx={
 };
 const exported=runInNewContext(source+"\n;({rotateLegacyBackup,parseOldKey})",ctx);
 const sha=x=>createHash("sha256").update(x).digest("hex");
-const plaintext=Buffer.from("-- Bellaquitas Fest SQL backup local\n-- TEST SINTETICO\nCREATE TABLE q(x);\nINSERT INTO q VALUES(1);\n","utf8");
+const plaintext=Buffer.from("-- Bellaquitas Fest SQL backup local\n-- TEST SINTETICO\nCREATE TABLE q(x);\n"+Array.from({length:120},(_,i)=>"INSERT INTO q VALUES("+i+");\n").join(""),"utf8");
 const originalKey=randomBytes(32),iv=randomBytes(12);
 const cipher=createCipheriv("aes-256-gcm",originalKey,iv);
 const compressed=gzipSync(plaintext);
