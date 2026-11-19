@@ -542,7 +542,7 @@
     "recoveryVerifiedWithNewKey": false,
     "authNativeBackupComplete": false,
     "blockReleaseUntilAllVerified": true,
-    "notes": "El respaldo original se hizo; el recifrado exige sus bytes y custodia privada. El export SQL temporal D1 no pudo guardarse por bloqueo de URL firmada y no es copia externa.",
+    "notes": "Biblioteca: backup bqbk JSON leído, se decodificó ciphertext AES-256-GCM y se recalculó SHA-256 de los 6.536 bytes cifrados, coincidente con sha256Encrypted. La clave privada sigue sin acreditar custodia offline; el recifrado legacy no está certificado. Nunca exponer claves ni contraseña en GitHub.",
     "newIndependentEncryptedD1BackupCreated": true,
     "newIndependentD1BackupRestoredAndVerified": true,
     "independentEncryptedD1BackupDurablyStoredInPrivateLibrary": true,
@@ -551,7 +551,12 @@
     "originalEncryptedBackupRotated": false,
     "originalEncryptedBackupLocatedInPersonalLibrary": true,
     "originalRecoveryKeyLocatedInPersonalLibrary": true,
-    "legacyOfflineRewrapToolPrepared": true
+    "legacyOfflineRewrapToolPrepared": true,
+    "libraryCiphertextDigestReverified": true,
+    "libraryCiphertextDigestAlgorithm": "SHA-256",
+    "libraryCiphertextDigest": "65ea99d27f4f8132758d5a80cdffb6649c0405bdcdbd123ca490e0438bebce8f",
+    "libraryCiphertextDigestCheckedOn": "2026-11-19",
+    "libraryFileRawMaterializationAvailable": false
   },
   "phase6PrivateWorkerFailClosed": {
     "status": "deployed-private",
