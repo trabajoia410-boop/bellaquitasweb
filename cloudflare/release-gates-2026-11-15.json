@@ -1113,5 +1113,51 @@
     "zoneStatus": "pending",
     "nextPhase": "phase6-controlled-release-preflight",
     "note": "Cierre DE ENTREGA TÉCNICA, no aprobación de publicación. Controles de seguridad heredados sin alterar."
+  },
+  "phase6RecoveryTransaction": {
+    "checkedDateUTC": "2026-11-19",
+    "status": "deployed-staging-and-private-preproduction-synthetically-tested",
+    "issue": "Reset token consumed before expensive password KDF and before credential update could fail, making a recovery link unusable without changing password.",
+    "fix": "Look up valid token without deleting; compute unchanged 600000-iteration PBKDF2; then use one atomic D1.batch transaction for conditional credential UPDATE, session revocation and token DELETE RETURNING. Any D1 failure rolls back.",
+    "source": "cloudflare/email-auth-routes.js",
+    "test": "cloudflare/test-admin-email-link.mjs",
+    "syntheticCases": {
+      "kdfFailureDoesNotConsumeResetToken": true,
+      "databaseFailureAfterPasswordUpdateRollsBackHashAndToken": true,
+      "replayCannotReuseTokenAfterSuccess": true,
+      "adminsIsolated": true,
+      "pointsVisitsRolesUnaffected": true
+    },
+    "deployment": {
+      "staging": {
+        "build": "96fe1298-5f53-49d8-a7b2-224e73a94831",
+        "version": "558c78e5-93a9-4425-b914-3f7cf6f05de9",
+        "buildOutcome": "success"
+      },
+      "preproduction": {
+        "build": "d0100ba9-3315-42a5-a458-50978742806c",
+        "version": "11e51957-8ddc-4edb-82dc-26e7dc1d9e12",
+        "buildOutcome": "success",
+        "workersDev": false,
+        "previews": false,
+        "publicRoutes": 0
+      }
+    },
+    "integrityAfterDeploy": {
+      "profiles": 7,
+      "admins": 2,
+      "points": 1999998,
+      "lifetimePoints": 1999998,
+      "visits": 0
+    },
+    "targetD1StillPrivate": true,
+    "siteStillNotPublished": true,
+    "limits": {
+      "kdfCpu10msMeasuredOnCloudflare": false,
+      "billingAuditComplete": false,
+      "finalSourceDeltaCertified": false,
+      "legacyBackupRotated": false,
+      "manualChecksDeferredToPostPublication": true
+    }
   }
 }
