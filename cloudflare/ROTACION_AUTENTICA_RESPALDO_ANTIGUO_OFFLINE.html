@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; img-src 'none'; form-action 'none'; object-src 'none'; base-uri 'none'">
+<title>Bellaquitas Fest · Rotación REAL del respaldo antiguo</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,Arial,sans-serif}*{box-sizing:border-box}body{margin:0;background:#121018;color:#f6eff7;padding:24px}
+main{max-width:780px;margin:0 auto}h1{font-size:clamp(25px,4vw,35px);color:#edd08c}
+p,li{line-height:1.58;color:#d8d0df}section{padding:22px;border:1px solid #514159;background:#211b2a;border-radius:14px;margin:22px 0}
+label{display:block;margin:16px 0;font-weight:600}input{display:block;margin:9px 0;width:100%;padding:10px;border:1px solid #73617f;border-radius:8px}
+button,.download{display:inline-block;padding:12px 16px;border-radius:8px;border:0;background:#e9c46a;color:#25182c;font-weight:700;text-decoration:none;margin:7px 7px 7px 0;cursor:pointer}
+button:disabled{opacity:.5;cursor:default}small{color:#b9adb9}#status{white-space:pre-wrap;overflow-wrap:anywhere;background:#100c16;border-radius:8px;padding:14px}
+.warn{border-left:4px solid #e9c46a;padding:11px 15px;background:#30202b}
+</style></head>
+<body><main>
+<h1>Bellaquitas Fest · Rotar de verdad la clave antigua</h1>
+<p class="warn">Esta página trabaja <strong>solo en tu ordenador</strong>, sin conexiones de red. No la subas a un alojamiento. Solo funciona con el archivo AES-256-GCM v1 que corresponda exactamente a la huella registrada el 16/11/2026. Si no reconoce el formato, se detiene sin modificar nada.</p>
+<section>
+<h2>1. Elegir los dos archivos originales</h2>
+<label>Respaldo cifrado antiguo (.bqbk)<input type="file" id="oldArchive" accept=".bqbk,.json"></label>
+<label>Clave de recuperación antigua (.txt o .b64)<input type="file" id="oldKey" accept=".txt,.b64,.key"></label>
+<button id="rotate">Verificar, descifrar en memoria y rotar con clave nueva</button>
+<p id="status" role="status">Todavía no se ha realizado ninguna operación.</p>
+</section>
+<section id="downloads" hidden>
+<h2>2. Guardar dos archivos por separado</h2>
+<a id="archiveDownload" class="download">Guardar respaldo recifrado</a>
+<a id="keyDownload" class="download">Guardar clave NUEVA</a>
+<p>No guardes ambos archivos juntos. Comprueba que ambos están descargados y abre la copia nueva en un programa de recuperación de confianza antes de considerar retirar la copia antigua.</p>
+</section>
+<section><h2>Lo que esta operación garantiza y lo que no</h2>
+<p>La rotación <strong>descifra de verdad</strong> el respaldo antiguo, comprueba el contenido SQL y su SHA-256, genera una clave AES-256 completamente nueva, vuelve a cifrar y verifica la restauración. No mete la clave antigua dentro de otro envoltorio.</p>
+<p><strong>No puede revocar la clave antigua en copias del archivo que ya estén fuera de tu control.</strong> Conserva los originales hasta confirmar que el respaldo nuevo sirve para restaurar todos los datos que necesitas. No subas aquí archivos de otras personas ni envíes claves a ChatGPT.</p>
+<small>Sin PowerShell, paquetes, extensiones, servidores externos, R2, Supabase ni cambios en la web.</small></section>
+</main>
+<script>
+"use strict";
+const KNOWN_OLD_SHA="57b6e0f513fbe76bdc502afe95420fb79d806eae21ba727d525014d00a6ecfcb";
+const MAX_FILE=8*1024*1024,MAX_PLAIN=64*1024*1024;
+const PREFIXES={"cloudflare-d1-staging":"-- Bellaquitas Fest D1 SQL backup\n","local-sql-unverified":"-- Bellaquitas Fest SQL backup local\n"};
+const decoder=new TextDecoder();
+const encoder=new TextEncoder();
+const fromBase64=x=>{if(typeof x!=="string"||x.length>MAX_FILE*2||!/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(x))throw Error("Base64 no válido");return Uint8Array.from(atob(x),c=>c.charCodeAt(0));};
+const toBase64=x=>{let value="";for(let i=0;i<x.length;i+=8192)value+=String.fromCharCode(...x.subarray(i,i+8192));return btoa(value);};
+const hex=x=>Array.from(x,b=>b.toString(16).padStart(2,"0")).join("");
+const digest=async x=>hex(new Uint8Array(await crypto.subtle.digest("SHA-256",x)));
+function parseOldKey(text){
+ if(typeof text!=="string"||text.length>8192)throw Error("Archivo de clave incorrecto");
+ const found=[...text.matchAll(/(?:^|[^0-9a-fA-F])([0-9a-fA-F]{64})(?=$|[^0-9a-fA-F])/g)];
+ if(found.length===1)return Uint8Array.from(found[0][1].match(/../g),v=>parseInt(v,16));
+ const trimmed=text.trim();
+ const key=fromBase64(trimmed);
+ if(key.length!==32)throw Error("La clave original no es AES-256");
+ return key;
+}
+async function gunzip(compressed){
+ if(typeof DecompressionStream==="undefined")throw Error("Navegador sin DecompressionStream gzip; utiliza Chrome/Edge/Safari actualizado");
+ const stream=new Blob([compressed]).stream().pipeThrough(new DecompressionStream("gzip"));
+ const reader=stream.getReader(),parts=[];let size=0;
+ try{
+  for(;;){const {value,done}=await reader.read();if(done)break;size+=value.length;
+   if(size>MAX_PLAIN)throw Error("SQL descomprimido demasiado grande");
+   parts.push(value);
+  }
+ }finally{try{await reader.cancel()}catch{}}
+ const out=new Uint8Array(size);let pos=0;for(const p of parts){out.set(p,pos);pos+=p.length;}
+ return out;
+}
+async function decryptCompressed(arch,key){
+ if(arch?.version!==1||arch.algorithm!=="AES-256-GCM"||arch.compression!=="gzip"||
+    !Object.hasOwn(PREFIXES,arch.source))throw Error("Formato original desconocido: no se puede rotar sin investigar el cifrado");
+ const iv=fromBase64(arch.iv_base64),encrypted=fromBase64(arch.ciphertext_base64);
+ if(iv.length!==12||encrypted.length<=16||encrypted.length>MAX_FILE)throw Error("Datos cifrados o IV inválidos");
+ const k=await crypto.subtle.importKey("raw",key,{name:"AES-GCM"},false,["decrypt"]);
+ let zipped;
+ try{zipped=new Uint8Array(await crypto.subtle.decrypt({name:"AES-GCM",iv,tagLength:128},k,encrypted));}
+ catch{throw Error("La clave original no descifra de forma auténtica el archivo")}
+ return zipped;
+}
+async function validateOriginal(arch,zipped){
+ const plain=await gunzip(zipped);
+ try{
+  if(!Number.isSafeInteger(arch.plaintext_bytes)||arch.plaintext_bytes!==plain.length)throw Error("Longitud SQL no coincide");
+  if(!/^[0-9a-f]{64}$/i.test(arch.plaintext_sha256||"")||await digest(plain)!==arch.plaintext_sha256.toLowerCase())throw Error("Huella del SQL no coincide");
+  if(!decoder.decode(plain.slice(0,180)).startsWith(PREFIXES[arch.source]))throw Error("La copia no corresponde al origen declarado");
+  return {size:plain.length,sha256:arch.plaintext_sha256.toLowerCase()};
+ }finally{plain.fill(0);}
+}
+async function rotateLegacyBackup(oldBytes,oldKeyText,requireKnownDigest=true){
+ if(!(oldBytes instanceof Uint8Array)||oldBytes.length<500||oldBytes.length>MAX_FILE)throw Error("Archivo antiguo fuera de límites");
+ const oldSha=await digest(oldBytes);
+ if(requireKnownDigest&&oldSha!==KNOWN_OLD_SHA)throw Error("No coincide el SHA-256 original del 16/11. No se ha generado nada.");
+ const arch=JSON.parse(decoder.decode(oldBytes));
+ const oldKey=parseOldKey(oldKeyText);
+ let zipped,newKey;
+ try{
+  zipped=await decryptCompressed(arch,oldKey);
+  const verified=await validateOriginal(arch,zipped);
+  newKey=crypto.getRandomValues(new Uint8Array(32));
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const cryptoKey=await crypto.subtle.importKey("raw",newKey,{name:"AES-GCM"},false,["encrypt","decrypt"]);
+  const ciphertext=new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM",iv,tagLength:128},cryptoKey,zipped));
+  const newArchive={version:1,source:arch.source,compression:"gzip",algorithm:"AES-256-GCM",
+   created_at:new Date().toISOString(),plaintext_bytes:verified.size,plaintext_sha256:verified.sha256,
+   iv_base64:toBase64(iv),ciphertext_base64:toBase64(ciphertext),rotation_provenance_sha256:oldSha};
+  const recovered=new Uint8Array(await crypto.subtle.decrypt({name:"AES-GCM",iv,tagLength:128},cryptoKey,ciphertext));
+  try{if(recovered.length!==zipped.length||recovered.some((v,i)=>v!==zipped[i]))throw Error("Fallo al verificar la nueva copia");
+   await validateOriginal(newArchive,recovered);
+  }finally{recovered.fill(0);}
+  return {archive:newArchive,newKeyBase64:toBase64(newKey),originalSha256:oldSha};
+ }finally{oldKey.fill(0);if(zipped)zipped.fill(0);if(newKey)newKey.fill(0);}
+}
+if(typeof document!=="undefined"){
+ const el=id=>document.getElementById(id),urls=[];
+ const download=(id,contents,name)=>{const blob=new Blob([contents],{type:"application/octet-stream"}),url=URL.createObjectURL(blob);urls.push(url);el(id).href=url;el(id).download=name;};
+ el("rotate").addEventListener("click",async()=>{
+  el("downloads").hidden=true;el("rotate").disabled=true;el("status").textContent="Descifrando y validando exclusivamente en memoria…";
+  for(const u of urls.splice(0))URL.revokeObjectURL(u);
+  try{
+   const file=el("oldArchive").files[0],keyfile=el("oldKey").files[0];
+   if(!file||!keyfile)throw Error("Debes seleccionar el archivo antiguo y su clave");
+   if(file.size>MAX_FILE||keyfile.size>8192)throw Error("Archivo demasiado grande");
+   const bytes=new Uint8Array(await file.arrayBuffer()),keyText=await keyfile.text();
+   const result=await rotateLegacyBackup(bytes,keyText,true);bytes.fill(0);
+   download("archiveDownload",JSON.stringify(result.archive,null,2)+"\n","BELLAQUITAS_RESPALDO_ANTIGUO_CLAVE_ROTADA.bqbk");
+   download("keyDownload",result.newKeyBase64+"\n","BELLAQUITAS_CLAVE_ROTADA_NUEVA.key");
+   el("downloads").hidden=false;
+   el("status").textContent="Rotación REAL completada. SQL/huella originales verificados; nueva clave AES generada; copia nueva descifrada y comprobada en memoria. Descarga los dos archivos en lugares separados.";
+  }catch(e){el("status").textContent="SIN ROTACIÓN: "+String(e?.message||"Error no reconocido").slice(0,240);}
+  finally{el("rotate").disabled=false;}
+ });
+}
+</script></body></html>
