@@ -179,7 +179,26 @@
     "otherPaidProductsAbsentVerified": false,
     "billingAuditComplete": false,
     "reason": "Workers Free confirmado por captura del propietario (19/11). La misma vista presenta R2 Plan en Almacenamiento y bases de datos con cancelación futura (10/12/2026, según historial y panel). Uso facturable mostrado 0 en columnas de consumo facturable, pero no se han auditado todos los productos, facturas ni consumo futuro. Mantener presupuesto cero y DNS/producción bloqueados hasta certeza de servicios sin gastos.",
-    "workersFreePlanEvidence": "Captura del panel Cloudflare aportada por el propietario el 19/11/2026: Suscripciones > Workers Free, plan 0/mes; no se muestra Workers Paid."
+    "workersFreePlanEvidence": "Captura del panel Cloudflare aportada por el propietario el 19/11/2026: Suscripciones > Workers Free, plan 0/mes; no se muestra Workers Paid.",
+    "readOnlyServiceInventory": {
+      "verifiedDate": "2026-11-19",
+      "source": "Cloudflare account API via linked connector, GET only",
+      "r2Buckets": 0,
+      "kvNamespaces": 0,
+      "queues": 0,
+      "vectorizeIndexes": 0,
+      "durableObjectNamespaces": 0,
+      "streamVerifiedEmpty": false,
+      "imagesVerifiedEmpty": false,
+      "streamAccess": "403 insufficient access",
+      "imagesAccess": "403 insufficient access",
+      "subscriptionReadAllowed": false,
+      "billingSpendPoliciesReadAllowed": false,
+      "billingUsageReadAllowed": false,
+      "billingHistoryReadAllowed": false,
+      "cloudflareZoneFreeVerified": true,
+      "note": "La ausencia de estos 5 recursos por API no prueba que no existan otros productos facturables. No marcar billingAuditComplete hasta inspección legítima con Billing Read."
+    }
   },
   "finalSignoff": {
     "explicitProductionAuthorization": false,
