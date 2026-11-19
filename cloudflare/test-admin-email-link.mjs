@@ -29,9 +29,9 @@ const d1={prepare(sql){return {bind(...values){return {
  sql,
  async first(){return db.prepare(sql).get(...values)||null;},
  async run(){
-  if(injectResetDatabaseFailure && sql.includes("UPDATE auth_email_credentials SET password_hash=")){
+  if(injectResetDatabaseFailure && sql.includes("DELETE FROM auth_sessions WHERE profile_id=")){
    injectResetDatabaseFailure=false;
-   throw Error("Synthetic database interruption before password reset");
+   throw Error("Synthetic database interruption after password UPDATE, before token consumption");
   }
   const st=db.prepare(sql);
   if(/\bRETURNING\b/i.test(sql)){
