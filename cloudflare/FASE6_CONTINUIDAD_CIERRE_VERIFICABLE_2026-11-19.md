@@ -80,3 +80,9 @@ El propietario ya entregó las fotografías de Cloudflare en los chats anteriore
 - **Suscripción R2**: la cancelación ya fue solicitada según historial; el panel la muestra activa hasta el **10/12/2026**. Se respeta su plazo, no se reactiva ni se contrata otro producto.
 - **Estado contable**: estas imágenes confirman lo visible, pero no prueban ausencia de cualquier cargo futuro o de suscripciones ajenas a lo fotografiado. El gate `otherPaidProductsAbsentVerified=false` y `billingAuditComplete=false` queda conservado solo por ese riesgo pendiente, **NO porque falte Billing Read**.
 - La comprobación de ausencia de cargos adicionales puede acreditarse con capturas/panel del titular y comprobación final de R2; **no depende de conseguir Billing Read API**.
+
+## Corrección: clave privada del 18/11 ya custodiada por el propietario
+
+El 19/11/2026 el propietario confirmó expresamente que **ya tiene guardada en su propio ordenador la clave privada RSA de recuperación entregada el 18/11**. Se acepta esta confirmación como evidencia de custodia externa a ChatGPT y se marca `phase6BackupSecretCustody.privateRecoveryKeyStoredOfflineByOwnerVerified=true` y `phase6RuntimeCutoverAttestation.backupPrivateKeyStoredOutsideChatVerified=true` en el registro de fase 6. **No pedir de nuevo la clave, no solicitar que la suba, ni repetir la generación.**
+
+El respaldo D1 cifrado de 18/11 está creado, restaurado y con integridad del ciphertext comprobada. La cuestión distinta que sigue **sin acreditación** es el recifrado/rotación de la antigua copia del 16/11 cuya clave se compartió anteriormente. No inventar que ese paso se ejecutó ni tratar la custodia de la clave RSA como pendiente. El Worker desplegado se mantiene deliberadamente en modo preproducción hasta completar todas las demás puertas.
