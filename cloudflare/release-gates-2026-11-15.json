@@ -92,7 +92,7 @@
     "realStagingExceededCpuCountVerifiedZero": false,
     "realPasswordKdfAndVideo206Profiled": false,
     "publishBlockedUntilProfileVerified": true,
-    "note": "QA MEDIA HTTP 206: 15 fragmentos de 5 MP4 (inicio, centro, EOF) comprobados con bytes exactos y CF-Cache-Status=HIT en todos (workflow 44471196855, job 135381006685). Buen resultado para ahorro de CPU de media QA, pero staging API aún no redeployada y P99 HTTP 206 histórico 280,65ms. Mantener cpu10msVerified=false.",
+    "note": "Staging API optimizado y desplegado 19/11 09:40 UTC. Build success, CI GitHub 3 flujos OK. Service Binding vídeo en staging y secretos conservados; 91 éxitos nueva versión CPU P99 5,534 ms (muestra preliminar). Los flags de CPU máxima y KDF siguen falsos hasta perfil representativo. No alterar DNS o producción.",
     "graphqlMeasurement": {
       "date": "2026-11-19",
       "windowUtc": "2026-11-19T00:00:00Z to 2026-11-20T00:00:00Z",
@@ -122,7 +122,7 @@
     },
     "mediaCacheDeclaredInRepository": true,
     "stagingVideoServiceBindingOptimizationCommitted": true,
-    "stagingVideoServiceBindingOptimizationDeployed": false,
+    "stagingVideoServiceBindingOptimizationDeployed": true,
     "mediaCacheObservedEnabledAfterQaDeployment": true,
     "mediaCacheEnabledPriorToNov19Change": "not_verified",
     "mediaQaAutoDeployment": {
@@ -171,6 +171,39 @@
       "qaCacheEffectiveForSample": true,
       "doesNotProveColdCachePerformance": true,
       "doesNotProveApiStagingUnder10ms": true
+    },
+    "apiProxyOptimizationLiveMeasured": true,
+    "stagingApiDeployment": {
+      "deployedAtUTC": "2026-11-19T09:40:42.607368Z",
+      "buildId": "bd1b5d4c-fd35-414f-b897-31d97c7f5c3d",
+      "buildOutcome": "success",
+      "worker": "bellaquitas-api-staging",
+      "version": "35a6e132-043b-4652-90bc-90c6aab06cc6",
+      "buildSourceCommit": "15c991af3c5f46f989d5e93b94d6a9dabe2990b3",
+      "stagingOnly": true,
+      "publicDnsRoutesAdded": 0,
+      "providerSecretsStillBound": true,
+      "videoServiceBindingStillBound": true,
+      "stagingMutationsDisabled": true,
+      "allowNewAccountsNo": true,
+      "originalD1Profiles": 7,
+      "originalD1Admins": 2,
+      "originalD1Points": 1999998,
+      "originalD1Visits": 0,
+      "targetD1Profiles": 7,
+      "targetD1Admins": 2,
+      "targetD1Points": 1999998,
+      "targetD1Visits": 0,
+      "githubPr3CommitTests": "three-workflows-completed-success",
+      "postdeploymentRealHttpTests": "success",
+      "graphqlCpuSample": {
+        "windowStartUtc": "2026-11-19T09:40:42Z",
+        "successfulRequests": 91,
+        "p99CpuMs": 5.534,
+        "nonSuccessfulDisconnectedRequests": 5,
+        "reportedExceededResourcesInSample": 0
+      },
+      "limitations": "Muestra 91 solicitudes; ni máximo CPU observado ni ruta KDF PBKDF2 de login/recuperación real ni carga en frío del 206 quedan certificados. Dejar cpu10msVerified falso."
     }
   },
   "phase6ZeroSpend": {
