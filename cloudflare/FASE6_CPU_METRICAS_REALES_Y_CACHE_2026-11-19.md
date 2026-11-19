@@ -19,12 +19,21 @@ Los valores medidos proceden del código ya desplegado en Workers; no se debe af
 
 ## 2. Hallazgo nuevo
 
-La lectura real de `GET /accounts/{account_id}/workers/scripts/bellaquitas-media-qa/settings` muestra **`cache_options.enabled=true` y `cross_version_cache=false`** en el Worker MEDIA **ya desplegado**. Por tanto, agregar `"cache":{"enabled":true}` en `cloudflare/wrangler-media-qa.jsonc` es **alineación declarativa del repositorio con un ajuste existente**, NO la activación nueva de una caché. Las peticiones existentes aún exhiben CPU elevada y se necesitan tests de aciertos `Cf-Cache-Status`.
+La lectura de `GET /accounts/{account_id}/workers/scripts/bellaquitas-media-qa/settings` muestra **`cache_options.enabled=true` y `cross_version_cache=false`**. El Worker multimedia **se desplegó automáticamente a las 03:25:24 UTC del 19/11 tras los commits en GitHub**. Por ello **NO podemos afirmar que esa caché ya estuviera activa ANTES del cambio**: la configuración observada se consultó cuando la nueva versión ya estaba desplegada. Hay que verificar `Cf-Cache-Status` y rangos HTTP 206 con tráfico comparable antes de atribuir causalidad al cache.
 
 Cloudflare documenta que Workers Cache (sin precio separado) puede gestionar `Range`: recibe el 200 completo, devuelve 206 y lo sirve desde el caché sin ejecutar JS en los aciertos. Los 206 producidos manualmente por el Worker no se cachean. Referencias:
 - https://developers.cloudflare.com/workers/cache/configuration/#range-requests
 - https://developers.cloudflare.com/workers/cache/
 - https://developers.cloudflare.com/workers/static-assets/billing-and-limitations/#range-requests
+
+## 2A. Comparación real entre versiones del Worker de vídeo (19/11 UTC)
+
+Cloudflare Workers Deployments identifica:
+- Versión anterior `774cd03e-53b3-4ef9-b78c-fa7909c09757`: **2.368** peticiones exitosas, CPU P50 **1,075 ms**, P95 **100,366 ms**, P99 **222,455 ms**.
+- Versión recién desplegada `9589f76c-b33c-440d-9547-ad6aa5032bcd`, desde **03:25:24 UTC**: **40** peticiones exitosas, CPU P50 **0,591 ms**, P95 **1,376 ms**, P99 **2,042 ms**, **0 errores observados**.
+- Este contraste es **favorable pero preliminar**: 40 peticiones no representan todos los patrones de vídeo y no demuestran un máximo inferior a 10 ms. La mezcla de rutas/cargas puede diferir entre versiones.
+- **API staging**: su despliegue no ha cambiado desde el 18/11 22:02 UTC, por lo que las optimizaciones de `web-mirror.js` en la rama **siguen sin estar desplegadas**.
+- **Preproducción final**: no ha cambiado desde el 18/11 22:04 UTC. Zona `pending`, 0 rutas públicas.
 
 ## 3. Cambios de la rama de migración
 
