@@ -86,3 +86,15 @@ El propietario ya entregó las fotografías de Cloudflare en los chats anteriore
 El 19/11/2026 el propietario confirmó expresamente que **ya tiene guardada en su propio ordenador la clave privada RSA de recuperación entregada el 18/11**. Se acepta esta confirmación como evidencia de custodia externa a ChatGPT y se marca `phase6BackupSecretCustody.privateRecoveryKeyStoredOfflineByOwnerVerified=true` y `phase6RuntimeCutoverAttestation.backupPrivateKeyStoredOutsideChatVerified=true` en el registro de fase 6. **No pedir de nuevo la clave, no solicitar que la suba, ni repetir la generación.**
 
 El respaldo D1 cifrado de 18/11 está creado, restaurado y con integridad del ciphertext comprobada. La cuestión distinta que sigue **sin acreditación** es el recifrado/rotación de la antigua copia del 16/11 cuya clave se compartió anteriormente. No inventar que ese paso se ejecutó ni tratar la custodia de la clave RSA como pendiente. El Worker desplegado se mantiene deliberadamente en modo preproducción hasta completar todas las demás puertas.
+
+
+## Respaldo fácil, sin pedir la clave privada — criterio confirmado por el propietario
+
+**No solicitar nunca que el propietario escriba, suba o envíe su clave privada RSA para CREAR, DUPLICAR, GUARDAR o VERIFICAR la huella pública SHA-256 del respaldo.** Ya confirmó que conserva en su ordenador la clave de recuperación correspondiente a la copia D1 del 18/11/2026. No generar otra clave privada innecesariamente.
+
+- **Respaldo principal existente:** `BELLAQUITAS_D1_COPIA_CIFRADA_2026-11-18.bqbk`. Este archivo AES-256-GCM / RSA-OAEP fue restaurado y comprobado con 7 perfiles y 1.999.998 puntos. Ya se encuentra en Biblioteca privada. Para tener copias adicionales, basta descargar/duplicar el archivo cifrado y verificar su SHA-256; **no se necesita descifrarlo**.
+- **Crear un respaldo posterior:** se puede cifrar con la clave pública RSA correspondiente a la privada ya custodiada, si se dispone y se valida esa clave pública. Si la pública no está disponible, no inventar que existe ni afirmar que la nueva copia es recuperable. La recuperación/descifrado de un respaldo protegido sí requiere la clave privada ya guardada por el usuario, pero esa clave se usa localmente y no pasa por el chat.
+- **Respaldo antiguo del 16/11:** no confundir duplicar el nuevo backup con rotar la clave antigua. El antiguo .bqbk y su clave antigua figuran en Biblioteca, pero no se pudieron materializar para recifrado real; `originalEncryptedBackupRotated=false`. Mantener esa conclusión explícita. Si se decide recifrarlo, el proceso debe ser estrictamente local. Evitar solicitar su clave antigua por chat.
+- **No guardar respaldos personales, claves o datos restaurados en el repositorio público.** No activar servicios de pago, cambiar DNS, sobrescribir archivos o borrar la única copia de rescate.
+
+El propietario pidió expresamente simplicidad y **ninguna solicitud de clave privada** para el flujo habitual de respaldo; la forma correcta es conservar la copia D1 ya cifrada y reutilizar su clave pública (si está disponible) para nuevas copias, sin degradar el cifrado.
