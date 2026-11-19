@@ -34,7 +34,7 @@ const d1={prepare(sql){return {bind(...values){return {
    throw Error("Synthetic database interruption before password reset");
   }
   const st=db.prepare(sql);
-  if(/\\bRETURNING\\b/i.test(sql)){
+  if(/\bRETURNING\b/i.test(sql)){
    const results=st.all(...values);
    return {success:true,meta:{changes:db.prepare("SELECT changes() AS n").get().n},results};
   }
