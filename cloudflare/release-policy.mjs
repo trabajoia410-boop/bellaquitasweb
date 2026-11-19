@@ -68,6 +68,14 @@ export function evaluateRelease(gates) {
   // Presupuesto obligatorio de 0 EUR: la zona Free NO certifica que la
   // suscripción Workers ni otros productos de la cuenta sean gratuitos.
   // Nunca permitir delegar/publicar hasta obtener evidencia de facturación.
+  const cpu = gates.phase6CpuSafety;
+  const cpu10msVerified =
+    cpu?.freeWorkersCpuLimitMs === 10 &&
+    cpu?.nativeHardLimitDocumented === true &&
+    cpu?.realStagingCpuP99Below10ms === true &&
+    cpu?.realStagingCpuMaxBelow10ms === true &&
+    cpu?.realStagingExceededCpuCountVerifiedZero === true &&
+    cpu?.realPasswordKdfAndVideo206Profiled === true;
   const budget = gates.phase6ZeroSpend;
   const freeOnlyVerified =
     budget?.zoneFreeVerified === true &&
@@ -166,7 +174,7 @@ export function evaluateRelease(gates) {
   // Esta fase solo habilitaría (tras firma expresa) copiar la delegación
   // exacta de Hostinger a Cloudflare SIN añadir rutas ni cambiar el A/www.
   const readyForNameserverDelegation =
-    authorized && freeOnlyVerified && pendingPrepublication.length === 0 &&
+    authorized && freeOnlyVerified && cpu10msVerified && pendingPrepublication.length === 0 &&
     adminTechnologyReady && targetPreDnsReady && dnsRecordsPrepared &&
     d?.zoneStatus === 'pending' &&
     d?.registrarNameserversChanged === false;
@@ -181,11 +189,12 @@ export function evaluateRelease(gates) {
   // La autorización nunca basta sin respaldo, credenciales recuperables,
   // integridad de datos y entorno final realmente preparado.
   const readyForControlledPublication =
-    authorized && freeOnlyVerified && pendingPrepublication.length === 0 &&
+    authorized && freeOnlyVerified && cpu10msVerified && pendingPrepublication.length === 0 &&
     adminTechnologyReady && targetReady;
   return {
     authorized,
     freeOnlyVerified,
+    cpu10msVerified,
     passed: REQUIRED_KEYS.length - pending.length,
     total: REQUIRED_KEYS.length,
     pending,
