@@ -10,7 +10,10 @@ const STAGING_HOSTNAME="bellaquitas-api-staging.bellaquitas-fest-410.workers.dev
 // no al proxy temporal GitHub. No activar este acceso en bellaquitas.fr.
 // Cuando el backend tenga ASSETS directo, se preferirá ese binding.
 function temporaryMediaAllowed(request,env){
- return !env?.ASSETS&&typeof env?.VIDEO_QA_PROXY?.fetch==="function"&&
+ // Staging puede preferir el Worker de medios PUBLICOS con cache activado:
+ // evita recortar MP4 completos en el Worker de login/QR. Nunca en prod.
+ return env?.SITE_MODE!=="production"&&
+  typeof env?.VIDEO_QA_PROXY?.fetch==="function"&&
   env?.STAGING_MUTATIONS==="disabled"&&
   env?.ALLOW_NEW_ACCOUNTS==="no"&&
   new URL(request.url).hostname===STAGING_HOSTNAME;
@@ -164,7 +167,8 @@ export async function mirrorRoute(request,env){
    if(!expected)return fail(404,"Este archivo no pertenece al diseño original");
    // Los originales se alojan en Cloudflare Static Assets, disponibles desde
    // el Worker multimedia aislado por Service Binding; nunca GitHub ni R2.
-   const useProxy=temporaryMediaAllowed(request,env);
+   const useProxy=temporaryMediaAllowed(request,env)&&
+     (!env?.ASSETS||expected.type==="video/mp4");
    if(!env?.ASSETS&&!useProxy)return fail(503,"Los medios estáticos aún no están desplegados");
    const assetUrl=new URL(request.url);
    assetUrl.pathname="/assets/"+encodeURIComponent(filename);
