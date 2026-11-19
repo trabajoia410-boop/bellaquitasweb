@@ -251,6 +251,31 @@
       "noAccountWrites": true,
       "verifiedBy": "Cloudflare API GET Worker settings, deployments, bindings, zone routes, D1 SELECT",
       "cpuProfileComplete": false
+    },
+    "kdfOriginalAlgorithmWorkerdLocalTest": {
+      "dateUTC": "2026-11-19",
+      "type": "LOCAL workerd via Wrangler --local, no Cloudflare account invocation",
+      "sourceJobId": 135566457738,
+      "sourceWorkflowRunId": 44525955475,
+      "workflowResult": "success",
+      "verifiedSyntheticVector": true,
+      "inputType": "synthetic fixed password and salt, no personal credentials",
+      "iterations": 600000,
+      "phases": 6,
+      "wallMsInsideLocalRuntime": 91,
+      "wallMsClientRoundtrip": 97,
+      "actualCloudflareCpuMeasured": false,
+      "freeCpuLimitMs": 10,
+      "severity": "potential CPU budget blocker, must not mark CPU flags passed",
+      "futureReleaseGateVerified": false,
+      "noSecretsOrD1": true,
+      "noRemoteDeployment": true,
+      "hostRestricted": "127.0.0.1 / localhost only",
+      "sourceFiles": [
+        "cloudflare/kdf-workerd-local-only.js",
+        "cloudflare/test-kdf-workerd-local-only.mjs",
+        "cloudflare/wrangler-kdf-local-only.jsonc"
+      ]
     }
   },
   "phase6ZeroSpend": {
@@ -339,6 +364,19 @@
       "r2Buckets": 0,
       "confirmedNoPaidProducts": false,
       "billingAuditComplete": false
+    },
+    "ciWorkloadSavings": {
+      "dateUTC": "2026-11-19",
+      "changedWorkflows": [
+        ".github/workflows/bellaquitas-phase5-preflight.yml",
+        ".github/workflows/cloudflare-migration-qa.yml",
+        ".github/workflows/qa-cloudflare-migration.yml"
+      ],
+      "excludeMarkdownOnlyUnderCloudflare": true,
+      "keepCodeAndAssetsTesting": true,
+      "noCloudflareWorkersDeployment": true,
+      "reason": "Avoid redundant browser/HTTP 206 tests and Workers invocations for documentation-only changes",
+      "freeTierSavingsExactNotMeasured": true
     }
   },
   "finalSignoff": {
