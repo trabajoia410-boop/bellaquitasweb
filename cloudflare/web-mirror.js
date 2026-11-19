@@ -235,7 +235,12 @@ export async function mirrorRoute(request,env){
      for(const [name,value] of Object.entries(PROTECTED))headers.set(name,value);
      headers.set("Content-Type",expected.type);
      headers.set("Accept-Ranges","bytes");
-     // Solo binarios originales públicos de la lista blanca: no contienen\n    // sesiones ni datos de D1. Cachear el MP4 también cuando lo entrega\n    // el Service Binding evita peticiones repetidas al Worker de login.\n    // No permitir cookies del origen multimedia en respuestas cacheables.\n    headers.delete("Set-Cookie");\n    headers.set("Cache-Control","public,max-age=86400");
+     // Solo binarios originales públicos de la lista blanca: no contienen
+     // sesiones ni datos de D1. Cachear el MP4 también cuando lo entrega
+     // el Service Binding evita peticiones repetidas al Worker de login.
+     // No permitir cookies del origen multimedia en respuestas cacheables.
+     headers.delete("Set-Cookie");
+     headers.set("Cache-Control","public,max-age=86400");
      return new Response(request.method==="HEAD"?null:served.body,{status:served.status,headers});
    }catch(error){
      console.error("Media QA:",String(error?.message||"unavailable").slice(0,105));
