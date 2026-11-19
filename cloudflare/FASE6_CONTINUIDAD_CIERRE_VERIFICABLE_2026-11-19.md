@@ -36,3 +36,13 @@ F. QA físico acordado de iPhone, QR/puerta y 2 administradores reales **despué
 ## Conclusión
 
 **La fase 6 sigue abierta intencionadamente.** Ningún bloqueador se puede dar por resuelto basándose en afirmaciones del asistente o flags sintéticos. Conservar todo el trabajo completo, no rehacer OAuth, Resend, D1, QR o vídeos desde cero; antes de cualquier operación irreversible, verificar el estado actual y respetar el presupuesto 0 €.
+
+## Actualización de validación QA: 19/11/2026
+
+- **CPU por código de respuesta**: Cloudflare GraphQL `workersInvocationsAdaptive` agrupada por `httpResponseStatus` identifica el principal cuello de botella en **HTTP 206** de staging: 1.082 solicitudes y P99 **280,650 ms**. En contraste, HTTP 200 tuvo 5.220 solicitudes y P99 **5,875 ms**, HTTP 401 tuvo 972 solicitudes y P99 **4,041 ms**. Esto es histórico del Worker de staging aún sin optimizar; **no equivale a demostrar el coste de contraseñas login/reset ni la CPU máxima**.
+- **Regresión EOF**: `cloudflare/test-free-cpu-policy.mjs` ahora verifica HTTP 206 también en el último bloque `bytes=25437514-25437524` de un vídeo original de 25.437.525 bytes, asegurando que la API staging utiliza solo `VIDEO_QA_PROXY`, sin recorrer el MP4 directo, sin cookies y sin cabecera de autorización. Es una prueba aislada sintética, no una medida de CPU real.
+- **Build de staging**: `.github/workflows/deploy-bellaquitas-api-staging-safe.yml` contiene guardas explícitas para la rama, el Worker existente, D1 **staging** aislada, ausencia de cambios de DNS, preservación de secretos con `keep_vars`, pruebas HTTP y rollback a versión anterior si falla el smoke test. Su primera ejecución detectó que **no existe `CLOUDFLARE_API_TOKEN` / `CF_API_TOKEN` accesible en GitHub Actions y saltó el despliegue**, conservando staging intacto.
+- **Empaquetado realmente probado**: la siguiente ejecución de ese flujo aprobó **`npx wrangler@4.160.0 deploy --dry-run --config cloudflare/wrangler-api-staging.jsonc`** incluso sin token privado, por lo que el empaquetado de la API staging pudo verificarse sin publicación ni escrituras D1. El despliegue remoto sigue omitido. **No pedir de nuevo Google/Resend ni confundir la ausencia de token de GitHub Actions con falta de credenciales de proveedores en Cloudflare.**
+- Si hay nuevas confirmaciones de CI después de esta actualización, comprobar las suites por SHA; no afirmar success de las que sigan en ejecución.
+- Todas las puertas anteriores de claves offline, auditoría integral de facturación, CPU real staging, delta final y DNS **continúan bloqueadas**.
+
