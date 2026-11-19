@@ -16,6 +16,19 @@ assert.equal(data.phase5CoreOriginRestore?.changesToProduction, false);
 assert.equal(data.productionChangesAuthorized, false,
   'NO cambiar producción automáticamente desde una prueba CI');
 assert.equal(actual.readyForControlledPublication, false);
+// Cierre del TRABAJO TÉCNICO fase 5 distinto del permiso para publicar.
+assert.equal(data.phase5TechnicalHandoff?.status,
+ 'technical-delivery-complete-production-gates-blocked');
+assert.equal(data.phase5TechnicalHandoff?.implementationDelivered,true);
+assert.equal(data.phase5TechnicalHandoff?.replicatedTablesExactlyMatched,16);
+assert.equal(data.phase5TechnicalHandoff?.backupTables,22);
+assert.equal(data.phase5TechnicalHandoff?.backupSqliteIntegrity,'ok');
+assert.equal(data.phase5TechnicalHandoff?.recoveryPackageHasPrivateKey,false);
+assert.equal(data.phase5TechnicalHandoff?.legacyBackupRekeyed,false);
+assert.equal(data.phase5TechnicalHandoff?.newPrivateKeyCustodiedOfflineVerified,false);
+assert.equal(data.phase5TechnicalHandoff?.originProviderDeltaCertified,false);
+assert.equal(data.phase5TechnicalHandoff?.prepublicationReleaseGatePassed,false,
+ 'No confundir entrega técnica con habilitación de rutas públicas');
 assert.ok(actual.pendingPrepublication.length >= 1,
   'Los bloqueos de respaldo o admins no deben aprobarse sin evidencia');
 
