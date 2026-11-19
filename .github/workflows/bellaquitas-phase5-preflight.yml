@@ -76,6 +76,8 @@ jobs:
         run: node cloudflare/test-production-site-route.mjs
       - name: Verificar que D1 preproducción está aislada, sin DNS ni escrituras
         run: node cloudflare/test-preproduction-config.mjs
+      - name: Verificar huellas de 10 registros DNS sin revelar TXT ni delegar
+        run: node cloudflare/test-phase6-dns-fingerprints.mjs
       - name: Comprobar optimizaciones CPU 10 ms sin reducir seguridad ni mediatización 206
         run: node cloudflare/test-free-cpu-policy.mjs
       - name: Medir KDF con valores sintéticos; solo aviso Node, no certificado Workers
