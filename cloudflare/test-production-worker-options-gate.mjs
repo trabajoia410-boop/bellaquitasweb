@@ -40,6 +40,8 @@ for(const path of ["/","/v1/auth/me","/administracion/","/v1/events"]){
   assert.equal(response.headers.get("X-Robots-Tag"),"noindex,nofollow");
  }
 }
+// El modo producción solo se abre si se ha certificado plan Free; una
+// simple aprobación o credenciales sintéticas no bastan sin esta marca.
 const safeProduction={
  SITE_MODE:"production",PUBLISH_APPROVED:"yes",
  FINAL_ORIGIN_RECONCILED:"yes",BACKUP_KEY_CUSTODIED:"yes",
@@ -54,6 +56,9 @@ const safeProduction={
  RESEND_FROM:"no-reply@bellaquitas.fr",
  TURNSTILE_SECRET:"fake-turnstile-secret",TURNSTILE_SITE_KEY:"fake-site-key"
 };
+const noFreeBilling=await worker.fetch(preflight(),{...safeProduction,FREE_TIER_BILLING_VERIFIED:"no"});
+assert.equal(noFreeBilling.status,503,"La API debe cerrarse si el plan gratuito no está verificado");
+assert.equal(noFreeBilling.headers.get("Access-Control-Allow-Origin"),null);
 // La API final no autoriza al origen GitHub Pages ni a www a
 // inspeccionar respuestas con CORS; staging conserva esas excepciones.
 for(const origin of ["https://trabajoia410-boop.github.io","https://www.bellaquitas.fr","https://example.invalid"]){
