@@ -46,3 +46,5 @@ F. QA físico acordado de iPhone, QR/puerta y 2 administradores reales **despué
 - Si hay nuevas confirmaciones de CI después de esta actualización, comprobar las suites por SHA; no afirmar success de las que sigan en ejecución.
 - Todas las puertas anteriores de claves offline, auditoría integral de facturación, CPU real staging, delta final y DNS **continúan bloqueadas**.
 
+
+**Precisión de despliegue (verificación API posterior):** el Worker `bellaquitas-api-preproduccion` desplegado mantiene `SITE_MODE=preproduction`, `PUBLISH_APPROVED=no`, `FINAL_ORIGIN_RECONCILED=no` y `BACKUP_KEY_CUSTODIED=no`; la variable `FREE_TIER_BILLING_VERIFIED` **no aparece como binding de texto en la versión desplegada**. Figura como `no` en la configuración del candidato de GitHub. La ausencia de esa variable no se interpreta como aprobación; además, la versión vigente sigue en modo preproducción y la zona continúa sin rutas Worker. No dar por desplegados los cambios de gate de CPU/facturación de la rama.
