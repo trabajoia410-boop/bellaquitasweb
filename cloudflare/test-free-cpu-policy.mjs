@@ -28,6 +28,15 @@ for(const file of files){
   file+": no introducir recursos adicionales de pago");
 }
 const apiCfg=load(files[0]);
+// Workers Cache se limita al Worker QA de medios públicos: jamás a endpoints
+// de sesión, correo, QR, puntuación o administración sin auditoría separada.
+const mediaCfg=load(files[2]);
+assert.equal(mediaCfg.cache?.enabled,true,
+ "El cache gratuito debe poder atender Range MP4 desde el edge sin ejecutar JS");
+assert.equal(mediaCfg.assets?.run_worker_first,true,
+ "Si el cache falla, mantener adaptador HTTP 206 para Safari/iPhone");
+assert.ok(apiCfg.cache?.enabled!==true,
+ "El Worker que contiene autenticación y D1 no debe tener cache global");
 assert.equal(apiCfg.vars?.PUBLISH_APPROVED,"no");
 assert.equal(apiCfg.vars?.BACKUP_KEY_CUSTODIED,"no");
 assert.equal(apiCfg.vars?.FREE_TIER_BILLING_VERIFIED,"no");
