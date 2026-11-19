@@ -8,3 +8,5 @@ Validación postbuild: 5 MP4 originales HTTP 206 inicio y final + bytes exactos,
 
 Corrección validada 2026-11-19: caché pública únicamente para MP4 original permitido; cookies eliminadas de la respuesta multimedia. Test sintético de inyección Set-Cookie aprobado antes de publicar esta revisión.
 Cambios excluidos: producción, DNS, punto, visitas, cuentas y secretos. Build staging debe mantener la D1 original y el Service Binding VIDEO_QA_PROXY.
+
+Fase 6, corrección de recuperación de contraseñas (19/11): actualizar SOLO staging con reset transaccional D1. El token se conserva si falla PBKDF2 y las tres escrituras (credenciales, revocación de sesiones y consumo del token) se realizan en un único D1.batch. QA sintética con 2 admins: rollback simulado y token de un solo uso, seguridad y HTTP reales aprobados. No crear ni usar credenciales reales. No cambiar DNS, Worker de producción, tokens, puntos, Google ni Resend.
