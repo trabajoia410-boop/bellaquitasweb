@@ -43,6 +43,7 @@ for(const path of ["/","/v1/auth/me","/administracion/","/v1/events"]){
 const safeProduction={
  SITE_MODE:"production",PUBLISH_APPROVED:"yes",
  FINAL_ORIGIN_RECONCILED:"yes",BACKUP_KEY_CUSTODIED:"yes",
+ FREE_TIER_BILLING_VERIFIED:"yes",
  PUBLIC_ORIGIN:DOMAIN,TURNSTILE_EXPECTED_HOSTNAME:"bellaquitas.fr",
  STAGING_MUTATIONS:"enabled",ALLOW_NEW_ACCOUNTS:"yes",
  EMAIL_AUTH_ENABLED:"yes",EMAIL_REGISTRATION_ENABLED:"yes",
