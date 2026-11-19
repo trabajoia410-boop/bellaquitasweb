@@ -608,7 +608,17 @@
     "libraryCiphertextDigestAlgorithm": "SHA-256",
     "libraryCiphertextDigest": "65ea99d27f4f8132758d5a80cdffb6649c0405bdcdbd123ca490e0438bebce8f",
     "libraryCiphertextDigestCheckedOn": "2026-11-19",
-    "libraryFileRawMaterializationAvailable": false
+    "libraryFileRawMaterializationAvailable": false,
+    "originalNativePasswordInventory": {
+      "checkedDate": "2026-11-19",
+      "source": "Original auth.users/auth.identities, SELECT counts only",
+      "users": 6,
+      "googleIdentities": 6,
+      "usersWithNativePassword": 0,
+      "verifiedEmails": 6,
+      "nativePasswordHashesToTransfer": 0,
+      "note": "6 Google account identifiers preserved in D1. No native password hashes in source; this does not certify offline private key custody or complete restoration of all authentication history and settings."
+    }
   },
   "phase6PrivateWorkerFailClosed": {
     "status": "deployed-private",
