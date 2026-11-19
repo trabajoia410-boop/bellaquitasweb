@@ -18,7 +18,9 @@ export function productionConfigurationReady(env) {
       env.FINAL_ORIGIN_RECONCILED !== "yes" ||
       env.BACKUP_KEY_CUSTODIED !== "yes" ||
       // Exigir verificación real de la facturación: zona Free no demuestra Workers Free.
-      env.FREE_TIER_BILLING_VERIFIED !== "yes") return false;
+      env.FREE_TIER_BILLING_VERIFIED !== "yes" ||
+      // Workers Free: no abrir registro/login de contraseña sin ensayo real de CPU.
+      env.FREE_TIER_CPU_VERIFIED !== "yes") return false;
   const has = (key, minimum) =>
     typeof env[key] === "string" && env[key].length >= minimum;
   const expectedFlags = {
