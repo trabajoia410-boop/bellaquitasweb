@@ -38,6 +38,8 @@ assert.equal(target.vars?.FREE_TIER_CPU_VERIFIED,'no',
  'No publicar sin perfil CPU real de contraseña y streaming dentro de Workers Free');
 assert.equal(target.vars?.CLERK_JWT_ENABLED,'no',
  'Clerk no puede utilizar cuentas ni puntos hasta verificar vínculos y migración');
+assert.equal(target.vars?.CLERK_EXCHANGE_ENABLED,'no');
+assert.equal(target.vars?.CLERK_QA_PREVIEW,'no');
 assert.equal(target.vars?.PUBLISH_APPROVED,'no',
  'La aprobación final de producción nunca se versiona como sí');
 assert.equal(target.d1_databases?.length,1);
