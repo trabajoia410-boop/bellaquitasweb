@@ -5,6 +5,7 @@ import {clerkSessionExchange} from "./clerk-session-exchange.js";
 import {productionSiteRoute} from "./production-site-route.js";
 import {productionAccessGate} from "./production-auth-readiness.js";
 import {adminConsoleRoute} from "./admin-console.js";
+import {studioSandboxRoute} from "./studio-sandbox.js";
 import {previewRoute} from "./preview-page.js";
 import {mirrorRoute} from "./web-mirror.js";
 import {mirrorDataRoute} from "./mirror-data-routes.js";
@@ -86,6 +87,10 @@ export default {
       // Consola en ruta separada, sin cambiar la portada ni la API pública.
       const adminPage = adminConsoleRoute(request,env);
       if (adminPage) return adminPage;
+      // Anonymous visual lab is read-only, has NO API privileges and only
+      // exists on the exact staging hostname with all mutations disabled.
+      const studioPage = studioSandboxRoute(request,env);
+      if (studioPage) return studioPage;
       const mirrorResponse = await mirrorRoute(request, env);
       if (mirrorResponse) return mirrorResponse;
       const previewResponse = previewRoute(request);
