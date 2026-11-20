@@ -49,6 +49,8 @@ jobs:
         run: node cloudflare/test-provider-broker.mjs
       - name: Probar Clerk JWT real criptografía con identidades ficticias sin tocar D1
         run: node cloudflare/test-clerk-auth-bridge.mjs
+      - name: Probar esquema Clerk y evitar suplantacion sin tocar D1 real
+        run: python3 -m unittest discover -s cloudflare -p 'test_clerk_links_guard.py' -v
       - name: Verificar interfaz Clerk en QA aislado sin alterar portada
         run: node cloudflare/test-clerk-qa-preview.mjs
       - name: Conciliar seis cuentas Google-Clerk sintéticas sin emails ni puntos reales
