@@ -35,6 +35,12 @@ try{
   await route.fulfill({status:200,contentType:"application/json",body:JSON.stringify(data)});
  });
  const page=await ctx.newPage();
+ const confirms=[];
+ page.on("dialog",async dialog=>{
+  if(dialog.type()!=="confirm")throw Error("Diálogo inesperado en QA");
+  confirms.push(dialog.message());
+  await dialog.accept();
+ });
  const writes=[],errors=[];
  page.on("request",r=>{
   if(r.url().startsWith(BASE+"/")&&!["GET","HEAD","OPTIONS"].includes(r.method()))
@@ -57,6 +63,8 @@ try{
  await frame.locator('.bf-hero-video').first().waitFor({state:"attached",timeout:10000});
  assert.equal(new URL(page.frames().find(f=>f.url().includes("admin_embed=1"))?.url()||BASE).hash,"#/",
   "El logo de cuenta debe llevar a Inicio");
+ assert.ok(confirms.some(s=>/sin guardar/i.test(s)),
+  "El editor debe pedir confirmación antes de abandonar un borrador sin guardar");
  // El iframe anidado se nutre del renderer original (y no un mock de texto).
  await frame.locator("#editor-preview").waitFor({state:"attached",timeout:15000});
  const embedded=page.locator("#siteVisualEditor");
