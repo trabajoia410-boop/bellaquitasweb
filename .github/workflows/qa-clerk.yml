@@ -1,0 +1,27 @@
+name: QA de identidad Clerk (solo pruebas)
+on:
+  pull_request:
+    paths:
+      - "cloudflare/clerk-auth-bridge.js"
+      - "cloudflare/test-clerk-auth.mjs"
+      - "cloudflare/test_clerk_migration.py"
+      - "cloudflare/migrations/0004-clerk-identity-links.sql"
+      - ".github/workflows/qa-clerk.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  security-unit-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verificar JWT Clerk y prohibicion de accesos sin vinculo
+        run: node --test cloudflare/test-clerk-auth.mjs
+      - name: Validar migracion D1 con SQLite en memoria
+        run: python3 -m unittest discover -s cloudflare -p 'test_clerk_migration.py' -v
