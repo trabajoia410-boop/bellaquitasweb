@@ -58,6 +58,11 @@ try{
  await frame.locator('.editor-theme[data-theme="minimal"]').waitFor({state:"visible",timeout:15000});
  await frame.locator('.editor-theme[data-theme="minimal"]').click();
  assert.match(await frame.locator('.editor-theme[data-theme="minimal"]').getAttribute("class")||"",/chosen/);
+ // El iframe anidado se nutre del renderer original (y no un mock de texto).
+ await frame.locator("#editor-preview").waitFor({state:"attached",timeout:15000});
+ const embedded=page.locator("#siteVisualEditor");
+ assert.equal(new URL(await embedded.getAttribute("src"),BASE).pathname,"/espejo/");
+ assert.equal(new URL(await embedded.getAttribute("src"),BASE).searchParams.get("admin_embed"),"1");
  // Clicking the account logo must return to the public Inicio, not /panel.
  await frame.locator('.side-head a.brand').click();
  await frame.locator('.bf-hero-video').first().waitFor({state:"attached",timeout:10000});
@@ -65,11 +70,6 @@ try{
   "El logo de cuenta debe llevar a Inicio");
  assert.ok(confirms.some(s=>/sin guardar/i.test(s)),
   "El editor debe pedir confirmación antes de abandonar un borrador sin guardar");
- // El iframe anidado se nutre del renderer original (y no un mock de texto).
- await frame.locator("#editor-preview").waitFor({state:"attached",timeout:15000});
- const embedded=page.locator("#siteVisualEditor");
- assert.equal(new URL(await embedded.getAttribute("src"),BASE).pathname,"/espejo/");
- assert.equal(new URL(await embedded.getAttribute("src"),BASE).searchParams.get("admin_embed"),"1");
  // El menú móvil no debe verse en PC; al reducir anchura abre lateral real.
  await page.setViewportSize({width:390,height:844});
  const toggle=page.locator("#adminNavToggle");
