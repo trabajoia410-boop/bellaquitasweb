@@ -1,3 +1,4 @@
+import {productionClerkUiConfig} from "./clerk-login-page.js";
 /**
  * Bellaquitas Fest — bloqueo de producción para no publicar una portada
  * que permita registrarse pero no iniciar sesión, ni un panel sin acceso.
@@ -40,7 +41,8 @@ export function productionConfigurationReady(env) {
   // The old email password KDF must stay OFF in production. A Clerk JWKS
   // verifier is only usable with a pinned production issuer and canonical
   // origin, plus both explicit feature flags and a complete release gate.
-  if (env.CLERK_JWT_ENABLED !== "yes" ||
+  if (!productionClerkUiConfig(env) ||
+      env.CLERK_JWT_ENABLED !== "yes" ||
       env.CLERK_EXCHANGE_ENABLED !== "yes" ||
       // El panel no puede quedar sin reverificación reciente de primer
       // factor Clerk (Hobby gratuito; MFA de producción sería de pago).
