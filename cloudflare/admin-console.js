@@ -27,6 +27,14 @@ export function adminConsoleRoute(request,env) {
     env?.STAGING_MUTATIONS==="disabled"&&env?.ALLOW_NEW_ACCOUNTS==="no"));
  const html=(env?.SITE_MODE==="production"
   ?HTML.replace('href="/espejo/#/recuperar"','href="/#/recuperar"')
+    // El inicio antiguo Google/email permanece como nodos ocultos solo
+    // para que los handlers heredados no fallen. Ninguno puede usarse.
+    .replace('<a href="/v1/auth/google/start?return=admin" class="action">Entrar con Google</a>',
+     '<a href="/v1/auth/google/start?return=admin" class="action" hidden style="display:none">Entrar con Google</a>'+
+     '<a href="/acceso/?return=administracion" class="action" id="clerkAdminLogin">Iniciar sesión con Bellaquitas</a>')
+    .replace('<form id="loginForm"','<form id="loginForm" hidden')
+    .replace('<h2>Correo y contraseña</h2>','<h2 hidden>Correo y contraseña</h2>')
+    .replace('<p class="hint"><a href="/#/recuperar"','<p class="hint" hidden><a href="/#/recuperar"')
   :HTML.replace('href="/" class="action secondary">Volver a la web</a>','href="/espejo/" class="action secondary">Volver a la web</a>'))
   .replace("<!--STAGING_LAB_DESIGN-->",stagingLab?"<div id=\"adminDesignTools\"><h3>Plantillas y diseño avanzado</h3>\n<p>Accede al laboratorio de doce plantillas, colores, iconos y secciones. No altera los datos ni publica cambios.</p>\n<div class=\"flex\"><button type=\"button\" id=\"adminDesignToggle\" class=\"secondary\" aria-controls=\"adminDesignStage\" aria-expanded=\"false\">Abrir laboratorio de plantillas</button>\n<button type=\"button\" id=\"adminDesignReview\" class=\"secondary\">Revisar borrador local</button>\n<a class=\"action secondary\" href=\"/laboratorio/\" target=\"_blank\" rel=\"noopener noreferrer\">Abrir en pestaña nueva</a></div>\n<div id=\"adminDesignSummary\" role=\"status\" aria-live=\"polite\" hidden></div>\n<div id=\"adminDesignStage\" hidden><iframe id=\"adminDesignStudio\" data-src=\"/laboratorio/?admin_embed=1\" title=\"Editor visual de doce plantillas\" loading=\"lazy\" referrerpolicy=\"same-origin\"></iframe></div>\n<p class=\"hint\">Este laboratorio es exclusivamente local. Guardar o publicar cambios reales sigue desactivado hasta superar las pruebas de seguridad.</p></div>":"");
  return new Response(request.method==="HEAD"?null:html.replace("__NONCE__",nonce).replace("</body>","<script nonce=\""+nonce+"\">"+ADMIN_TRANSLATION_JS+"</script></body>"),{status:200,headers});
