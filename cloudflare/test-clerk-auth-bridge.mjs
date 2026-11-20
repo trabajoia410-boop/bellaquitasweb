@@ -169,6 +169,8 @@ try{
    {...claims,iss:"https://evil.test"}, {...claims,exp:now-1},
    {...claims,nbf:now+120}, {...claims,iat:now+120},
    {...claims,exp:now+4000}, {...claims,sid:"invalid"},
+   {...claims,sts:"pending"}, {...claims,sts:"ended"},
+   {...claims,sts:"suspended"}, {...claims,act:{sub:"user_other123456789"}},
  ]){
   assert.equal(await verifyClerkJwt(request(make(modified)),env),null,
     "Cualquier claim fuera de dominio, identidad o plazo debe rechazarse");
