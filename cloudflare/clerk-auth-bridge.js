@@ -140,6 +140,12 @@ export async function verifyClerkJwt(request,env,network=fetch){
  if(header?.alg!=="RS256"||header.typ&&header.typ!=="JWT"||
     !/^[A-Za-z0-9_-]{5,128}$/.test(header.kid||"")||header.jku||header.jwk||header.x5u)return null;
  const now=Math.floor(Date.now()/1000);
+ // Los tokens de sesiones todavía pendientes o impersonadas pueden
+ // estar firmados: firma válida no equivale a una sesión de socio activa.
+ // Clerk usa sts='pending' y act para impersonación administrativa.
+ if(claims?.sts==="pending"||claims?.sts==="ended"||
+    (claims?.sts!==undefined&&claims.sts!=="active")||
+    claims?.act!==undefined)return null;
  if(claims?.iss!==cfg.issuer||claims.azp!==cfg.origin||
     !/^user_[A-Za-z0-9]{10,128}$/.test(claims.sub||"")||
     !/^sess_[A-Za-z0-9]{10,128}$/.test(claims.sid||"")||
