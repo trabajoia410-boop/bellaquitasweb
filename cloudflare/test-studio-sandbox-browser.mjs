@@ -34,6 +34,16 @@ try{
  await page.locator("#studioAccent").fill("#ce94ff");
  await page.waitForFunction(()=>document.querySelector("#site")?.contentDocument?.body?.getAttribute("data-s-hero")==="framed");
  assert.equal(await preview.locator("body").evaluate(e=>e.style.getPropertyValue("--s-accent")),"#ce94ff");
+ // Los iconos se editan directamente, además de las imágenes y textos.
+ await page.locator('#pages [data-page="/experiencia"]').click();
+ await preview.locator(".feature-icon").first().waitFor({state:"visible",timeout:16000});
+ await preview.locator(".feature-icon").first().click();
+ await page.locator("#studioIcon").waitFor({state:"visible"});
+ assert.equal(await page.locator("#studioIcon").isEnabled(),true);
+ await page.locator("#studioIcon").fill("♫");
+ assert.equal(await preview.locator(".feature-icon").first().innerText(),"♫");
+ await page.locator('#pages [data-page="/"]').click();
+ await preview.locator(".bf-new-navbar-logo img").waitFor({state:"attached",timeout:16000});
  await page.locator("#studioPickLogo").click();
  assert.match(await page.locator("#studioSelection").innerText(),/Logo superior/);
  const tinyPng=Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9WpuIgAAAABJRU5ErkJggg==","base64");
