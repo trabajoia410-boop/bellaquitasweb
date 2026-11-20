@@ -103,7 +103,7 @@ assert.match(email,/iterations:100000/);
    "No reactivar el inicio Google directo fuera de Clerk");
  }
  assert.equal(apiCfg.vars?.CLERK_ADMIN_STEPUP_ENABLED,"no",
-  "MFA Clerk de administradores aún NO activado");
+  "Reverificación gratuita de administradores aún NO activada");
 
 // Solo rutas publicas media son cacheables (200); 206 de respaldo conserva
 // compatibilidad Safari si el Workers Cache todavia no esta en el edge.
