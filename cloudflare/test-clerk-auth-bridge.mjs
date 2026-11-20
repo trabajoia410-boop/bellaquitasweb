@@ -35,6 +35,35 @@ const env={SITE_MODE:"staging",CLERK_JWT_ENABLED:"yes",CLERK_ISSUER:issuer,
       return {async first(){queries++;return member;}};}};}}};
 const request=(token=signed,path="/v1/auth/clerk/me",method="GET")=>new Request(origin+path,{method,headers:{"Authorization":"Bearer "+token}});
 try{
+ // JWKS no es fiable: Content-Length ausente NO autoriza descargar JSON
+ // excesivo. El token de prueba está firmado, así que la única barrera debe
+ // ser el límite real de bytes, no una firma incorrecta.
+ const overflowIssuer="https://qa-overflow.clerk.accounts.dev";
+ const overflowEnv={...env,CLERK_ISSUER:overflowIssuer};
+ const overflowToken=make({...claims,iss:overflowIssuer});
+ const huge=JSON.stringify({keys:[jwk],payload:"x".repeat(70000)});
+ assert.equal(await verifyClerkJwt(request(overflowToken),overflowEnv,
+  async()=>new Response(huge,{status:200})),null,
+  "JWKS debe rechazar payloads mayores a 64 KiB sin Content-Length");
+ const fakeLength=String(Buffer.byteLength(JSON.stringify({keys:[jwk]})));
+ const validJWKS=await verifyClerkJwt(request(overflowToken),overflowEnv,
+  async()=>new Response(JSON.stringify({keys:[jwk]}),{status:200,
+   headers:{"Content-Length":fakeLength}}));
+ assert.equal(validJWKS.subject,claims.sub,
+  "El límite JWKS no debe romper respuestas legales con Content-Length");
+ const streamIssuer="https://qa-streaming.clerk.accounts.dev";
+ const streamEnv={...env,CLERK_ISSUER:streamIssuer};
+ const streamToken=make({...claims,iss:streamIssuer});
+ let chunks=0;
+ const stream=new ReadableStream({pull(controller){
+  chunks++;
+  controller.enqueue(new Uint8Array(8192).fill(0x20));
+  if(chunks>=20)controller.close();
+ }});
+ assert.equal(await verifyClerkJwt(request(streamToken),streamEnv,
+  async()=>new Response(stream,{status:200})),null,
+  "El límite funciona en streaming");
+ assert.ok(chunks<20,"No consumir cuerpo completo tras exceder 64 KiB");
  const good=await verifyClerkJwt(request(),env);
  assert.equal(good.subject,claims.sub);
  const profile=await clerkIdentityRoute(request(),env);
