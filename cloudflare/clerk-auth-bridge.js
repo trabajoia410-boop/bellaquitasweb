@@ -7,6 +7,40 @@
  */
 const HEAD={"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store","X-Content-Type-Options":"nosniff","X-Robots-Tag":"noindex, nofollow","Referrer-Policy":"no-referrer"};
 const reply=(body,status)=>new Response(JSON.stringify(body),{status,headers:HEAD});
+// Avoid re-fetching JWKS and importing RSA keys on every 60-second Clerk JWT.
+// Short-lived, issuer-pinned, bounded isolate cache: never trust a JWT header
+// URL, and throttle unknown KIDs to avoid repeated paid-resource subrequests.
+const JWKS_MAX_AGE_MS=5*60*1000, JWKS_UNKNOWN_KID_RETRY_MS=30*1000;
+const jwksCache=new Map();
+async function verifiedClerkKey(cfg,kid,network) {
+ const clock=Date.now(),item=jwksCache.get(cfg.issuer);
+ if(item&&clock-item.fetchedAt<JWKS_MAX_AGE_MS){
+  const known=item.keys.get(kid);
+  if(known)return known;
+  if(clock-item.fetchedAt<JWKS_UNKNOWN_KID_RETRY_MS)return null;
+ }
+ const reply=await network(cfg.jwks,{headers:{Accept:"application/json"},cf:{cacheEverything:true,cacheTtl:300}});
+ if(!reply.ok||Number(reply.headers.get("content-length")||0)>65536)return null;
+ const body=await reply.json();
+ if(!Array.isArray(body?.keys)||body.keys.length>25)return null;
+ // Resolve only the requested key; caching one CryptoKey bounds memory and
+ // prevents importing 25 keys in a single invocation.
+ const match=body.keys.find(k=>k.kid===kid&&k.kty==="RSA"&&
+  (!k.alg||k.alg==="RS256")&&(!k.use||k.use==="sig")&&
+  typeof k.n==="string"&&typeof k.e==="string");
+ const keys=new Map();
+ if(match){
+  const imported=await crypto.subtle.importKey("jwk",
+   {kty:"RSA",n:match.n,e:match.e,alg:"RS256",ext:true},
+   {name:"RSASSA-PKCS1-v1_5",hash:"SHA-256"},false,["verify"]);
+  keys.set(kid,imported);
+ }
+ // Keep at most two issuers; production allows only the fixed custom domain.
+ if(!jwksCache.has(cfg.issuer)&&jwksCache.size>=2)
+  jwksCache.delete(jwksCache.keys().next().value);
+ jwksCache.set(cfg.issuer,{fetchedAt:clock,keys});
+ return keys.get(kid)||null;
+}
 function decode64(data){
  if(typeof data!=="string"||data.length>12000||!/^[A-Za-z0-9_-]+$/.test(data))throw Error("JWT encoding");
  const b=atob(data.replace(/-/g,"+").replace(/_/g,"/"));
@@ -50,18 +84,9 @@ export async function verifyClerkJwt(request,env,network=fetch){
     !Number.isSafeInteger(claims.exp)||claims.nbf>now+5||
     claims.iat>now+60||claims.exp<=now||
     claims.exp-claims.iat>3600||claims.exp-claims.iat<=0)return null;
- let remote;
  try{
-  remote=await network(cfg.jwks,{headers:{Accept:"application/json"},cf:{cacheEverything:true,cacheTtl:300}});
-  if(!remote.ok||Number(remote.headers.get("content-length")||0)>65536)return null;
-  const json=await remote.json();
-  if(!Array.isArray(json?.keys)||json.keys.length>25)return null;
-  const jwk=json.keys.find(k=>k.kid===header.kid&&k.kty==="RSA"&&
-       (!k.alg||k.alg==="RS256")&&(!k.use||k.use==="sig")&&
-       typeof k.n==="string"&&typeof k.e==="string");
-  if(!jwk)return null;
-  const key=await crypto.subtle.importKey("jwk",{kty:"RSA",n:jwk.n,e:jwk.e,alg:"RS256",ext:true},
-     {name:"RSASSA-PKCS1-v1_5",hash:"SHA-256"},false,["verify"]);
+  const key=await verifiedClerkKey(cfg,header.kid,network);
+  if(!key)return null;
   const ok=await crypto.subtle.verify("RSASSA-PKCS1-v1_5",key,decode64(parts[2]),
      new TextEncoder().encode(parts[0]+"."+parts[1]));
   if(!ok)return null;

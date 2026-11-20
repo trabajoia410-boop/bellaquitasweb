@@ -43,7 +43,8 @@ try{
  assert.equal(body.adminSessionAuthorized,false);
  assert.equal(profile.headers.get("Cache-Control"),"no-store");
  assert.equal(profile.headers.get("Set-Cookie"),null);
- assert.ok(fetches===2&&queries===1);
+ assert.ok(fetches===1&&queries===1,
+ "JWKS key import should be reused in one Worker isolate");
  assert.equal(await clerkIdentityRoute(request(signed,"/v1/events"),env),null);
  assert.equal((await clerkIdentityRoute(request(signed,"/v1/auth/clerk/me","POST"),env)).status,405);
  const disabled={...env,CLERK_JWT_ENABLED:"no"};
@@ -62,6 +63,11 @@ try{
  assert.equal(await verifyClerkJwt(request(make(claims,{...header,alg:"none"})),env),null);
  assert.equal(await verifyClerkJwt(request(make(claims,{...header,jku:"https://evil.test/jwks"})),env),null);
  assert.equal(await verifyClerkJwt(request(make(claims,{...header,kid:"unknown-key"})),env),null);
+ const priorMisses=fetches;
+ for(let n=0;n<30;n++)
+  assert.equal(await verifyClerkJwt(request(make(claims,{...header,kid:"unknown-"+n})),env),null);
+ assert.equal(fetches,priorMisses,
+ "Unknown KID flood must not trigger unbounded JWKS requests");
  assert.equal(await verifyClerkJwt(request(),{...env,CLERK_ISSUER:"http://qa.clerk.accounts.dev"}),null);
  assert.equal(await verifyClerkJwt(request(),{...env,CLERK_ISSUER:"https://evil.test"}),null);
  assert.equal(await verifyClerkJwt(request(),{...env,SITE_MODE:"production"}),null);
