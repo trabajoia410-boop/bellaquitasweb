@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import assert from "node:assert/strict";
+import {Script} from "node:vm";
 import {studioSandboxRoute} from "./studio-sandbox.js";
 const origin="https://bellaquitas-api-staging.bellaquitas-fest-410.workers.dev";
 const good={SITE_MODE:"staging",STAGING_MUTATIONS:"disabled",ALLOW_NEW_ACCOUNTS:"no"};
@@ -13,6 +14,21 @@ assert.match(html,/admin_embed=1#\//);
 assert.match(html,/Guardar borrador local/);
 assert.match(html,/data-page="\/eventos"/);
 assert.match(html,/data-theme="minimal"/);
+for(const preset of ["original","noir","urban","glass","violet","editorial"])
+ assert.match(html,new RegExp('data-preset="'+preset+'"'));
+for(const element of ["studioHeader","studioMenu","studioHero","studioCards",
+ "studioButtons","studioFont","studioAccent","studioSurface","studioPickLogo",
+ "studioFile","studioIcon","studioSections","studioResetDesign"])
+ assert.match(html,new RegExp('id="'+element+'"'));
+assert.match(html,/data-section="eventos"/);
+assert.match(html,/data-icon="♛"/);
+assert.match(html,/bf_studio_design_v2/);
+assert.match(html,/data-s-header/);
+assert.match(html,/\.bf-new-navbar-logo/);
+assert.match(html,/localStorage\.setItem\(KEY,value\)/);
+const inline=Array.from(html.matchAll(/<script nonce="[^"]+">([\s\S]*?)<\/script>/g));
+assert.equal(inline.length,2,"Los dos scripts requieren CSP nonce");
+for(const [i,s] of inline.entries())new Script(s[1],{filename:"studio-inline-"+i+".js"});
 assert.match(html,/localStorage\.setItem\(KEY,json\)/);
 assert.match(html,/event\.target\?\.nodeType===1/,
  "Cross-frame click-to-edit must work even when Element constructors differ");
