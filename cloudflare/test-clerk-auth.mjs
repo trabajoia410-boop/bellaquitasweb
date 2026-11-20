@@ -140,6 +140,43 @@ test("JWKS inaccesible o sin clave aceptable: ningún token autorizado", async (
   assert.equal(wrongKey, null);
 });
 
+
+test("JWKS sin longitud declarada: rechazar más de 64 KiB aun si la firma es válida", async () => {
+  const oversized = JSON.stringify({keys: [jwk], padding: "x".repeat(66000)});
+  const response = await bridge.verifyClerkToken(req(makeToken()), env, async () =>
+    new Response(oversized, {status: 200}));
+  assert.equal(response, null);
+});
+
+test("JWKS que declara una respuesta excesiva se rechaza antes de consumirla", async () => {
+  let consumed = false;
+  const body = new ReadableStream({
+    pull() { consumed = true; throw Error("No debe leerse"); }
+  });
+  const response = await bridge.verifyClerkToken(req(makeToken()), env, async () =>
+    new Response(body, {
+      status: 200,
+      headers: {"Content-Length": "999999"}
+    }));
+  assert.equal(response, null);
+  assert.equal(consumed, false);
+});
+
+test("JWKS fragmentado que excede 64 KiB deja de leerse sin autorizar", async () => {
+  let produced = 0;
+  const body = new ReadableStream({
+    pull(controller) {
+      produced++;
+      controller.enqueue(new Uint8Array(8192).fill(0x20));
+      if (produced >= 20) controller.close();
+    }
+  });
+  const response = await bridge.verifyClerkToken(req(makeToken()), env, async () =>
+    new Response(body, {status: 200}));
+  assert.equal(response, null);
+  assert.ok(produced < 20, "No debe descargar todo el cuerpo");
+});
+
 test("JWT válido sin D1 disponible: 503 sin crear sesión", async () => {
   const r = await bridge.clerkReadOnlyRoute(req(makeToken()), env);
   assert.equal(r.status, 503);
