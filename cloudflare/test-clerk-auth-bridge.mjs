@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 /* Clerk + Cloudflare, pruebas 100% sintéticas y sin Internet ni cuentas reales. */
 import assert from "node:assert/strict";
-import {generateKeyPairSync,createSign,webcrypto} from "node:crypto";
+import {generateKeyPairSync,createSign} from "node:crypto";
 import {readFileSync} from "node:fs";
 import {verifyClerkJwt,clerkIdentityRoute} from "./clerk-auth-bridge.js";
-globalThis.crypto=webcrypto;
 const issuer="https://qa.clerk.accounts.dev",origin="https://qa.bellaquitas.test";
 const {privateKey,publicKey}=generateKeyPairSync("rsa",{modulusLength:2048,publicExponent:65537});
 const jwk={...publicKey.export({format:"jwk"}),kid:"qa-clerk-kid-2026",use:"sig",alg:"RS256"};
