@@ -78,3 +78,33 @@ Se aprovechó la **integración ya existente** de Cloudflare Workers Builds, aso
 **QA postdespliegue:** rerun de GitHub Actions `44671273478`, incluyendo pruebas HTTP de staging (sin sesiones ni mutaciones), seguridad/fidelidad y navegador ES/FR, terminó con tres jobs en `success`. Esto valida endpoints y apariencia automática, **no** cuentas Clerk reales, sesión OAuth de producción, garantía de CPU menor a 10 ms ni facturación integral.
 
 **Situación:** staging actualizado de forma segura, rama PR #3 continúa borrador, sin merge ni corte DNS. No poner `FREE_TIER_CPU_VERIFIED=yes`, `FREE_TIER_BILLING_VERIFIED=yes` ni `PUBLISH_APPROVED=yes` sin evidencias reales.
+
+## 6. Revisión específica de la tarde del 20/11/2026 — rama principal
+
+**Sin corte ni cambios de datos reales.** Se identificó que la PR #3 es la integración completa con Worker de preproducción, JWT cacheado, intercambio de sesión y SQL `0008-clerk-verified-links.sql`. La PR #5 era un prototipo paralelo basado en `main`, con otra migración `0004-clerk-identity-links.sql`. Para evitar dos esquemas incompatibles, se cerró PR #5 **sin fusionar**; su historial sigue disponible.
+
+### Corrección técnica integrada en PR #3
+
+- Se corrigió `cloudflare/clerk-auth-bridge.js` para limitar el cuerpo de descarga de JWKS a **65.536 bytes de transmisión reales**. El límite anterior solo comprobaba `Content-Length`, que el servidor remoto puede omitir o falsear.
+- Se preservaron la caché de cinco minutos, el freno a `kid` desconocidos y los controles de JWT/segundo paso administrativo.
+- Se ampliaron las pruebas de `cloudflare/test-clerk-auth-bridge.mjs` con JWKS excesivo sin longitud, respuesta válida con longitud anunciada y streaming fragmentado; verifican que no se absorbe el cuerpo completo.
+- GitHub Actions **`Bellaquitas Fase 6 - identidades Clerk sin produccion` terminó `success`** en https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/44800915353. Los otros ensayos de migración tras el cambio también finalizaron satisfactoriamente.
+- Cloudflare staging y preproducción **no se desplegaron** como consecuencia de esta corrección. Los Workers mantienen los candados anteriores: `STAGING_MUTATIONS=disabled`; preproducción `SITE_MODE=preproduction`, `CLERK_JWT_ENABLED=no`, `CLERK_EXCHANGE_ENABLED=no`, `PUBLISH_APPROVED=no`, `FREE_TIER_BILLING_VERIFIED=no`, `FREE_TIER_CPU_VERIFIED=no`, `BACKUP_KEY_CUSTODIED=no`, `FINAL_ORIGIN_RECONCILED=no`.
+
+### Cotejo adicional de las bases (solo SELECT)
+
+Se volvieron a comparar **todas las tablas compartidas** entre la D1 de preproducción y dos restauraciones históricas:
+- **Restauración aislada 14/11:** 20 tablas comunes, 16 idénticas en filas completas. La base restaurada contiene siete registros antiguos de rate-limit, dos sesiones históricas, tres logs multimedia y nueve registros de auditoría que ya no aparecen en preproducción. Faltan tres tablas creadas después de esa restauración: `auth_admin_email_links`, `auth_admin_sessions` y `auth_clerk_links`.
+- **Restauración postadministración 15/11:** 22 tablas comunes, 18 idénticas. Las mismas cuatro diferencias de datos efímeros e históricos; solo falta `auth_clerk_links`, creado con posterioridad.
+- En ambos casos `PRAGMA quick_check=ok` y `PRAGMA foreign_key_check=0`.
+- Los registros comparados conservan 7 perfiles y 7 vínculos de identidad; preproducción y staging siguen con 7 perfiles, 2 administradores, **1.999.998 puntos, 0 visitas**; la copia de recuperación original con 6 perfiles conserva el mismo saldo.
+- **No confundir los backups históricos con una instantánea exacta actual de 23 tablas.** Los controles de esquema y deltas siguen pendientes antes del corte.
+
+### Backups cifrados: distinguir lo realizado de lo pendiente
+
+- El archivo independiente `BELLAQUITAS_D1_COPIA_CIFRADA_2026-11-18.bqbk` ya fue restaurado/validado en SQLite en memoria en la sesión documentada el **18/11**: AES-256-GCM, llave AES envuelta en RSA-3072, 22 tablas, integridad y sumas comprobadas. No repetir el trabajo realizado sin necesidad.
+- Su archivo cifrado figura en Library, pero **`files__materialize` sigue denegando los bytes del archivo**; no se ha podido repetir aquí la prueba con su clave RSA. **La custodia externa de la clave privada no está certificada**.
+- Se hizo una **exportación oficial D1** de la base `bellaquitas-origen-recuperacion-20261116` el 20/11 y la API devolvió `status=complete` y URL temporal de una hora. La descarga desde este entorno no está habilitada; **esa exportación temporal no se contabiliza como nueva copia duradera ni como restauración.**
+- Permanecen pendientes rotación/custodia del backup histórico, reconciliación de identidad del proveedor antiguo, cuentas Clerk reales (0 usuarios en dev/producción), coste 0 verificable y ensayo CPU del Worker candidato. No modificar flags de seguridad o DNS.
+
+**Resultado:** la rama principal es la fuente de verdad; las pruebas de seguridad pasan, y los datos reales permanecen intactos. La fase 6 sigue bloqueada para publicación hasta resolver condiciones verificables restantes.
