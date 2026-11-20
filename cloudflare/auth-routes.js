@@ -108,11 +108,19 @@ export async function createVerifiedAdminSession(profileId,env) {
   return [sessionCookie(primary,ADMIN_SESSION_SECONDS),adminCookie(additional)];
 }
 // Solo lo utiliza el Worker tras verificar una credencial de identidad.
-export async function createAuthSession(profileId,env) {
+export async function createAuthSession(profileId,env,options={}) {
   if(typeof profileId!=="string"||!/^[a-f0-9-]{36}$/i.test(profileId))throw Error("Invalid profile identifier");
   const profile=await env.DB.prepare("SELECT role FROM profiles WHERE id=?").bind(profileId).first();
   if(!profile)throw Error("Profile not found");
-  const age=profile.role==="admin"?ADMIN_SESSION_SECONDS:SESSION_SECONDS;
+  // The legacy login keeps its existing lifetime. Sessions exchanged from
+  // Clerk explicitly request a shorter cap so they never outlive Clerk's
+  // configured seven-day maximum or inherit the 30-day BF legacy default.
+  const defaultAge=profile.role==="admin"?ADMIN_SESSION_SECONDS:SESSION_SECONDS;
+  const requestedAge=options?.maxAgeSeconds;
+  if (requestedAge!==undefined &&
+      (!Number.isSafeInteger(requestedAge)||requestedAge<60||requestedAge>SESSION_SECONDS))
+    throw Error("Invalid BF session lifetime");
+  const age=requestedAge===undefined?defaultAge:Math.min(defaultAge,requestedAge);
   const raw=token(),hash=await digest(raw);
   await env.DB.prepare("INSERT INTO auth_sessions(token_hash,profile_id,expires_at) VALUES (?,?,unixepoch()+?)")
     .bind(hash,profileId,age).run();

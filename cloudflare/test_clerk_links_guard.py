@@ -9,6 +9,9 @@ from pathlib import Path
 SQL = Path(__file__).with_name("migrations").joinpath(
     "0008-clerk-verified-links.sql"
 ).read_text(encoding="utf-8")
+SQL_STRICT = Path(__file__).with_name("migrations").joinpath(
+    "0009-clerk-confirmed-evidence-immutable.sql"
+).read_text(encoding="utf-8")
 
 
 class ClerkLinksGuardTests(unittest.TestCase):
@@ -35,6 +38,7 @@ class ClerkLinksGuardTests(unittest.TestCase):
         INSERT INTO auth_identity_links VALUES('google','2222222222222','qa_b');
         """)
         self.con.executescript(SQL)
+        self.con.executescript(SQL_STRICT)
 
     def tearDown(self):
         self.con.close()
@@ -88,6 +92,25 @@ class ClerkLinksGuardTests(unittest.TestCase):
                 self.con.execute(statement)
         self.assert_balances_unchanged()
 
+    def test_confirmed_same_profile_alternate_evidence_is_immutable(self):
+        self.con.execute(
+            "INSERT INTO auth_identity_links VALUES('email','verified@example.test','qa_a')"
+        )
+        self.insert("user_0123456789abcdef", "qa_a", "1111111111111",
+                    "migration_confirmed", 1795161600)
+        for statement in [
+            "UPDATE auth_clerk_links SET evidence_provider='email', evidence_subject='verified@example.test'",
+            "UPDATE auth_clerk_links SET verified_at=1795161601",
+            "UPDATE auth_clerk_links SET linked_at=linked_at+1",
+        ]:
+            with self.assertRaises(sqlite3.IntegrityError):
+                self.con.execute(statement)
+        self.assertEqual(self.con.execute(
+            "SELECT evidence_provider,evidence_subject,verified_at "
+            "FROM auth_clerk_links"
+        ).fetchone(), ("google", "1111111111111", 1795161600))
+        self.assert_balances_unchanged()
+
     def test_profile_restriction_prevents_silent_loss(self):
         self.insert("user_0123456789abcdef", "qa_a", "1111111111111",
                     "migration_confirmed", 1795161600)
@@ -97,6 +120,7 @@ class ClerkLinksGuardTests(unittest.TestCase):
 
     def test_schema_can_reapply_without_rewrites(self):
         self.con.executescript(SQL)
+        self.con.executescript(SQL_STRICT)
         self.assert_balances_unchanged()
 
 

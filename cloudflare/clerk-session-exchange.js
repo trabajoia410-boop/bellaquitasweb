@@ -7,6 +7,10 @@ import {verifyClerkJwt} from "./clerk-auth-bridge.js";
 import {createAuthSession} from "./auth-routes.js";
 const HEAD={"Cache-Control":"no-store","Content-Type":"application/json; charset=utf-8","X-Robots-Tag":"noindex,nofollow","Referrer-Policy":"no-referrer","X-Content-Type-Options":"nosniff"};
 const json=(payload,status=200,extra={})=>new Response(JSON.stringify(payload),{status,headers:{...HEAD,...extra}});
+// The Clerk session lifetime configured for this application is 7 days.
+// This short BF bridge cookie expires within 12h even for a normal member.
+// A fresh Clerk JWT is needed to exchange again; admin step-up is independent.
+const CLERK_BF_SESSION_SECONDS=12*60*60;
 export async function clerkSessionExchange(request,env){
  if(new URL(request.url).pathname!=="/v1/auth/clerk/exchange")return null;
  if(request.method!=="POST")return json({error:"Método no permitido"},405);
@@ -33,7 +37,7 @@ export async function clerkSessionExchange(request,env){
  // admin step-up cookie. /v1/admin/session and privileged mutations still
  // require a separate verified admin reauthentication.
  try{
-  const cookie=await createAuthSession(record.id,env);
+  const cookie=await createAuthSession(record.id,env,{maxAgeSeconds:CLERK_BF_SESSION_SECONDS});
   const headers=new Headers(HEAD);headers.append("Set-Cookie",cookie);
   return new Response(JSON.stringify({authenticated:true,adminStepUpRequired:record.role==="admin"}),{status:200,headers});
  }catch{return json({error:"No fue posible crear sesión"},503);}

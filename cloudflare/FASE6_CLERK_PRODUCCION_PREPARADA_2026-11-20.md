@@ -70,3 +70,11 @@ El mismo 20/11 se han incorporado a `release-policy.mjs` dos controles independi
 2. `clerkDnsSafe`: exige cinco CNAME Clerk sin proxy, conservar los diez registros anteriores y completar el registro DMARC sin debilitar la política autoritativa ya existente. No delegar los nameservers a Cloudflare mientras esa condición sea falsa.
 
 En `release-gates-2026-11-15.json` el estado Clerk figura con **0/7 vínculos verificados**, DNS dominio no verificado, Google OAuth producción sin configurar y legado CPU sin resolver. Las banderas permanecen en `false`. Se añadieron pruebas negativas a `test-release-gates.mjs` para impedir que cualquiera de estas condiciones pendientes sea ignorada. **No se han modificado ni emitido sesiones reales.**
+
+## Endurecimiento Clerk adicional (20/11/2026, segunda revisión)
+
+Se detectó que el puente `clerkSessionExchange` heredaba los 30 días de la cookie BF de socio, mientras el máximo de sesión Clerk producción configurado es de 7 días. Se ha añadido un parámetro de duración opcional a `createAuthSession`, sin cambiar las sesiones antiguas: los intercambios Clerk emiten ahora BF HttpOnly **máximo 12 horas**, también comprobado en la inserción D1 sintética y en Max-Age. Eso **no implementa revocación instantánea sincronizada con Clerk**: se necesita vincular/desactivar sesiones al cerrar sesión y/o webhook para afirmar logout completo.
+
+El planificador de enlaces reconoce también `external_accounts[].provider_user_id` de la API Clerk oficial, además de `providerUserId` de SDK, siempre sujeto a `verification.status=verified` y coincidencia exacta con `auth_identity_links.provider_subject`. No se enlaza por correo.
+
+La nueva migración aditiva `0009-clerk-confirmed-evidence-immutable.sql` impide sustituir evidencia Google por evidencia email del mismo perfil tras confirmar un vínculo; tampoco permite alterar la fecha de verificación. En su prueba SQLite se introduce una segunda identidad verificada **ficticia del mismo perfil** y se confirma el rechazo del cambio de evidencia, sin alterar balances ni roles. Aplicar solo después de CI.

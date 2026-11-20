@@ -13,6 +13,21 @@ const users=original.map((x,i)=>({
 const actual=planClerkVerifiedLinks({originalGoogleLinks:original,clerkUsers:users});
 assert.equal(actual.complete,true);
 assert.equal(actual.verifiedGoogleMatches,6);
+const rawClerkApiUsers=users.map(x=>({
+ id:x.id,email_addresses:[{email_address:"untrusted@example.test"}],
+ external_accounts:[{
+  provider:"oauth_google",
+  provider_user_id:x.externalAccounts[0].providerUserId,
+  verification:{status:"verified"}
+ }]
+}));
+const rawPlan=planClerkVerifiedLinks({originalGoogleLinks:original,clerkUsers:rawClerkApiUsers});
+assert.equal(rawPlan.complete,true,
+ "La API real Clerk external_accounts.provider_user_id debe vincular por subject");
+assert.equal(rawPlan.verifiedGoogleMatches,6);
+const rawNotVerified=structuredClone(rawClerkApiUsers);
+rawNotVerified[0].external_accounts[0].verification.status="unverified";
+assert.equal(planClerkVerifiedLinks({originalGoogleLinks:original,clerkUsers:rawNotVerified}).verifiedGoogleMatches,5);
 assert.equal(actual.pendingOriginal,0);
 assert.equal(actual.dryRun,true);
 assert.equal(actual.productionWriteAuthorized,false);

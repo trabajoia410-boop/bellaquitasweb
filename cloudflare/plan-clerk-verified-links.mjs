@@ -29,10 +29,12 @@ export function planClerkVerifiedLinks({originalGoogleLinks,clerkUsers}){
   assert.ok(Array.isArray(providers));
   const google=providers.filter(x=>(x.provider==="google"||x.provider==="oauth_google")&&
     x.verification?.status==="verified"&&
-    typeof x.providerUserId==="string");
+    typeof (x.providerUserId??x.provider_user_id)==="string");
   if(google.length>1)throw Error("Cuenta Clerk con varias identidades Google verificadas");
   if(google.length===0){unknown.push("sin-google-verificado");continue;}
-  const subject=google[0].providerUserId;
+  // Clerk Backend API sends provider_user_id; SDK-derived test fixtures may
+  // use providerUserId. Both require verification and exact Google subject.
+  const subject=google[0].providerUserId??google[0].provider_user_id;
   if(!/^[0-9]{1,64}$/.test(subject))throw Error("Google subject Clerk inválido");
   const profileId=source.get(subject);
   if(!profileId){unknown.push("nuevo-usuario");continue;}

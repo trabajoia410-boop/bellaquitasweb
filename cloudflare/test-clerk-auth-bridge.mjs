@@ -97,7 +97,7 @@ try{
        assert.equal(value,member.id);return {first:async()=>({role:"socio"})};}};
      if(sql.startsWith("INSERT INTO auth_sessions"))return {bind(...params){
        assert.equal(params[1],member.id);
-       assert.equal(params[2],30*24*60*60);
+       assert.equal(params[2],12*60*60);
        return {run:async()=>{inserted++;return {success:true};}};}};
      throw Error("Unexpected SQL - no points/visits/role changes permitted");
    }
@@ -107,6 +107,8 @@ try{
  assert.equal(exchanged.status,200);
  assert.equal(inserted,1);
  assert.match(exchanged.headers.get("Set-Cookie")||"",/^__Host-bf_session=/);
+ assert.match(exchanged.headers.get("Set-Cookie")||"",/Max-Age=43200;/,
+  "Una sesión obtenida de Clerk no puede heredar los 30 días antiguos");
  assert.equal((await exchanged.json()).adminStepUpRequired,false);
  assert.equal((await clerkSessionExchange(exchangeRequest(signed,false),exchangeEnv)).status,403);
  assert.equal((await clerkSessionExchange(exchangeRequest(make({...claims,sub:"user_unknown1234567890"})),exchangeEnv)).status,503);
