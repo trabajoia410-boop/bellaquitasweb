@@ -44,6 +44,9 @@ const getHtml=async path=>{
  assert.match(html,/clerk\.bellaquitas\.fr\/npm\/@clerk\/ui@1/);
  assert.match(html,/\/v1\/auth\/clerk\/exchange/);
  assert.match(html,/\/v1\/auth\/clerk\/admin\/step-up/);
+ assert.match(html,/id="lang-es"/);
+ assert.match(html,/id="lang-fr"/);
+ assert.match(html,/data-fr="Connexion à Bellaquitas Fest"/);
  assert.doesNotMatch(html,/sk_live_|password_hash|supabase|R2_BUCKET|GITHUB_TOKEN/);
  return html;
 };
@@ -74,12 +77,14 @@ assert.equal(blocked.headers.get("Set-Cookie"),null);
 const inline=adminHtml.match(/<script nonce="[^"]+">([\s\S]*?)<\/script>/)?.[1];
 assert.ok(inline);
 const script=new vm.Script(inline,{filename:"synthetic-clerk-login.js"});
-async function browser({html=adminHtml,exchange=200,step=200,signed=true,reverify=false}={}){
+async function browser({html=adminHtml,exchange=200,step=200,signed=true,reverify=false,lang="es"}={}){
  const actionHandlers=new Map(),events=new Map();
  const els={status:{textContent:""},
   continue:{disabled:true,addEventListener(name,fn){actionHandlers.set("continue:"+name,fn);}},
   reverify:{hidden:true,disabled:false,addEventListener(name,fn){actionHandlers.set("reverify:"+name,fn);}},
-  "sign-in":{},account:{hidden:true}};
+  "sign-in":{},account:{hidden:true},
+  "lang-es":{addEventListener(n,fn){actionHandlers.set("lang-es:"+n,fn);},setAttribute(){}},
+  "lang-fr":{addEventListener(n,fn){actionHandlers.set("lang-fr:"+n,fn);},setAttribute(){}}};
  const paths=[],tabProof=[],redirects=[];
  let signOutCalls=0;
  const mockClerk={
@@ -87,10 +92,13 @@ async function browser({html=adminHtml,exchange=200,step=200,signed=true,reverif
   load:async()=>{},addListener(){},mountUserButton(){},mountSignIn(){},
   signOut:async()=>{signOutCalls++;}
  };
+ const documentLang={lang:"es"};
  const ctx=vm.createContext({
+  localStorage:{getItem:k=>k==="bellaquitas-lang"?lang:null,setItem(){}},
   window:{Clerk:mockClerk,__internal_ClerkUICtor:function(){},
    addEventListener:(name,fn)=>events.set(name,fn)},
   document:{body:{dataset:{admin:html.includes('data-admin="yes"')?"yes":"no"}},
+   documentElement:documentLang,querySelectorAll:()=>[],
    getElementById:id=>els[id]},
   fetch:async(path,opts)=>{
    paths.push({path,opts});
@@ -108,7 +116,8 @@ async function browser({html=adminHtml,exchange=200,step=200,signed=true,reverif
   assert.equal(els.reverify.hidden,false,"La opción aparece tras rechazar step-up");
   await actionHandlers.get("reverify:click")();
  }
- return {paths,tabProof,redirects,status:els.status.textContent,signOutCalls};
+ return {paths,tabProof,redirects,status:els.status.textContent,signOutCalls,
+  lang:documentLang.lang};
 }
 const adminSuccess=await browser();
 assert.deepEqual(adminSuccess.paths.map(x=>x.path),[
@@ -134,6 +143,9 @@ const ordinary=await browser({html:memberHtml});
 assert.deepEqual(ordinary.paths.map(x=>x.path),["/v1/auth/clerk/exchange"]);
 assert.deepEqual(ordinary.redirects,["/#/mi-espacio"]);
 assert.deepEqual(ordinary.tabProof,[]);
+const french=await browser({html:memberHtml,exchange:403,lang:"fr"});
+assert.equal(french.lang,"fr");
+assert.match(french.status,/n’est pas encore associé/);
 const signedOut=await browser({signed:false});
 assert.deepEqual(signedOut.redirects,[]);
 assert.equal(signedOut.paths.length,0);
