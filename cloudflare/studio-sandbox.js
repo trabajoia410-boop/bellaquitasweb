@@ -36,7 +36,7 @@ textarea{display:block;width:100%;min-height:110px;resize:vertical;border-radius
 @media(max-width:800px){
  .head{padding:12px}.head strong{font-size:15px}
  .layout{display:block}.panel{display:none}
- #drawer:not([hidden]){display:inline-flex}
+ #drawer{display:inline-flex}
  body.menu-open .panel{display:block;position:fixed;inset:0 auto 0 0;width:min(87vw,345px);z-index:11;box-shadow:9px 0 40px #000b}
  body.menu-open #drawerBg{display:block;position:fixed;inset:0;z-index:10;background:#0009;border:0;width:100%}
  .preview{padding:9px}.stage{height:75vh}.preview-head{gap:7px}
@@ -44,7 +44,7 @@ textarea{display:block;width:100%;min-height:110px;resize:vertical;border-radius
 </style></head><body>
 <header class="head"><div><strong>BELLAQUITAS FEST <span style="color:var(--gold)">/ Laboratorio</span></strong>
 <small>Versión de pruebas, no es el panel de administración real</small></div>
-<div class="actions"><button id="drawer" class="btn" type="button" hidden aria-label="Abrir menú lateral">☰</button>
+<div class="actions"><button id="drawer" class="btn" type="button" aria-label="Abrir menú lateral">☰</button>
 <a class="btn" href="/espejo/" target="_blank" rel="noopener noreferrer">Ver portada completa</a></div></header>
 <button id="drawerBg" type="button" aria-label="Cerrar menú" aria-hidden="true"></button>
 <div class="layout"><aside class="panel" id="controls" aria-label="Opciones de edición visual">
@@ -139,7 +139,7 @@ document.getElementById("pages").addEventListener("click",event=>{
 document.getElementById("themes").addEventListener("click",event=>{
  const b=event.target.closest("button[data-theme]");if(!b)return;
  theme=b.dataset.theme; if(!["classic","minimal","festival"].includes(theme))return;
- applyTheme();inform("Modelo cambiado sólo en esta vista previa.");
+ applyTheme();setPressed("[data-theme]","theme",theme);inform("Modelo cambiado sólo en esta vista previa.");
 });
 document.querySelectorAll("[data-device]").forEach(b=>b.addEventListener("click",()=>{
  const m=b.dataset.device;stage.classList.toggle("mobile",m==="mobile");setPressed("[data-device]","device",m);
