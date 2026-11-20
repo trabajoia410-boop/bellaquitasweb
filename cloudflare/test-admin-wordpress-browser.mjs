@@ -64,7 +64,9 @@ try{
  assert.match(summary,/NO publicado ni guardado en D1/);
  await page.locator("#adminDesignToggle").click();
  const studio=page.frameLocator("#adminDesignStudio");
- await studio.locator('[data-preset="cobalt"]').waitFor({state:"visible",timeout:45000});
+ await studio.locator('[data-panel="templates"] summary').waitFor({state:"visible",timeout:45000});
+ await studio.locator('[data-panel="templates"] summary').click();
+ await studio.locator('[data-preset="cobalt"]').waitFor({state:"visible",timeout:20000});
  assert.equal(await studio.locator("[data-preset]").count(),12);
  assert.equal(await page.locator("#adminDesignToggle").getAttribute("aria-expanded"),"true");
  await page.locator("#adminDesignToggle").click();
