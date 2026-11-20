@@ -166,3 +166,5 @@ jobs:
           else
             echo "NO DESPLEGADO: credencial GitHub ausente o preflight no completado; staging conservado intacto." >> "$GITHUB_STEP_SUMMARY"
           fi
+
+# Trigger de QA fase 6 (20/11/2026): SOLO staging, sin corte de dominio.
