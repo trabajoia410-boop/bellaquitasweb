@@ -1,5 +1,6 @@
 import {authRoute} from "./auth-routes.js";
 import {protectedRoute} from "./protected-routes.js";
+import {clerkReadOnlyRoute} from "./clerk-auth-bridge.js";
 /**
  * Bellaquitas Fest — API de lectura para entorno de pruebas en Cloudflare.
  * No usar para gestionar usuarios, puntos, visitas ni permisos.
@@ -56,6 +57,8 @@ export default {
     try {
       const authResponse = await authRoute(request, env);
       if (authResponse) return authResponse;
+      const clerkResponse = await clerkReadOnlyRoute(request, env);
+      if (clerkResponse) return clerkResponse;
       const protectedResponse = await protectedRoute(request, env);
       if (protectedResponse) return protectedResponse;
       if (request.method !== "GET") {
