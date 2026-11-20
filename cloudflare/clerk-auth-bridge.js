@@ -14,6 +14,8 @@ const JWKS_MAX_AGE_MS=5*60*1000, JWKS_UNKNOWN_KID_RETRY_MS=30*1000;
 const jwksCache=new Map();
 // Agrupar recargas simultáneas para no multiplicar subrequests a Clerk.
 const jwksInFlight=new Map();
+// Fallos del proveedor: rechazar tokens sin gastar subrequests repetidas.
+const jwksFailureRetryAt=new Map();
 // Límite de memoria de la respuesta REAL, aunque el proveedor omita
 // Content-Length. Un JWKS no confiable nunca debe reservar bytes sin límite.
 const MAX_JWKS_BYTES=65536;
@@ -45,7 +47,8 @@ async function readPinnedJwksOnce(cfg,network) {
  if(existing)return existing;
  const task=(async()=>{
   const reply=await network(cfg.jwks,{headers:{Accept:"application/json"},
-   cf:{cacheEverything:true,cacheTtl:300}});
+   cf:{cacheEverything:true,cacheTtl:300},
+   signal:AbortSignal.timeout(5000)});
   if(!reply.ok)return null;
   return boundedJwksBody(reply);
  })();
@@ -64,8 +67,20 @@ async function verifiedClerkKey(cfg,kid,network) {
   if(clock-(item.lastRefreshAt??item.fetchedAt)<JWKS_UNKNOWN_KID_RETRY_MS)
    return null;
  }
- const body=await readPinnedJwksOnce(cfg,network);
- if(!body||!Array.isArray(body.keys)||body.keys.length>25)return null;
+ // Fail closed during a provider incident; avoid repeated external
+ // subrequests if JWT verification cannot obtain an authoritative JWKS.
+ if((jwksFailureRetryAt.get(cfg.issuer)||0)>clock)return null;
+ let body;
+ try{body=await readPinnedJwksOnce(cfg,network);}
+ catch{
+  jwksFailureRetryAt.set(cfg.issuer,Date.now()+JWKS_UNKNOWN_KID_RETRY_MS);
+  return null;
+ }
+ if(!body||!Array.isArray(body.keys)||body.keys.length>25){
+  jwksFailureRetryAt.set(cfg.issuer,Date.now()+JWKS_UNKNOWN_KID_RETRY_MS);
+  return null;
+ }
+ jwksFailureRetryAt.delete(cfg.issuer);
  const match=body.keys.find(k=>k.kid===kid&&k.kty==="RSA"&&
   (!k.alg||k.alg==="RS256")&&(!k.use||k.use==="sig")&&
   typeof k.n==="string"&&typeof k.e==="string");
