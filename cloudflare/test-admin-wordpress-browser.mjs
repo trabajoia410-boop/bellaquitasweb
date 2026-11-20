@@ -50,7 +50,26 @@ try{
  const response=await page.goto(BASE+"/administracion/",{waitUntil:"domcontentloaded",timeout:60000});
  assert.equal(response.status(),200);
  await page.locator("#workspace").waitFor({state:"visible",timeout:25000});
+ await page.evaluate(()=>localStorage.setItem("bf_studio_design_v2",JSON.stringify({
+  preset:"cobalt",header:"outlined",menu:"underline",hero:"full",
+  cards:"glass",accent:"#82adf6",bg:"#071628",nav:"#122743",
+  images:{},icons:{"\/experiencia|icon|0":"♫"},hidden:["eventos"]
+ })));
  await page.locator('[data-tab="site"]').click();
+ assert.equal(await page.locator("#adminDesignToggle").isVisible(),true);
+ await page.locator("#adminDesignReview").click();
+ const summary=await page.locator("#adminDesignSummary").innerText();
+ assert.match(summary,/cobalt/);
+ assert.match(summary,/Fondo de menús: #122743/);
+ assert.match(summary,/NO publicado ni guardado en D1/);
+ await page.locator("#adminDesignToggle").click();
+ const studio=page.frameLocator("#adminDesignStudio");
+ await studio.locator('[data-preset="cobalt"]').waitFor({state:"visible",timeout:45000});
+ assert.equal(await studio.locator("[data-preset]").count(),12);
+ assert.equal(await page.locator("#adminDesignToggle").getAttribute("aria-expanded"),"true");
+ await page.locator("#adminDesignToggle").click();
+ assert.equal(await page.locator("#adminDesignStage").isVisible(),false);
+
  const frame=page.frameLocator("#siteVisualEditor");
  await frame.locator('.editor-toolbar').waitFor({state:"visible",timeout:45000});
  assert.match(await frame.locator('.editor-preview-head').innerText(),/Vista previa/);
