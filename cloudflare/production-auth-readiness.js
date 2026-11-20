@@ -42,6 +42,9 @@ export function productionConfigurationReady(env) {
   // origin, plus both explicit feature flags and a complete release gate.
   if (env.CLERK_JWT_ENABLED !== "yes" ||
       env.CLERK_EXCHANGE_ENABLED !== "yes" ||
+      // El panel no puede quedar sin segundo paso; el flujo MFA todavía
+      // necesita aprobación y pruebas de identidad real antes del corte.
+      env.CLERK_ADMIN_STEPUP_ENABLED !== "yes" ||
       env.CLERK_ISSUER !== "https://clerk.bellaquitas.fr" ||
       env.CLERK_ALLOWED_ORIGIN !== CANONICAL_ORIGIN) return false;
   if (env.PUBLIC_ORIGIN !== CANONICAL_ORIGIN) return false;
