@@ -74,15 +74,18 @@ assert.equal(blocked.headers.get("Set-Cookie"),null);
 const inline=adminHtml.match(/<script nonce="[^"]+">([\s\S]*?)<\/script>/)?.[1];
 assert.ok(inline);
 const script=new vm.Script(inline,{filename:"synthetic-clerk-login.js"});
-async function browser({html=adminHtml,exchange=200,step=200,signed=true}={}){
+async function browser({html=adminHtml,exchange=200,step=200,signed=true,reverify=false}={}){
  const actionHandlers=new Map(),events=new Map();
  const els={status:{textContent:""},
-  continue:{disabled:true,addEventListener(name,fn){actionHandlers.set(name,fn);}},
+  continue:{disabled:true,addEventListener(name,fn){actionHandlers.set("continue:"+name,fn);}},
+  reverify:{hidden:true,disabled:false,addEventListener(name,fn){actionHandlers.set("reverify:"+name,fn);}},
   "sign-in":{},account:{hidden:true}};
  const paths=[],tabProof=[],redirects=[];
+ let signOutCalls=0;
  const mockClerk={
   session:signed?{getToken:async()=>"fake.synthetic.token"}:null,
-  load:async()=>{},addListener(){},mountUserButton(){},mountSignIn(){}
+  load:async()=>{},addListener(){},mountUserButton(){},mountSignIn(){},
+  signOut:async()=>{signOutCalls++;}
  };
  const ctx=vm.createContext({
   window:{Clerk:mockClerk,__internal_ClerkUICtor:function(){},
@@ -100,8 +103,12 @@ async function browser({html=adminHtml,exchange=200,step=200,signed=true}={}){
  assert.ok(events.has("load"));
  await events.get("load")();
  assert.equal(els.continue.disabled,!signed);
- await actionHandlers.get("click")();
- return {paths,tabProof,redirects,status:els.status.textContent};
+ await actionHandlers.get("continue:click")();
+ if(reverify){
+  assert.equal(els.reverify.hidden,false,"La opción aparece tras rechazar step-up");
+  await actionHandlers.get("reverify:click")();
+ }
+ return {paths,tabProof,redirects,status:els.status.textContent,signOutCalls};
 }
 const adminSuccess=await browser();
 assert.deepEqual(adminSuccess.paths.map(x=>x.path),[
@@ -118,6 +125,11 @@ const withoutStep=await browser({step:403});
 assert.equal(withoutStep.paths.length,2);
 assert.deepEqual(withoutStep.tabProof,[]);
 assert.deepEqual(withoutStep.redirects,[]);
+const stepReverify=await browser({step:403,reverify:true});
+assert.equal(stepReverify.signOutCalls,1);
+assert.equal(stepReverify.paths.at(-1)?.path,"/v1/auth/logout");
+assert.deepEqual(stepReverify.redirects,["/acceso/?return=administracion"]);
+assert.deepEqual(stepReverify.tabProof,[]);
 const ordinary=await browser({html:memberHtml});
 assert.deepEqual(ordinary.paths.map(x=>x.path),["/v1/auth/clerk/exchange"]);
 assert.deepEqual(ordinary.redirects,["/#/mi-espacio"]);
