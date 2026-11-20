@@ -19,6 +19,44 @@ try{
  await preview.locator("main").first().waitFor({state:"visible",timeout:45000});
  const initial=page.locator("#site");
  assert.equal(new URL(await initial.getAttribute("src"),ROOT).searchParams.get("admin_embed"),"1");
+ // All 6 presets affect the REAL site's iframe, not just the selector.
+ const styles=["original","noir","urban","glass","violet","editorial"];
+ for(const preset of styles){
+  await page.locator('[data-preset="'+preset+'"]').click();
+  await page.waitForFunction(id=>document.querySelector("#site")?.contentDocument?.body?.getAttribute("data-s-preset")===id,preset,{timeout:10000});
+  assert.equal(await page.locator('[data-preset="'+preset+'"]').getAttribute("aria-pressed"),"true");
+ }
+ await page.locator("#studioHeader").selectOption("glass");
+ await page.waitForFunction(()=>document.querySelector("#site")?.contentDocument?.body?.getAttribute("data-s-header")==="glass");
+ await page.locator("#studioMenu").selectOption("pills");
+ await page.locator("#studioCards").selectOption("glass");
+ await page.locator("#studioHero").selectOption("framed");
+ await page.locator("#studioAccent").fill("#ce94ff");
+ await page.waitForFunction(()=>document.querySelector("#site")?.contentDocument?.body?.getAttribute("data-s-hero")==="framed");
+ assert.equal(await preview.locator("body").evaluate(e=>e.style.getPropertyValue("--s-accent")),"#ce94ff");
+ await page.locator("#studioPickLogo").click();
+ assert.match(await page.locator("#studioSelection").innerText(),/Logo superior/);
+ const tinyPng=Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9WpuIgAAAABJRU5ErkJggg==","base64");
+ await page.locator("#studioFile").setInputFiles({name:"qa-logo.png",mimeType:"image/png",buffer:tinyPng});
+ await page.waitForFunction(()=>document.querySelector("#site")?.contentDocument?.querySelector(".bf-new-navbar-logo img")?.getAttribute("src")?.startsWith("data:image/"),{timeout:10000});
+ assert.match(await preview.locator(".bf-new-navbar-logo img").getAttribute("src"),/^data:image\//);
+ // Visibility, section order and local persistence are separate from server state.
+ await page.locator('[data-section="eventos"] input').uncheck();
+ await page.waitForFunction(()=>document.querySelector("#site")?.contentDocument?.body?.getAttribute("data-s-hide-eventos")==="true");
+ await page.locator('[data-section="ventajas"] [data-move="up"]').click();
+ assert.equal(await page.locator("#studioSections [data-section]").nth(1).getAttribute("data-section"),"ventajas");
+ await page.locator("#save").click();
+ const localDesign=await page.evaluate(()=>JSON.parse(localStorage.getItem("bf_studio_design_v2")||"{}"));
+ assert.equal(localDesign.preset,"custom");
+ assert.equal(localDesign.images["global|header-logo"]?.startsWith("data:image/"),true);
+ assert.ok(localDesign.hidden.includes("eventos"));
+ await page.reload({waitUntil:"domcontentloaded",timeout:45000});
+ await preview.locator(".bf-new-navbar-logo img").waitFor({state:"attached",timeout:30000});
+ await page.waitForFunction(()=>document.querySelector("#site")?.contentDocument?.body?.getAttribute("data-s-header")==="glass",{timeout:20000});
+ assert.match(await preview.locator(".bf-new-navbar-logo img").getAttribute("src"),/^data:image\//);
+ page.once("dialog",dialog=>dialog.accept());
+ await page.locator("#studioResetDesign").click();
+ await page.waitForFunction(()=>document.querySelector("#site")?.contentDocument?.body?.getAttribute("data-s-preset")==="original",{timeout:20000});
  await page.locator('#pages [data-page="/eventos"]').click();
  await preview.locator("main").first().waitFor({state:"visible",timeout:30000});
  await page.waitForFunction(()=>document.querySelector("#site")?.contentWindow?.location.hash==="#/eventos",{timeout:10000});
