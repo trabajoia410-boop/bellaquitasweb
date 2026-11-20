@@ -70,15 +70,6 @@ textarea{display:block;width:100%;min-height:110px;resize:vertical;border-radius
 <button class="btn" type="button" data-page="/ventajas">Ventajas</button>
 <button class="btn" type="button" data-page="/preguntas">Preguntas</button>
 </div>
-<h2>Modelos de diseño</h2><div class="menu" id="themes">
-<button class="btn" type="button" data-theme="classic">Original Bellaquitas</button>
-<button class="btn" type="button" data-theme="minimal">Minimalista</button>
-<button class="btn" type="button" data-theme="festival">Festival</button>
-</div>
-<h2>Edición de textos</h2><p>Pulsa un texto de la página para modificarlo en esta vista previa.</p>
-<div id="chosen" aria-live="polite">Selecciona un texto de la página</div>
-<label for="editing">Texto seleccionado</label><textarea id="editing" maxlength="600" disabled placeholder="Selecciona primero un texto de la página"></textarea>
-
 <section class="studio-advanced" aria-label="Personalización visual">
 <div class="studio-group"><h2>Plantillas completas</h2><p>Escoge un modelo y personaliza cada elemento. Siempre puedes recuperar el original.</p><div class="studio-presets" id="studioPresets">
 <button class="studio-preset" data-preset="original" type="button" aria-pressed="true"><span class="studio-swatch" style="background:linear-gradient(110deg,#080809 45%,#e9c477 45% 65%,#211825 65%)"></span><strong>Original Bellaquitas</strong><small>Diseño actual</small></button>
@@ -117,6 +108,15 @@ textarea{display:block;width:100%;min-height:110px;resize:vertical;border-radius
 <div class="studio-section" data-section="unete"><label class="studio-check"><input type="checkbox" checked/> Invitación final</label><button class="btn" type="button" data-move="up">↑</button><button class="btn" type="button" data-move="down">↓</button></div>
 </div><button class="btn" type="button" id="studioResetDesign">Restablecer diseño original</button>
 <p id="studioStatus" aria-live="polite"></p></div></section>
+<h2>Acabados básicos (opcional)</h2><div class="menu" id="themes">
+<button class="btn" type="button" data-theme="classic">Original Bellaquitas</button>
+<button class="btn" type="button" data-theme="minimal">Minimalista</button>
+<button class="btn" type="button" data-theme="festival">Festival</button>
+</div>
+<h2>Edición de textos</h2><p>Pulsa un texto de la página para modificarlo en esta vista previa.</p>
+<div id="chosen" aria-live="polite">Selecciona un texto de la página</div>
+<label for="editing">Texto seleccionado</label><textarea id="editing" maxlength="600" disabled placeholder="Selecciona primero un texto de la página"></textarea>
+
 <h2>Borrador</h2><div class="menu">
 <button class="btn primary" id="save" type="button">Guardar borrador local</button>
 <button class="btn" id="reset" type="button">Restablecer vista sin guardar</button>
