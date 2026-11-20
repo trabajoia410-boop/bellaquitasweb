@@ -18,7 +18,13 @@ export function adminConsoleRoute(request,env) {
  };
  // La recuperación del panel definitivo debe abrir la portada REAL en /,
  // no el antiguo espejo /espejo/ (redirigido en producción).
- const stagingLab=env?.SITE_MODE==="staging";
+ const hostname=new URL(request.url).hostname;
+ // Legacy staging does not declare SITE_MODE. Permit its exact workers.dev
+ // host only when writes and registrations are disabled. Never production.
+ const stagingLab=env?.SITE_MODE!=="production"&&
+  (env?.SITE_MODE==="staging"||
+   (hostname==="bellaquitas-api-staging.bellaquitas-fest-410.workers.dev"&&
+    env?.STAGING_MUTATIONS==="disabled"&&env?.ALLOW_NEW_ACCOUNTS==="no"));
  const html=(env?.SITE_MODE==="production"
   ?HTML.replace('href="/espejo/#/recuperar"','href="/#/recuperar"')
   :HTML.replace('href="/" class="action secondary">Volver a la web</a>','href="/espejo/" class="action secondary">Volver a la web</a>'))
