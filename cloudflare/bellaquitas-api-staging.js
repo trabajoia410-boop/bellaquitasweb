@@ -101,7 +101,11 @@ export default {
           "f4978ae8-1058-43a7-b5cd-ef9b17c11843.png"
         ]);
         const name = logo[1].toLowerCase();
-        if (!permitted.has(name)) return jsonResponse(request,{error:"Imagen no encontrada"},404);
+        if (!permitted.has(name) || typeof env.MEDIA?.get !== "function") {
+          // R2 fue eliminado: responder 404 sin excepciones ni búsquedas externas.
+          // Nunca intentar reconstruir el contenido usando IDs de perfiles.
+          return jsonResponse(request, {error: "Imagen no encontrada"}, 404);
+        }
         const object = await env.MEDIA.get("logos/" + name);
         if (!object) return jsonResponse(request,{error:"Imagen no encontrada"},404);
         const mime = name.endsWith(".png")?"image/png":"image/jpeg";
