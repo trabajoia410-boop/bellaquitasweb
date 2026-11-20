@@ -36,12 +36,14 @@ export async function clerkSessionExchange(request,env){
  }catch{return json({error:"Migración todavía no disponible"},503);}
  if(!record)return json({error:"Vinculación no verificada"},403);
  if(isAdminStepUp){
-  // MFA real y reciente, NO simple token iat fresco: Clerk renueva JWT cada
-  // minuto aunque el usuario no vuelva a verificar ninguna credencial.
+  // Clerk Hobby (Free) no incluye MFA en producción. Usamos la
+  // reverificación de PRIMER factor (código de correo o contraseña),
+  // que Clerk expresa con fva[0]. iat fresco NO implica reautenticación.
+  // Exigir edad máxima de 2 minutos y una sesión Bellaquitas ya vinculada.
   const fva=jwt.factorVerificationAge;
   if(!Array.isArray(fva)||fva.length!==2||
-     !fva.every(age=>Number.isSafeInteger(age)&&age>=0&&age<=5))
-   return json({error:"Reautenticación MFA necesaria"},403);
+     !Number.isSafeInteger(fva[0])||fva[0]<0||fva[0]>2)
+   return json({error:"Vuelve a verificar tu cuenta Clerk"},403);
   if(record.role!=="admin")
    return json({error:"Acceso reservado a administradores"},403);
   let current;
