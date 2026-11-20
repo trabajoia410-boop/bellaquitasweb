@@ -87,8 +87,8 @@ try{
  // Clicking the account logo must return to the public Inicio, not /panel.
  await frame.locator('.side-head a.brand').click();
  await frame.locator('.bf-hero-video').first().waitFor({state:"attached",timeout:10000});
- assert.equal(new URL(page.frames().find(f=>f.url().includes("/espejo/?admin_embed=1"))?.url()||BASE).hash,"#/",
-  "El logo de cuenta debe llevar a Inicio");
+ assert.equal(await page.locator("#siteVisualEditor").evaluate(iframe=>iframe.contentWindow.location.hash),"#/",
+  "El logo de cuenta debe llevar a Inicio dentro del editor real");
  assert.ok(confirms.some(s=>/sin guardar/i.test(s)),
   "El editor debe pedir confirmación antes de abandonar un borrador sin guardar");
  // El menú móvil no debe verse en PC; al reducir anchura abre lateral real.
