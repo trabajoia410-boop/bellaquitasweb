@@ -41,6 +41,20 @@ textarea{display:block;width:100%;min-height:110px;resize:vertical;border-radius
  body.menu-open #drawerBg{display:block;position:fixed;inset:0;z-index:10;background:#0009;border:0;width:100%}
  .preview{padding:9px}.stage{height:75vh}.preview-head{gap:7px}
 }
+
+.studio-group{border-top:1px solid #64546866;padding-top:8px;margin-top:20px}.studio-presets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.studio-preset{border:1px solid #6d516f;background:#171219;color:#fef5ed;border-radius:11px;text-align:left;min-height:83px;padding:9px;cursor:pointer}
+.studio-preset[aria-pressed=true]{border:2px solid #f1c981;padding:8px;background:#2d2431}
+.studio-preset strong,.studio-preset small{display:block}.studio-preset strong{font-size:12px;margin-top:7px}.studio-preset small{color:#c0b2c3;font-size:10px}
+.studio-swatch{display:block;height:25px;border-radius:5px}
+.studio-field{width:100%;background:#120e14;color:#fff7ef;border:1px solid #806a82;border-radius:9px;padding:10px;font:inherit}
+.studio-two{display:grid;grid-template-columns:1fr 1fr;gap:10px}.studio-two input[type=color]{width:100%;height:38px;background:#120e14;border-radius:7px;border:1px solid #806a82}
+.studio-check{display:flex!important;gap:7px;align-items:center;color:#fff7ef!important;font-size:12px!important}
+.studio-check input{accent-color:#e9c477}.studio-section{display:flex;gap:5px;align-items:center;border-bottom:1px solid #ffffff15;padding:6px 0}
+.studio-section .studio-check{flex:1;margin:0}.studio-section button{padding:4px 8px}
+.studio-icons{display:flex;flex-wrap:wrap;gap:6px}.studio-icons button{padding:5px 10px;min-width:34px;text-align:center}
+#studioSelection,#studioStatus{color:#f1c981;font-size:12px;min-height:21px}
+#studioFile{max-width:100%;font-size:12px}
 </style></head><body>
 <header class="head"><div><strong>BELLAQUITAS FEST <span style="color:var(--gold)">/ Laboratorio</span></strong>
 <small>Versión de pruebas, no es el panel de administración real</small></div>
@@ -64,6 +78,45 @@ textarea{display:block;width:100%;min-height:110px;resize:vertical;border-radius
 <h2>Edición de textos</h2><p>Pulsa un texto de la página para modificarlo en esta vista previa.</p>
 <div id="chosen" aria-live="polite">Selecciona un texto de la página</div>
 <label for="editing">Texto seleccionado</label><textarea id="editing" maxlength="600" disabled placeholder="Selecciona primero un texto de la página"></textarea>
+
+<section class="studio-advanced" aria-label="Personalización visual">
+<div class="studio-group"><h2>Plantillas completas</h2><p>Escoge un modelo y personaliza cada elemento. Siempre puedes recuperar el original.</p><div class="studio-presets" id="studioPresets">
+<button class="studio-preset" data-preset="original" type="button" aria-pressed="true"><span class="studio-swatch" style="background:linear-gradient(110deg,#080809 45%,#e9c477 45% 65%,#211825 65%)"></span><strong>Original Bellaquitas</strong><small>Diseño actual</small></button>
+<button class="studio-preset" data-preset="noir" type="button" aria-pressed="false"><span class="studio-swatch" style="background:linear-gradient(110deg,#090a0d 45%,#cdaa66 45% 65%,#171717 65%)"></span><strong>Noir & Dorado</strong><small>Elegante, nocturno</small></button>
+<button class="studio-preset" data-preset="urban" type="button" aria-pressed="false"><span class="studio-swatch" style="background:linear-gradient(110deg,#171020 45%,#ae81e5 45% 65%,#32213b 65%)"></span><strong>Urbano Club</strong><small>Streetwear y fiesta</small></button>
+<button class="studio-preset" data-preset="glass" type="button" aria-pressed="false"><span class="studio-swatch" style="background:linear-gradient(110deg,#132231 45%,#55c8d4 45% 65%,#1c3037 65%)"></span><strong>Cristal</strong><small>Transparencias</small></button>
+<button class="studio-preset" data-preset="violet" type="button" aria-pressed="false"><span class="studio-swatch" style="background:linear-gradient(110deg,#1d0f27 45%,#d8a1ff 45% 65%,#41234d 65%)"></span><strong>Festival Violeta</strong><small>Contraste y color</small></button>
+<button class="studio-preset" data-preset="editorial" type="button" aria-pressed="false"><span class="studio-swatch" style="background:linear-gradient(110deg,#231c1c 45%,#dfc39d 45% 65%,#45372d 65%)"></span><strong>Editorial</strong><small>Minimalista profesional</small></button>
+</div></div>
+<div class="studio-group"><h2>Barra de arriba y menú</h2>
+<label for="studioHeader">Plantilla de cabecera</label><select id="studioHeader" class="studio-field"><option value="original">Original</option><option value="glass">Flotante de cristal</option><option value="compact">Compacta</option><option value="centered">Centrada</option><option value="outlined">Con contorno</option></select>
+<label for="studioMenu">Modelo de navegación</label><select id="studioMenu" class="studio-field"><option value="original">Original</option><option value="pills">Botones redondeados</option><option value="underline">Línea activa</option><option value="minimal">Minimalista</option></select>
+<label class="studio-check"><input id="studioLogoShow" type="checkbox" checked/> Mostrar logo</label><label class="studio-check"><input id="studioTickerShow" type="checkbox" checked/> Mostrar banda animada</label>
+<label for="studioBanner">Texto de la banda animada</label><input id="studioBanner" class="studio-field" maxlength="100" placeholder="BELLAQUITAS FEST · VIVE EL MOMENTO"/>
+</div>
+<div class="studio-group"><h2>Inicio, ventanas y tarjetas</h2>
+<label for="studioHero">Plantilla de portada</label><select id="studioHero" class="studio-field"><option value="original">Original</option><option value="cinema">Cinematográfica</option><option value="full">Pantalla completa</option><option value="framed">Ventana enmarcada</option><option value="soft">Oscura elegante</option></select>
+<label for="studioCards">Tarjetas y ventanas</label><select id="studioCards" class="studio-field"><option value="original">Original</option><option value="glass">Semitransparentes</option><option value="outlined">Con borde</option><option value="square">Rectangulares</option><option value="soft">Esquinas suaves</option></select>
+<label for="studioButtons">Botones</label><select id="studioButtons" class="studio-field"><option value="original">Original</option><option value="pill">Redondeados</option><option value="outline">Contorno</option><option value="square">Rectangulares</option></select>
+<label for="studioFont">Tipo de letra</label><select id="studioFont" class="studio-field"><option value="original">Original</option><option value="urban">Urbana fuerte</option><option value="modern">Moderna limpia</option><option value="editorial">Editorial</option></select>
+<div class="studio-two"><div><label for="studioAccent">Color principal</label><input id="studioAccent" type="color" value="#e9c477"/></div><div><label for="studioSurface">Color ventanas</label><input id="studioSurface" type="color" value="#211825"/></div></div>
+</div>
+<div class="studio-group"><h2>Logos, fotos e iconos</h2><p>Pulsa en un logo, imagen o icono de la vista previa y cámbialo aquí. Los archivos no se suben al servidor.</p>
+<div id="studioSelection" aria-live="polite">Ningún elemento seleccionado</div>
+<button class="btn" id="studioPickLogo" type="button">Seleccionar logo superior</button>
+<label for="studioFile">Elegir imagen JPG, PNG o WebP</label><input id="studioFile" type="file" accept="image/png,image/jpeg,image/webp"/>
+<label for="studioImageUrl">O imagen mediante URL HTTPS</label><input class="studio-field" id="studioImageUrl" type="url" maxlength="600" placeholder="https://..."/>
+<div class="menu"><button class="btn" id="studioApplyImage" type="button">Aplicar imagen</button><button class="btn" id="studioRestoreImage" type="button">Restaurar imagen original</button></div>
+<label for="studioIcon">Icono seleccionado</label><input id="studioIcon" class="studio-field" maxlength="8" disabled placeholder="Pulsa un icono en la página"/>
+<div id="studioIcons" class="studio-icons"><button class="btn" type="button" data-icon="✦">✦</button><button class="btn" type="button" data-icon="♛">♛</button><button class="btn" type="button" data-icon="★">★</button><button class="btn" type="button" data-icon="♥">♥</button><button class="btn" type="button" data-icon="◈">◈</button><button class="btn" type="button" data-icon="♫">♫</button><button class="btn" type="button" data-icon="◎">◎</button><button class="btn" type="button" data-icon="▦">▦</button></div></div>
+<div class="studio-group"><h2>Secciones de la portada</h2><p>Ocultar y cambiar el orden de las ventanas sin borrarlas.</p><div id="studioSections">
+<div class="studio-section" data-section="experiencia"><label class="studio-check"><input type="checkbox" checked/> Experiencia</label><button class="btn" type="button" data-move="up">↑</button><button class="btn" type="button" data-move="down">↓</button></div>
+<div class="studio-section" data-section="eventos"><label class="studio-check"><input type="checkbox" checked/> Eventos</label><button class="btn" type="button" data-move="up">↑</button><button class="btn" type="button" data-move="down">↓</button></div>
+<div class="studio-section" data-section="ventajas"><label class="studio-check"><input type="checkbox" checked/> Ventajas</label><button class="btn" type="button" data-move="up">↑</button><button class="btn" type="button" data-move="down">↓</button></div>
+<div class="studio-section" data-section="preguntas"><label class="studio-check"><input type="checkbox" checked/> Preguntas</label><button class="btn" type="button" data-move="up">↑</button><button class="btn" type="button" data-move="down">↓</button></div>
+<div class="studio-section" data-section="unete"><label class="studio-check"><input type="checkbox" checked/> Invitación final</label><button class="btn" type="button" data-move="up">↑</button><button class="btn" type="button" data-move="down">↓</button></div>
+</div><button class="btn" type="button" id="studioResetDesign">Restablecer diseño original</button>
+<p id="studioStatus" aria-live="polite"></p></div></section>
 <h2>Borrador</h2><div class="menu">
 <button class="btn primary" id="save" type="button">Guardar borrador local</button>
 <button class="btn" id="reset" type="button">Restablecer vista sin guardar</button>
@@ -120,7 +173,7 @@ function bindFrame(){
   // Elements inside an iframe belong to a DIFFERENT JS realm.
   // instanceof window.Element is false there; check nodeType instead.
   const target=event.target?.nodeType===1?event.target.closest("[data-bf-studio-key]"):null;
-  if(!target)return;
+  if(!target||event.target?.closest?.("[data-studio-image],[data-studio-icon]"))return;
   event.preventDefault();event.stopImmediatePropagation();
   selected=target;editing.disabled=false;editing.value=target.textContent.trim();
   chosen.textContent="Editando texto de "+(currentPage()==="/"?"Inicio":currentPage().slice(1));
@@ -167,6 +220,7 @@ document.getElementById("save").addEventListener("click",()=>{
 document.getElementById("reset").addEventListener("click",()=>{
  if(!confirm("¿Restablecer la vista y borrar este borrador local?"))return;
  draft={};try{localStorage.removeItem(KEY);}catch{}
+ window.dispatchEvent(new Event("bf-studio-reset"));
  frame.src="/espejo/?admin_embed=1#"+currentPage();
  inform("Vista restaurada; no se ha modificado ningún dato en Cloudflare.");
 });
@@ -192,5 +246,5 @@ export function studioSandboxRoute(request,env){
   "Referrer-Policy":"no-referrer","X-Frame-Options":"DENY",
   "Content-Security-Policy":"default-src 'none'; frame-src 'self'; script-src 'nonce-"+nonce+"'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
  };
- return new Response(request.method==="HEAD"?null:HTML.replace("__NONCE__",nonce),{status:200,headers});
+ return new Response(request.method==="HEAD"?null:HTML.replaceAll("__NONCE__",nonce),{status:200,headers});
 }
