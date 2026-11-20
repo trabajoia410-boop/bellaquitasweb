@@ -51,3 +51,26 @@ BEFORE UPDATE OF clerk_user_id, profile_id ON auth_clerk_links
 BEGIN
   SELECT RAISE(ABORT, 'La identidad vinculada es inmutable');
 END;
+
+-- Una vinculación confirmada no se puede degradar, borrar ni sustituir
+-- por otra prueba de identidad desde una ruta ordinaria. Cualquier reparación
+-- excepcional exige una migración administrativa revisada y auditada.
+CREATE TRIGGER IF NOT EXISTS trg_clerk_confirmed_immutable
+BEFORE UPDATE ON auth_clerk_links
+WHEN OLD.link_method = 'migration_confirmed'
+  AND (
+    NEW.link_method IS NOT OLD.link_method
+    OR NEW.evidence_provider IS NOT OLD.evidence_provider
+    OR NEW.evidence_subject IS NOT OLD.evidence_subject
+    OR NEW.confirmed_at IS NOT OLD.confirmed_at
+  )
+BEGIN
+  SELECT RAISE(ABORT, 'Vinculación confirmada inmutable');
+END;
+
+CREATE TRIGGER IF NOT EXISTS trg_clerk_confirmed_no_delete
+BEFORE DELETE ON auth_clerk_links
+WHEN OLD.link_method = 'migration_confirmed'
+BEGIN
+  SELECT RAISE(ABORT, 'No eliminar vínculos confirmados sin migración auditada');
+END;
