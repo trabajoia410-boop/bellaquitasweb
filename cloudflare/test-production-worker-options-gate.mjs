@@ -51,6 +51,7 @@ const safeProduction={
  STAGING_MUTATIONS:"enabled",ALLOW_NEW_ACCOUNTS:"yes",
  EMAIL_AUTH_ENABLED:"no",EMAIL_REGISTRATION_ENABLED:"no",
  CLERK_JWT_ENABLED:"yes",CLERK_EXCHANGE_ENABLED:"yes",
+ CLERK_ADMIN_STEPUP_ENABLED:"yes",
  CLERK_ISSUER:"https://clerk.bellaquitas.fr",CLERK_ALLOWED_ORIGIN:DOMAIN,
  ADMIN_EMAIL_LINK_ENABLED:"no",SUGGESTIONS_ENABLED:"yes",
  DB:{prepare(){}},ASSETS:{fetch(){}},
@@ -67,6 +68,7 @@ for(const patch of [
  {ADMIN_EMAIL_LINK_ENABLED:"yes"},
  {CLERK_JWT_ENABLED:"no"},
  {CLERK_EXCHANGE_ENABLED:"no"},
+ {CLERK_ADMIN_STEPUP_ENABLED:"no"},
  {CLERK_ISSUER:"https://qa.clerk.accounts.dev"}
 ]){
  const unsafe=await worker.fetch(preflight(),{...safeProduction,...patch});
