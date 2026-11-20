@@ -3,6 +3,7 @@ import {SITE_MEDIA} from "./site-media-manifest.js";
 import {ADDITIONAL_MEDIA} from "./visual-extra-media.js";
 import {MIRROR_SUGGESTIONS_UI} from "./mirror-suggestions-ui.js";
 import {MIRROR_ADMIN_NEW_TAB} from "./mirror-admin-newtab.js";
+import {fixMirrorNavigation} from "./mirror-navigation-guard.js";
 const MIRROR_BASE="/espejo/";
 const QA_MEDIA_PROXY="https://bellaquitas-media-qa.bellaquitas-fest-410.workers.dev";
 const STAGING_HOSTNAME="bellaquitas-api-staging.bellaquitas-fest-410.workers.dev";
@@ -132,9 +133,10 @@ function sameDesignJS(source){
     !source.includes('assets/Bellaquitas%20Fest%20para%20m%C3%B3vil.mp4'))
     throw Error("Selector de vídeo original cambió; comprobar antes de aplicar parche iOS");
  // Solo se sustituye la conexión de datos y se corrige la elección de fuente.
- return source.replace(needle,"await import('/espejo/bridge.js')")
+ return fixMirrorNavigation(source.replace(needle,"await import('/espejo/bridge.js')")
    .replace(live,"const live = true; // Catálogos y sesiones de Cloudflare, sin Supabase.")
-   .replace(anchor,select+"\n"+anchor);
+   .replace(anchor,select+"\n"+anchor));
+
 }
 // La copia visual es INMUTABLE por versión de Worker: transformar HTML y JS
 // una sola vez por isolate evita repetir regex/reemplazos para cada visita.
@@ -250,9 +252,14 @@ export async function mirrorRoute(request,env){
  try{
   if(path==="/espejo/"||path==="/espejo/index.html"){
    const html=cachedMirrorHtml??(cachedMirrorHtml=sameDesignHTML(await original("index.html")));
+   // Embedded visual editor is available only as public read-only markup
+   // in a SAME-ORIGIN frame. Authorization to /editor still needs BF admin
+   // session; external framing and cross-site access remain forbidden.
+   const embed=url.searchParams.get("admin_embed")==="1";
    return new Response(request.method==="HEAD"?null:html,{headers:{...PROTECTED,
+    "X-Frame-Options":embed?"SAMEORIGIN":"DENY",
     "Content-Type":"text/html; charset=utf-8",
-    "Content-Security-Policy":"default-src 'self'; script-src 'self' https://challenges.cloudflare.com; script-src-attr 'none'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://challenges.cloudflare.com; frame-src 'self' blob: about: https://challenges.cloudflare.com; media-src 'self' blob: https:; worker-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests"}}); 
+    "Content-Security-Policy":"default-src 'self'; script-src 'self' https://challenges.cloudflare.com; script-src-attr 'none'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://challenges.cloudflare.com; frame-src 'self' blob: about: https://challenges.cloudflare.com; media-src 'self' blob: https:; worker-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; upgrade-insecure-requests"}}); 
   }
   if(path==="/espejo/app.js"){
    const code=cachedMirrorJs??(cachedMirrorJs=sameDesignJS(await original("app.js")));

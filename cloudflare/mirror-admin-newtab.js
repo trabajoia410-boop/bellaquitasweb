@@ -1,4 +1,4 @@
-// No altera el diseño original. Intercepta exclusivamente navegación al panel interno.
+// No altera el diseño original. Abre el único acceso Administrador en una pestaña independiente; no habilita roles.
 export const MIRROR_ADMIN_NEW_TAB=String.raw`(()=>{
  'use strict';
  document.addEventListener('click',function(e){
