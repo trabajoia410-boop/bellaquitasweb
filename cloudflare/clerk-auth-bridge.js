@@ -17,7 +17,7 @@ const jwksCache=new Map();
 const MAX_JWKS_BYTES=65536;
 async function boundedJwksBody(response) {
  const declared=response.headers.get("content-length");
- if(declared!==null&&(!/^\\d+$/.test(declared)||Number(declared)>MAX_JWKS_BYTES))
+ if(declared!==null&&(!/^\d+$/.test(declared)||Number(declared)>MAX_JWKS_BYTES))
   return null;
  if(!response.body||typeof response.body.getReader!=="function")return null;
  const reader=response.body.getReader(),chunks=[];
