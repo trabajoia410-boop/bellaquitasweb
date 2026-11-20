@@ -1,5 +1,18 @@
 # Bellaquitas Fest — Cloudflare staging
 
+> **ESTADO VIGENTE — 20/11/2026.** Este documento conserva a continuación las
+> notas **históricas** del primer staging. **No hay buckets R2 ni bindings
+> R2 activos** en la cuenta Cloudflare revisada. Los 8 Workers existentes
+> tienen **cero Cron Triggers programados**, por lo que no hay tareas de
+> migración multimedia pendientes por ese mecanismo. Las funciones de
+> fotografías R2 se niegan de forma controlada en la rama de fase 6 y no
+> deben activarse hasta disponer de almacenamiento gratuito verificado.
+> La web pública sigue en GitHub Pages con la autenticación antigua;
+> Clerk tiene instancias de desarrollo/producción preparadas pero **cero
+> usuarios**, y las validaciones de facturación/CPU/custodia de claves
+> siguen pendientes. **No fusionar ni desplegar esta rama en producción.**
+> Los resultados detallados constan en `FASE6_CLERK_QA.md`.
+
 **La web pública sigue en GitHub Pages + Supabase.** No pasar tráfico de
 producción a Cloudflare antes de validar Google, correo/contraseña y permisos.
 
