@@ -47,3 +47,37 @@ No modificar `bellaquitas.fr`, DNS, `config.js`, `app.js`, diseño, imágenes, v
 4. Confirmar con acceso al panel de facturación, dado que la API conectada devuelve 403, la opción de **ningún gasto facturable**.
 5. Ensayar funcionalidades, navegación ES/FR, QR y Safari/iPhone antes del corte reversible. Las pruebas manuales del usuario quedan reservadas para el final.
 6. Conservar `main`, `bellaquitas.fr`, DNS, imágenes, vídeos, puntos y visitas intactos hasta resolver todos los bloqueos.
+
+## Auditoría de restauraciones y CPU — 20/11/2026, segunda revisión
+
+**Método:** solo lecturas en D1 y consulta de métricas reales de Workers vía `events.workersInvocations`. Ningún cambio de configuración, DNS, roles, puntos o publicación.
+
+### Restauraciones existentes
+
+- Se localizaron **dos bases aisladas ya restauradas**: `bellaquitas-restore-isolated-20261114` y `bellaquitas-restore-postadmin-20261115`.
+- `PRAGMA quick_check` devuelve `ok` para ambas restauraciones, el origen de recuperación y el almacén de respaldos cifrados.
+- Se compararon **15 tablas de negocio y auditoría** en cada restauración frente a `bellaquitas-staging`, comprobando las filas completas sin publicar datos personales. **Cero diferencias** entre registros comparados. Incluyen 7 perfiles, 7 vínculos de identidad, 2 actividades, 3 cambios administrativos, 1 evento, 1 contenido, 1 borrador, 9 entradas de auditoría y 3 entradas de migración multimedia; las restantes tablas examinadas están vacías.
+- El almacén D1 `bellaquitas-encrypted-backups-20261114` contiene **un archivo cifrado** `staging-full-20261114-01`, con `AES-256-GCM`, datos SQL gzip y `plaintext_bytes=30134`; creación 14/11/2026. Hay **dos registros de bookmarks** de restauración del 15/11/2026. La presencia del archivo y las restauraciones no prueba que ese archivo concreto se pueda descifrar hoy sin una clave custodiada.
+- La base de recuperación independiente conserva **6 perfiles**, frente a 7 en staging/preproducción. Los 6 originales coinciden campo por campo en la comparación previa. El séptimo socio se creó en staging el 10/11/2026; tiene 0 puntos, 0 puntos acumulados y 0 visitas. **No borrar sin verificar origen**.
+
+### CPU medida (datos muestreados)
+
+Consulta analítica para el período `2026-11-19` a `2026-11-21` (UTC, intervalo con límite exclusivo). `cpuTimeUs` expresado en microsegundos; `approx_max` representa un máximo **aproximado**, no una medición exhaustiva.
+
+| Worker | CPU media | Máximo aprox. |
+| --- | ---: | ---: |
+| `bellaquitas-api-staging` | 2,91 ms | 483,51 ms |
+| `bellaquitas-api-qa` | 1,58 ms | 18,94 ms |
+| `bellaquitas-media-qa` | 10,73 ms | 366,29 ms |
+| `bellaquitas-device-qa` | 0,50 ms | 2,96 ms |
+| `bellaquitas-admin-visual-preview` | 0,57 ms | 3,54 ms |
+
+**Interpretación:** la API principal y el flujo multimedia muestran picos incompatibles con asumir que todas las solicitudes respetan el objetivo de 10 ms de CPU. No confundir el promedio con el máximo. Esta métrica no mide por separado el proceso JWT/WebCrypto de Clerk. No habilitar tráfico real basado solo en las medias.
+
+### Bloqueos restantes
+
+- Obtener y custodiar fuera de GitHub la clave del backup cifrado, restaurar **ese archivo concreto** y comparar una instantánea actualizada de origen frente a destino. No guardar secretos en el repositorio público.
+- Crear/vincular usuarios Clerk únicamente tras autenticación verificada de la identidad Google previa y de la nueva; producción y desarrollo Clerk todavía tenían **cero usuarios** en la comprobación.
+- Aislar las rutas con picos de CPU (sobre todo multimedia) y demostrar funcionamiento dentro de los límites reales del plan, antes de habilitar el Worker para producción.
+- La API de suscripciones/facturación sigue sin permisos suficientes (**403**); gasto cero **sin verificar**.
+- Pruebas del usuario en dispositivos reales se reservan para el final, tal como se acordó. No cortar DNS ni fusionar la rama antes de resolver bloqueos.
