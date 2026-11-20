@@ -85,5 +85,48 @@ class ClerkLinkingMigrationTests(unittest.TestCase):
         self.assertEqual(self.db.execute(
             "SELECT count(*) FROM auth_clerk_links").fetchone()[0], 0)
 
+
+    def test_confirmed_link_cannot_be_altered_or_deleted(self):
+        """Even an alternate Google identity of the SAME profile is not
+        sufficient to rewrite a confirmed link without an audited migration."""
+        self.db.execute("""
+            INSERT INTO auth_identity_links(provider,provider_subject,profile_id)
+            VALUES ('google','sub-a-alternate','qa-a')
+        """)
+        self.db.execute("""
+            INSERT INTO auth_clerk_links (
+              clerk_user_id, profile_id, link_method, evidence_provider,
+              evidence_subject, confirmed_at)
+            VALUES ('user_12345678901234567890','qa-a','migration_confirmed',
+                    'google','sub-a',datetime('now'))
+        """)
+        rejected = [
+            ("UPDATE auth_clerk_links SET evidence_subject='sub-a-alternate'", ()),
+            ("UPDATE auth_clerk_links SET link_method='pending'", ()),
+            ("UPDATE auth_clerk_links SET confirmed_at='2099-01-01'", ()),
+            ("DELETE FROM auth_clerk_links WHERE profile_id='qa-a'", ()),
+        ]
+        for sql, params in rejected:
+            with self.subTest(sql=sql):
+                with self.assertRaises(sqlite3.IntegrityError):
+                    self.db.execute(sql, params)
+        row = self.db.execute("""
+            SELECT profile_id,link_method,evidence_subject
+            FROM auth_clerk_links
+        """).fetchone()
+        self.assertEqual(row, ('qa-a', 'migration_confirmed', 'sub-a'))
+        self.assertEqual(self.db.execute(
+            "SELECT SUM(points) FROM profiles").fetchone()[0], 34)
+
+    def test_unconfirmed_link_can_be_removed_during_qa(self):
+        self.db.execute("""
+            INSERT INTO auth_clerk_links (
+              clerk_user_id,profile_id,link_method,evidence_provider,evidence_subject)
+            VALUES ('user_12345678901234567890','qa-a','pending','google','sub-a')
+        """)
+        self.db.execute("DELETE FROM auth_clerk_links WHERE link_method='pending'")
+        self.assertEqual(self.db.execute(
+            "SELECT COUNT(*) FROM auth_clerk_links").fetchone()[0], 0)
+
 if __name__ == "__main__":
     unittest.main()
