@@ -50,6 +50,7 @@ export function clerkLoginPage(request,env){
  const continueButton=document.getElementById("continue");
  const signIn=document.getElementById("sign-in");
  const account=document.getElementById("account");
+ const reverify=document.getElementById("reverify");
  const admin=document.body.dataset.admin==="yes";
  const setStatus=(v)=>{status.textContent=v;};
  let busy=false;
@@ -73,8 +74,9 @@ export function clerkLoginPage(request,env){
     const second=await fetch("/v1/auth/clerk/admin/step-up",options);
     if(!second.ok){
      setStatus(second.status===403?
-      "Para entrar al panel debes volver a verificar tu acceso en Clerk y continuar en los siguientes dos minutos.":
+      "Para entrar al panel debes volver a identificarte y continuar en los siguientes dos minutos.":
       "El acceso administrativo permanece protegido.");
+     if(second.status===403)reverify.hidden=false;
      return;
     }
     // The server verified signed Clerk identity + the same BF admin session.
@@ -87,6 +89,19 @@ export function clerkLoginPage(request,env){
   }finally{busy=false;continueButton.disabled=false;}
  }
  continueButton.addEventListener("click",proceed);
+ // La reverificación funciona también en Clerk Free: cerrar sesión en
+ // Clerk y volver a entrar con Google o código/contraseña. Sin MFA de pago.
+ reverify.addEventListener("click",async()=>{
+  reverify.disabled=true;
+  try{
+   await fetch("/v1/auth/logout",{method:"POST",credentials:"same-origin",cache:"no-store"});
+   await window.Clerk?.signOut();
+   location.assign("/acceso/?return=administracion");
+  }catch{
+   setStatus("No se pudo cerrar la sesión. Utiliza el menú de Clerk.");
+   reverify.disabled=false;
+  }
+ });
  window.addEventListener("load",async()=>{
   try{
    if(!window.Clerk||!window.__internal_ClerkUICtor)
@@ -95,8 +110,8 @@ export function clerkLoginPage(request,env){
    const update=()=>{
     const signed=!!window.Clerk.session;
     continueButton.disabled=!signed;
+    account.hidden=!signed;
     if(signed){
-     account.hidden=false;
      setStatus("Identidad Clerk disponible. Pulsa Continuar para comprobar tu ficha.");
     }
    };
@@ -123,6 +138,7 @@ export function clerkLoginPage(request,env){
   '<div id="sign-in"></div><div id="account" hidden></div>',
   '<p id="status" role="status" aria-live="polite">Preparando inicio de sesión…</p>',
   '<button type="button" id="continue" disabled>Continuar</button>',
+  '<button type="button" id="reverify" hidden style="margin-left:8px">Volver a identificarme</button>',
   '<p><small>'+(admin?'La administración requiere verificación reciente y una sesión previamente vinculada.':'Solo las identidades vinculadas pueden recuperar su ficha original.')+'</small></p>',
   '</section></main>',
   '<script defer crossorigin="anonymous" src="https://'+HOST+'/npm/@clerk/ui@1/dist/ui.browser.js"></script>',
