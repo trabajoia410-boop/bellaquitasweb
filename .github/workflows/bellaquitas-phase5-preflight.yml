@@ -65,6 +65,8 @@ jobs:
         run: node cloudflare/test-account-cutover-policy.mjs
       - name: Probar auditor de exportaciones originales
         run: node cloudflare/test-audit-production-export.mjs
+      - name: Comprobar que Clerk nunca permite rutas OAuth/PBKDF2 legado ni correos admin
+        run: node cloudflare/test-clerk-legacy-closed.mjs
       - name: Bloquear OAuth y correos de producción sin configuración y comprobar retornos correctos
         run: node cloudflare/test-production-auth-cutover.mjs
       - name: Bloquear tambien OPTIONS CORS del Worker real sin aprobacion
