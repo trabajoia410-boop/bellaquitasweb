@@ -3,6 +3,8 @@ on:
   pull_request:
     paths:
       - "cloudflare/clerk-auth-bridge.js"
+      - "cloudflare/bellaquitas-api-staging.js"
+      - "cloudflare/test-staging-no-r2.mjs"
       - "cloudflare/test-clerk-auth.mjs"
       - "cloudflare/test_clerk_migration.py"
       - "cloudflare/migrations/0004-clerk-identity-links.sql"
@@ -23,5 +25,7 @@ jobs:
           node-version: "22"
       - name: Verificar JWT Clerk y prohibicion de accesos sin vinculo
         run: node --test cloudflare/test-clerk-auth.mjs
+      - name: Verificar imágenes con R2 eliminado y rutas de lectura
+        run: node --test cloudflare/test-staging-no-r2.mjs
       - name: Validar migracion D1 con SQLite en memoria
         run: python3 -m unittest discover -s cloudflare -p 'test_clerk_migration.py' -v
