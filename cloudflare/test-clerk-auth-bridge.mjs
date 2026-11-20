@@ -65,6 +65,54 @@ try{
   async()=>new Response(stream,{status:200})),null,
   "El límite funciona en streaming");
  assert.ok(chunks<20,"No consumir cuerpo completo tras exceder 64 KiB");
+ // JWKS concurrente: una ráfaga no debe iniciar 20 subrequests hacia
+ // el emisor real. La simulación utiliza firmas y rutas puramente sintéticas.
+ const burstIssuer="https://qa-burst.clerk.accounts.dev";
+ const burstEnv={...env,CLERK_ISSUER:burstIssuer};
+ let burstCalls=0;
+ const burstNetwork=async url=>{
+  assert.equal(url,burstIssuer+"/.well-known/jwks.json");
+  burstCalls++;
+  await new Promise(resolve=>setImmediate(resolve));
+  return new Response(JSON.stringify({keys:[jwk]}),{status:200});
+ };
+ const burst=await Promise.all(Array.from({length:20},(_,i)=>
+  verifyClerkJwt(request(make({...claims,iss:burstIssuer},
+   {...header,kid:"qa-burst-unknown-"+String(i).padStart(4,"0")})),
+   burstEnv,burstNetwork)));
+ assert.ok(burst.every(result=>result===null),
+  "Las veinte firmas con KID desconocido deben rechazarse");
+ assert.equal(burstCalls,1,
+  "JWKS concurrente: debe haber una sola descarga y no veinte");
+
+ // Dos claves legítimas simultáneas: no perder ninguna por carreras entre
+ // importación y actualización de la caché del mismo isolate.
+ const parallelIssuer="https://qa-parallel.clerk.accounts.dev";
+ const parallelEnv={...env,CLERK_ISSUER:parallelIssuer};
+ const parallelPair=generateKeyPairSync("rsa",{modulusLength:2048,publicExponent:65537});
+ const parallelJwk={...parallelPair.publicKey.export({format:"jwk"}),
+  kid:"qa-clerk-parallel-key",use:"sig",alg:"RS256"};
+ let parallelCalls=0;
+ const parallelNetwork=async url=>{
+  assert.equal(url,parallelIssuer+"/.well-known/jwks.json");
+  parallelCalls++;
+  await new Promise(resolve=>setImmediate(resolve));
+  return new Response(JSON.stringify({keys:[jwk,parallelJwk]}),{status:200});
+ };
+ const oldParallel=make({...claims,iss:parallelIssuer});
+ const newParallel=make({...claims,iss:parallelIssuer},
+  {...header,kid:parallelJwk.kid},parallelPair.privateKey);
+ const both=await Promise.all([
+  verifyClerkJwt(request(oldParallel),parallelEnv,parallelNetwork),
+  verifyClerkJwt(request(newParallel),parallelEnv,parallelNetwork)]);
+ assert.equal(both[0]?.subject,claims.sub);
+ assert.equal(both[1]?.subject,claims.sub);
+ assert.equal(parallelCalls,1,"Solo una descarga de dos claves");
+ assert.equal((await verifyClerkJwt(request(oldParallel),parallelEnv,
+  async()=>{throw Error("No debe recargar JWKS");}))?.subject,claims.sub);
+ assert.equal((await verifyClerkJwt(request(newParallel),parallelEnv,
+  async()=>{throw Error("No debe recargar JWKS");}))?.subject,claims.sub);
+
  const good=await verifyClerkJwt(request(),env);
  assert.equal(good.subject,claims.sub);
  const profile=await clerkIdentityRoute(request(),env);
