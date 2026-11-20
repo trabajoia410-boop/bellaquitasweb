@@ -121,3 +121,19 @@ Se volvieron a comparar **todas las tablas compartidas** entre la D1 de preprodu
 - Exportación D1 SQL oficial temporal: la API completa la tarea, pero la descarga firmada no está accesible desde este entorno. **No afirmar nueva copia duradera** ni acceso a la clave privada RSA sin evidencia. Continúa válida la prueba histórica de cifrado/restauración de 18/11.
 - Bloqueos de publicación **sin cambios**: 0 cuentas Clerk vinculadas, verificación completa de gasto cero ausente, CPU del Worker final sin certificar, custodia de clave externa no confirmada y reconciliación del proveedor antiguo en vivo aún pendiente. `main` y DNS permanecen intactos.
 
+
+## 8. Prueba independiente de restauración con respaldo cifrado (21/11/2026)
+
+Se ejecutó una **nueva restauración local en SQLite `:memory:`**, a partir de los archivos de recuperación del 18/11 entregados al propietario dentro del ZIP de 19/11. La prueba no contactó servicios externos, no generó SQL desencriptado en disco, no envió la clave a conectores y no realizó ninguna escritura en Cloudflare D1.
+
+- Integridad del ZIP (CRC) y SHA-256 de `.bqbk` iguales al manifiesto.
+- RSA-OAEP-3072-SHA256: desenrollado de la clave AES exitoso; **AES-256-GCM**: autenticación y descifrado exitosos; compresión gzip correcta.
+- Paquete `bellaquitas-d1-private` restaurado con tablas y filas, seguido de índices y triggers en **SQLite solo memoria**.
+- **22 tablas**, **17 índices**, **5 triggers** (44 objetos).
+- **7 perfiles**, **2 administradores**, **1.999.998 puntos**, **0 visitas**, **7 vínculos de identidad**, **0 vínculos huérfanos** y **0 identificadores de proveedor duplicados**.
+- `PRAGMA integrity_check = ok` y `PRAGMA foreign_key_check` = **0 errores**. Los resultados coinciden exactamente con el manifiesto.
+- No se publicaron nombres, correos, credenciales, contraseñas, filas de usuarios ni material criptográfico.
+
+**Límites de la comprobación:** demuestra la recuperación correcta del snapshot cifrado del 18/11, **no** la sincronía con la base viva posterior ni una copia actual. `BACKUP_KEY_CUSTODIED` permanece en `no`, porque una validación criptográfica no confirma custodia segura y exclusiva fuera del chat. **Se debe renovar la clave de cifrado antes de publicación**, generándola localmente bajo control del propietario y cifrando de nuevo el respaldo con su clave pública; la clave antigua no debe considerarse exclusiva después de haber sido transferida. El propietario debe mantener la copia anterior hasta comprobar la nueva restauración.
+
+Los controles de publicación, presupuesto gratuito, reconciliación del proveedor antiguo y pruebas de cuentas Clerk reales continúan bloqueados. No se ha tocado `main`, Workers, DNS, puntos ni visitas.
