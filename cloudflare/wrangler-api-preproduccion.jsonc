@@ -30,6 +30,7 @@
     "CLERK_JWT_ENABLED": "no",
     "CLERK_EXCHANGE_ENABLED": "no",
     "CLERK_ADMIN_STEPUP_ENABLED": "no",
+    "CLERK_UI_ENABLED": "no",
     "CLERK_QA_PREVIEW": "no",
     "PROVIDER_BROKER_ENABLED": "yes",
     "CLERK_ISSUER": "https://clerk.bellaquitas.fr",
