@@ -55,6 +55,55 @@ textarea{display:block;width:100%;min-height:110px;resize:vertical;border-radius
 .studio-icons{display:flex;flex-wrap:wrap;gap:6px}.studio-icons button{padding:5px 10px;min-width:34px;text-align:center}
 #studioSelection,#studioStatus{color:#f1c981;font-size:12px;min-height:21px}
 #studioFile{max-width:100%;font-size:12px}
+/* Editor category accordion and touch-friendly sidebar */
+.panel{max-height:calc(100dvh - 66px);overflow-y:auto;scrollbar-width:thin;overscroll-behavior:contain;position:sticky;top:0}
+.lab-accordion{border:1px solid #574059;border-radius:13px;overflow:hidden;background:#19141d;margin:9px 0}
+.lab-accordion>summary{cursor:pointer;list-style:none;position:relative;padding:14px 32px 14px 13px;font-weight:800;font-size:13px;color:#f4e7db;min-height:47px;display:flex;align-items:center}
+.lab-accordion>summary::-webkit-details-marker{display:none}
+.lab-accordion>summary::after{content:"⌄";position:absolute;right:14px;color:var(--gold);font-size:20px;top:8px;transform:rotate(-90deg);transition:transform .18s}
+.lab-accordion[open]>summary{border-bottom:1px solid #68506c;background:#312435}
+.lab-accordion[open]>summary::after{transform:rotate(0)}
+.lab-accordion-body{padding:12px 11px 16px}
+.lab-accordion-body>p:first-child{margin-top:0}
+.lab-accordion-body>.menu{gap:6px}
+.lab-accordion-body .btn{min-height:40px}
+.lab-accordion-body .studio-presets{gap:8px}
+.panel .notice{margin:0 0 10px}
+.panel h2{margin:8px 0;font-size:14px}
+.lab-sidebar-heading{display:flex;align-items:center;justify-content:space-between;gap:5px;margin:0 0 9px}
+.lab-sidebar-heading strong{letter-spacing:.04em}
+.lab-sidebar-close{display:none;border:1px solid #715773;border-radius:8px;padding:5px 11px;background:#312534;color:white;font-size:18px}
+#labOpenEditor{display:none;background:var(--gold);color:#211722;font-weight:800}
+.lab-quick-actions{display:flex;gap:7px;padding:9px 3px 3px;position:sticky;bottom:0;background:#201a22ee;backdrop-filter:blur(12px);z-index:1}
+.lab-quick-actions #save{flex:1;text-align:center}
+.studio-palette-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:9px 0 5px}
+.studio-palette{min-height:40px;border:1px solid #68506c;color:#fcf4e8;background:#2d2232;border-radius:8px;font-size:12px;cursor:pointer}
+.studio-minor-title{font-size:12px;margin:12px 0 6px;color:var(--muted)}
+.lab-accordion-body label{font-size:12px}
+.lab-accordion-body input[type=color]{height:41px}
+.studio-advanced[data-inspector="icon"] #studioPickLogo,
+.studio-advanced[data-inspector="icon"] #studioFile,
+.studio-advanced[data-inspector="icon"] #studioImageUrl,
+.studio-advanced[data-inspector="icon"] #studioApplyImage,
+.studio-advanced[data-inspector="icon"] #studioRestoreImage,
+.studio-advanced[data-inspector="icon"] label[for="studioFile"],
+.studio-advanced[data-inspector="icon"] label[for="studioImageUrl"]{display:none!important}
+.studio-advanced[data-inspector="image"] #studioIcon,
+.studio-advanced[data-inspector="image"] #studioIcons,
+.studio-advanced[data-inspector="image"] label[for="studioIcon"]{display:none!important}
+@media(max-width:800px){
+ .panel{position:fixed;top:0;bottom:0;left:0;height:100dvh;max-height:100dvh;overflow-y:auto;padding:13px;overscroll-behavior:contain}
+ .lab-sidebar-close{display:inline-flex}
+ .lab-accordion>summary{min-height:54px;font-size:14px}
+ .head{min-height:59px}.head small{font-size:10px}
+ .preview-head{position:sticky;top:0;z-index:3;background:#0d0a0ef3;padding:9px 3px}
+ .stage{height:calc(100dvh - 190px);min-height:400px}
+ .lab-quick-actions{padding-bottom:max(8px,env(safe-area-inset-bottom))}
+}
+body.lab-sim-mobile #labOpenEditor{display:inline-flex}
+body.lab-sim-mobile-open .panel{display:block!important;position:fixed;inset:0 auto 0 0;width:min(88vw,358px);z-index:11;height:100dvh;max-height:100dvh;overflow-y:auto}
+body.lab-sim-mobile-open #drawerBg{display:block!important;position:fixed;inset:0;background:#000b;z-index:10;width:100%;border:none}
+body.lab-sim-mobile-open .lab-sidebar-close{display:inline-flex}
 </style></head><body>
 <header class="head"><div><strong>BELLAQUITAS FEST <span style="color:var(--gold)">/ Laboratorio</span></strong>
 <small>Versión de pruebas, no es el panel de administración real</small></div>
@@ -78,6 +127,12 @@ textarea{display:block;width:100%;min-height:110px;resize:vertical;border-radius
 <button class="studio-preset" data-preset="glass" type="button" aria-pressed="false"><span class="studio-swatch" style="background:linear-gradient(110deg,#132231 45%,#55c8d4 45% 65%,#1c3037 65%)"></span><strong>Cristal</strong><small>Transparencias</small></button>
 <button class="studio-preset" data-preset="violet" type="button" aria-pressed="false"><span class="studio-swatch" style="background:linear-gradient(110deg,#1d0f27 45%,#d8a1ff 45% 65%,#41234d 65%)"></span><strong>Festival Violeta</strong><small>Contraste y color</small></button>
 <button class="studio-preset" data-preset="editorial" type="button" aria-pressed="false"><span class="studio-swatch" style="background:linear-gradient(110deg,#231c1c 45%,#dfc39d 45% 65%,#45372d 65%)"></span><strong>Editorial</strong><small>Minimalista profesional</small></button>
+<button class="studio-preset" data-preset="cobalt" type="button" aria-pressed="false"><span class="studio-swatch" style="background:linear-gradient(110deg,#071628 45%,#82adf6 45% 65%,#203b5c 65%)"></span><strong>Azul Medianoche</strong><small>Azul profundo y cobre</small></button>
+<button class="studio-preset" data-preset="rose" type="button" aria-pressed="false"><span class="studio-swatch" style="background:linear-gradient(110deg,#230f20 45%,#ed98c3 45% 65%,#39233c 65%)"></span><strong>Rosa Noche</strong><small>Rosa suave, club urbano</small></button>
+<button class="studio-preset" data-preset="emerald" type="button" aria-pressed="false"><span class="studio-swatch" style="background:linear-gradient(110deg,#0b1d1b 45%,#8adbc0 45% 65%,#1a3933 65%)"></span><strong>Esmeralda</strong><small>Verde joya y negro</small></button>
+<button class="studio-preset" data-preset="ice" type="button" aria-pressed="false"><span class="studio-swatch" style="background:linear-gradient(110deg,#102027 45%,#a8e4ed 45% 65%,#2a4049 65%)"></span><strong>Hielo Premium</strong><small>Azul hielo y grafito</small></button>
+<button class="studio-preset" data-preset="copper" type="button" aria-pressed="false"><span class="studio-swatch" style="background:linear-gradient(110deg,#261b16 45%,#e6ac73 45% 65%,#453028 65%)"></span><strong>Cobre & Ámbar</strong><small>Cálido, sofisticado</small></button>
+<button class="studio-preset" data-preset="monochrome" type="button" aria-pressed="false"><span class="studio-swatch" style="background:linear-gradient(110deg,#151515 45%,#d9d8d7 45% 65%,#303030 65%)"></span><strong>Blanco & Negro</strong><small>Editorial monocromo</small></button>
 </div></div>
 <div class="studio-group"><h2>Barra de arriba y menú</h2>
 <label for="studioHeader">Plantilla de cabecera</label><select id="studioHeader" class="studio-field"><option value="original">Original</option><option value="glass">Flotante de cristal</option><option value="compact">Compacta</option><option value="centered">Centrada</option><option value="outlined">Con contorno</option></select>
@@ -91,6 +146,18 @@ textarea{display:block;width:100%;min-height:110px;resize:vertical;border-radius
 <label for="studioButtons">Botones</label><select id="studioButtons" class="studio-field"><option value="original">Original</option><option value="pill">Redondeados</option><option value="outline">Contorno</option><option value="square">Rectangulares</option></select>
 <label for="studioFont">Tipo de letra</label><select id="studioFont" class="studio-field"><option value="original">Original</option><option value="urban">Urbana fuerte</option><option value="modern">Moderna limpia</option><option value="editorial">Editorial</option></select>
 <div class="studio-two"><div><label for="studioAccent">Color principal</label><input id="studioAccent" type="color" value="#e9c477"/></div><div><label for="studioSurface">Color ventanas</label><input id="studioSurface" type="color" value="#211825"/></div></div>
+<div class="studio-two"><div><label for="studioBg">Fondo general</label><input id="studioBg" type="color" value="#100d12"/></div><div><label for="studioNav">Fondo de menús</label><input id="studioNav" type="color" value="#1a111a"/></div></div>
+<div class="studio-two"><div><label for="studioTextColor">Color de textos</label><input id="studioTextColor" type="color" value="#fff7ef"/></div><div><label for="studioSecondary">Color secundario</label><input id="studioSecondary" type="color" value="#bb85a0"/></div></div>
+<div class="studio-two"><div><label for="studioBorder">Color de bordes</label><input id="studioBorder" type="color" value="#62404f"/></div></div>
+<h3 class="studio-minor-title">Paletas rápidas</h3>
+<div id="studioPalettes" class="studio-palette-grid" role="group" aria-label="Paletas de color">
+<button type="button" class="studio-palette" data-palette="noir">Dorado</button>
+<button type="button" class="studio-palette" data-palette="urban">Morado</button>
+<button type="button" class="studio-palette" data-palette="cobalt">Azul</button>
+<button type="button" class="studio-palette" data-palette="rose">Rosa</button>
+<button type="button" class="studio-palette" data-palette="emerald">Verde</button>
+<button type="button" class="studio-palette" data-palette="monochrome">Neutro</button>
+</div>
 </div>
 <div class="studio-group"><h2>Logos, fotos e iconos</h2><p>Pulsa en un logo, imagen o icono de la vista previa y cámbialo aquí. Los archivos no se suben al servidor.</p>
 <div id="studioSelection" aria-live="polite">Ningún elemento seleccionado</div>
@@ -123,7 +190,7 @@ textarea{display:block;width:100%;min-height:110px;resize:vertical;border-radius
 </div><p id="notice" role="status" aria-live="polite"></p></aside>
 <main class="preview"><div class="preview-head"><div><strong>Vista previa interactiva</strong>
 <small>Portada auténtica · textos editables sólo en este navegador</small></div>
-<div class="row"><button class="btn" data-device="desktop" type="button" aria-pressed="true">▭ Ordenador</button>
+<div class="row"><button class="btn" id="labOpenEditor" type="button" aria-controls="controls" aria-expanded="false">☰ Editar</button><button class="btn" data-device="desktop" type="button" aria-pressed="true">▭ Ordenador</button>
 <button class="btn" data-device="mobile" type="button" aria-pressed="false">▯ Móvil</button>
 <button class="btn" data-lang="es" type="button" aria-pressed="true">ES</button><button class="btn" data-lang="fr" type="button" aria-pressed="false">FR</button></div></div>
 <div class="stage" id="stage"><iframe id="site" src="/espejo/?admin_embed=1#/" title="Página Bellaquitas Fest, previsualización sin guardar" referrerpolicy="same-origin"></iframe></div>
@@ -176,7 +243,8 @@ function bindFrame(){
   if(!target||event.target?.closest?.("[data-studio-image],[data-studio-icon]"))return;
   event.preventDefault();event.stopImmediatePropagation();
   selected=target;editing.disabled=false;editing.value=target.textContent.trim();
-  chosen.textContent="Editando texto de "+(currentPage()==="/"?"Inicio":currentPage().slice(1));
+  chosen.textContent="Editando texto de "+(currentPage()==="/"?"Portada":currentPage().slice(1));
+  window.bfLabOpen?.("text");
   editing.focus({preventScroll:true});
  },true);
  observer=new MutationObserver(()=>decorate());
@@ -197,7 +265,11 @@ document.getElementById("themes").addEventListener("click",event=>{
  applyTheme();setPressed("[data-theme]","theme",theme);inform("Modelo cambiado sólo en esta vista previa.");
 });
 document.querySelectorAll("[data-device]").forEach(b=>b.addEventListener("click",()=>{
- const m=b.dataset.device;stage.classList.toggle("mobile",m==="mobile");setPressed("[data-device]","device",m);
+ const m=b.dataset.device;stage.classList.toggle("mobile",m==="mobile");
+ document.body.classList.toggle("lab-sim-mobile",m==="mobile");
+ document.body.classList.remove("lab-sim-mobile-open");
+ setPressed("[data-device]","device",m);
+ inform(m==="mobile"?"Vista móvil: puedes abrir el panel izquierdo con «☰ Editar».":"Vista ordenador restaurada.");
 }));
 document.querySelectorAll("[data-lang]").forEach(b=>b.addEventListener("click",()=>{
  lang=b.dataset.lang;if(!["es","fr"].includes(lang))return;
