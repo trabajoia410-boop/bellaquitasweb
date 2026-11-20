@@ -122,6 +122,8 @@ export default {
       }
       const photo = pathname.match(/^\/v1\/moments\/photos\/([0-9a-f-]{36})$/i);
       if (photo) {
+        // R2 retirado: evitar incluso la lectura de D1 cuando no hay destino.
+        if (typeof env.MEDIA?.get !== "function") return jsonResponse(request, {error: "Foto no encontrada"}, 404);
         const record = await env.DB.prepare(
           "SELECT p.storage_path, p.caption FROM moments_photos p " +
           "INNER JOIN moments_albums a ON a.id = p.album_id " +
