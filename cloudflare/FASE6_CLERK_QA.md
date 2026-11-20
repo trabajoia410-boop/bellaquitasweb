@@ -24,3 +24,26 @@ La comprobación criptográfica de Clerk usa WebCrypto y JWKS, no el cálculo de
 
 ## Lo que permanece intacto
 No modificar `bellaquitas.fr`, DNS, `config.js`, `app.js`, diseño, imágenes, vídeos, datos de socios, puntos, visitas o roles reales durante esta etapa.
+
+## Auditoría adicional no invasiva — 20/11/2026
+
+**Solo lecturas en bases con datos.** Las únicas escrituras ejecutadas durante la auditoría fueron la instalación de **dos triggers de integridad** en `bellaquitas-migration-qa-20261114`, una base aislada con 0 perfiles y 0 enlaces Clerk.
+
+- **Clerk:** producción y desarrollo existen, 0 usuarios en ambas instancias. La integración Google OAuth de producción declara las credenciales configuradas; habilitada la contraseña y la verificación por correo. El dominio `bellaquitas.fr` presenta DNS, TLS y correo con estado `complete`. Esto NO acredita que un usuario original haya iniciado sesión.
+- **Conciliación D1:** origen de recuperación 6 perfiles, preproducción 7. Las 6 filas antiguas de `profiles` y sus 6 `auth_identity_links` coinciden **campo a campo**. Las filas de `activity` (2), `admin_member_changes` (3), `events` (1), `site_content` (1) y `site_drafts` (1) coinciden **campo a campo**; las tablas vacías examinadas siguen vacías.
+- **Saldos sin cambio:** suma 1.999.998 puntos, 0 visitas y 2 roles admin en recuperación y preproducción. El séptimo perfil adicional en preproducción es un socio con 0 puntos y 0 visitas, más un vínculo de identidad; no borrar ni asumir que es una cuenta oficial.
+- **Seguridad D1:** la base QA contiene los cinco triggers `trg_clerk_*`, incluidos los que impiden alterar o borrar vínculos `migration_confirmed`; 0 perfiles, 0 enlaces. Los tests de migración ejecutan comprobaciones de integridad únicamente con SQLite en memoria.
+- **Banderas de seguridad en preproducción:** `CLERK_JWT_ENABLED=no`, `CLERK_EXCHANGE_ENABLED=no`, `STAGING_MUTATIONS=disabled`, `PUBLISH_APPROVED=no`, `ALLOW_NEW_ACCOUNTS=no`, `FREE_TIER_BILLING_VERIFIED=no`, `FREE_TIER_CPU_VERIFIED=no`, `BACKUP_KEY_CUSTODIED=no`, `FINAL_ORIGIN_RECONCILED=no`.
+- **R2:** el listado de buckets de la cuenta devuelve 0; el Worker de preproducción no declara un binding R2 activo.
+- **Facturación:** los endpoints de suscripciones, uso y políticas de gasto devuelven HTTP 403 por permisos. No se puede confirmar el plan efectivo, el límite de gasto 0 o la imposibilidad de cobros. No marcar como verificado.
+- **Límite público de Workers Free:** 100.000 solicitudes/día y 10 ms de CPU/solicitud; al rebasar el límite Cloudflare puede devolver errores en vez de servir la aplicación. Ver documentación oficial: https://developers.cloudflare.com/workers/platform/limits/ .
+- **Laboratorio:** ya existe en el Worker `bellaquitas-api-staging`; panel lateral, categorías, plantillas y vistas están en código desplegado. Su presencia no acredita publicación segura de cambios reales.
+
+### Criterios para continuar
+
+1. Verificar una **copia final exportada, cifrada, custodiada y restaurada**, con comparación posterior a los últimos cambios reales. El cotejo de las filas anteriores **no** reemplaza esa prueba.
+2. Verificar identidades reales de las dos cuentas administradoras y usuarios originales antes de enlazar Clerk por su `sub` verificado, nunca por coincidencia de correo.
+3. Medir el consumo de CPU de JWT/WebCrypto y el desempeño real en Workers Free (señal de 10 ms).
+4. Confirmar con acceso al panel de facturación, dado que la API conectada devuelve 403, la opción de **ningún gasto facturable**.
+5. Ensayar funcionalidades, navegación ES/FR, QR y Safari/iPhone antes del corte reversible. Las pruebas manuales del usuario quedan reservadas para el final.
+6. Conservar `main`, `bellaquitas.fr`, DNS, imágenes, vídeos, puntos y visitas intactos hasta resolver todos los bloqueos.
