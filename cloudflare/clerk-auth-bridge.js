@@ -69,20 +69,18 @@ async function verifiedClerkKey(cfg,kid,network) {
  const match=body.keys.find(k=>k.kid===kid&&k.kty==="RSA"&&
   (!k.alg||k.alg==="RS256")&&(!k.use||k.use==="sig")&&
   typeof k.n==="string"&&typeof k.e==="string");
- // A request for an unknown key must not flush an existing valid key.
- // Keep at most TWO verified keys until their original five-minute TTL.
- // This also allows old/new signed sessions to coexist briefly on rotation.
- // Releer la caché tras el fetch/await: otra petición simultánea puede
- // haber importado una segunda clave válida durante nuestra espera.
+ // Resolver la importación asíncrona ANTES de leer la caché:
+ // durante importKey otra invocación puede incorporar otra clave válida.
+ let imported=null;
+ if(match)imported=await crypto.subtle.importKey("jwk",
+  {kty:"RSA",n:match.n,e:match.e,alg:"RS256",ext:true},
+  {name:"RSASSA-PKCS1-v1_5",hash:"SHA-256"},false,["verify"]);
+ // Releer justo antes de la escritura, sin ningún await entre medias.
+ // Conservar como máximo dos claves durante el TTL original de cinco minutos.
  const latest=jwksCache.get(cfg.issuer);
  const latestFresh=!!latest&&clock-latest.fetchedAt<JWKS_MAX_AGE_MS;
  const keys=latestFresh?new Map(latest.keys):new Map();
- if(match){
-  const imported=await crypto.subtle.importKey("jwk",
-   {kty:"RSA",n:match.n,e:match.e,alg:"RS256",ext:true},
-   {name:"RSASSA-PKCS1-v1_5",hash:"SHA-256"},false,["verify"]);
-  keys.set(kid,imported);
- }
+ if(imported)keys.set(kid,imported);
  while(keys.size>2)keys.delete(keys.keys().next().value);
  // Keep at most two issuers; production allows only the fixed custom domain.
  if(!jwksCache.has(cfg.issuer)&&jwksCache.size>=2)
