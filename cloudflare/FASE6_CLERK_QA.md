@@ -81,3 +81,12 @@ Consulta analítica para el período `2026-11-19` a `2026-11-21` (UTC, intervalo
 - Aislar las rutas con picos de CPU (sobre todo multimedia) y demostrar funcionamiento dentro de los límites reales del plan, antes de habilitar el Worker para producción.
 - La API de suscripciones/facturación sigue sin permisos suficientes (**403**); gasto cero **sin verificar**.
 - Pruebas del usuario en dispositivos reales se reservan para el final, tal como se acordó. No cortar DNS ni fusionar la rama antes de resolver bloqueos.
+
+## Correcciones del 20/11/2026 — rutas R2 eliminadas y coste operativo
+
+- La API de staging ahora responde **404** si se solicita un logo permitido sin binding R2, en lugar de lanzar `TypeError` y devolver 503. Las fotografías también devuelven 404 cuando no existe un cliente `MEDIA.get`; `/health` solo muestra almacenamiento configurado cuando existe `MEDIA.get`.
+- En las rutas protegidas de carga de fotos, si ya pasó la autenticación, autorización de origen y la bandera de pruebas pero **R2 no tiene `put` y `delete`**, devuelve **503 antes de leer el cuerpo o escribir en D1**. Las escrituras continúan bloqueadas por `STAGING_MUTATIONS=disabled`.
+- Dos nuevos test suites offline: `cloudflare/test-staging-no-r2.mjs` y `cloudflare/test-protected-no-r2.mjs`, ambos incluidos en el flujo GitHub Actions `.github/workflows/qa-clerk.yml`. La ejecución https://github.com/trabajoia410-boop/bellaquitasweb/actions/runs/44790437667 finalizó `success`.
+- Se consultaron los **8 Workers** de la cuenta Cloudflare: **ninguno tiene Cron Triggers programados**, y ninguno de sus bindings actuales es de tipo R2. El listado de buckets R2 de la cuenta está vacío. No se tocaron esos Workers.
+- El `cloudflare/README.md` indica que la documentación inicial sobre R2 quedó obsoleta, para evitar reactivarlo por error.
+- **Limitación importante:** esto evita errores de R2 en el código propuesto, no migra las fotos a un almacenamiento nuevo ni demuestra que los vídeos se sirvan por rutas finales sin CPU. Sin presupuesto confirmado y sin validación de usuarios reales, la web pública y DNS no se modifican.
