@@ -108,3 +108,16 @@ Se volvieron a comparar **todas las tablas compartidas** entre la D1 de preprodu
 - Permanecen pendientes rotación/custodia del backup histórico, reconciliación de identidad del proveedor antiguo, cuentas Clerk reales (0 usuarios en dev/producción), coste 0 verificable y ensayo CPU del Worker candidato. No modificar flags de seguridad o DNS.
 
 **Resultado:** la rama principal es la fuente de verdad; las pruebas de seguridad pasan, y los datos reales permanecen intactos. La fase 6 sigue bloqueada para publicación hasta resolver condiciones verificables restantes.
+
+
+## 7. Refuerzo Clerk + conciliación D1 (20/11, tarde)
+
+- **Sin tocar Workers desplegados ni producción:** modificación exclusivamente de `clerk-auth-bridge.js` y sus pruebas sintéticas.
+- El subrequest JWKS usa `AbortSignal.timeout(5000)`, con fallo cerrado cuando un proveedor deja de responder. No se habilita login real ni se añade proveedor de pago.
+- Si la descarga/verificación estructural del JWKS falla, se aplica un **cooldown de 30 segundos por emisor permitido**, reduciendo reintentos seriales maliciosos que pueden consumir la cuota gratuita. Los tokens sin firma verificable siguen rechazados; las claves válidas cacheadas pueden seguir verificándose durante su TTL.
+- La prueba anterior que exigía recuperar instantáneamente el mismo emisor tras una respuesta maliciosa no era compatible con ese cooldown; se separó la prueba positiva en un emisor sintético independiente. Se añadieron pruebas de fallo con 25 reintentos (una única solicitud externa) y recuperación tras el cooldown. No se confundió ese hallazgo de QA con un fallo de la web pública.
+- **Origen recuperado D1**: 6 perfiles, 6 vínculos, 0 huérfanos, 0 duplicados de `provider,provider_subject`, 1.999.998 puntos y 0 visitas. La tabla `legacy_auth_users_for_migration` existe pero tiene **0 filas**, por lo que su ausencia en preproducción no significa que falten usuarios dentro de esa tabla.
+- **Preproducción D1**: 7 perfiles, 7 vínculos, 0 huérfanos, 0 duplicados de `provider,provider_subject`, 1.999.998 puntos y 0 visitas. El séptimo perfil sigue conservado y no debe tratarse como cuenta descartable.
+- Exportación D1 SQL oficial temporal: la API completa la tarea, pero la descarga firmada no está accesible desde este entorno. **No afirmar nueva copia duradera** ni acceso a la clave privada RSA sin evidencia. Continúa válida la prueba histórica de cifrado/restauración de 18/11.
+- Bloqueos de publicación **sin cambios**: 0 cuentas Clerk vinculadas, verificación completa de gasto cero ausente, CPU del Worker final sin certificar, custodia de clave externa no confirmada y reconciliación del proveedor antiguo en vivo aún pendiente. `main` y DNS permanecen intactos.
+
