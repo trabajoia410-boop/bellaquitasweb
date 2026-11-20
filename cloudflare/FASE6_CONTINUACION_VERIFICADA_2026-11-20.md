@@ -57,3 +57,24 @@ La nueva tabla **no se ha aplicado a D1 de producción preparada ni a staging**,
 6. `release-gates-2026-11-15.json` y los flags del Worker de preproducción **permanecen cerrados**. Las pruebas físicas personales siguen diferidas hasta después de publicar.
 
 No se promete que la fase 6 esté terminada ni que la web haya sido migrada. Esta anotación registra trabajo real sin exponer datos sensibles ni activar gastos.
+
+## 5. Staging actualizado mediante Cloudflare Workers Builds (20/11/2026)
+
+GitHub Actions `deploy-bellaquitas-api-staging-safe.yml` compiló y verificó en seco pero omitió el deploy por falta de los secretos de repositorio `CF_API_TOKEN`/`CLOUDFLARE_API_TOKEN`; se respetó ese bloqueo y no se expusieron claves.
+
+Se aprovechó la **integración ya existente** de Cloudflare Workers Builds, asociada a la rama `migracion/fase5-segura-20261114`, sin crear servicios ni activar plan de pago. Se verificó configuración de despliegue únicamente de `bellaquitas-api-staging`, versión anterior recuperable y cuota de Builds disponible. Cloudflare Builds ejecutó el código de la rama y finalizó `success`:
+
+- Build: `a9cdfd6d-e12e-41b6-9793-7444246826ca`.
+- Versión desplegada: `39a83855-8054-48e9-a8ba-e033df368880`.
+- Versión anterior identificada para rollback: `da846f2f-bbd5-439a-b32e-05ffa482c6ae`.
+- Finalización del despliegue: `2026-11-20T04:03:56.385Z` (UTC).
+- El log dice `Uploaded bellaquitas-api-staging`, `Deployed bellaquitas-api-staging triggers` y `Success: Deploy command completed`.
+- Cloudflare API después del despliegue: `STAGING_MUTATIONS=disabled`, `ALLOW_NEW_ACCOUNTS=no`, `CLERK_JWT_ENABLED` ausente/desactivado, D1 staging intacta, secrets `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `RESEND_API_KEY`, `EMAIL_RATE_KEY`, `PROVIDER_BROKER_KEY`, `TURNSTILE_SECRET` aún vinculados; proxy de vídeo preservado.
+- El Worker **preproducción** sigue sin despliegue adicional, `SITE_MODE=preproduction`, `PUBLISH_APPROVED=no`, `CLERK_JWT_ENABLED=no`, `CLERK_EXCHANGE_ENABLED=no`, `FREE_TIER_BILLING_VERIFIED=no`, `FREE_TIER_CPU_VERIFIED=no` y subdominio desactivado.
+- Zona `bellaquitas.fr`: estado `pending`, plan `Free Website`; 0 Worker Routes y 0 Worker Custom Domains. **No se cambió el sitio público**.
+
+**Esquema D1 staging:** aplicada exclusivamente la migración `0008-clerk-verified-links.sql`; 5 objetos DDL correctos, 3 triggers presentes, `auth_clerk_links` con 0 filas; inserción de identidad falsa rechazada. Paridad de 14 tablas con preproducción confirmada otra vez después de aplicar la migración. Perfiles=7, administradores=2, puntos=1.999.998, visitas=0 antes/después.
+
+**QA postdespliegue:** rerun de GitHub Actions `44671273478`, incluyendo pruebas HTTP de staging (sin sesiones ni mutaciones), seguridad/fidelidad y navegador ES/FR, terminó con tres jobs en `success`. Esto valida endpoints y apariencia automática, **no** cuentas Clerk reales, sesión OAuth de producción, garantía de CPU menor a 10 ms ni facturación integral.
+
+**Situación:** staging actualizado de forma segura, rama PR #3 continúa borrador, sin merge ni corte DNS. No poner `FREE_TIER_CPU_VERIFIED=yes`, `FREE_TIER_BILLING_VERIFIED=yes` ni `PUBLISH_APPROVED=yes` sin evidencias reales.
