@@ -43,6 +43,11 @@ assert.match(html,/event\.target\?\.nodeType===1/,
  "Cross-frame click-to-edit must work even when Element constructors differ");
 assert.doesNotMatch(html,/auth_sessions|auth_clerk_links|passwordHash\(/);
 assert.equal(ok.headers.get("X-Frame-Options"),"DENY");
+const embedded=studioSandboxRoute(req(origin+"/laboratorio/?admin_embed=1"),good);
+assert.equal(embedded.status,200);
+assert.equal(embedded.headers.get("X-Frame-Options"),"SAMEORIGIN");
+assert.match(embedded.headers.get("Content-Security-Policy"),/frame-ancestors 'self'/);
+assert.equal(embedded.headers.get("Set-Cookie"),null);
 assert.match(ok.headers.get("Content-Security-Policy"),/frame-src 'self'/);
 assert.match(ok.headers.get("Content-Security-Policy"),/connect-src 'none'/);
 assert.equal(ok.headers.get("Set-Cookie"),null);

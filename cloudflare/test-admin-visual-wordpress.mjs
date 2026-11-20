@@ -44,7 +44,7 @@ const unsafeStage=adminConsoleRoute(new Request("https://bellaquitas-api-staging
 });
 assert.doesNotMatch(await unsafeStage.text(),/id="adminDesignStudio"/,
  "The anonymous studio must disappear if staging writes become active");
-assert.match(html,/data-src="\/laboratorio\/"/);
+assert.match(html,/data-src="\/laboratorio\/\?admin_embed=1"/);
 assert.match(html,/bf_studio_design_v2/);
 assert.match(html,/NO publicado ni guardado en D1/);
 const prod=adminConsoleRoute(new Request("https://bellaquitas.fr/administracion/"),{SITE_MODE:"production"});

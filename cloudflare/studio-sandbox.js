@@ -667,12 +667,13 @@ export function studioSandboxRoute(request,env){
   return new Response("Laboratorio no disponible",{status:503,headers:{"Cache-Control":"no-store","X-Robots-Tag":"noindex,nofollow"}});
  if(url.pathname==="/laboratorio")return Response.redirect(url.origin+"/laboratorio/",308);
  if(request.method!=="GET"&&request.method!=="HEAD")return new Response("Método no permitido",{status:405});
+ const sameOriginFrame=url.searchParams.get("admin_embed")==="1";
  const nonce=btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(18))));
  const headers={
   "Content-Type":"text/html; charset=utf-8","Cache-Control":"no-store",
   "X-Robots-Tag":"noindex,nofollow","X-Content-Type-Options":"nosniff",
-  "Referrer-Policy":"no-referrer","X-Frame-Options":"DENY",
-  "Content-Security-Policy":"default-src 'none'; frame-src 'self'; script-src 'nonce-"+nonce+"'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+  "Referrer-Policy":"no-referrer","X-Frame-Options":sameOriginFrame?"SAMEORIGIN":"DENY",
+  "Content-Security-Policy":"default-src 'none'; frame-src 'self'; script-src 'nonce-"+nonce+"'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors "+(sameOriginFrame?"'self'":"'none'")+""
  };
  return new Response(request.method==="HEAD"?null:HTML.replaceAll("__NONCE__",nonce),{status:200,headers});
 }
