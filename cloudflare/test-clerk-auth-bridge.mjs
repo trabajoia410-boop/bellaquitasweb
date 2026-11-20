@@ -121,6 +121,6 @@ try{
  const adminExchange=await clerkSessionExchange(exchangeRequest(),{...exchangeEnv,DB:adminDb});
  assert.equal(adminExchange.status,200);
  assert.equal((await adminExchange.json()).adminStepUpRequired,true);
- assert.doesNotMatch(adminExchange.headers.get("Set-Cookie")||"","__Host-bf_admin");
+ assert.doesNotMatch(adminExchange.headers.get("Set-Cookie")||"",/__Host-bf_admin/);
  console.log("OK: Clerk JWT RS256, origen/issuer fijos, caducidad, firma/JWKS, vínculo explícito, 0 acceso admin, 0 cambios de cuentas/puntos.");
 }finally{globalThis.fetch=previousFetch;}
