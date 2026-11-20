@@ -18,6 +18,11 @@ assert.equal(actual.dryRun,true);
 assert.equal(actual.productionWriteAuthorized,false);
 assert.equal(actual.adminApproved,false);
 assert.equal(actual.links.length,6);
+assert.ok(actual.links.every((x,i)=>x.evidenceProvider==="google" &&
+ x.evidenceSubject===original[i].provider_subject &&
+ x.verifiedAtRequiredAtInsertion===true),
+ "Guardar la evidencia original de Google en el plan de enlace Clerk");
+
 assert.deepEqual(actual.links.map(x=>x.profileId),original.map(x=>x.profile_id));
 const noUsers=planClerkVerifiedLinks({originalGoogleLinks:original,clerkUsers:[]});
 assert.equal(noUsers.pendingOriginal,6);
