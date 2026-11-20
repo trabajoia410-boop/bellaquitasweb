@@ -8,12 +8,13 @@ import {clerkSessionExchange} from "./clerk-session-exchange.js";
 const issuer="https://qa.clerk.accounts.dev",origin="https://qa.bellaquitas.test";
 const {privateKey,publicKey}=generateKeyPairSync("rsa",{modulusLength:2048,publicExponent:65537});
 const jwk={...publicKey.export({format:"jwk"}),kid:"qa-clerk-kid-2026",use:"sig",alg:"RS256"};
+let availableJwks=[jwk];
 let fetches=0,queries=0;
 const previousFetch=globalThis.fetch;
 globalThis.fetch=async (url)=>{
  assert.equal(url,issuer+"/.well-known/jwks.json","JWKS no puede venir de JWT controlado por el usuario");
  fetches++;
- return new Response(JSON.stringify({keys:[jwk]}),{status:200,headers:{"content-type":"application/json"}});
+ return new Response(JSON.stringify({keys:availableJwks}),{status:200,headers:{"content-type":"application/json"}});
 };
 const encode=x=>Buffer.from(JSON.stringify(x)).toString("base64url");
 const now=Math.floor(Date.now()/1000);
@@ -97,6 +98,39 @@ try{
   assert.equal(await verifyClerkJwt(request(make(claims,{...header,kid:"unknown-"+n})),env),null);
  assert.equal(fetches,priorMisses,
  "Unknown KID flood must not trigger unbounded JWKS requests");
+
+ // Si pasan 30s, un KID desconocido puede refrescar JWKS UNA vez,
+ // pero NUNCA borrar la clave legítima ya importada y vigente.
+ const originalClock=Date.now;
+ try{
+  const baseClock=originalClock();
+  Date.now=()=>baseClock+31_000;
+  assert.equal(await verifyClerkJwt(
+    request(make(claims,{...header,kid:"qa-key-unknown-after-30s"})),env),null);
+  assert.equal(fetches,priorMisses+1,"Una sola recarga JWKS tras el cooldown");
+  assert.equal((await verifyClerkJwt(request(),env))?.subject,claims.sub,
+    "Un KID inventado NO puede invalidar una sesión válida");
+  assert.equal(fetches,priorMisses+1,
+    "La clave conocida debe seguir cacheada sin más subrequests");
+
+  // Simular rotación con dos claves firmantes. La firma anterior debe seguir
+  // verificándose mientras el JWT esté vivo, sin reimportación costosa.
+  const rotated=generateKeyPairSync("rsa",{modulusLength:2048,publicExponent:65537});
+  const rotatedJwk={...rotated.publicKey.export({format:"jwk"}),
+    kid:"qa-clerk-kid-2026-rotated",use:"sig",alg:"RS256"};
+  availableJwks=[jwk,rotatedJwk];
+  Date.now=()=>baseClock+62_000;
+  const rotatedToken=make(claims,{...header,kid:rotatedJwk.kid},rotated.privateKey);
+  assert.equal((await verifyClerkJwt(request(rotatedToken),env))?.subject,claims.sub);
+  assert.equal((await verifyClerkJwt(request(),env))?.subject,claims.sub,
+    "La nueva clave no debe desplazar la antigua válida");
+  assert.equal(fetches,priorMisses+2,
+    "La caché mantiene las dos claves sin recargar JWKS otra vez");
+ }finally{
+  Date.now=originalClock;
+  availableJwks=[jwk];
+ }
+
  assert.equal(await verifyClerkJwt(request(),{...env,CLERK_ISSUER:"http://qa.clerk.accounts.dev"}),null);
  assert.equal(await verifyClerkJwt(request(),{...env,CLERK_ISSUER:"https://evil.test"}),null);
  assert.equal(await verifyClerkJwt(request(),{...env,SITE_MODE:"production"}),null);
