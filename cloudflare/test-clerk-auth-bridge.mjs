@@ -113,6 +113,40 @@ try{
  assert.equal((await verifyClerkJwt(request(newParallel),parallelEnv,
   async()=>{throw Error("No debe recargar JWKS");}))?.subject,claims.sub);
 
+
+ // Ante fallo externo, la primera solicitud falla cerrada y durante 30s no
+ // se repite el subrequest para cada token potencialmente malicioso.
+ const brokenIssuer="https://qa-provider-down.clerk.accounts.dev";
+ const brokenEnv={...env,CLERK_ISSUER:brokenIssuer};
+ const brokenToken=make({...claims,iss:brokenIssuer});
+ let providerAttempts=0;
+ const brokenNetwork=async (url,opts)=>{
+  assert.equal(url,brokenIssuer+"/.well-known/jwks.json");
+  assert.ok(opts.signal instanceof AbortSignal,
+   "Cada consulta externa debe tener plazo de 5 segundos");
+  providerAttempts++;
+  throw Error("JWKS provider unavailable");
+ };
+ assert.equal(await verifyClerkJwt(request(brokenToken),brokenEnv,brokenNetwork),null);
+ for(let i=0;i<25;i++)
+  assert.equal(await verifyClerkJwt(request(brokenToken),brokenEnv,brokenNetwork),null);
+ assert.equal(providerAttempts,1,
+  "JWKS fallido no debe crear miles de subrequests externos");
+
+ // Una vez transcurrido el cooldown, un emisor recuperado vuelve a admitir
+ // la firma legítima sin intervención ni falsificar identidades.
+ const oldNow=Date.now;
+ try{
+  Date.now=()=>oldNow()+31_000;
+  const recovered=await verifyClerkJwt(request(brokenToken),brokenEnv,
+   async (url,opts)=>{
+    assert.equal(url,brokenIssuer+"/.well-known/jwks.json");
+    assert.equal(opts.signal.aborted,false);
+    return new Response(JSON.stringify({keys:[jwk]}),{status:200});
+   });
+  assert.equal(recovered?.subject,claims.sub);
+ }finally{Date.now=oldNow;}
+
  const good=await verifyClerkJwt(request(),env);
  assert.equal(good.subject,claims.sub);
  const profile=await clerkIdentityRoute(request(),env);
