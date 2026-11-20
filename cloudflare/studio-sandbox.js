@@ -312,29 +312,23 @@ document.addEventListener("keydown",event=>{if(event.key==="Escape")document.bod
 (()=>{"use strict";
 const frame=document.getElementById("site"),byId=id=>document.getElementById(id),KEY="bf_studio_design_v2";
 const sections=["experiencia","eventos","ventajas","preguntas","unete"];
-const PRESETS={
- original:{header:"original",menu:"original",hero:"original",cards:"original",buttons:"original",font:"original",accent:"#e9c477",surface:"#211825"},
- noir:{header:"outlined",menu:"underline",hero:"cinema",cards:"outlined",buttons:"outline",font:"modern",accent:"#d4af66",surface:"#161318"},
- urban:{header:"compact",menu:"pills",hero:"full",cards:"square",buttons:"square",font:"urban",accent:"#b78be9",surface:"#2b2038"},
- glass:{header:"glass",menu:"pills",hero:"soft",cards:"glass",buttons:"pill",font:"modern",accent:"#5bd2d8",surface:"#182a36"},
- violet:{header:"centered",menu:"pills",hero:"cinema",cards:"glass",buttons:"pill",font:"urban",accent:"#d3a2ff",surface:"#301b42"},
- editorial:{header:"centered",menu:"minimal",hero:"framed",cards:"soft",buttons:"outline",font:"editorial",accent:"#dfbe8c",surface:"#352c29"}
-};
+const PRESETS={"original":{"header":"original","menu":"original","hero":"original","cards":"original","buttons":"original","font":"#e9c477","accent":"#211825","surface":"#100d12","bg":"#1a111a","nav":"#fff7ef","text":"#bb85a0","secondary":"#62404f"},"noir":{"header":"outlined","menu":"underline","hero":"cinema","cards":"outlined","buttons":"outline","font":"modern","accent":"#d4af66","surface":"#161318","bg":"#090a0e","nav":"#161318","text":"#f7e6c7","secondary":"#a78f75","border":"#8c7452"},"urban":{"header":"compact","menu":"pills","hero":"full","cards":"square","buttons":"square","font":"urban","accent":"#b78be9","surface":"#2b2038","bg":"#161122","nav":"#271a37","text":"#f5eaff","secondary":"#d887bd","border":"#76539b"},"glass":{"header":"glass","menu":"pills","hero":"soft","cards":"glass","buttons":"pill","font":"modern","accent":"#5bd2d8","surface":"#182a36","bg":"#0b1b26","nav":"#1d3440","text":"#f1fdff","secondary":"#a0bded","border":"#4d8698"},"violet":{"header":"centered","menu":"pills","hero":"cinema","cards":"glass","buttons":"pill","font":"urban","accent":"#d3a2ff","surface":"#301b42","bg":"#170e23","nav":"#29123b","text":"#f9efff","secondary":"#d98edf","border":"#755198"},"editorial":{"header":"centered","menu":"minimal","hero":"framed","cards":"soft","buttons":"outline","font":"editorial","accent":"#dfbe8c","surface":"#352c29","bg":"#211b1a","nav":"#312521","text":"#f9f0e3","secondary":"#ad907b","border":"#856e55"},"cobalt":{"header":"outlined","menu":"underline","hero":"full","cards":"glass","buttons":"pill","font":"modern","accent":"#82adf6","surface":"#203b5c","bg":"#071628","nav":"#122743","text":"#eff6ff","secondary":"#7bbcd4","border":"#5779a4"},"rose":{"header":"glass","menu":"pills","hero":"cinema","cards":"glass","buttons":"pill","font":"modern","accent":"#ed98c3","surface":"#39233c","bg":"#230f20","nav":"#321629","text":"#fff0f9","secondary":"#b985df","border":"#995779"},"emerald":{"header":"compact","menu":"underline","hero":"soft","cards":"glass","buttons":"outline","font":"modern","accent":"#8adbc0","surface":"#1a3933","bg":"#0b1d1b","nav":"#16352d","text":"#effff7","secondary":"#d2bd78","border":"#497e6b"},"ice":{"header":"glass","menu":"minimal","hero":"full","cards":"soft","buttons":"pill","font":"modern","accent":"#a8e4ed","surface":"#2a4049","bg":"#102027","nav":"#1b333b","text":"#effdff","secondary":"#9dbde2","border":"#668b99"},"copper":{"header":"outlined","menu":"underline","hero":"cinema","cards":"soft","buttons":"outline","font":"editorial","accent":"#e6ac73","surface":"#453028","bg":"#261b16","nav":"#39251e","text":"#fff2e4","secondary":"#d89171","border":"#986c56"},"monochrome":{"header":"centered","menu":"minimal","hero":"framed","cards":"outlined","buttons":"square","font":"editorial","accent":"#d9d8d7","surface":"#303030","bg":"#151515","nav":"#252525","text":"#f6f6f6","secondary":"#aaa8a7","border":"#777777"}};
 const defaults={...PRESETS.original,preset:"original",logo:true,ticker:true,banner:"",order:[...sections],hidden:[],images:{},icons:{}};
 let design=structuredClone(defaults),selected=null,obs=null,queued=false;
-const keys=["header","menu","hero","cards","buttons","font","accent","surface"];
-const form={header:"studioHeader",menu:"studioMenu",hero:"studioHero",cards:"studioCards",buttons:"studioButtons",font:"studioFont",accent:"studioAccent",surface:"studioSurface"};
+const keys=["header","menu","hero","cards","buttons","font","accent","surface","bg","nav","text","secondary","border"];
+const colorKeys=new Set(["accent","surface","bg","nav","text","secondary","border"]);
+const form={header:"studioHeader",menu:"studioMenu",hero:"studioHero",cards:"studioCards",buttons:"studioButtons",font:"studioFont",accent:"studioAccent",surface:"studioSurface",bg:"studioBg",nav:"studioNav",text:"studioTextColor",secondary:"studioSecondary",border:"studioBorder"};
 const status=msg=>{byId("studioStatus").textContent=msg;};
 const goodKey=k=>typeof k==="string"&&k.length<135&&/^[a-z0-9|/_-]+$/i.test(k);
 const page=()=>{try{return(frame.contentWindow.location.hash.slice(1)||"/").slice(0,40)}catch{return"/"}};
 try{
  const saved=JSON.parse(localStorage.getItem(KEY)||"null");
  if(saved&&typeof saved==="object"&&!Array.isArray(saved)){
-  const base=Object.keys(PRESETS).includes(saved.preset)?saved.preset:"original";
-  design={...defaults,...PRESETS[base],preset:base};
+  const base=saved.preset==="custom"?"custom":Object.keys(PRESETS).includes(saved.preset)?saved.preset:"original";
+  design={...defaults,...(PRESETS[base]||PRESETS.original),preset:base};
   for(const key of keys){
    const input=byId(form[key]);
-   if(key==="accent"||key==="surface"){
+   if(colorKeys.has(key)){
     if(typeof saved[key]==="string"&&/^#[0-9a-f]{6}$/i.test(saved[key]))design[key]=saved[key];
    }else if(Array.from(input.options).some(opt=>opt.value===saved[key]))design[key]=saved[key];
   }
@@ -381,7 +375,7 @@ function apply(){
  body.setAttribute("data-s-logo",design.logo?"visible":"hidden");
  body.setAttribute("data-s-ticker",design.ticker?"visible":"hidden");
  for(const k of sections)body.setAttribute("data-s-hide-"+k,String(design.hidden.includes(k)));
- body.style.setProperty("--s-accent",design.accent);body.style.setProperty("--s-surface",design.surface);
+ for(const key of colorKeys)body.style.setProperty("--s-"+key,design[key]);
  reorder(doc);
  Array.from(doc.querySelectorAll("img")).slice(0,90).forEach((img,i)=>{
   const key=img.closest(".bf-new-navbar-logo")?"global|header-logo":page()+"|img|"+i;
@@ -416,6 +410,7 @@ function bind(){
   byId("studioIcon").disabled=selected.type!=="icon";
   byId("studioIcon").value=selected.type==="icon"?target.textContent.trim():"";
   status("Seleccionado. Modifícalo desde las opciones de la izquierda.");
+  window.bfLabOpen?.("media",selected.type);
  },true);
  obs=new MutationObserver(schedule);
  obs.observe(doc.body,{childList:true,subtree:true});
@@ -428,13 +423,21 @@ byId("studioPresets").addEventListener("click",e=>{
  Object.assign(design,PRESETS[btn.dataset.preset],{preset:btn.dataset.preset});
  sync();schedule();status("Plantilla "+btn.querySelector("strong").textContent+" aplicada únicamente en pruebas.");
 });
+byId("studioPalettes").addEventListener("click",event=>{
+ const button=event.target.closest("[data-palette]");
+ if(!button||!PRESETS[button.dataset.palette])return;
+ const palette=PRESETS[button.dataset.palette];
+ for(const key of colorKeys)design[key]=palette[key];
+ design.preset="custom";sync();schedule();
+ status("Paleta aplicada a menús, botones, tarjetas, textos y todos los fondos.");
+});
 for(const k of keys){
  byId(form[k]).addEventListener("input",()=>{
   const value=byId(form[k]).value;
-  if((k==="accent"||k==="surface")?!/^#[a-f0-9]{6}$/i.test(value):
+  if(colorKeys.has(k)?!/^#[a-f0-9]{6}$/i.test(value):
     !Array.from(byId(form[k]).options).some(o=>o.value===value))return;
   design[k]=value;
-  if(k==="accent"||k==="surface")design.preset="custom";
+  if(colorKeys.has(k))design.preset="custom";
   sync();schedule();status("Estilo actualizado en esta vista previa.");
  });
 }
