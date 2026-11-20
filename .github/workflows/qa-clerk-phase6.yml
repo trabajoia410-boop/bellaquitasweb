@@ -7,6 +7,10 @@ on:
       - 'cloudflare/migrations/0008-clerk-verified-links.sql'
       - 'cloudflare/clerk-auth-bridge.js'
       - 'cloudflare/clerk-session-exchange.js'
+      - 'cloudflare/clerk-login-page.js'
+      - 'cloudflare/test-clerk-login-page.mjs'
+      - 'cloudflare/admin-console.js'
+      - 'cloudflare/production-auth-readiness.js'
       - 'cloudflare/plan-clerk-verified-links.mjs'
       - 'cloudflare/test-clerk-verified-links.mjs'
       - 'cloudflare/test-clerk-auth-bridge.mjs'
@@ -19,6 +23,10 @@ on:
       - 'cloudflare/migrations/0008-clerk-verified-links.sql'
       - 'cloudflare/clerk-auth-bridge.js'
       - 'cloudflare/clerk-session-exchange.js'
+      - 'cloudflare/clerk-login-page.js'
+      - 'cloudflare/test-clerk-login-page.mjs'
+      - 'cloudflare/admin-console.js'
+      - 'cloudflare/production-auth-readiness.js'
       - 'cloudflare/plan-clerk-verified-links.mjs'
       - 'cloudflare/test-clerk-verified-links.mjs'
       - 'cloudflare/test-clerk-auth-bridge.mjs'
@@ -46,6 +54,8 @@ jobs:
           node-version: '22'
       - name: RSA, JWT, permisos y sesion reforzada
         run: node cloudflare/test-clerk-auth-bridge.mjs
+      - name: Pantalla Clerk y panel administracion sin usuarios ni red
+        run: node cloudflare/test-clerk-login-page.mjs
       - name: Plan de enlace con evidencia original Google exacta
         run: node cloudflare/test-clerk-verified-links.mjs
       - name: 6 pruebas de integridad SQL contra suplantacion
