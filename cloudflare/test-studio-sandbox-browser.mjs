@@ -84,6 +84,7 @@ try{
  await edit.fill("Ensayo visual Bellaquitas sin publicar");
  await page.locator("#save").click();
  const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem("bf_studio_local_draft_v1")||"{}"));
+ console.log("QA-DIAGNOSTIC",JSON.stringify({key,savedKeys:Object.keys(saved),editingValue:await edit.inputValue(),editorSelected:await page.locator("#chosen").innerText(),status:await page.locator("#notice").innerText()}));
  assert.equal(saved[key],"Ensayo visual Bellaquitas sin publicar");
  await page.reload({waitUntil:"domcontentloaded",timeout:45000});
  await preview.locator('[data-bf-studio-key]:visible').first().waitFor({state:"visible",timeout:45000});
