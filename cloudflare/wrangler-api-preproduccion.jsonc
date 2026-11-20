@@ -30,7 +30,9 @@
     "CLERK_JWT_ENABLED": "no",
     "CLERK_EXCHANGE_ENABLED": "no",
     "CLERK_QA_PREVIEW": "no",
-    "PROVIDER_BROKER_ENABLED": "yes"
+    "PROVIDER_BROKER_ENABLED": "yes",
+    "CLERK_ISSUER": "https://clerk.bellaquitas.fr",
+    "CLERK_ALLOWED_ORIGIN": "https://bellaquitas.fr"
   },
   "assets": {
     "directory": "./dist-static",
