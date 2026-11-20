@@ -339,6 +339,15 @@ async function adminEmailLinkConfirm(request,env,data){
 }
 export async function emailAuthRoute(request,env){
  const path=new URL(request.url).pathname;
+ // Block ALL legacy PBKDF2/password, recovery and admin-link endpoints in
+ // Clerk-only production, before any request parsing or expensive KDF.
+ if(env?.SITE_MODE==="production"&&
+    (path.startsWith("/v1/auth/email/")||
+     path.startsWith("/v1/auth/admin/email/link/"))){
+   if(path==="/v1/auth/email/status"&&request.method==="GET")
+     return json({login:false,registration:false,adminLink:false,turnstileSiteKey:null});
+   return bad("Autenticación antigua desactivada: utiliza Clerk",410);
+ }
  if(path==="/v1/auth/email/status"){
    if(request.method!=="GET")return bad("Método no permitido",405);
    return json({login:emailLoginReady(env),registration:emailRegistrationReady(env),turnstileSiteKey:emailRegistrationReady(env)?env.TURNSTILE_SITE_KEY:null,adminLink:adminEmailLinkReady(env)});

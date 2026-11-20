@@ -294,6 +294,11 @@ async function callbackGoogle(request,env) {
 }
 export async function authRoute(request,env) {
   const path=new URL(request.url).pathname;
+  // Clerk is the sole Google sign-in authority in production. The legacy
+  // Google handler otherwise creates sessions without matching Clerk links.
+  if(env?.SITE_MODE==="production" &&
+     (path==="/v1/auth/google/start"||path==="/v1/auth/google/callback"))
+    return fail("Utiliza el inicio de sesión de Clerk",410);
   if(path==="/v1/auth/google/start")return beginGoogle(request,env);
   if(path==="/v1/auth/google/callback"){
     if(request.method!=="GET")return fail("Método no permitido",405);

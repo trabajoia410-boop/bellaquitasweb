@@ -52,7 +52,7 @@ const safeProduction={
  EMAIL_AUTH_ENABLED:"no",EMAIL_REGISTRATION_ENABLED:"no",
  CLERK_JWT_ENABLED:"yes",CLERK_EXCHANGE_ENABLED:"yes",
  CLERK_ISSUER:"https://clerk.bellaquitas.fr",CLERK_ALLOWED_ORIGIN:DOMAIN,
- ADMIN_EMAIL_LINK_ENABLED:"yes",SUGGESTIONS_ENABLED:"yes",
+ ADMIN_EMAIL_LINK_ENABLED:"no",SUGGESTIONS_ENABLED:"yes",
  DB:{prepare(){}},ASSETS:{fetch(){}},
  GOOGLE_CLIENT_ID:"fake-google-client-id",GOOGLE_CLIENT_SECRET:"fake-google-client-secret",
  EMAIL_RATE_KEY:"x".repeat(48),RESEND_API_KEY:"fake-resend-key",
@@ -64,6 +64,7 @@ const safeProduction={
 for(const patch of [
  {EMAIL_AUTH_ENABLED:"yes"},
  {EMAIL_REGISTRATION_ENABLED:"yes"},
+ {ADMIN_EMAIL_LINK_ENABLED:"yes"},
  {CLERK_JWT_ENABLED:"no"},
  {CLERK_EXCHANGE_ENABLED:"no"},
  {CLERK_ISSUER:"https://qa.clerk.accounts.dev"}

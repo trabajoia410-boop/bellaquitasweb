@@ -31,7 +31,8 @@ export function productionConfigurationReady(env) {
     // Never require or enable its login/registration during Clerk cutover.
     EMAIL_AUTH_ENABLED: "no",
     EMAIL_REGISTRATION_ENABLED: "no",
-    ADMIN_EMAIL_LINK_ENABLED: "yes",
+    // Clerk also replaces the legacy admin email-link KDF.
+    ADMIN_EMAIL_LINK_ENABLED: "no",
     SUGGESTIONS_ENABLED: "yes"
   };
   if (!Object.entries(expectedFlags).every(([key,value])=>env[key]===value))
