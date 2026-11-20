@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {generateKeyPairSync,createSign} from "node:crypto";
 import {readFileSync} from "node:fs";
 import {verifyClerkJwt,clerkIdentityRoute} from "./clerk-auth-bridge.js";
+import {clerkSessionExchange} from "./clerk-session-exchange.js";
 const issuer="https://qa.clerk.accounts.dev",origin="https://qa.bellaquitas.test";
 const {privateKey,publicKey}=generateKeyPairSync("rsa",{modulusLength:2048,publicExponent:65537});
 const jwk={...publicKey.export({format:"jwk"}),kid:"qa-clerk-kid-2026",use:"sig",alg:"RS256"};
@@ -81,5 +82,45 @@ try{
  assert.match(migration,/CREATE TABLE IF NOT EXISTS auth_clerk_links/);
  assert.doesNotMatch(migration,/\b(?:UPDATE|DELETE)\s+profiles\b|\bINSERT\s+INTO\s+profiles\b/i);
  assert.doesNotMatch(migration,/password_hash|email\s*=/i);
+ const exchangeRequest=(token=signed,withOrigin=true)=>new Request(origin+"/v1/auth/clerk/exchange",{
+   method:"POST",headers:{"Authorization":"Bearer "+token,
+     ...(withOrigin?{"Origin":origin,"Sec-Fetch-Site":"same-origin"}:{})}
+ });
+ assert.equal((await clerkSessionExchange(exchangeRequest(),env)).status,503,
+   "No activar intercambio sin bandera adicional");
+ let inserted=0;
+ const sessionDB={
+   prepare(sql){
+     if(sql.includes("FROM auth_clerk_links"))return {bind(value){
+       assert.equal(value,claims.sub);return {first:async()=>({id:member.id,role:"socio"})};}};
+     if(sql.includes("SELECT role FROM profiles WHERE id=?"))return {bind(value){
+       assert.equal(value,member.id);return {first:async()=>({role:"socio"})};}};
+     if(sql.startsWith("INSERT INTO auth_sessions"))return {bind(...params){
+       assert.equal(params[1],member.id);
+       assert.equal(params[2],30*24*60*60);
+       return {run:async()=>{inserted++;return {success:true};}};}};
+     throw Error("Unexpected SQL - no points/visits/role changes permitted");
+   }
+ };
+ const exchangeEnv={...env,CLERK_EXCHANGE_ENABLED:"yes",DB:sessionDB};
+ const exchanged=await clerkSessionExchange(exchangeRequest(),exchangeEnv);
+ assert.equal(exchanged.status,200);
+ assert.equal(inserted,1);
+ assert.match(exchanged.headers.get("Set-Cookie")||"",/^__Host-bf_session=/);
+ assert.equal((await exchanged.json()).adminStepUpRequired,false);
+ assert.equal((await clerkSessionExchange(exchangeRequest(signed,false),exchangeEnv)).status,403);
+ assert.equal((await clerkSessionExchange(exchangeRequest(make({...claims,sub:"user_unknown1234567890"})),exchangeEnv)).status,503);
+ assert.equal((await clerkSessionExchange(exchangeRequest(),{...exchangeEnv,CLERK_EXCHANGE_ENABLED:"no"})).status,503);
+ // En ningún caso Clerk abre la cookie __Host-bf_admin de step-up.
+ const adminDb={prepare(sql){
+   if(sql.includes("FROM auth_clerk_links"))return {bind:()=>({first:async()=>({id:member.id,role:"admin"})})};
+   if(sql.includes("SELECT role FROM profiles"))return {bind:()=>({first:async()=>({role:"admin"})})};
+   if(sql.startsWith("INSERT INTO auth_sessions"))return {bind:()=>({run:async()=>({success:true})})};
+   throw Error("SQL no autorizado");
+ }};
+ const adminExchange=await clerkSessionExchange(exchangeRequest(),{...exchangeEnv,DB:adminDb});
+ assert.equal(adminExchange.status,200);
+ assert.equal((await adminExchange.json()).adminStepUpRequired,true);
+ assert.doesNotMatch(adminExchange.headers.get("Set-Cookie")||"","__Host-bf_admin");
  console.log("OK: Clerk JWT RS256, origen/issuer fijos, caducidad, firma/JWKS, vínculo explícito, 0 acceso admin, 0 cambios de cuentas/puntos.");
 }finally{globalThis.fetch=previousFetch;}
