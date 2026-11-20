@@ -1,5 +1,6 @@
 import {authRoute} from "./auth-routes.js";
 import {clerkIdentityRoute} from "./clerk-auth-bridge.js";
+import {clerkQaPreview} from "./clerk-qa-preview.js";
 import {productionSiteRoute} from "./production-site-route.js";
 import {productionAccessGate} from "./production-auth-readiness.js";
 import {adminConsoleRoute} from "./admin-console.js";
@@ -90,6 +91,8 @@ export default {
       if (previewResponse) return previewResponse;
       // Clerk opt-in: JWT firmado y vínculo sujeto->perfil verificado, solo lectura.
       // No crea sesión BF, no permite administración ni sustituye Google legado.
+      const clerkQaPage = clerkQaPreview(request, env);
+      if (clerkQaPage) return clerkQaPage;
       const clerkResponse = await clerkIdentityRoute(request, env);
       if (clerkResponse) return clerkResponse;
       const emailResponse = await emailAuthRoute(request, env);
