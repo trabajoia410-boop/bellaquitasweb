@@ -26,6 +26,10 @@ jobs:
           for f in cloudflare/{bellaquitas-api-staging,admin-console,auth-routes,email-auth-routes,protected-routes,web-mirror,mirror-write-routes,mirror-data-routes}.js; do
             node --check "$f"
           done
+      - name: Validar sintaxis y seguridad de pantalla Clerk aislada
+        run: |
+          node --check cloudflare/clerk-login-page.js
+          node cloudflare/test-clerk-login-page.mjs
       - name: Validar configuración para redeploy staging sin tocar DNS ni secretos
         run: node cloudflare/test-staging-redeploy-config.mjs
       - name: Auditar que el SQL original tenga identidades, usuarios y puntos sin datos personales
