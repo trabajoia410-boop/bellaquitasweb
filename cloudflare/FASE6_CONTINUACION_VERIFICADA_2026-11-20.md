@@ -17,7 +17,7 @@ Se ordenó la representación completa de las filas dentro de la ejecución priv
 | Restauración aislada 14/11 | 7 | 1.999.998 | 2 | 14/14 iguales |
 | Origen recuperación 16/11 | 6 | 1.999.998 | 2 | Histórico: no contiene el séptimo perfil |
 
-Las 14 tablas suman 22 filas de negocio/identidad (algunas contienen columnas JSON). No se afirma paridad de las tablas de sesiones efímeras, auditoría de migración ni de las tablas no enumeradas. **No se ha consultado en vivo el origen antiguo tras el snapshot**, por lo que sigue pendiente la conciliación del delta final.
+Las 14 tablas suman 23 filas de negocio/identidad (algunas contienen columnas JSON). No se afirma paridad de las tablas de sesiones efímeras, auditoría de migración ni de las tablas no enumeradas. **No se ha consultado en vivo el origen antiguo tras el snapshot**, por lo que sigue pendiente la conciliación del delta final.
 
 El séptimo perfil ya fue auditado el 15/11: identidad de email verificada, rol socio, cero puntos y cero visitas. **Debe conservarse** hasta una política de fusión/corte explícita.
 
