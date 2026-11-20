@@ -34,6 +34,16 @@ assert.match(html,/id="adminDesignTools"/);
 assert.match(html,/id="adminDesignToggle"/);
 assert.match(html,/id="adminDesignReview"/);
 assert.match(html,/id="adminDesignStudio"/);
+const realStaging=adminConsoleRoute(new Request("https://bellaquitas-api-staging.bellaquitas-fest-410.workers.dev/administracion/"),{
+ STAGING_MUTATIONS:"disabled",ALLOW_NEW_ACCOUNTS:"no"
+});
+assert.match(await realStaging.text(),/id="adminDesignStudio"/,
+ "The live stage has no SITE_MODE and must show the studio when explicitly read-only");
+const unsafeStage=adminConsoleRoute(new Request("https://bellaquitas-api-staging.bellaquitas-fest-410.workers.dev/administracion/"),{
+ STAGING_MUTATIONS:"enabled",ALLOW_NEW_ACCOUNTS:"no"
+});
+assert.doesNotMatch(await unsafeStage.text(),/id="adminDesignStudio"/,
+ "The anonymous studio must disappear if staging writes become active");
 assert.match(html,/data-src="\/laboratorio\/"/);
 assert.match(html,/bf_studio_design_v2/);
 assert.match(html,/NO publicado ni guardado en D1/);
