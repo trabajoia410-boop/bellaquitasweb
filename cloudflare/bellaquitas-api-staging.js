@@ -1,6 +1,7 @@
 import {authRoute} from "./auth-routes.js";
 import {clerkIdentityRoute} from "./clerk-auth-bridge.js";
 import {clerkQaPreview} from "./clerk-qa-preview.js";
+import {clerkLoginPage} from "./clerk-login-page.js";
 import {clerkSessionExchange} from "./clerk-session-exchange.js";
 import {productionSiteRoute} from "./production-site-route.js";
 import {productionAccessGate} from "./production-auth-readiness.js";
@@ -84,6 +85,9 @@ export default {
       // explícitamente marcado como producción (staging no cambia).
       const publicSite=await productionSiteRoute(request,env);
       if(publicSite)return publicSite;
+      // Acceso Clerk en página separada; bloqueado en preproducción.
+      const clerkPage=clerkLoginPage(request,env);
+      if(clerkPage)return clerkPage;
       // Consola en ruta separada, sin cambiar la portada ni la API pública.
       const adminPage = adminConsoleRoute(request,env);
       if (adminPage) return adminPage;
