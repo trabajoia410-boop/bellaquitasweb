@@ -43,6 +43,8 @@ jobs:
         run: node cloudflare/test-rotate-legacy-offline.mjs
       - name: Verificar código del panel y todas sus traducciones ES/FR
         run: node cloudflare/test-admin-console.mjs
+      - name: Probar logo Inicio, único acceso Administrador y editor visual embebido sin datos reales
+        run: node cloudflare/test-admin-visual-wordpress.mjs
       - name: Probar administradores de dos cuentas con datos sintéticos
         run: node --experimental-sqlite cloudflare/test-admin-email-link.mjs
       - name: Validar conexión privada a Google y Resend sin copiar credenciales
