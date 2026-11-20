@@ -47,6 +47,8 @@ jobs:
         run: node --experimental-sqlite cloudflare/test-admin-email-link.mjs
       - name: Validar conexión privada a Google y Resend sin copiar credenciales
         run: node cloudflare/test-provider-broker.mjs
+      - name: Probar Clerk JWT real criptografía con identidades ficticias sin tocar D1
+        run: node cloudflare/test-clerk-auth-bridge.mjs
       - name: Verificar OAuth Google contra login CSRF de otro navegador
         run: node cloudflare/test-oauth-browser-bound-state.mjs
       - name: Probar editor completo con 2 administradores ficticios y D1 en memoria
