@@ -28,6 +28,8 @@
     "FREE_TIER_BILLING_VERIFIED": "no",
     "FREE_TIER_CPU_VERIFIED": "no",
     "CLERK_JWT_ENABLED": "no",
+    "CLERK_EXCHANGE_ENABLED": "no",
+    "CLERK_QA_PREVIEW": "no",
     "PROVIDER_BROKER_ENABLED": "yes"
   },
   "assets": {
