@@ -52,6 +52,11 @@ try{
  await frame.locator('.editor-theme[data-theme="minimal"]').waitFor({state:"visible",timeout:15000});
  await frame.locator('.editor-theme[data-theme="minimal"]').click();
  assert.match(await frame.locator('.editor-theme[data-theme="minimal"]').getAttribute("class")||"",/chosen/);
+ // Clicking the account logo must return to the public Inicio, not /panel.
+ await frame.locator('.side-head a.brand').click();
+ await frame.locator('.bf-hero-video').first().waitFor({state:"attached",timeout:10000});
+ assert.equal(new URL(page.frames().find(f=>f.url().includes("admin_embed=1"))?.url()||BASE).hash,"#/",
+  "El logo de cuenta debe llevar a Inicio");
  // El iframe anidado se nutre del renderer original (y no un mock de texto).
  await frame.locator("#editor-preview").waitFor({state:"attached",timeout:15000});
  const embedded=page.locator("#siteVisualEditor");
@@ -67,6 +72,9 @@ try{
  await page.locator('#adminNav [data-tab="events"]').click();
  assert.equal(await toggle.getAttribute("aria-expanded"),"false");
  assert.equal(await page.locator('[data-page="events"]').isVisible(),true);
+ const eventsFrame=page.locator("#eventsVisualPreview");
+ await eventsFrame.waitFor({state:"visible",timeout:10000});
+ assert.equal(new URL(await eventsFrame.getAttribute("src"),BASE).hash,"#/eventos");
  assert.equal(await page.locator('#adminNav').evaluate(el=>getComputedStyle(el).display),"none");
  // Visitante anónimo no obtiene derechos: el mock de browser NO llega a D1.
  assert.deepEqual(writes,[],"Navegación del editor nunca debe modificar cuentas");
