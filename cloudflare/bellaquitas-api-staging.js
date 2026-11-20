@@ -71,7 +71,7 @@ export default {
           service: "bellaquitas-staging",
           status: record?.ok === 1 ? "ok" : "error",
           database: record?.ok === 1 ? "connected" : "unavailable",
-          storage: env.MEDIA ? "configured" : "unavailable"
+          storage: typeof env.MEDIA?.get === "function" ? "configured" : "unavailable"
         }, record?.ok === 1 ? 200 : 503);
       }
       const publicQueries = {
@@ -127,7 +127,7 @@ export default {
           "INNER JOIN moments_albums a ON a.id = p.album_id " +
           "WHERE p.id = ? AND a.published = 1 LIMIT 1"
         ).bind(photo[1]).first();
-        if (!record || !env.MEDIA) return jsonResponse(request, {error: "Foto no encontrada"}, 404);
+        if (!record || typeof env.MEDIA?.get !== "function") return jsonResponse(request, {error: "Foto no encontrada"}, 404);
         const object = await env.MEDIA.get(record.storage_path);
         if (!object) return jsonResponse(request, {error: "Foto no encontrada"}, 404);
         const mime = object.httpMetadata?.contentType || "";
