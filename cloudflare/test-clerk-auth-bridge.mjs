@@ -65,10 +65,11 @@ try{
  assert.equal(await verifyClerkJwt(request(),{...env,CLERK_ISSUER:"http://qa.clerk.accounts.dev"}),null);
  assert.equal(await verifyClerkJwt(request(),{...env,CLERK_ISSUER:"https://evil.test"}),null);
  assert.equal(await verifyClerkJwt(request(),{...env,SITE_MODE:"production"}),null);
- assert.equal((await clerkIdentityRoute(request(),{...env,DB:{prepare(){return{bind(){return{first:async()=>null};}};}}})).status,403,
+ const dbReturning=value=>({prepare:()=>({bind:()=>({first:async()=>value})})});
+ assert.equal((await clerkIdentityRoute(request(),{...env,DB:dbReturning(null)})).status,403,
    "Clerk válido pero sin vinculación NO puede crear perfil o acceder");
  const admin={...member,role:"admin"};
- const adminRes=await clerkIdentityRoute(request(),{...env,DB:{prepare(){return{bind(){return{first:async()=>admin};}};}}}});
+ const adminRes=await clerkIdentityRoute(request(),{...env,DB:dbReturning(admin)});
  assert.equal(adminRes.status,200);
  assert.equal((await adminRes.json()).adminSessionAuthorized,false,
    "Clerk no sustituye segundo factor admin");
