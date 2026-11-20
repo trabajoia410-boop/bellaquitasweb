@@ -754,7 +754,8 @@
     "clerkCnamesAddedToPendingZone": 5,
     "clerkDmarcAddedToPendingZone": false,
     "clerkDomainFullyVerified": false,
-    "authoritativeNameserversUnchanged": true
+    "authoritativeNameserversUnchanged": true,
+    "clerkDmarcOriginalPolicyReviewed": false
   },
   "phase6TurnstileProduction": {
     "status": "provisioned-but-disabled",
@@ -1275,5 +1276,27 @@
     "productionDomainConnected": false,
     "productionCutoverApproved": false,
     "note": "Reutiliza app ya existente; toda integración desplegable sigue bloqueada por gates previos hasta completar Google OAuth de producción, reconciliación real y pruebas en dominio canónico. No implica que la contraseña antigua se pueda reutilizar: inventario previo tenía 0 hashes nativos en proveedor original y 1 credencial staging heredada requiere transición segura."
+  },
+  "phase6ClerkProduction": {
+    "applicationId": "app_3MLxHRJm2GlebhItEr9REyEivsz",
+    "productionInstanceId": "ins_3MM7xtO06Ez6Cig1vKOoYo4gjA7",
+    "productionInstanceCreated": true,
+    "signUpCurrentlyRestricted": true,
+    "currentProductionUsers": 0,
+    "expectedOriginalGoogleProfiles": 6,
+    "expectedOriginalEmailProfiles": 1,
+    "verifiedGoogleLinks": 0,
+    "verifiedEmailLinks": 0,
+    "verifiedD1Links": 0,
+    "productionDomainVerified": false,
+    "googleOauthProductionConfigured": false,
+    "emailRecoveryProvenOnFinalDomain": false,
+    "authenticatedAccountsQaPassed": false,
+    "adminStepUpQaPassed": false,
+    "legacyPasswordKdfRemovedFromAllProductionRoutes": false,
+    "jwtVerificationFreeCpuTested": false,
+    "billingAddonsDisabled": true,
+    "noNewAccountsCreated": true,
+    "note": "Clerk production and protected schema exist, but real identities and domain are unverified. Do not publish or claim migration complete."
   }
 }

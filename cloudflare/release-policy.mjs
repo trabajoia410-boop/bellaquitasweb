@@ -160,6 +160,38 @@ export function evaluateRelease(gates) {
     dnsRequirements?.SPF_CNAME === true &&
     dnsRequirements?.GoogleSearchConsoleTXT === true;
 
+
+  // Clerk es el proveedor final elegido por el propietario. Una Service
+  // Binding al proveedor ANTIGUO no certifica identidad Clerk: bloquear
+  // explícitamente el corte hasta probar las siete identidades, acceso
+  // administrador reforzado, recuperación y CPU de JWT sin KDF heredada.
+  const clerk = gates.phase6ClerkProduction;
+  const clerkProductionReady =
+    clerk?.productionInstanceCreated === true &&
+    clerk?.productionDomainVerified === true &&
+    clerk?.googleOauthProductionConfigured === true &&
+    clerk?.expectedOriginalGoogleProfiles === 6 &&
+    clerk?.expectedOriginalEmailProfiles === 1 &&
+    clerk?.verifiedGoogleLinks === 6 &&
+    clerk?.verifiedEmailLinks === 1 &&
+    clerk?.verifiedD1Links === 7 &&
+    clerk?.emailRecoveryProvenOnFinalDomain === true &&
+    clerk?.authenticatedAccountsQaPassed === true &&
+    clerk?.adminStepUpQaPassed === true &&
+    clerk?.legacyPasswordKdfRemovedFromAllProductionRoutes === true &&
+    clerk?.jwtVerificationFreeCpuTested === true;
+
+
+  // Añadir cinco CNAME sin proxy no verifica Clerk. Antes de delegar DNS
+  // debe preservarse DMARC de Hostinger sin bajar la política existente.
+  const clerkDnsSafe =
+    d?.clerkCnamesAddedToPendingZone === 5 &&
+    d?.clerkDmarcAddedToPendingZone === true &&
+    d?.clerkDmarcOriginalPolicyReviewed === true &&
+    d?.legacyRecordsVerifiedUnchangedAfterClerkPreparation === true &&
+    Number.isSafeInteger(d?.pendingZoneDnsRecordCount) &&
+    d.pendingZoneDnsRecordCount >= 16;
+
   // Antes de pasar a fase 6 se exige la conciliación real con el proveedor
   // anterior, NO solo que dos D1 bajo Cloudflare sean idénticas.
   const finalOriginDeltaVerified =
@@ -178,14 +210,14 @@ export function evaluateRelease(gates) {
   // exacta de Hostinger a Cloudflare SIN añadir rutas ni cambiar el A/www.
   const readyForNameserverDelegation =
     authorized && freeOnlyVerified && cpu10msVerified && pendingPrepublication.length === 0 &&
-    adminTechnologyReady && targetPreDnsReady && dnsRecordsPrepared &&
+    adminTechnologyReady && targetPreDnsReady && dnsRecordsPrepared && clerkDnsSafe &&
     d?.zoneStatus === 'pending' &&
     d?.registrarNameserversChanged === false;
 
   // La siguiente fase requiere una zona Cloudflare YA activa y una
   // delegación confirmada; no basta con registros preparados en pendiente.
   const dnsReady =
-    dnsRecordsPrepared && d?.zoneStatus === 'active' &&
+    dnsRecordsPrepared && clerkDnsSafe && d?.zoneStatus === 'active' &&
     d?.registrarNameserversChanged === true;
   const targetReady = targetPreDnsReady && dnsReady && authProvidersReady;
 
@@ -193,7 +225,7 @@ export function evaluateRelease(gates) {
   // integridad de datos y entorno final realmente preparado.
   const readyForControlledPublication =
     authorized && freeOnlyVerified && cpu10msVerified && pendingPrepublication.length === 0 &&
-    adminTechnologyReady && targetReady;
+    adminTechnologyReady && targetReady && clerkProductionReady;
   return {
     authorized,
     freeOnlyVerified,
@@ -204,6 +236,8 @@ export function evaluateRelease(gates) {
     pendingPrepublication,
     pendingOwnerPostpublication,
     adminTechnologyReady,
+    clerkProductionReady,
+    clerkDnsSafe,
     visualReady,
     providerBindingsReady,
     liveProvidersReady,

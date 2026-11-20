@@ -60,3 +60,13 @@ En la zona **pendiente** de Cloudflare se crearon los 5 CNAME exigidos por Clerk
 **Los nombres de servidor autoritativos de Hostinger NO se han modificado**: Cloudflare sigue estado `pending`. Estos CNAME de Cloudflare no están aún publicados por el DNS autoritativo de Hostinger; no declarar dominio Clerk verificado ni sustituir Google OAuth. No se creó el TXT `_dmarc` porque no ha podido comprobarse una política DMARC ya activa de Hostinger; publicar `p=none` encima de una política fuerte podría debilitar el correo.
 
 Se conservó `cloudflare/phase6-dns-fingerprints-20261119.json` como **fotografía histórica de los 10 registros originales**, no como estado actual; el estado actual queda en `phase6DnsVerification.pendingZoneDnsRecordCount=15`. Los release gates y la compilación privada siguen bloqueando producción mientras falten DNS autoritativo, Google OAuth, conciliación y auditoría Free.
+
+
+## Candado de publicación reforzado: Clerk y DMARC
+
+El mismo 20/11 se han incorporado a `release-policy.mjs` dos controles independientes:
+
+1. `clerkProductionReady`: exige dominio Clerk validado, Google OAuth de producción, los **6 perfiles Google + 1 socio email** vinculados con prueba, acceso de administrador reforzado, recuperación de correo, eliminación efectiva de KDF heredada y medición CPU real del JWT en Workers Free. La creación de la instancia Clerk, el simple correo coincidente y una prueba sintética no dan autorización.
+2. `clerkDnsSafe`: exige cinco CNAME Clerk sin proxy, conservar los diez registros anteriores y completar el registro DMARC sin debilitar la política autoritativa ya existente. No delegar los nameservers a Cloudflare mientras esa condición sea falsa.
+
+En `release-gates-2026-11-15.json` el estado Clerk figura con **0/7 vínculos verificados**, DNS dominio no verificado, Google OAuth producción sin configurar y legado CPU sin resolver. Las banderas permanecen en `false`. Se añadieron pruebas negativas a `test-release-gates.mjs` para impedir que cualquiera de estas condiciones pendientes sea ignorada. **No se han modificado ni emitido sesiones reales.**

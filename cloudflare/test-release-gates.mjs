@@ -20,6 +20,11 @@ assert.equal(actual.freeOnlyVerified,false,
   'No afirmar facturación gratuita sin permiso de consultar suscripciones');
 assert.equal(actual.cpu10msVerified,false,
   'No fingir que rutas KDF y vídeo ya están por debajo de 10ms sin perfil real');
+assert.equal(actual.clerkProductionReady,false,
+  'Un Clerk sin DNS, Google OAuth ni los 7 vínculos verificados NO autoriza producción');
+assert.equal(actual.clerkDnsSafe,false,
+  'Sin política DMARC comprobada no delegar nameservers');
+
 // Cierre del TRABAJO TÉCNICO fase 5 distinto del permiso para publicar.
 assert.equal(data.phase5TechnicalHandoff?.status,
  'technical-delivery-complete-production-gates-blocked');
@@ -54,6 +59,21 @@ fake.phase6CpuSafety.realStagingCpuMaxBelow10ms = true;
 fake.phase6CpuSafety.realStagingExceededCpuCountVerifiedZero = true;
 fake.phase6CpuSafety.realPasswordKdfAndVideo206Profiled = true;
 fake.phase6CpuSafety.realPasswordKdfFreeCompatible = true;
+// Solo una simulación de cierre Clerk: no modifica credenciales ni cuentas.
+fake.phase6DnsVerification.clerkDmarcAddedToPendingZone=true;
+fake.phase6DnsVerification.clerkDmarcOriginalPolicyReviewed=true;
+fake.phase6DnsVerification.pendingZoneDnsRecordCount=16;
+fake.phase6ClerkProduction.productionDomainVerified=true;
+fake.phase6ClerkProduction.googleOauthProductionConfigured=true;
+fake.phase6ClerkProduction.verifiedGoogleLinks=6;
+fake.phase6ClerkProduction.verifiedEmailLinks=1;
+fake.phase6ClerkProduction.verifiedD1Links=7;
+fake.phase6ClerkProduction.emailRecoveryProvenOnFinalDomain=true;
+fake.phase6ClerkProduction.authenticatedAccountsQaPassed=true;
+fake.phase6ClerkProduction.adminStepUpQaPassed=true;
+fake.phase6ClerkProduction.legacyPasswordKdfRemovedFromAllProductionRoutes=true;
+fake.phase6ClerkProduction.jwtVerificationFreeCpuTested=true;
+
 // Simulación: solo en un corte real se podrán marcar estas cuatro evidencias.
 fake.phase6PreproductionDb.realUsersImported = true;
 fake.phase6PreproductionDb.productionWorkerConfigured = true;
@@ -185,6 +205,31 @@ for(const requirement of [
  assert.equal(evaluateRelease(notReady).readyForControlledPublication,false,
   'No publicar a producción si falta '+requirement);
 }
+// No confundir GitHub QA sintética con migración real de siete cuentas.
+for (const [field,value] of [
+ ['productionDomainVerified',false],
+ ['googleOauthProductionConfigured',false],
+ ['verifiedGoogleLinks',5],
+ ['verifiedEmailLinks',0],
+ ['verifiedD1Links',6],
+ ['emailRecoveryProvenOnFinalDomain',false],
+ ['authenticatedAccountsQaPassed',false],
+ ['adminStepUpQaPassed',false],
+ ['legacyPasswordKdfRemovedFromAllProductionRoutes',false],
+ ['jwtVerificationFreeCpuTested',false]
+]) {
+ const blocked=structuredClone(fake);
+ blocked.phase6ClerkProduction[field]=value;
+ assert.equal(evaluateRelease(blocked).readyForControlledPublication,false,
+  'Clerk no puede abrir publicación si falta '+field);
+}
+for(const field of ['clerkDmarcAddedToPendingZone','clerkDmarcOriginalPolicyReviewed']){
+ const blocked=structuredClone(controlledDelegation);
+ blocked.phase6DnsVerification[field]=false;
+ assert.equal(evaluateRelease(blocked).readyForNameserverDelegation,false,
+  'No delegar DNS sin DMARC comprobado: '+field);
+}
+
 const noCpu = structuredClone(fake);
 noCpu.phase6CpuSafety.realStagingCpuMaxBelow10ms = false;
 assert.equal(evaluateRelease(noCpu).readyForControlledPublication,false,
