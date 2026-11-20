@@ -527,7 +527,10 @@ byId("studioApplyImage").addEventListener("click",()=>{
 byId("studioRestoreImage").addEventListener("click",()=>{
  if(selected?.type!=="image")return status("Selecciona una imagen primero.");
  delete design.images[selected.key];
- frame.src="/espejo/?admin_embed=1#"+page();
+ // Assigning iframe.src to its current URL can be a no-op when hash matches.
+ // A real reload restores the original immutable media after local changes.
+ try{frame.contentWindow.location.reload();}
+ catch{frame.src="/espejo/?admin_embed=1#"+page();}
  status("Imagen restaurada en pruebas.");
 });
 byId("studioIcon").addEventListener("input",()=>{
@@ -555,7 +558,11 @@ function reset(){
  try{localStorage.removeItem(KEY)}catch{}
  byId("studioSelection").textContent="Ningún elemento seleccionado";
  byId("studioIcon").disabled=true;byId("studioIcon").value="";
- sync();frame.src="/espejo/?admin_embed=1#"+page();
+ sync();schedule();
+ // A same-URL navigation does not reliably reload the iframe in Chrome.
+ // Force reload so original images, text, palettes and icons are restored.
+ try{frame.contentWindow.location.reload();}
+ catch{frame.src="/espejo/?admin_embed=1#"+page();}
  status("Plantilla original restaurada sin alterar la web pública.");
 }
 byId("studioResetDesign").addEventListener("click",()=>{
