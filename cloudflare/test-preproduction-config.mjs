@@ -55,12 +55,12 @@ assert.equal(clerkProdPlan.dns_not_modified,false,
   'Se han añadido CNAME solo en la zona Cloudflare pendiente');
 assert.equal(clerkProdPlan.authoritative_dns_unchanged,true,
   'Hostinger sigue siendo DNS autoritativo, no cambiar nameservers');
-assert.equal(clerkProdPlan.cloudflare_pending_zone_records_prepared,5);
+assert.equal(clerkProdPlan.cloudflare_pending_zone_records_prepared,6);
 assert.equal(clerkProdPlan.cloudflare_pending_zone_original_records_preserved,true);
-assert.equal(clerkProdPlan.cloudflare_pending_zone_record_count,15);
-assert.equal(clerkProdPlan.dmarc_record_prepared_in_cloudflare,false,
-  'No establecer p=none sin comprobar la política DMARC original');
-assert.equal(clerkProdPlan.records.filter(r=>r.prepared_in_cloudflare_pending_zone).length,5);
+assert.equal(clerkProdPlan.cloudflare_pending_zone_record_count,16);
+assert.equal(clerkProdPlan.dmarc_record_prepared_in_cloudflare,true,
+  'DMARC de Hostinger comprobado y copiado solo a la zona Cloudflare pendiente');
+assert.equal(clerkProdPlan.records.filter(r=>r.prepared_in_cloudflare_pending_zone).length,6);
 assert.ok(clerkProdPlan.records.every(r=>r.authoritative_dns_unchanged===true));
 assert.equal(clerkProdPlan.records.length,6);
 assert.ok(clerkProdPlan.records.some(r=>r.type==='CNAME' &&
@@ -70,8 +70,12 @@ assert.ok(clerkProdPlan.records.some(r=>r.type==='TXT' &&
   r.name==='_dmarc.bellaquitas.fr' &&
   /Do not overwrite existing DMARC/.test(r.note||'')),
   'No sobrescribir una política DMARC existente sin comprobarla');
-assert.ok(Object.values(clerkProdPlan.deployment_guards).every(v=>v===false),
-  'Los gates de Clerk, cuentas, CPU, billing y DNS siguen cerrados');
+assert.equal(clerkProdPlan.deployment_guards.clerk_google_oauth_production_configured,true);
+assert.equal(clerkProdPlan.deployment_guards.clerk_email_domain_verified,true);
+assert.ok(Object.entries(clerkProdPlan.deployment_guards).filter(([k])=>
+ k!=='clerk_google_oauth_production_configured'&&k!=='clerk_email_domain_verified'
+ ).every(([,v])=>v===false),
+ 'Los gates restantes de usuarios, CPU, billing y DNS siguen cerrados');
 
 assert.equal(target.vars?.CLERK_QA_PREVIEW,'no');
 assert.equal(target.vars?.PUBLISH_APPROVED,'no',
