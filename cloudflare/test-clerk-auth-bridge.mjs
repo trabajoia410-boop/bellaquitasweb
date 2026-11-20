@@ -280,11 +280,11 @@ try{
  assert.equal(adminExchange.status,200);
  assert.equal((await adminExchange.json()).adminStepUpRequired,true);
  assert.doesNotMatch(adminExchange.headers.get("Set-Cookie")||"",/__Host-bf_admin/);
- // Reautenticación del panel administrativo: JWT reciente NO prueba MFA.
- // Solo el claim fva firmado con dos factores recientes es suficiente.
- const adminFresh=make({...claims,fva:[0,0]});
- const adminMissingMfa=make({...claims,fva:[0,-1]});
- const adminStale=make({...claims,fva:[0,6]});
+ // Reautenticación ADMIN en plan gratuito: un JWT recién expedido no prueba
+ // que Clerk haya reverificado el primer factor. No exigir MFA de pago.
+ const adminFresh=make({...claims,fva:[0,-1]});
+ const adminStale=make({...claims,fva:[3,-1]});
+ const adminNeverVerified=make({...claims,fva:[-1,-1]});
  const bfCookie="B".repeat(43);
  const stepRequest=(jwt=adminFresh,cookie=bfCookie)=>
   new Request(origin+"/v1/auth/clerk/admin/step-up",{method:"POST",headers:{
@@ -317,12 +317,12 @@ try{
   CLERK_ADMIN_STEPUP_ENABLED:"yes"};
  assert.equal((await clerkSessionExchange(stepRequest(),{
   ...stepEnv,CLERK_ADMIN_STEPUP_ENABLED:"no"})).status,503);
- assert.equal((await clerkSessionExchange(stepRequest(adminMissingMfa),stepEnv)).status,403);
+ assert.equal((await clerkSessionExchange(stepRequest(adminNeverVerified),stepEnv)).status,403);
  assert.equal((await clerkSessionExchange(stepRequest(adminStale),stepEnv)).status,403);
  assert.equal((await clerkSessionExchange(stepRequest(signed),stepEnv)).status,403);
  assert.equal((await clerkSessionExchange(stepRequest(make({...claims,sts:"pending",fva:[0,0]})),stepEnv)).status,401);
  assert.equal((await clerkSessionExchange(stepRequest(make({...claims,act:{sub:"user_impersonator"},fva:[0,0]})),stepEnv)).status,401);
- assert.equal(adminWrites,0,"Sin verificación MFA no se crean sesiones admin");
+ assert.equal(adminWrites,0,"Sin primera verificación reciente no se crean sesiones admin");
  assert.equal((await clerkSessionExchange(stepRequest(adminFresh,null),stepEnv)).status,403);
  assert.equal(adminWrites,0);
  const freshAdmin=await clerkSessionExchange(stepRequest(),stepEnv);
@@ -342,6 +342,6 @@ try{
   "No conceder privilegios con cookie de otro perfil");
  assert.equal(adminWrites,1);
  assert.ok(adminDbReads>0);
- console.log("OK: Clerk JWT firmado, sesiones pendientes/impersonadas bloqueadas, MFA admin y perfil coincidente.");
+ console.log("OK: Clerk JWT firmado, sesiones pendientes/impersonadas bloqueadas, primer factor reciente y perfil coincidente sin MFA de pago.");
 
 }finally{globalThis.fetch=previousFetch;}
