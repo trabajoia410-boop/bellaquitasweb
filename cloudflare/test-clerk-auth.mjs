@@ -109,6 +109,44 @@ test("JWT válido y vínculo confirmado: lectura del perfil sin permiso admin", 
   assert.ok(requestCount >= 1);
 });
 
+
+test("Claims de Clerk fuera de confianza: el Worker falla cerrado", async () => {
+  const now = Math.floor(Date.now() / 1000);
+  const attempts = [
+    { iss: "https://another-clerk.example" },
+    { azp: "https://bellaquitas.fr" },
+    { nbf: now + 120 },
+    { iat: now + 120 },
+    { exp: now + 5000 },
+    { sub: "invalid-subject" },
+    { sid: "invalid-session" },
+    { nbf: "not-a-timestamp" },
+    { exp: now - 1 },
+  ];
+  for (const claims of attempts) {
+    const r = await bridge.clerkReadOnlyRoute(req(makeToken(claims)), env);
+    assert.equal(r.status, 401, "Debe rechazarse " + Object.keys(claims).join(","));
+  }
+});
+
+test("JWKS inaccesible o sin clave aceptable: ningún token autorizado", async () => {
+  const token = makeToken();
+  const fail = await bridge.verifyClerkToken(req(token), env, async () => {
+    throw new Error("La clave no está disponible");
+  });
+  assert.equal(fail, null);
+  const wrongKey = await bridge.verifyClerkToken(req(token), env, async () =>
+    new Response(JSON.stringify({ keys: [] }), { status: 200 }));
+  assert.equal(wrongKey, null);
+});
+
+test("JWT válido sin D1 disponible: 503 sin crear sesión", async () => {
+  const r = await bridge.clerkReadOnlyRoute(req(makeToken()), env);
+  assert.equal(r.status, 503);
+  const body = await r.json();
+  assert.equal(body.authenticated, undefined);
+});
+
 test("Solo GET: no admite escritura por esta ruta", async () => {
   const r = await bridge.clerkReadOnlyRoute(req(null, "POST"), env);
   assert.equal(r.status, 405);
