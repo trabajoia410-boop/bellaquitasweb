@@ -49,7 +49,9 @@ const safeProduction={
  FREE_TIER_CPU_VERIFIED:"yes",
  PUBLIC_ORIGIN:DOMAIN,TURNSTILE_EXPECTED_HOSTNAME:"bellaquitas.fr",
  STAGING_MUTATIONS:"enabled",ALLOW_NEW_ACCOUNTS:"yes",
- EMAIL_AUTH_ENABLED:"yes",EMAIL_REGISTRATION_ENABLED:"yes",
+ EMAIL_AUTH_ENABLED:"no",EMAIL_REGISTRATION_ENABLED:"no",
+ CLERK_JWT_ENABLED:"yes",CLERK_EXCHANGE_ENABLED:"yes",
+ CLERK_ISSUER:"https://clerk.bellaquitas.fr",CLERK_ALLOWED_ORIGIN:DOMAIN,
  ADMIN_EMAIL_LINK_ENABLED:"yes",SUGGESTIONS_ENABLED:"yes",
  DB:{prepare(){}},ASSETS:{fetch(){}},
  GOOGLE_CLIENT_ID:"fake-google-client-id",GOOGLE_CLIENT_SECRET:"fake-google-client-secret",
@@ -57,6 +59,19 @@ const safeProduction={
  RESEND_FROM:"no-reply@bellaquitas.fr",
  TURNSTILE_SECRET:"fake-turnstile-secret",TURNSTILE_SITE_KEY:"fake-site-key"
 };
+// Nunca abrir ni siquiera el preflight si el KDF legado de 600k PBKDF2
+// sigue habilitado o Clerk está ausente en un supuesto despliegue final.
+for(const patch of [
+ {EMAIL_AUTH_ENABLED:"yes"},
+ {EMAIL_REGISTRATION_ENABLED:"yes"},
+ {CLERK_JWT_ENABLED:"no"},
+ {CLERK_EXCHANGE_ENABLED:"no"},
+ {CLERK_ISSUER:"https://qa.clerk.accounts.dev"}
+]){
+ const unsafe=await worker.fetch(preflight(),{...safeProduction,...patch});
+ assert.equal(unsafe.status,503,"Producción debe bloquear modo auth inseguro: "+Object.keys(patch)[0]);
+ assert.equal(unsafe.headers.get("Access-Control-Allow-Origin"),null);
+}
 const noFreeBilling=await worker.fetch(preflight(),{...safeProduction,FREE_TIER_BILLING_VERIFIED:"no"});
 assert.equal(noFreeBilling.status,503,"La API debe cerrarse si el plan gratuito no está verificado");
 assert.equal(noFreeBilling.headers.get("Access-Control-Allow-Origin"),null);
