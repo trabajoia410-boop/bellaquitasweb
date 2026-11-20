@@ -38,7 +38,11 @@ export function planClerkVerifiedLinks({originalGoogleLinks,clerkUsers}){
   if(!profileId){unknown.push("nuevo-usuario");continue;}
   if(profileSeen.has(profileId))throw Error("Dos usuarios Clerk para un perfil antiguo");
   profileSeen.add(profileId);
-  matched.push(Object.freeze({clerkUserId:person.id,profileId,method:"migration_confirmed"}));
+  matched.push(Object.freeze({
+   clerkUserId:person.id,profileId,method:"migration_confirmed",
+   evidenceProvider:"google",evidenceSubject:subject,
+   verifiedAtRequiredAtInsertion:true
+  }));
  }
  const pending=originalGoogleLinks.length-matched.length;
  assert.ok(pending>=0);
