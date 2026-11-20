@@ -81,7 +81,6 @@ textarea{display:block;width:100%;min-height:110px;resize:vertical;border-radius
 .studio-minor-title{font-size:12px;margin:12px 0 6px;color:var(--muted)}
 .lab-accordion-body label{font-size:12px}
 .lab-accordion-body input[type=color]{height:41px}
-.studio-advanced[data-inspector="icon"] #studioPickLogo,
 .studio-advanced[data-inspector="icon"] #studioFile,
 .studio-advanced[data-inspector="icon"] #studioImageUrl,
 .studio-advanced[data-inspector="icon"] #studioApplyImage,
@@ -489,7 +488,9 @@ byId("studioPickLogo").addEventListener("click",()=>{
  if(!image)return status("Abre primero Inicio para seleccionar el logo.");
  selected={element:image,key:"global|header-logo",type:"image"};
  byId("studioSelection").textContent="Logo superior seleccionado";
- byId("studioIcon").disabled=true;status("Elige una imagen local o dirección HTTPS para el logo.");
+ byId("studioIcon").disabled=true;
+ window.bfLabOpen?.("media","image");
+ status("Elige una imagen local o dirección HTTPS para el logo.");
 });
 function imageApply(val){
  if(selected?.type!=="image"||!selected.element?.isConnected)return status("Primero selecciona una imagen de la vista previa.");
