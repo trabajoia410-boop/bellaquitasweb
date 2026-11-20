@@ -50,6 +50,8 @@ const safeProduction={
  PUBLIC_ORIGIN:DOMAIN,TURNSTILE_EXPECTED_HOSTNAME:"bellaquitas.fr",
  STAGING_MUTATIONS:"enabled",ALLOW_NEW_ACCOUNTS:"yes",
  EMAIL_AUTH_ENABLED:"no",EMAIL_REGISTRATION_ENABLED:"no",
+ CLERK_UI_ENABLED:"yes",
+ CLERK_PUBLISHABLE_KEY:"pk_live_"+Buffer.from("clerk.bellaquitas.fr$").toString("base64"),
  CLERK_JWT_ENABLED:"yes",CLERK_EXCHANGE_ENABLED:"yes",
  CLERK_ADMIN_STEPUP_ENABLED:"yes",
  CLERK_ISSUER:"https://clerk.bellaquitas.fr",CLERK_ALLOWED_ORIGIN:DOMAIN,
@@ -68,6 +70,8 @@ for(const patch of [
  {ADMIN_EMAIL_LINK_ENABLED:"yes"},
  {CLERK_JWT_ENABLED:"no"},
  {CLERK_EXCHANGE_ENABLED:"no"},
+ {CLERK_UI_ENABLED:"no"},
+ {CLERK_PUBLISHABLE_KEY:"invalid"},
  {CLERK_ADMIN_STEPUP_ENABLED:"no"},
  {CLERK_ISSUER:"https://qa.clerk.accounts.dev"}
 ]){
