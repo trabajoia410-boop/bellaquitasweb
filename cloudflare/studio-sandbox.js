@@ -117,7 +117,9 @@ function bindFrame(){
  style.textContent="[data-bf-studio-key]:hover{outline:2px dashed #f4c985!important;outline-offset:3px!important}";
  doc.head.append(style);
  doc.addEventListener("click",event=>{
-  const target=event.target instanceof Element?event.target.closest("[data-bf-studio-key]"):null;
+  // Elements inside an iframe belong to a DIFFERENT JS realm.
+  // instanceof window.Element is false there; check nodeType instead.
+  const target=event.target?.nodeType===1?event.target.closest("[data-bf-studio-key]"):null;
   if(!target)return;
   event.preventDefault();event.stopImmediatePropagation();
   selected=target;editing.disabled=false;editing.value=target.textContent.trim();

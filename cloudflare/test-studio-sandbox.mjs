@@ -14,6 +14,8 @@ assert.match(html,/Guardar borrador local/);
 assert.match(html,/data-page="\/eventos"/);
 assert.match(html,/data-theme="minimal"/);
 assert.match(html,/localStorage\.setItem\(KEY,json\)/);
+assert.match(html,/event\.target\?\.nodeType===1/,
+ "Cross-frame click-to-edit must work even when Element constructors differ");
 assert.doesNotMatch(html,/auth_sessions|auth_clerk_links|passwordHash\(/);
 assert.equal(ok.headers.get("X-Frame-Options"),"DENY");
 assert.match(ok.headers.get("Content-Security-Policy"),/frame-src 'self'/);
