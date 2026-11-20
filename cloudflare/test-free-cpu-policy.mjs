@@ -8,6 +8,8 @@
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {evaluateRelease} from "./release-policy.mjs";
+import {emailAuthRoute} from "./email-auth-routes.js";
+import {authRoute} from "./auth-routes.js";
 import mediaWorker from "./media-qa-worker.js";
 import {mirrorRoute} from "./web-mirror.js";
 
@@ -72,6 +74,36 @@ const email=read("cloudflare/email-auth-routes.js");
 assert.match(email,/const ITERATIONS=600000;/);
 assert.match(email,/for\(let phase=0;phase<6;phase\+\+\)/);
 assert.match(email,/iterations:100000/);
+
+// En producción los endpoints heredados nunca pueden ejecutar PBKDF2,
+ // aunque una variable antigua active por error EMAIL_AUTH_ENABLED.
+ // La simulación prohíbe cualquier acceso a D1 y no envía contraseñas.
+ const expensiveRoutes=[
+  "/v1/auth/email/register","/v1/auth/email/login",
+  "/v1/auth/email/reset","/v1/auth/email/forgot",
+  "/v1/auth/admin/email/link/start","/v1/auth/admin/email/link/confirm"
+ ];
+ const blockedEnv={SITE_MODE:"production",EMAIL_AUTH_ENABLED:"yes",
+  EMAIL_REGISTRATION_ENABLED:"yes",ADMIN_EMAIL_LINK_ENABLED:"yes",
+  DB:{prepare(){throw Error("KDF/SQL heredados NO autorizados");}}};
+ for(const route of expensiveRoutes){
+  const request=new Request("https://bellaquitas.fr"+route,{
+   method:"POST",headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({email:"test@example.invalid",password:"SYNTHETIC_ONLY"})});
+  const result=await emailAuthRoute(request,blockedEnv);
+  assert.equal(result.status,410,route+": no se permite KDF en producción");
+  assert.equal(result.headers.get("Set-Cookie"),null);
+ }
+ assert.equal((await emailAuthRoute(new Request(
+  "https://bellaquitas.fr/v1/auth/email/status"),blockedEnv)).status,200);
+ for(const route of ["/v1/auth/google/start","/v1/auth/google/callback"]){
+  const result=await authRoute(new Request("https://bellaquitas.fr"+route),
+   blockedEnv);
+  assert.equal(result.status,410,
+   "No reactivar el inicio Google directo fuera de Clerk");
+ }
+ assert.equal(apiCfg.vars?.CLERK_ADMIN_STEPUP_ENABLED,"no",
+  "MFA Clerk de administradores aún NO activado");
 
 // Solo rutas publicas media son cacheables (200); 206 de respaldo conserva
 // compatibilidad Safari si el Workers Cache todavia no esta en el edge.
