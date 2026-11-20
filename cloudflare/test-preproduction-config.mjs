@@ -39,6 +39,31 @@ assert.equal(target.vars?.FREE_TIER_CPU_VERIFIED,'no',
 assert.equal(target.vars?.CLERK_JWT_ENABLED,'no',
  'Clerk no puede utilizar cuentas ni puntos hasta verificar vínculos y migración');
 assert.equal(target.vars?.CLERK_EXCHANGE_ENABLED,'no');
+
+const clerkProdPlan=load('cloudflare/clerk-production-dns-plan.json');
+assert.equal(clerkProdPlan.canonical_origin,'https://bellaquitas.fr');
+assert.equal(clerkProdPlan.clerk_issuer,'https://clerk.bellaquitas.fr');
+assert.equal(target.vars?.CLERK_ISSUER,clerkProdPlan.clerk_issuer,
+  'No aceptar un issuer Clerk arbitrario o de desarrollo en preproducción');
+assert.equal(target.vars?.CLERK_ALLOWED_ORIGIN,clerkProdPlan.canonical_origin,
+  'La audiencia/origen Clerk debe ser el dominio canónico');
+assert.equal(clerkProdPlan.clerk_signup_mode,'restricted',
+  'No abrir nuevas inscripciones antes de conciliar perfiles');
+assert.equal(clerkProdPlan.production_users_created,0,
+  'Los perfiles anteriores no se deben replicar por email');
+assert.equal(clerkProdPlan.dns_not_modified,true,
+  'No marcar como aplicados los cambios DNS todavía');
+assert.equal(clerkProdPlan.records.length,6);
+assert.ok(clerkProdPlan.records.some(r=>r.type==='CNAME' &&
+  r.name==='clerk.bellaquitas.fr' && r.target==='frontend-api.clerk.services' &&
+  r.proxied===false), 'No activar proxy para CNAME FAPI Clerk');
+assert.ok(clerkProdPlan.records.some(r=>r.type==='TXT' &&
+  r.name==='_dmarc.bellaquitas.fr' &&
+  /Do not overwrite existing DMARC/.test(r.note||'')),
+  'No sobrescribir una política DMARC existente sin comprobarla');
+assert.ok(Object.values(clerkProdPlan.deployment_guards).every(v=>v===false),
+  'Los gates de Clerk, cuentas, CPU, billing y DNS siguen cerrados');
+
 assert.equal(target.vars?.CLERK_QA_PREVIEW,'no');
 assert.equal(target.vars?.PUBLISH_APPROVED,'no',
  'La aprobación final de producción nunca se versiona como sí');
