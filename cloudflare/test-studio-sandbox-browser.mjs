@@ -75,7 +75,7 @@ try{
  await page.locator('[data-theme="classic"]').click();
  await page.locator('#pages [data-page="/"]').click();
  await preview.locator('main').first().waitFor({state:"visible",timeout:30000});
- const text=preview.locator('[data-bf-studio-key]:visible').first();
+ const text=preview.locator('main h2[data-bf-studio-key]:visible').first();
  await text.waitFor({state:"visible",timeout:20000});
  const key=await text.getAttribute("data-bf-studio-key");
  await text.click();
@@ -87,8 +87,8 @@ try{
  console.log("QA-DIAGNOSTIC",JSON.stringify({key,savedKeys:Object.keys(saved),editingValue:await edit.inputValue(),editorSelected:await page.locator("#chosen").innerText(),status:await page.locator("#notice").innerText()}));
  assert.equal(saved[key],"Ensayo visual Bellaquitas sin publicar");
  await page.reload({waitUntil:"domcontentloaded",timeout:45000});
- await preview.locator('[data-bf-studio-key]:visible').first().waitFor({state:"visible",timeout:45000});
- assert.equal(await preview.locator('[data-bf-studio-key]:visible').first().innerText(),"Ensayo visual Bellaquitas sin publicar");
+ await preview.locator('main h2[data-bf-studio-key]:visible').first().waitFor({state:"visible",timeout:45000});
+ assert.equal(await preview.locator('main h2[data-bf-studio-key]:visible').first().innerText(),"Ensayo visual Bellaquitas sin publicar");
  await page.setViewportSize({width:390,height:844});
  const drawer=page.locator("#drawer");
  await drawer.waitFor({state:"visible",timeout:10000});
