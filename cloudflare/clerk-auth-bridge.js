@@ -40,32 +40,37 @@ async function boundedJwksBody(response) {
 
 async function verifiedClerkKey(cfg,kid,network) {
  const clock=Date.now(),item=jwksCache.get(cfg.issuer);
- if(item&&clock-item.fetchedAt<JWKS_MAX_AGE_MS){
+ const fresh=!!item&&clock-item.fetchedAt<JWKS_MAX_AGE_MS;
+ if(fresh){
   const known=item.keys.get(kid);
   if(known)return known;
-  if(clock-item.fetchedAt<JWKS_UNKNOWN_KID_RETRY_MS)return null;
+  // Each unknown KID must not trigger a new subrequest on every JWT.
+  if(clock-(item.lastRefreshAt??item.fetchedAt)<JWKS_UNKNOWN_KID_RETRY_MS)
+   return null;
  }
  const reply=await network(cfg.jwks,{headers:{Accept:"application/json"},cf:{cacheEverything:true,cacheTtl:300}});
  if(!reply.ok)return null;
  const body=await boundedJwksBody(reply);
- if(!body)return null;
- if(!Array.isArray(body?.keys)||body.keys.length>25)return null;
- // Resolve only the requested key; caching one CryptoKey bounds memory and
- // prevents importing 25 keys in a single invocation.
+ if(!body||!Array.isArray(body.keys)||body.keys.length>25)return null;
  const match=body.keys.find(k=>k.kid===kid&&k.kty==="RSA"&&
   (!k.alg||k.alg==="RS256")&&(!k.use||k.use==="sig")&&
   typeof k.n==="string"&&typeof k.e==="string");
- const keys=new Map();
+ // A request for an unknown key must not flush an existing valid key.
+ // Keep at most TWO verified keys until their original five-minute TTL.
+ // This also allows old/new signed sessions to coexist briefly on rotation.
+ const keys=fresh?new Map(item.keys):new Map();
  if(match){
   const imported=await crypto.subtle.importKey("jwk",
    {kty:"RSA",n:match.n,e:match.e,alg:"RS256",ext:true},
    {name:"RSASSA-PKCS1-v1_5",hash:"SHA-256"},false,["verify"]);
   keys.set(kid,imported);
  }
+ while(keys.size>2)keys.delete(keys.keys().next().value);
  // Keep at most two issuers; production allows only the fixed custom domain.
  if(!jwksCache.has(cfg.issuer)&&jwksCache.size>=2)
   jwksCache.delete(jwksCache.keys().next().value);
- jwksCache.set(cfg.issuer,{fetchedAt:clock,keys});
+ jwksCache.set(cfg.issuer,{fetchedAt:fresh?item.fetchedAt:clock,
+  lastRefreshAt:clock,keys});
  return keys.get(kid)||null;
 }
 function decode64(data){
