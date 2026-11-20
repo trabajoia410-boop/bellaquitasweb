@@ -18,8 +18,12 @@ const ok={
  TURNSTILE_EXPECTED_HOSTNAME:"bellaquitas.fr",
  STAGING_MUTATIONS:"enabled",
  ALLOW_NEW_ACCOUNTS:"yes",
- EMAIL_AUTH_ENABLED:"yes",
- EMAIL_REGISTRATION_ENABLED:"yes",
+ EMAIL_AUTH_ENABLED:"no",
+ EMAIL_REGISTRATION_ENABLED:"no",
+ CLERK_JWT_ENABLED:"yes",
+ CLERK_EXCHANGE_ENABLED:"yes",
+ CLERK_ISSUER:"https://clerk.bellaquitas.fr",
+ CLERK_ALLOWED_ORIGIN:origin,
  ADMIN_EMAIL_LINK_ENABLED:"yes",
  SUGGESTIONS_ENABLED:"yes",
  DB:{prepare(){}},
@@ -35,6 +39,10 @@ const ok={
 const req=(url=origin+"/",method="GET")=>new Request(url,{method});
 assert.equal(productionConfigurationReady(ok),true);
 assert.equal(productionAccessGate(req(),ok),null);
+assert.equal(ok.EMAIL_AUTH_ENABLED,"no",
+ "La publicación Clerk NO debe activar PBKDF2 heredada de 600.000 iteraciones");
+assert.equal(ok.EMAIL_REGISTRATION_ENABLED,"no",
+ "El registro se hará en Clerk y nunca duplicando socios en D1");
 // Variante segura para reutilizar Google y Resend ya configurados en
 // otro Worker del mismo propietario SIN importar sus secretos.
 const bridged={
@@ -70,8 +78,12 @@ for(const [key,bad] of [
  ["TURNSTILE_SITE_KEY",""],
  ["STAGING_MUTATIONS","disabled"],
  ["ALLOW_NEW_ACCOUNTS","no"],
- ["EMAIL_AUTH_ENABLED","no"],
- ["EMAIL_REGISTRATION_ENABLED","no"],
+ ["EMAIL_AUTH_ENABLED","yes"],
+ ["EMAIL_REGISTRATION_ENABLED","yes"],
+ ["CLERK_JWT_ENABLED","no"],
+ ["CLERK_EXCHANGE_ENABLED","no"],
+ ["CLERK_ISSUER","https://qa.clerk.accounts.dev"],
+ ["CLERK_ALLOWED_ORIGIN","https://wrong.invalid"],
  ["ADMIN_EMAIL_LINK_ENABLED","no"],
  ["SUGGESTIONS_ENABLED","no"],
  ["SITE_MODE","unknown"],

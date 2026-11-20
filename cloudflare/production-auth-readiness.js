@@ -26,13 +26,23 @@ export function productionConfigurationReady(env) {
   const expectedFlags = {
     STAGING_MUTATIONS: "enabled",
     ALLOW_NEW_ACCOUNTS: "yes",
-    EMAIL_AUTH_ENABLED: "yes",
-    EMAIL_REGISTRATION_ENABLED: "yes",
+    // Clerk handles both Google and password/email in production. The
+    // legacy PBKDF2 route consumed 136+ ms CPU on Workers Free (limit 10 ms).
+    // Never require or enable its login/registration during Clerk cutover.
+    EMAIL_AUTH_ENABLED: "no",
+    EMAIL_REGISTRATION_ENABLED: "no",
     ADMIN_EMAIL_LINK_ENABLED: "yes",
     SUGGESTIONS_ENABLED: "yes"
   };
   if (!Object.entries(expectedFlags).every(([key,value])=>env[key]===value))
     return false;
+  // The old email password KDF must stay OFF in production. A Clerk JWKS
+  // verifier is only usable with a pinned production issuer and canonical
+  // origin, plus both explicit feature flags and a complete release gate.
+  if (env.CLERK_JWT_ENABLED !== "yes" ||
+      env.CLERK_EXCHANGE_ENABLED !== "yes" ||
+      env.CLERK_ISSUER !== "https://clerk.bellaquitas.fr" ||
+      env.CLERK_ALLOWED_ORIGIN !== CANONICAL_ORIGIN) return false;
   if (env.PUBLIC_ORIGIN !== CANONICAL_ORIGIN) return false;
   if (env.TURNSTILE_EXPECTED_HOSTNAME &&
       env.TURNSTILE_EXPECTED_HOSTNAME !== "bellaquitas.fr") return false;
