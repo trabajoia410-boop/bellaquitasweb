@@ -740,15 +740,21 @@
     "emailRecordsPreserved": true,
     "searchConsoleRecordPreserved": true,
     "zonePlan": "Free Website",
-    "pendingZoneDnsRecordCount": 10,
-    "pendingZoneRecordsCrossChecked": "2026-11-17",
+    "pendingZoneDnsRecordCount": 15,
+    "pendingZoneRecordsCrossChecked": "2026-11-20",
     "dnsDelegationRunbook": "cloudflare/FASE5_DNS_DELEGACION_SEPARADA_2026-11-17.md",
     "registrarNameServersPlanned": [
       "donald.ns.cloudflare.com",
       "tricia.ns.cloudflare.com"
     ],
     "authoritativeDelegationVerified": false,
-    "productionWorkerRoutesAttached": 0
+    "productionWorkerRoutesAttached": 0,
+    "legacyRecordsCount": 10,
+    "legacyRecordsVerifiedUnchangedAfterClerkPreparation": true,
+    "clerkCnamesAddedToPendingZone": 5,
+    "clerkDmarcAddedToPendingZone": false,
+    "clerkDomainFullyVerified": false,
+    "authoritativeNameserversUnchanged": true
   },
   "phase6TurnstileProduction": {
     "status": "provisioned-but-disabled",

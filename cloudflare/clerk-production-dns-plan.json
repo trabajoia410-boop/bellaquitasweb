@@ -11,49 +11,61 @@
   "clerk_domain_status": "incomplete",
   "clerk_signup_mode": "restricted",
   "production_users_created": 0,
-  "dns_not_modified": true,
+  "dns_not_modified": false,
   "records": [
     {
       "type": "CNAME",
       "name": "clerk.bellaquitas.fr",
       "target": "frontend-api.clerk.services",
       "required": true,
-      "proxied": false
+      "proxied": false,
+      "prepared_in_cloudflare_pending_zone": true,
+      "authoritative_dns_unchanged": true
     },
     {
       "type": "CNAME",
       "name": "accounts.bellaquitas.fr",
       "target": "accounts.clerk.services",
       "required": true,
-      "proxied": false
+      "proxied": false,
+      "prepared_in_cloudflare_pending_zone": true,
+      "authoritative_dns_unchanged": true
     },
     {
       "type": "CNAME",
       "name": "clkmail.bellaquitas.fr",
       "target": "mail.0wjy6s533o1f.clerk.services",
       "required": true,
-      "proxied": false
+      "proxied": false,
+      "prepared_in_cloudflare_pending_zone": true,
+      "authoritative_dns_unchanged": true
     },
     {
       "type": "CNAME",
       "name": "clk._domainkey.bellaquitas.fr",
       "target": "dkim1.0wjy6s533o1f.clerk.services",
       "required": true,
-      "proxied": false
+      "proxied": false,
+      "prepared_in_cloudflare_pending_zone": true,
+      "authoritative_dns_unchanged": true
     },
     {
       "type": "CNAME",
       "name": "clk2._domainkey.bellaquitas.fr",
       "target": "dkim2.0wjy6s533o1f.clerk.services",
       "required": true,
-      "proxied": false
+      "proxied": false,
+      "prepared_in_cloudflare_pending_zone": true,
+      "authoritative_dns_unchanged": true
     },
     {
       "type": "TXT",
       "name": "_dmarc.bellaquitas.fr",
       "target": "v=DMARC1; p=none;",
       "required": true,
-      "note": "Do not overwrite existing DMARC or lower enforcement; inspect authoritative existing TXT and reconcile with Clerk before writing."
+      "note": "Do not overwrite existing DMARC or lower enforcement; inspect authoritative existing TXT and reconcile with Clerk before writing.",
+      "prepared_in_cloudflare_pending_zone": false,
+      "authoritative_dns_unchanged": true
     }
   ],
   "deployment_guards": {
@@ -65,5 +77,11 @@
     "cloudflare_cpu_verified": false,
     "dns_change_authorized": false,
     "production_worker_route_enabled": false
-  }
+  },
+  "authoritative_dns_unchanged": true,
+  "cloudflare_pending_zone_records_prepared": 5,
+  "cloudflare_pending_zone_original_records_preserved": true,
+  "cloudflare_pending_zone_record_count": 15,
+  "dmarc_record_prepared_in_cloudflare": false,
+  "dmarc_authoritative_status": "not independently verifiable; not altered"
 }

@@ -51,8 +51,17 @@ assert.equal(clerkProdPlan.clerk_signup_mode,'restricted',
   'No abrir nuevas inscripciones antes de conciliar perfiles');
 assert.equal(clerkProdPlan.production_users_created,0,
   'Los perfiles anteriores no se deben replicar por email');
-assert.equal(clerkProdPlan.dns_not_modified,true,
-  'No marcar como aplicados los cambios DNS todavía');
+assert.equal(clerkProdPlan.dns_not_modified,false,
+  'Se han añadido CNAME solo en la zona Cloudflare pendiente');
+assert.equal(clerkProdPlan.authoritative_dns_unchanged,true,
+  'Hostinger sigue siendo DNS autoritativo, no cambiar nameservers');
+assert.equal(clerkProdPlan.cloudflare_pending_zone_records_prepared,5);
+assert.equal(clerkProdPlan.cloudflare_pending_zone_original_records_preserved,true);
+assert.equal(clerkProdPlan.cloudflare_pending_zone_record_count,15);
+assert.equal(clerkProdPlan.dmarc_record_prepared_in_cloudflare,false,
+  'No establecer p=none sin comprobar la política DMARC original');
+assert.equal(clerkProdPlan.records.filter(r=>r.prepared_in_cloudflare_pending_zone).length,5);
+assert.ok(clerkProdPlan.records.every(r=>r.authoritative_dns_unchanged===true));
 assert.equal(clerkProdPlan.records.length,6);
 assert.ok(clerkProdPlan.records.some(r=>r.type==='CNAME' &&
   r.name==='clerk.bellaquitas.fr' && r.target==='frontend-api.clerk.services' &&
@@ -186,7 +195,13 @@ assert.equal(gates.phase6BackupSecretCustody?.newD1ExportFileDurablyStored,false
 assert.equal(gates.phase6DnsVerification?.zoneStatus,'pending',
  'La zona no puede presentarse como activa antes del registrador');
 assert.equal(gates.phase6DnsVerification?.registrarNameserversChanged,false);
-assert.equal(gates.phase6DnsVerification?.pendingZoneDnsRecordCount,10);
+assert.equal(gates.phase6DnsVerification?.pendingZoneDnsRecordCount,15);
+assert.equal(gates.phase6DnsVerification?.legacyRecordsCount,10);
+assert.equal(gates.phase6DnsVerification?.legacyRecordsVerifiedUnchangedAfterClerkPreparation,true);
+assert.equal(gates.phase6DnsVerification?.clerkCnamesAddedToPendingZone,5);
+assert.equal(gates.phase6DnsVerification?.clerkDmarcAddedToPendingZone,false);
+assert.equal(gates.phase6DnsVerification?.clerkDomainFullyVerified,false);
+assert.equal(gates.phase6DnsVerification?.authoritativeNameserversUnchanged,true);
 assert.equal(gates.phase6DnsVerification?.legacyARecordsDnsOnly,4);
 assert.equal(gates.phase6DnsVerification?.legacyWwwDnsOnly,true);
 assert.equal(gates.phase6PreproductionDb?.productionWorkerConfigured,false);

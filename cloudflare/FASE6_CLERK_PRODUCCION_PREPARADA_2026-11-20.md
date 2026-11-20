@@ -51,3 +51,12 @@ Lectura Cloudflare tras despliegue:
 7. Conciliar altas nuevas del origen previo desde la última exportación, y prueba del flujo de sesión/admin; los tests físicos iPhone/QR del propietario permanecen diferidos hasta después de publicar.
 
 **No se ha hecho el corte. No aprobar release-gates ni cambiar DNS/main.** Este archivo preserva evidencia de lo efectivamente realizado.
+
+
+## Preparación DNS adicional — verificación del 20/11/2026
+
+En la zona **pendiente** de Cloudflare se crearon los 5 CNAME exigidos por Clerk, todos `proxied=false`, TTL 3600. La lista exacta es `cloudflare/clerk-production-dns-plan.json`. La zona pasó de **10 a 15 registros**. Se verificó por Cloudflare API que los **10 registros originales conservan tipo, host, destino, proxy e identificador**, incluyendo GitHub Pages, MX y Resend. No se modificó ningún A, MX, TXT, NS ni se añadió ruta Worker pública.
+
+**Los nombres de servidor autoritativos de Hostinger NO se han modificado**: Cloudflare sigue estado `pending`. Estos CNAME de Cloudflare no están aún publicados por el DNS autoritativo de Hostinger; no declarar dominio Clerk verificado ni sustituir Google OAuth. No se creó el TXT `_dmarc` porque no ha podido comprobarse una política DMARC ya activa de Hostinger; publicar `p=none` encima de una política fuerte podría debilitar el correo.
+
+Se conservó `cloudflare/phase6-dns-fingerprints-20261119.json` como **fotografía histórica de los 10 registros originales**, no como estado actual; el estado actual queda en `phase6DnsVerification.pendingZoneDnsRecordCount=15`. Los release gates y la compilación privada siguen bloqueando producción mientras falten DNS autoritativo, Google OAuth, conciliación y auditoría Free.
