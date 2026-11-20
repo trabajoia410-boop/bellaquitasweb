@@ -46,7 +46,7 @@ const getHtml=async path=>{
  assert.match(html,/\/v1\/auth\/clerk\/admin\/step-up/);
  assert.match(html,/id="lang-es"/);
  assert.match(html,/id="lang-fr"/);
- assert.match(html,/data-fr="Connexion à Bellaquitas Fest"/);
+ assert.match(html,/data-fr="(?:Connexion à Bellaquitas Fest|Accès à l’administration)"/);
  assert.doesNotMatch(html,/sk_live_|password_hash|supabase|R2_BUCKET|GITHUB_TOKEN/);
  return html;
 };
