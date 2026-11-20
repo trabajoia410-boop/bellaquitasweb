@@ -47,7 +47,10 @@ try{
   async()=>new Response(huge,{status:200})),null,
   "JWKS debe rechazar payloads mayores a 64 KiB sin Content-Length");
  const fakeLength=String(Buffer.byteLength(JSON.stringify({keys:[jwk]})));
- const validJWKS=await verifyClerkJwt(request(overflowToken),overflowEnv,
+ const lengthIssuer="https://qa-length.clerk.accounts.dev";
+ const lengthEnv={...env,CLERK_ISSUER:lengthIssuer};
+ const lengthToken=make({...claims,iss:lengthIssuer});
+ const validJWKS=await verifyClerkJwt(request(lengthToken),lengthEnv,
   async()=>new Response(JSON.stringify({keys:[jwk]}),{status:200,
    headers:{"Content-Length":fakeLength}}));
  assert.equal(validJWKS.subject,claims.sub,
