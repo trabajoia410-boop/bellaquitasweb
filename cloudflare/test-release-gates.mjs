@@ -21,9 +21,14 @@ assert.equal(actual.freeOnlyVerified,false,
 assert.equal(actual.cpu10msVerified,false,
   'No fingir que rutas KDF y vídeo ya están por debajo de 10ms sin perfil real');
 assert.equal(actual.clerkProductionReady,false,
-  'Un Clerk sin DNS, Google OAuth ni los 7 vínculos verificados NO autoriza producción');
-assert.equal(actual.clerkDnsSafe,false,
-  'Sin política DMARC comprobada no delegar nameservers');
+  'Clerk con DNS/Google correcto pero 0 de 7 identidades vinculadas NO autoriza producción');
+assert.equal(actual.clerkDnsSafe,true,
+  'DMARC Hostinger validado y replicado en zona pending sin alterar los registros originales');
+assert.equal(data.phase6ClerkProduction.productionDomainVerified,true);
+assert.equal(data.phase6ClerkProduction.googleOauthProductionConfigured,true);
+assert.equal(data.phase6ClerkProduction.currentProductionUsers,0);
+assert.equal(data.phase6DnsVerification.pendingZoneDnsRecordCount,16);
+assert.equal(data.phase6CpuSafety.realClerkJwtAndColdVideo206Profiled,false);
 
 // Cierre del TRABAJO TÉCNICO fase 5 distinto del permiso para publicar.
 assert.equal(data.phase5TechnicalHandoff?.status,
@@ -57,8 +62,10 @@ fake.phase6ZeroSpend.billingAuditComplete = true;
 fake.phase6CpuSafety.realStagingCpuP99Below10ms = true;
 fake.phase6CpuSafety.realStagingCpuMaxBelow10ms = true;
 fake.phase6CpuSafety.realStagingExceededCpuCountVerifiedZero = true;
-fake.phase6CpuSafety.realPasswordKdfAndVideo206Profiled = true;
-fake.phase6CpuSafety.realPasswordKdfFreeCompatible = true;
+// Solo simulación: el release final utiliza JWT de Clerk, NO PBKDF2.
+fake.phase6CpuSafety.realClerkJwtAndColdVideo206Profiled = true;
+fake.phase6CpuSafety.clerkJwtFreeCpuCompatible = true;
+fake.phase6CpuSafety.legacyKdfDisabledInProductionRoutes = true;
 // Solo una simulación de cierre Clerk: no modifica credenciales ni cuentas.
 fake.phase6DnsVerification.clerkDmarcAddedToPendingZone=true;
 fake.phase6DnsVerification.clerkDmarcOriginalPolicyReviewed=true;
@@ -234,14 +241,25 @@ const noCpu = structuredClone(fake);
 noCpu.phase6CpuSafety.realStagingCpuMaxBelow10ms = false;
 assert.equal(evaluateRelease(noCpu).readyForControlledPublication,false,
  'Sin medición CPU no publicar, aunque DNS y presupuesto estén aprobados');
-const kdfOverBudget=structuredClone(fake);
-kdfOverBudget.phase6CpuSafety.realPasswordKdfFreeCompatible=false;
-assert.equal(evaluateRelease(kdfOverBudget).readyForControlledPublication,false,
-  "Aunque se marquen todos los demás gates, un KDF de 136ms NO puede aprobar Workers Free");
+const withoutClerkColdTest=structuredClone(fake);
+withoutClerkColdTest.phase6CpuSafety.realClerkJwtAndColdVideo206Profiled=false;
+assert.equal(evaluateRelease(withoutClerkColdTest).readyForControlledPublication,false,
+ "Sin mediciones JWT Clerk y vídeo 206 en frío no publicar en Workers Free");
+for(const name of ["clerkJwtFreeCpuCompatible","legacyKdfDisabledInProductionRoutes"]){
+ const noProof=structuredClone(fake);
+ noProof.phase6CpuSafety[name]=false;
+ assert.equal(evaluateRelease(noProof).readyForControlledPublication,false,
+  "No abrir sin prueba Clerk Free y KDF cerrado: "+name);
+}
+const legacyAlreadyDisabled=structuredClone(fake);
+legacyAlreadyDisabled.phase6CpuSafety.realPasswordKdfFreeCompatible=false;
+legacyAlreadyDisabled.phase6CpuSafety.realPasswordKdfAndVideo206Profiled=false;
+assert.equal(evaluateRelease(legacyAlreadyDisabled).readyForControlledPublication,true,
+ "El KDF 136 ms desactivado no bloquea Clerk si la nueva CPU está certificada y auth legacy cerrada");
 const noCpuForDns=structuredClone(controlledDelegation);
-noCpuForDns.phase6CpuSafety.realPasswordKdfAndVideo206Profiled=false;
+noCpuForDns.phase6CpuSafety.realClerkJwtAndColdVideo206Profiled=false;
 assert.equal(evaluateRelease(noCpuForDns).readyForNameserverDelegation,false,
- 'Sin prueba de CPU de KDF y vídeo no cambiar NS');
+ 'Sin CPU de JWT Clerk + vídeo frío no delegar DNS');
 const noBudget = structuredClone(fake);
 noBudget.phase6ZeroSpend.workersFreePlanVerified = false;
 assert.equal(evaluateRelease(noBudget).readyForControlledPublication, false,

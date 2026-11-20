@@ -69,16 +69,28 @@ export function evaluateRelease(gates) {
   // suscripción Workers ni otros productos de la cuenta sean gratuitos.
   // Nunca permitir delegar/publicar hasta obtener evidencia de facturación.
   const cpu = gates.phase6CpuSafety;
-  const cpu10msVerified =
+  // Clerk es el proveedor de acceso final. El KDF legado de 600.000
+  // iteraciones quedó BLOQUEADO y tardó 136.424 ms CPU. Exigir que ese
+  // algoritmo ya desactivado pase 10 ms crearía un bloqueo circular o
+  // incentivaría reducir su seguridad. Exigir en su lugar rendimiento REAL
+  // de JWT Clerk y rangos MP4 206, incluido caché frío, sobre el nuevo Worker.
+  const clerkSelected = gates.phase6ClerkProduction?.productionInstanceCreated === true;
+  const cpuCommon =
     cpu?.freeWorkersCpuLimitMs === 10 &&
     cpu?.nativeHardLimitDocumented === true &&
     cpu?.realStagingCpuP99Below10ms === true &&
     cpu?.realStagingCpuMaxBelow10ms === true &&
-    cpu?.realStagingExceededCpuCountVerifiedZero === true &&
+    cpu?.realStagingExceededCpuCountVerifiedZero === true;
+  const clerkCpuReady=clerkSelected &&
+    cpu?.realClerkJwtAndColdVideo206Profiled === true &&
+    cpu?.clerkJwtFreeCpuCompatible === true &&
+    cpu?.legacyKdfDisabledInProductionRoutes === true &&
+    gates.phase6ClerkProduction?.legacyPasswordKdfRemovedFromAllProductionRoutes === true &&
+    gates.phase6ClerkProduction?.jwtVerificationFreeCpuTested === true;
+  const legacyCpuReady=!clerkSelected &&
     cpu?.realPasswordKdfAndVideo206Profiled === true &&
-    // La medición de KDF debe demostrar compatibilidad real con 10 ms,
-    // no solo indicar que se ejecutó. Prueba 19/11: 136,424 ms -> false.
     cpu?.realPasswordKdfFreeCompatible === true;
+  const cpu10msVerified=cpuCommon && (clerkCpuReady || legacyCpuReady);
   const budget = gates.phase6ZeroSpend;
   const freeOnlyVerified =
     budget?.zoneFreeVerified === true &&

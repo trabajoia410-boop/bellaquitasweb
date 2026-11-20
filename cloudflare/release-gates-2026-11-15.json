@@ -1,7 +1,7 @@
 {
   "project": "Bellaquitas Fest",
   "migrationBranch": "migracion/fase5-segura-20261114",
-  "asOf": "2026-11-16",
+  "asOf": "2026-11-20",
   "productionDomain": "bellaquitas.fr",
   "productionChangesAuthorized": false,
   "readiness": {
@@ -309,7 +309,10 @@
         "probePassed": true
       },
       "runtimeGateRemainsNo": true
-    }
+    },
+    "realClerkJwtAndColdVideo206Profiled": false,
+    "clerkJwtFreeCpuCompatible": false,
+    "legacyKdfDisabledInProductionRoutes": false
   },
   "phase6ZeroSpend": {
     "zoneFreeVerified": true,
@@ -740,8 +743,8 @@
     "emailRecordsPreserved": true,
     "searchConsoleRecordPreserved": true,
     "zonePlan": "Free Website",
-    "pendingZoneDnsRecordCount": 15,
-    "pendingZoneRecordsCrossChecked": "2026-11-20",
+    "pendingZoneDnsRecordCount": 16,
+    "pendingZoneRecordsCrossChecked": true,
     "dnsDelegationRunbook": "cloudflare/FASE5_DNS_DELEGACION_SEPARADA_2026-11-17.md",
     "registrarNameServersPlanned": [
       "donald.ns.cloudflare.com",
@@ -752,10 +755,10 @@
     "legacyRecordsCount": 10,
     "legacyRecordsVerifiedUnchangedAfterClerkPreparation": true,
     "clerkCnamesAddedToPendingZone": 5,
-    "clerkDmarcAddedToPendingZone": false,
-    "clerkDomainFullyVerified": false,
+    "clerkDmarcAddedToPendingZone": true,
+    "clerkDomainFullyVerified": true,
     "authoritativeNameserversUnchanged": true,
-    "clerkDmarcOriginalPolicyReviewed": false
+    "clerkDmarcOriginalPolicyReviewed": true
   },
   "phase6TurnstileProduction": {
     "status": "provisioned-but-disabled",
@@ -1288,8 +1291,8 @@
     "verifiedGoogleLinks": 0,
     "verifiedEmailLinks": 0,
     "verifiedD1Links": 0,
-    "productionDomainVerified": false,
-    "googleOauthProductionConfigured": false,
+    "productionDomainVerified": true,
+    "googleOauthProductionConfigured": true,
     "emailRecoveryProvenOnFinalDomain": false,
     "authenticatedAccountsQaPassed": false,
     "adminStepUpQaPassed": false,
@@ -1297,6 +1300,6 @@
     "jwtVerificationFreeCpuTested": false,
     "billingAddonsDisabled": true,
     "noNewAccountsCreated": true,
-    "note": "Clerk production and protected schema exist, but real identities and domain are unverified. Do not publish or claim migration complete."
+    "note": "Clerk production check 2026-11-20: custom domain DNS, SSL, mail complete, Google OAuth credentials configured, signups restricted, 0 users. No verified identity links, admin step-up, production login or recovery yet."
   }
 }

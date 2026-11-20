@@ -8,7 +8,7 @@
   "production_domain": "bellaquitas.fr",
   "current_dns_authority": "Hostinger DNS inferred from original_name_servers on pending Cloudflare zone; verify before edit",
   "cloudflare_zone_status": "pending",
-  "clerk_domain_status": "incomplete",
+  "clerk_domain_status": "complete",
   "clerk_signup_mode": "restricted",
   "production_users_created": 0,
   "dns_not_modified": false,
@@ -64,13 +64,14 @@
       "target": "v=DMARC1; p=none;",
       "required": true,
       "note": "Do not overwrite existing DMARC or lower enforcement; inspect authoritative existing TXT and reconcile with Clerk before writing.",
-      "prepared_in_cloudflare_pending_zone": false,
-      "authoritative_dns_unchanged": true
+      "prepared_in_cloudflare_pending_zone": true,
+      "authoritative_dns_unchanged": true,
+      "original_authoritative_policy_reviewed": true
     }
   ],
   "deployment_guards": {
-    "clerk_google_oauth_production_configured": false,
-    "clerk_email_domain_verified": false,
+    "clerk_google_oauth_production_configured": true,
+    "clerk_email_domain_verified": true,
     "original_users_reconciled": false,
     "backup_legacy_rekeyed": false,
     "cloudflare_billing_audited": false,
@@ -79,9 +80,9 @@
     "production_worker_route_enabled": false
   },
   "authoritative_dns_unchanged": true,
-  "cloudflare_pending_zone_records_prepared": 5,
+  "cloudflare_pending_zone_records_prepared": 6,
   "cloudflare_pending_zone_original_records_preserved": true,
-  "cloudflare_pending_zone_record_count": 15,
-  "dmarc_record_prepared_in_cloudflare": false,
-  "dmarc_authoritative_status": "not independently verifiable; not altered"
+  "cloudflare_pending_zone_record_count": 16,
+  "dmarc_record_prepared_in_cloudflare": true,
+  "dmarc_authoritative_status": "Hostinger screenshot 2026-11-20: TXT _dmarc v=DMARC1; p=none;. Clerk DNS/SSL/mail complete. Cloudflare pending mirrors same value; original Hostinger unchanged."
 }
