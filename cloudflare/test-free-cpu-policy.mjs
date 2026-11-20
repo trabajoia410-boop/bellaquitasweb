@@ -102,6 +102,8 @@ assert.match(email,/iterations:100000/);
   assert.equal(result.status,410,
    "No reactivar el inicio Google directo fuera de Clerk");
  }
+ assert.equal(apiCfg.vars?.CLERK_UI_ENABLED,"no",
+  "El acceso Clerk público debe continuar desactivado en preproducción");
  assert.equal(apiCfg.vars?.CLERK_ADMIN_STEPUP_ENABLED,"no",
   "Reverificación gratuita de administradores aún NO activada");
 
