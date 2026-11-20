@@ -12,6 +12,8 @@ const reply=(body,status)=>new Response(JSON.stringify(body),{status,headers:HEA
 // URL, and throttle unknown KIDs to avoid repeated paid-resource subrequests.
 const JWKS_MAX_AGE_MS=5*60*1000, JWKS_UNKNOWN_KID_RETRY_MS=30*1000;
 const jwksCache=new Map();
+// Agrupar recargas simultáneas para no multiplicar subrequests a Clerk.
+const jwksInFlight=new Map();
 // Límite de memoria de la respuesta REAL, aunque el proveedor omita
 // Content-Length. Un JWKS no confiable nunca debe reservar bytes sin límite.
 const MAX_JWKS_BYTES=65536;
@@ -38,6 +40,20 @@ async function boundedJwksBody(response) {
  return JSON.parse(new TextDecoder("utf-8",{fatal:true}).decode(bytes));
 }
 
+async function readPinnedJwksOnce(cfg,network) {
+ const existing=jwksInFlight.get(cfg.issuer);
+ if(existing)return existing;
+ const task=(async()=>{
+  const reply=await network(cfg.jwks,{headers:{Accept:"application/json"},
+   cf:{cacheEverything:true,cacheTtl:300}});
+  if(!reply.ok)return null;
+  return boundedJwksBody(reply);
+ })();
+ jwksInFlight.set(cfg.issuer,task);
+ try{return await task;}
+ finally{if(jwksInFlight.get(cfg.issuer)===task)jwksInFlight.delete(cfg.issuer);}
+}
+
 async function verifiedClerkKey(cfg,kid,network) {
  const clock=Date.now(),item=jwksCache.get(cfg.issuer);
  const fresh=!!item&&clock-item.fetchedAt<JWKS_MAX_AGE_MS;
@@ -48,9 +64,7 @@ async function verifiedClerkKey(cfg,kid,network) {
   if(clock-(item.lastRefreshAt??item.fetchedAt)<JWKS_UNKNOWN_KID_RETRY_MS)
    return null;
  }
- const reply=await network(cfg.jwks,{headers:{Accept:"application/json"},cf:{cacheEverything:true,cacheTtl:300}});
- if(!reply.ok)return null;
- const body=await boundedJwksBody(reply);
+ const body=await readPinnedJwksOnce(cfg,network);
  if(!body||!Array.isArray(body.keys)||body.keys.length>25)return null;
  const match=body.keys.find(k=>k.kid===kid&&k.kty==="RSA"&&
   (!k.alg||k.alg==="RS256")&&(!k.use||k.use==="sig")&&
@@ -58,7 +72,11 @@ async function verifiedClerkKey(cfg,kid,network) {
  // A request for an unknown key must not flush an existing valid key.
  // Keep at most TWO verified keys until their original five-minute TTL.
  // This also allows old/new signed sessions to coexist briefly on rotation.
- const keys=fresh?new Map(item.keys):new Map();
+ // Releer la caché tras el fetch/await: otra petición simultánea puede
+ // haber importado una segunda clave válida durante nuestra espera.
+ const latest=jwksCache.get(cfg.issuer);
+ const latestFresh=!!latest&&clock-latest.fetchedAt<JWKS_MAX_AGE_MS;
+ const keys=latestFresh?new Map(latest.keys):new Map();
  if(match){
   const imported=await crypto.subtle.importKey("jwk",
    {kty:"RSA",n:match.n,e:match.e,alg:"RS256",ext:true},
@@ -69,7 +87,7 @@ async function verifiedClerkKey(cfg,kid,network) {
  // Keep at most two issuers; production allows only the fixed custom domain.
  if(!jwksCache.has(cfg.issuer)&&jwksCache.size>=2)
   jwksCache.delete(jwksCache.keys().next().value);
- jwksCache.set(cfg.issuer,{fetchedAt:fresh?item.fetchedAt:clock,
+ jwksCache.set(cfg.issuer,{fetchedAt:latestFresh?latest.fetchedAt:clock,
   lastRefreshAt:clock,keys});
  return keys.get(kid)||null;
 }
