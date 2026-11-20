@@ -64,18 +64,12 @@ test("La ruta de salud no simula que R2 siga activo", async () => {
   assert.equal(data.storage, "unavailable");
 });
 
-test("No se leen fotografías cuando el almacenamiento fue retirado", async () => {
+test("No se consulta D1 por fotografías cuando el almacenamiento fue retirado", async () => {
+  let queries = 0;
   const response = await api.fetch(
     request("/v1/moments/photos/00000000-0000-0000-0000-000000000000"),
-    {
-      DB: { prepare() {
-        return { bind() {
-          return { async first() {
-            return { storage_path: "some-private-path", caption: "QA" };
-          } };
-        } };
-      } }
-    }
+    { DB: { prepare() { queries++; throw Error("D1 no debe consultarse"); } } }
   );
   assert.equal(response.status, 404);
+  assert.equal(queries, 0);
 });
