@@ -18,13 +18,6 @@ try{
  const frame=page.frameLocator("#site");
  await frame.locator("main").first().waitFor({state:"visible",timeout:45000});
  assert.equal(new URL(await page.locator("#site").getAttribute("src"),ROOT).searchParams.get("admin_embed"),"1");
- console.log("EDITOR-DIAGNOSTIC",JSON.stringify(await page.evaluate(()=>({
-  title:document.title,scriptCount:document.querySelectorAll("script").length,
-  panel:!!document.getElementById("controls"),groups:document.querySelectorAll(".studio-group").length,
-  folds:document.querySelectorAll(".lab-accordion").length,
-  accordionScript:document.querySelectorAll('script[nonce]').length,
-  isLabOpen:typeof window.bfLabOpen,savePresent:!!document.getElementById("save")
- }))),JSON.stringify(errors));
  const fold=id=>page.locator('.lab-accordion[data-panel="'+id+'"]');
  const show=async id=>{
   await fold(id).evaluate(el=>el.open=true);
@@ -80,6 +73,7 @@ try{
  await show("pages");
  await page.locator('#pages [data-page="/"]').click();
  await frame.locator(".bf-new-navbar-logo img").waitFor({state:"attached",timeout:20000});
+ await show("media");
  await show("media");
  await page.locator("#studioPickLogo").click();
  assert.match(await page.locator("#studioSelection").innerText(),/Logo superior/);
