@@ -205,9 +205,17 @@ document.querySelectorAll("[data-lang]").forEach(b=>b.addEventListener("click",(
  setPressed("[data-lang]","lang",lang);
 }));
 editing.addEventListener("input",()=>{
- if(!selected?.isConnected)return;
+ // La web original puede regenerar nodos tras navegar o cambiar de idioma:
+ // conservar el borrador por clave incluso si el elemento fue sustituido.
+ const key=selected?.dataset.bfStudioKey;
+ if(!key||key.length>130)return;
  const value=editing.value.slice(0,600);
- selected.textContent=value;draft[selected.dataset.bfStudioKey]=value;
+ draft[key]=value;
+ if(selected.isConnected)selected.textContent=value;
+ else {
+  const latest=frame.contentDocument?.querySelector('[data-bf-studio-key="'+key.replace(/[^A-Za-z0-9|/_-]/g,"")+'"]');
+  if(latest){selected=latest;selected.textContent=value;}
+ }
  inform("Cambio sólo de vista previa; todavía no se ha guardado el borrador local.");
 });
 document.getElementById("save").addEventListener("click",()=>{
