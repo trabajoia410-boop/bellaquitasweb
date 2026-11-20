@@ -68,6 +68,8 @@ try{
  await page.waitForFunction(()=>document.querySelector('.lab-accordion[data-panel="media"]')?.open===true);
  assert.equal(await page.locator("#studioIcon").isEnabled(),true);
  assert.equal(await page.locator(".studio-advanced").getAttribute("data-inspector"),"icon");
+ assert.equal(await page.locator("#studioPickLogo").isVisible(),true,
+  "Debe poderse seleccionar el logo incluso después de editar un icono");
  await page.locator("#studioIcons [data-icon='♫']").click();
  assert.equal(await frame.locator(".feature-icon").first().innerText(),"♫");
  await show("pages");
