@@ -562,6 +562,100 @@ byId("studioResetDesign").addEventListener("click",()=>{
 });
 window.addEventListener("bf-studio-reset",reset);
 })();
+</script><script nonce="__NONCE__">
+(()=>{"use strict";
+const panel=document.getElementById("controls"),body=document.body;
+const iconFor={pages:"▤",templates:"◈",header:"☰",hero:"▣",media:"◉",sections:"↕",basic:"✧",text:"✎",save:"✓"};
+const labels={pages:"Páginas de la web",templates:"Plantillas completas",header:"Barra superior y menú",
+ hero:"Inicio, ventanas y tarjetas",media:"Logos, imágenes e iconos",sections:"Secciones y orden",
+ basic:"Acabados adicionales",text:"Editar textos",save:"Borrador y restauración"};
+function makeFold(id,title,expanded=false){
+ const details=document.createElement("details");details.className="lab-accordion";
+ details.dataset.panel=id;details.open=expanded;
+ const summary=document.createElement("summary");
+ summary.textContent=iconFor[id]+"  "+(title||labels[id]);summary.setAttribute("aria-label",title||labels[id]);
+ const content=document.createElement("div");content.className="lab-accordion-body";
+ details.append(summary,content);
+ details.addEventListener("toggle",()=>{
+  if(details.open){
+   for(const other of panel.querySelectorAll(".lab-accordion"))
+    if(other!==details&&other.open)other.open=false;
+  }
+ });
+ return {details,content};
+}
+const groups=Array.from(panel.querySelectorAll(".studio-advanced > .studio-group"));
+const advancedPanels=["templates","header","hero","media","sections"];
+for(let i=0;i<groups.length;i++){
+ const group=groups[i],id=advancedPanels[i];if(!id)continue;
+ const h=group.querySelector(":scope > h2");
+ const {details,content}=makeFold(id,labels[id]);
+ if(h)h.remove();
+ while(group.firstChild)content.append(group.firstChild);
+ group.replaceWith(details);
+}
+function wrapHead(title,id,open=false){
+ const heading=Array.from(panel.querySelectorAll(":scope > h2")).find(el=>el.textContent.trim()===title);
+ if(!heading)return;
+ const {details,content}=makeFold(id,labels[id],open);
+ let next=heading.nextSibling;
+ while(next){
+  if(next.nodeType===1&&(next.matches("h2")||next.matches(".studio-advanced")||next.matches(".lab-accordion")))break;
+  const after=next.nextSibling;content.append(next);next=after;
+ }
+ heading.replaceWith(details);
+}
+wrapHead("Páginas","pages",true);
+wrapHead("Acabados básicos (opcional)","basic");
+wrapHead("Edición de textos","text");
+wrapHead("Borrador","save");
+// A single, always-visible Save action: no long scroll required.
+const save=document.getElementById("save");
+if(save){
+ const quick=document.createElement("div");quick.className="lab-quick-actions";
+ quick.setAttribute("role","group");quick.setAttribute("aria-label","Guardar borrador");
+ quick.append(save);panel.append(quick);
+}
+const head=document.createElement("div");head.className="lab-sidebar-heading";
+const title=document.createElement("strong");title.textContent="EDITOR BELLAQUITAS";
+const close=document.createElement("button");close.type="button";
+close.className="lab-sidebar-close";close.textContent="×";close.setAttribute("aria-label","Cerrar panel lateral");
+head.append(title,close);panel.prepend(head);
+const pages=document.querySelector('#pages [data-page="/"]');
+if(pages)pages.textContent="Portada web";
+function closeMenus(){
+ body.classList.remove("menu-open","lab-sim-mobile-open");
+ const trigger=document.getElementById("labOpenEditor");
+ if(trigger)trigger.setAttribute("aria-expanded","false");
+}
+function openDrawer(){
+ if(window.matchMedia("(max-width:800px)").matches)body.classList.add("menu-open");
+ else body.classList.add("lab-sim-mobile-open");
+ document.getElementById("labOpenEditor")?.setAttribute("aria-expanded","true");
+}
+document.getElementById("labOpenEditor")?.addEventListener("click",()=>{
+ if(body.classList.contains("lab-sim-mobile-open")||body.classList.contains("menu-open"))closeMenus();
+ else openDrawer();
+});
+document.getElementById("drawer")?.setAttribute("aria-controls","controls");
+close.addEventListener("click",closeMenus);
+document.getElementById("drawerBg")?.addEventListener("click",closeMenus);
+document.addEventListener("keydown",ev=>{if(ev.key==="Escape")closeMenus()});
+window.bfLabOpen=(id,kind)=>{
+ const fold=panel.querySelector('.lab-accordion[data-panel="'+id+'"]');
+ if(!fold)return;
+ fold.open=true;
+ if(id==="media"){
+  document.querySelector(".studio-advanced")?.setAttribute("data-inspector",kind==="icon"?"icon":"image");
+ }
+ fold.scrollIntoView({block:"nearest"});
+ if(window.matchMedia("(max-width:800px)").matches||body.classList.contains("lab-sim-mobile"))openDrawer();
+ if(id==="media"&&kind==="icon"){
+  const input=document.getElementById("studioIcon");
+  if(input&&!input.disabled)input.focus({preventScroll:true});
+ }
+};
+})();
 </script></body></html>`;
 export function studioSandboxRoute(request,env){
  const url=new URL(request.url);
