@@ -83,6 +83,7 @@ for(const [key,bad] of [
  ["EMAIL_REGISTRATION_ENABLED","yes"],
  ["CLERK_JWT_ENABLED","no"],
  ["CLERK_EXCHANGE_ENABLED","no"],
+ ["CLERK_ADMIN_STEPUP_ENABLED","no"],
  ["CLERK_ISSUER","https://qa.clerk.accounts.dev"],
  ["CLERK_ALLOWED_ORIGIN","https://wrong.invalid"],
  ["ADMIN_EMAIL_LINK_ENABLED","yes"],
