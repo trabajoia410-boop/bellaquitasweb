@@ -12,6 +12,32 @@ const reply=(body,status)=>new Response(JSON.stringify(body),{status,headers:HEA
 // URL, and throttle unknown KIDs to avoid repeated paid-resource subrequests.
 const JWKS_MAX_AGE_MS=5*60*1000, JWKS_UNKNOWN_KID_RETRY_MS=30*1000;
 const jwksCache=new Map();
+// Límite de memoria de la respuesta REAL, aunque el proveedor omita
+// Content-Length. Un JWKS no confiable nunca debe reservar bytes sin límite.
+const MAX_JWKS_BYTES=65536;
+async function boundedJwksBody(response) {
+ const declared=response.headers.get("content-length");
+ if(declared!==null&&(!/^\\d+$/.test(declared)||Number(declared)>MAX_JWKS_BYTES))
+  return null;
+ if(!response.body||typeof response.body.getReader!=="function")return null;
+ const reader=response.body.getReader(),chunks=[];
+ let total=0;
+ try{
+  for(;;){
+   const {done,value}=await reader.read();
+   if(done)break;
+   if(!(value instanceof Uint8Array))return null;
+   total+=value.byteLength;
+   if(total>MAX_JWKS_BYTES){await reader.cancel();return null;}
+   chunks.push(value);
+  }
+ }finally{reader.releaseLock();}
+ const bytes=new Uint8Array(total);
+ let offset=0;
+ for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength;}
+ return JSON.parse(new TextDecoder("utf-8",{fatal:true}).decode(bytes));
+}
+
 async function verifiedClerkKey(cfg,kid,network) {
  const clock=Date.now(),item=jwksCache.get(cfg.issuer);
  if(item&&clock-item.fetchedAt<JWKS_MAX_AGE_MS){
@@ -20,8 +46,9 @@ async function verifiedClerkKey(cfg,kid,network) {
   if(clock-item.fetchedAt<JWKS_UNKNOWN_KID_RETRY_MS)return null;
  }
  const reply=await network(cfg.jwks,{headers:{Accept:"application/json"},cf:{cacheEverything:true,cacheTtl:300}});
- if(!reply.ok||Number(reply.headers.get("content-length")||0)>65536)return null;
- const body=await reply.json();
+ if(!reply.ok)return null;
+ const body=await boundedJwksBody(reply);
+ if(!body)return null;
  if(!Array.isArray(body?.keys)||body.keys.length>25)return null;
  // Resolve only the requested key; caching one CryptoKey bounds memory and
  // prevents importing 25 keys in a single invocation.
