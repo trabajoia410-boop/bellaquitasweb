@@ -160,7 +160,10 @@ export async function verifyClerkJwt(request,env,network=fetch){
      new TextEncoder().encode(parts[0]+"."+parts[1]));
   if(!ok)return null;
  }catch{return null;}
- return {subject:claims.sub,sessionId:claims.sid};
+ // fva es firmado por Clerk y mide minutos desde la verificación
+ // de primer/segundo factor. No inferir MFA desde iat del JWT.
+ return {subject:claims.sub,sessionId:claims.sid,
+  factorVerificationAge:Array.isArray(claims.fva)?claims.fva:null};
 }
 export async function clerkIdentityRoute(request,env){
  if(new URL(request.url).pathname!=="/v1/auth/clerk/me")return null;
