@@ -199,12 +199,12 @@ assert.equal(gates.phase6BackupSecretCustody?.newD1ExportFileDurablyStored,false
 assert.equal(gates.phase6DnsVerification?.zoneStatus,'pending',
  'La zona no puede presentarse como activa antes del registrador');
 assert.equal(gates.phase6DnsVerification?.registrarNameserversChanged,false);
-assert.equal(gates.phase6DnsVerification?.pendingZoneDnsRecordCount,15);
+assert.equal(gates.phase6DnsVerification?.pendingZoneDnsRecordCount,16);
 assert.equal(gates.phase6DnsVerification?.legacyRecordsCount,10);
 assert.equal(gates.phase6DnsVerification?.legacyRecordsVerifiedUnchangedAfterClerkPreparation,true);
 assert.equal(gates.phase6DnsVerification?.clerkCnamesAddedToPendingZone,5);
-assert.equal(gates.phase6DnsVerification?.clerkDmarcAddedToPendingZone,false);
-assert.equal(gates.phase6DnsVerification?.clerkDomainFullyVerified,false);
+assert.equal(gates.phase6DnsVerification?.clerkDmarcAddedToPendingZone,true);
+assert.equal(gates.phase6DnsVerification?.clerkDomainFullyVerified,true);
 assert.equal(gates.phase6DnsVerification?.authoritativeNameserversUnchanged,true);
 assert.equal(gates.phase6DnsVerification?.legacyARecordsDnsOnly,4);
 assert.equal(gates.phase6DnsVerification?.legacyWwwDnsOnly,true);
