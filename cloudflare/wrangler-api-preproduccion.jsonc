@@ -27,6 +27,7 @@
     "BACKUP_KEY_CUSTODIED": "no",
     "FREE_TIER_BILLING_VERIFIED": "no",
     "FREE_TIER_CPU_VERIFIED": "no",
+    "CLERK_JWT_ENABLED": "no",
     "PROVIDER_BROKER_ENABLED": "yes"
   },
   "assets": {
