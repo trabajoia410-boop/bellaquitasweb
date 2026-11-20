@@ -61,6 +61,10 @@ export async function protectedRoute(request,env){
   if(request.method!=="POST")return error("Método no permitido",405);
   if(!checkOrigin(request,env))return error("Origen de solicitud no permitido",403);
   if(env.STAGING_MUTATIONS!=="enabled")return error("Las operaciones de pruebas están desactivadas",423);
+  // El antiguo R2 fue eliminado; prohibir cualquier carga antes de leer bytes
+  // o modificar D1 si no existe un almacenamiento plenamente operativo.
+  if(photoMatch && (typeof env.MEDIA?.put !== "function" || typeof env.MEDIA?.delete !== "function"))
+    return error("Almacenamiento multimedia no disponible",503);
   let body;
   try{if(!photoMatch)body=await readJson(request);}catch(e){return error("Solicitud JSON inválida",400);}
   try{
