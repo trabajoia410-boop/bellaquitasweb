@@ -121,5 +121,7 @@ jobs:
         run: npx playwright install --with-deps chromium webkit
       - name: Auditar 66 combinaciones idioma/ruta/dispositivo y prohibir antiguo proveedor
         run: node cloudflare/test-public-routes-browser.mjs
+      - name: Simular administrador en navegador y probar editor visual WordPress y menú móvil sin sesiones reales
+        run: node cloudflare/test-admin-wordpress-browser.mjs
       - name: Revisar panel independiente y ES/FR en WebKit
         run: node cloudflare/test-admin-live-browser.mjs
