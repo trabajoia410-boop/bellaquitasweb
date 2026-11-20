@@ -24,7 +24,8 @@ async function check(path, expectedStatus = 200, options = {}) {
 const {payload: health} = await check("/health");
 assert.equal(health.status, "ok");
 assert.equal(health.database, "connected");
-assert.equal(health.storage, "configured");
+// R2 fue eliminado; no volver a exigir un binding que no existe.
+assert.equal(health.storage, "unavailable", "La API no debe depender del R2 retirado");
 for (const path of ["/v1/events", "/v1/rewards", "/v1/promos", "/v1/moments"]) {
   const {payload} = await check(path);
   assert.ok(Array.isArray(payload.items), `${path} debe devolver items[]`);
