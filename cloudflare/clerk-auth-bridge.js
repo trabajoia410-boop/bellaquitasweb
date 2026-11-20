@@ -48,6 +48,42 @@ function configuration(env) {
     jwks: issuer.origin + "/.well-known/jwks.json"
   };
 }
+// No fiarse únicamente de Content-Length: un servidor puede omitirlo o
+// transmitir un JSON excesivo por chunks. Se cancela la lectura al superar
+// el límite, antes de reservar memoria o analizar un cuerpo no confiable.
+const MAX_JWKS_BYTES = 65536;
+async function boundedJwksJson(response) {
+  const header = response.headers.get("content-length");
+  if (header !== null && (!/^\d+$/.test(header) || Number(header) > MAX_JWKS_BYTES))
+    return null;
+  if (!response.body || typeof response.body.getReader !== "function") return null;
+  const reader = response.body.getReader();
+  const chunks = [];
+  let received = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!(value instanceof Uint8Array)) return null;
+      received += value.byteLength;
+      if (received > MAX_JWKS_BYTES) {
+        await reader.cancel();
+        return null;
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const bytes = new Uint8Array(received);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
+}
+
 export async function verifyClerkToken(request, env, network = fetch) {
   const config = configuration(env);
   if (!config) return null;
@@ -80,10 +116,8 @@ export async function verifyClerkToken(request, env, network = fetch) {
       headers: { Accept: "application/json" },
       cf: { cacheEverything: true, cacheTtl: 300 }
     });
-    if (!answer.ok || Number(answer.headers.get("content-length") || 0) > 65536) {
-      return null;
-    }
-    const data = await answer.json();
+    if (!answer.ok) return null;
+    const data = await boundedJwksJson(answer);
     if (!Array.isArray(data?.keys) || data.keys.length > 25) return null;
     const jwk = data.keys.find(key =>
       key.kid === header.kid && key.kty === "RSA" &&
