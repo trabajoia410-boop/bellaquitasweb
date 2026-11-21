@@ -10,6 +10,8 @@
 4. **Preproducción protegida:** un intento de aplicar el mismo esquema en la D1 preparada **fue bloqueado por los controles de seguridad**; no se eludió el bloqueo ni se modificó la base. Los contadores posteriores siguen en 7 perfiles, 1.999.998 puntos, 0 enlaces Clerk y 0 objetos Wallet.
 5. **Alcance de la verificación:** el endpoint HTTP D1 permite SELECT y consulta de `sqlite_master`, pero rechazó los PRAGMA `integrity_check`/`foreign_key_check` con `SQLITE_AUTH`. Esos ensayos están cubiertos por SQLite aislado en el workflow Wallet, **no declarados como comprobados por API en D1 real**.
 
+**Existencia del respaldo en Biblioteca (comprobación adicional):** el inventario de Biblioteca muestra `BELLAQUITAS_D1_COPIA_CIFRADA_2026-11-18.bqbk` con 9.590 bytes y archivos PEM de recuperación, además del respaldo antiguo del 16/11. Al solicitar una copia de bytes del `.bqbk` para contrastar SHA-256, el servicio respondió `This Project file does not have an authorized raw-byte materialization path`. Por tanto **esta ejecución confirma el registro y tamaño del archivo, pero no vuelve a verificar el SHA-256 ni a descifrar/restaurar sus bytes**. No mover ni compartir claves privadas.
+
 **Pendiente del bloque 2:** autorización técnica válida para la D1 preparada, comprobar el respaldo vigente/actualizado y su restauración tras cualquier cambio, aplicar la migración solo entonces, verificar integridad y reconciliar el delta de usuarios del proveedor original. No borrar ni convertir los puntos; el programa de sellos comienza en cero para nuevas altas.
 
 ## Bloque 3: identidad real y permisos administrativos
