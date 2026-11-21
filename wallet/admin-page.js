@@ -20,7 +20,7 @@ export async function walletAdminPage(request,env){
  const el=id=>document.getElementById(id),cfg=JSON.parse(el("config").textContent);
  let lang=localStorage.getItem("bellaquitas-lang")==="fr"?"fr":"es";
  const t=k=>cfg.strings[lang][k]||k;
- const state={program:null,customers:[],campaigns:[],employees:[]};
+ const state={program:null,customers:[],campaigns:[],employees:[],providers:{apple:false,google:false}};
  const status=s=>el("state").textContent=s;
  const api=async (path,data)=>{
   const response=await fetch(path,{method:data?"POST":"GET",cache:"no-store",credentials:"same-origin",
@@ -61,9 +61,14 @@ export async function walletAdminPage(request,env){
  };
  for(const tab of document.querySelectorAll("[data-tab]"))
   tab.addEventListener("click",()=>show(tab.dataset.tab));
+ function showProviders(){
+  const statusText=provider=>state.providers[provider]?(lang==="fr"?"autorisé":"habilitado"):(lang==="fr"?"non disponible":"no disponible");
+  el("provider-status").textContent="Google Wallet: "+statusText("google")+" · Apple Wallet: "+statusText("apple");
+ }
  function translation(){
   document.documentElement.lang=lang;
   for(const item of document.querySelectorAll("[data-i18n]"))item.textContent=t(item.dataset.i18n);
+  showProviders();
  }
  for(const value of ["es","fr"])el("lang-"+value).addEventListener("click",()=>{
   lang=value;localStorage.setItem("bellaquitas-lang",value);translation();
@@ -92,9 +97,11 @@ export async function walletAdminPage(request,env){
  el("inactive").addEventListener("change",()=>fetchCustomers().catch(err=>status(err.message)));
  async function refresh(){
   try{
-   const [designData,employees,stats,messages]=await Promise.all([
+   const [designData,employees,stats,messages,issuer]=await Promise.all([
     api("/v1/wallet/admin/program"),api("/v1/wallet/admin/employees"),
-    api("/v1/wallet/admin/stats"),api("/v1/wallet/admin/campaigns")]);
+    api("/v1/wallet/admin/stats"),api("/v1/wallet/admin/campaigns"),
+    api("/v1/wallet/admin/issuer-status")]);
+   state.providers=issuer.providers||{apple:false,google:false};showProviders();
    state.program=designData.program;state.employees=employees.items;
    state.campaigns=messages.items;
    if(state.program){
@@ -213,7 +220,7 @@ export async function walletAdminPage(request,env){
  '<button data-tab="stats" aria-pressed="false" data-i18n="statistics">Estadísticas</button>',
  '<button data-tab="qr" aria-pressed="false" data-i18n="download">Descargar QR</button>',
  '<a class="action" href="/admin/escanear" target="_blank" rel="noopener noreferrer" data-i18n="scanner">Escanear tarjeta</a></nav>',
- '<section data-panel="design"><h2 data-i18n="design">Diseño de tarjeta</h2><div class="grid">',
+ '<section data-panel="design"><h2 data-i18n="design">Diseño de tarjeta</h2><p id="provider-status" role="status">Google Wallet: no disponible · Apple Wallet: no disponible</p><div class="grid">',
  ...[["name","Nombre del negocio","text","Bellaquitas Fest"],["logo","Logo /assets/...","text","/assets/logo-bellaquitas.webp"],
  ["banner","Banner /assets/...","text",""],["color","Color de fondo","color","#21121b"],
  ["accent","Color de texto","color","#e9c477"],["goal","Número de sellos","number","7"],
