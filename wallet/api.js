@@ -124,9 +124,12 @@ async function verify(req,env){
  const expected=await hmac("otp:"+record.id+":"+data.code,env.WALLET_HMAC_KEY);
  const expectedBytes=new TextEncoder().encode(expected);
  const originalBytes=new TextEncoder().encode(record.code_hash);
- if(expectedBytes.length!==originalBytes.length||
-    !expectedBytes.every((v,i)=>v===originalBytes[i]))
-  return fail("Código inválido o caducado",403);
+ // Comparación de longitud fija sin salida temprana. No revelar
+ // por tiempos qué dígitos del OTP son correctos.
+ let difference=expectedBytes.length^originalBytes.length;
+ for(let i=0;i<Math.max(expectedBytes.length,originalBytes.length);i++)
+  difference|=(expectedBytes[i]??0)^(originalBytes[i]??0);
+ if(difference!==0)return fail("Código inválido o caducado",403);
  let existing=await env.DB.prepare("SELECT id FROM wallet_customers WHERE program_id=? AND contact_hash=? AND deleted_at IS NULL")
   .bind(record.program_id,record.contact_hash).first();
  let customerId=existing?.id;
