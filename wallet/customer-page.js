@@ -194,7 +194,7 @@ export async function walletCustomerPage(request,env){
  '<button id="google" class="wallet-btn" type="button" data-i18n="google">Añadir a Google Wallet</button></div>',
  '<button class="wallet-btn" id="delete" type="button" data-i18n="delete">Solicitar eliminación de mis datos</button></section>',
  '<p id="status" aria-live="polite" role="status"></p>',
- '<p style="font-size:.78rem" data-i18n="notes">El programa nuevo utiliza sellos; los puntos antiguos quedan archivados.</p></section></main>'
+ '<p style="font-size:.78rem" data-i18n="notes">El programa nuevo utiliza sellos; los puntos antiguos quedan archivados.</p></section></main>',
  '<script type="application/json" id="wallet-config">'+data+'</script>',
  '<script src="/wallet/qr.js"></script>',
  '<script nonce="'+nonce+'">'+script+'</script></body></html>'
