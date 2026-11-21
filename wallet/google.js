@@ -8,6 +8,7 @@ const ROOT="https://walletobjects.googleapis.com/walletobjects/v1";
 const enc=o=>btoa(JSON.stringify(o)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
 const b64=x=>btoa(String.fromCharCode(...x)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
 const tokenCache=new Map();
+const classCache=new Map();
 const safeIssuer=x=>typeof x==="string"&&/^[0-9]{6,25}$/.test(x);
 const cfg=env=>{
  const issuer=env?.WALLET_GOOGLE_ISSUER_ID,client=env?.WALLET_GOOGLE_CLIENT_EMAIL,
@@ -56,6 +57,19 @@ async function api(env,method,path,body){
  return response.status===204?{}:response.json();
 }
 const classId=cfg=>cfg.issuer+".bellaquitas_fest";
+async function ensureLoyaltyClass(program,env){
+ const c=cfg(env),key=classId(c);
+ if((classCache.get(key)||0)>Date.now())return;
+ const logo=program.logo_url&&/^\/assets\/[a-zA-Z0-9/_-]+\.png$/.test(program.logo_url)?
+  "https://bellaquitas.fr"+program.logo_url:null;
+ const item={id:key,issuerName:program.name,programName:program.name,
+  reviewStatus:"UNDER_REVIEW",
+  ...(logo?{programLogo:{sourceUri:{uri:logo},contentDescription:{
+   defaultValue:{language:"es-ES",value:program.name}}}}:{})};
+ await api(env,"POST","/loyaltyClass",item);
+ classCache.set(key,Date.now()+5*60*1000);
+}
+
 const objectId=(cfg,customer)=>cfg.issuer+".bf_"+customer.id.replace(/-/g,"");
 function loyaltyObject(customer,program,settings){
  return {id:objectId(settings,customer),classId:classId(settings),
@@ -65,6 +79,7 @@ function loyaltyObject(customer,program,settings){
 }
 export async function googleCreatePass(customer,program,env){
  const c=cfg(env);
+ await ensureLoyaltyClass(program,env);
  await api(env,"POST","/loyaltyObject",loyaltyObject(customer,program,c));
  const key=await signer(c.pem),now=Math.floor(Date.now()/1000);
  // Google-signed issuer JWT; no user PII in URL besides opaque object ID.
