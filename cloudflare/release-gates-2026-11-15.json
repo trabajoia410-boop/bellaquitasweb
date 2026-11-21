@@ -1291,6 +1291,7 @@
     "verifiedGoogleLinks": 0,
     "verifiedEmailLinks": 0,
     "verifiedD1Links": 0,
+    "verifiedAdminLinks": 0,
     "productionDomainVerified": true,
     "googleOauthProductionConfigured": true,
     "emailRecoveryProvenOnFinalDomain": false,
@@ -1301,5 +1302,17 @@
     "billingAddonsDisabled": true,
     "noNewAccountsCreated": true,
     "note": "Clerk production check 2026-11-20: custom domain DNS, SSL, mail complete, Google OAuth credentials configured, signups restricted, 0 users. No verified identity links, admin step-up, production login or recovery yet."
+  },
+  "phase6WalletD1": {
+    "qaSchemaInstalled": true,
+    "qaTableCount": 13,
+    "qaTriggerCount": 4,
+    "qaDatabaseHadNoProfiles": true,
+    "preparedSchemaInstalled": false,
+    "tableCount": 0,
+    "triggerCount": 0,
+    "oldPointBalancesPreserved": false,
+    "backupAfterSchemaVerified": false,
+    "note": "2026-11-21: 0010 creada en D1 QA aislada, 13 tablas y 4 triggers; preproducción permanece sin Wallet (operación bloqueada por seguridad). Los 7 perfiles, 2 admins y 1999998 puntos de la D1 preparada siguen intactos. No declarar preparada ni custodia nueva sin prueba."
   }
 }
