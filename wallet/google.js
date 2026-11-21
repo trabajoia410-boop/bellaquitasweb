@@ -1,3 +1,4 @@
+import {googleWalletCredentials} from "./google-credentials.js";
 /**
  * Google Wallet API LoyaltyObject adapter (explicit credential-gated).
  * No API call unless issuer + service account keys exist AND WALLET_MODE=real.
@@ -9,16 +10,13 @@ const enc=o=>btoa(JSON.stringify(o)).replace(/\+/g,"-").replace(/\//g,"_").repla
 const b64=x=>btoa(String.fromCharCode(...x)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
 const tokenCache=new Map();
 const classCache=new Map();
-const safeIssuer=x=>typeof x==="string"&&/^[0-9]{6,25}$/.test(x);
 const cfg=env=>{
- const issuer=env?.WALLET_GOOGLE_ISSUER_ID,client=env?.WALLET_GOOGLE_CLIENT_EMAIL,
-       pem=env?.WALLET_GOOGLE_PRIVATE_KEY;
- if(env?.WALLET_MODE!=="real"||!safeIssuer(issuer)||
-   typeof client!=="string"||!/^[-\w.]+@[-\w.]+\.iam\.gserviceaccount\.com$/.test(client)||
-   typeof pem!=="string"||!pem.includes("-----BEGIN "+"PRIVATE KEY-----"))
-   throw Error("Google Wallet issuer not configured");
- return {issuer,client,pem};
+ if(env?.WALLET_MODE!=="real")throw Error("Google Wallet issuer not configured");
+ const credentials=googleWalletCredentials(env);
+ if(!credentials)throw Error("Google Wallet issuer not configured");
+ return credentials;
 };
+
 async function signer(pem){
  const raw=pem.replace(new RegExp("-----BEGIN "+"PRIVATE KEY-----|-----END "+"PRIVATE KEY-----|\\s","g"),"");
  const der=Uint8Array.from(atob(raw),c=>c.charCodeAt(0));
