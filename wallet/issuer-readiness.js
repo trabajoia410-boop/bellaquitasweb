@@ -13,13 +13,13 @@ export function walletIssuerReadiness(env){
   typeof env.WALLET_GOOGLE_ISSUER_ID==="string"&&
   /^[0-9]{6,25}$/.test(env.WALLET_GOOGLE_ISSUER_ID)&&
   typeof env.WALLET_GOOGLE_CLIENT_EMAIL==="string"&&
-  /^[\\w.-]+@[\\w.-]+\\.iam\\.gserviceaccount\\.com$/.test(env.WALLET_GOOGLE_CLIENT_EMAIL)&&
+  /^[\w.-]+@[\w.-]+\.iam\.gserviceaccount\.com$/.test(env.WALLET_GOOGLE_CLIENT_EMAIL)&&
   typeof env.WALLET_GOOGLE_PRIVATE_KEY==="string"&&
   env.WALLET_GOOGLE_PRIVATE_KEY.includes("-----BEGIN PRIVATE KEY-----")&&
   env.WALLET_GOOGLE_PRIVATE_KEY.includes("-----END PRIVATE KEY-----");
  const apple=live&&env?.WALLET_APPLE_ISSUER_APPROVED==="yes"&&
   typeof env.APPLE_PASS_TYPE_ID==="string"&&
-  /^pass\\.[\\w.-]+$/.test(env.APPLE_PASS_TYPE_ID)&&
+  /^pass\.[\w.-]+$/.test(env.APPLE_PASS_TYPE_ID)&&
   typeof env.APPLE_PASS_SIGNER?.fetch==="function"&&
   typeof env.APPLE_PUSH_BRIDGE?.fetch==="function"&&
   typeof env.WALLET_HMAC_KEY==="string"&&env.WALLET_HMAC_KEY.length>=32;
