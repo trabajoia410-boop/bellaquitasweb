@@ -31,3 +31,13 @@
 - Google Wallet: solicitud de publicación del titular **en revisión**, independiente de estos bloques.
 - El único cambio D1 real de esta ejecución fue el esquema Wallet en la base **QA vacía**. No hubo mutación de D1 preparada o staging.
 - No declarar bloques 2/3 completados hasta los pendientes citados. El objetivo es evitar tanto una falsa sensación de cierre como pedir al propietario repetir pasos ya realizados.
+
+## Actualización de ejecución — 21/11, auditoría sin cambios en producción
+
+- **D1 QA idempotente:** se aplicó la migración 0010 por segunda vez a la base vacía de pruebas. Las 24 sentencias concluyeron con éxito, y los conteos antes/después fueron exactamente **13 tablas Wallet, 4 triggers, 0 clientes y 0 sellos**. No se instalaron objetos Wallet en D1 preparada ni staging.
+- **Paridad criptográfica de contenido sin revelar PII:** se leyeron las filas de las tablas \`profiles\`, \`auth_identity_links\`, \`events\`, \`site_content\`, \`site_drafts\`, \`activity\`, \`admin_member_changes\`, \`rewards\` y \`redemptions\` en **preproducción y staging**. Dentro del ejecutor Cloudflare se normalizaron las filas y se compararon huellas SHA-256. Coinciden **9 de 9 tablas**, incluidos 7 perfiles, 7 enlaces de origen, 1 evento, 1 contenido, 1 borrador, 2 actividades y 3 cambios de socios. **Ningún registro personal ni huella individual salió en el resultado.** Esto certifica solo estas dos bases entre sí, no el origen externo todavía activo ni una restauración nueva.
+- **Comprobación de Time Travel D1 (solo GET):** Cloudflare devolvió correctamente el marcador actual para la D1 preparada. No se ha restaurado ni retrocedido la base, y no se ha realizado escritura alguna. En el plan Workers Free la recuperación D1 Time Travel cubre **hasta 7 días**; un marcador no sustituye una copia externa cifrada ni su custodia. Referencia: https://developers.cloudflare.com/d1/reference/time-travel/ .
+- **Preflight cruzado:** se añadieron \`phase6-blocks23-preflight.mjs\` y su prueba sintética. Verifican las 13 tablas y 4 triggers, paridad de los 7 perfiles y saldos, seis identidades Google y una de correo, dos administradores correctamente vinculados, respaldo posterior y delta de origen. Nunca autorizan por un simple conteo de emails. Incorporados a los workflows Wallet y Clerk sin credenciales.
+- **Clerk producción:** nuevo recuento read-only confirma **0 usuarios**. No se crean cuentas, permisos ni vínculos por correo automáticamente.
+
+**Por cerrar:** D1 preparada todavía no tiene tablas Wallet ni respaldo renovado; la operación de instalación fue bloqueada por seguridad y no se ha eludido. También faltan el delta de origen y la prueba de posesión de las siete identidades reales. Los candados de publicación permanecen en NO.
