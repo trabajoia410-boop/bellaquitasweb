@@ -33,6 +33,7 @@ let cachedPublicHtml=null;
 let cachedPublicHeaders=null;
 let cachedPublicMode=null;
 let cachedStampAppJS=null;
+let cachedStampLocaleFR=null;
 
 export async function productionSiteRoute(request,env) {
   if(env?.SITE_MODE!=="production")return null;
@@ -107,6 +108,12 @@ export async function productionSiteRoute(request,env) {
       cachedStampAppJS=stampsOnlyMemberUI(stampsOnlyMarketingCopy(await served.text()));
     return response(request.method==="HEAD"?null:cachedStampAppJS,200,
       "application/javascript; charset=utf-8");
+  }
+  if(path==="/locale-fr.js"&&stampsReplacePoints(env)&&served.status===200){
+    if(request.method==="HEAD")return response(null,200,"application/javascript; charset=utf-8");
+    if(cachedStampLocaleFR===null)
+      cachedStampLocaleFR=stampsOnlyMarketingCopy(await served.text());
+    return response(cachedStampLocaleFR,200,"application/javascript; charset=utf-8");
   }
   if(!page)return served;
   if(served.status!==200)return served;
