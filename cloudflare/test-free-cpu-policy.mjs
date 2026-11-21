@@ -65,7 +65,8 @@ const site=read("cloudflare/production-site-route.js");
 assert.match(site,/let cachedPublicHtml=null;/);
 assert.match(site,/let cachedPublicHeaders=null;/);
 assert.match(site,/cachedPublicHtml=html;/);
-assert.match(site,/if\(page&&cachedPublicHtml!==null\)/);
+assert.match(site,/if\(page&&cachedPublicHtml!==null&&cachedPublicMode===stampsReplacePoints\(env\)\)/);
+assert.match(site,/cachedPublicMode=stampsReplacePoints\(env\)/);
 const media=read("cloudflare/media-qa-worker.js");
 assert.match(media,/streamByteRange\(response\.body,range\.start,range\.end\)/);
 assert.ok(!media.includes("new Uint8Array(await response.arrayBuffer())"),
