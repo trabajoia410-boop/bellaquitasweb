@@ -227,7 +227,7 @@ export async function walletAdminPage(request,env){
  '<div id="business-qr"></div><p id="qr-link">https://bellaquitas.fr/tarjeta/bellaquitas-fest</p>',
  '<div id="qr-buttons"><button type="button" id="png">Descargar PNG</button> <button type="button" id="pdf">Imprimir / Guardar como PDF</button></div></section>',
  '<p id="state" role="status" aria-live="polite"></p></main>',
- '<script id="config" type="application/json">'+config+'</script><script defer src="/wallet/qr.js"></script>',
+ '<script id="config" type="application/json">'+config+'</script><script src="/wallet/qr.js"></script>',
  '<script nonce="'+nonce+'">'+script+'</script></body></html>'
  ].join("");
  const headers=new Headers({...HEAD,"Content-Type":"text/html; charset=utf-8"});
