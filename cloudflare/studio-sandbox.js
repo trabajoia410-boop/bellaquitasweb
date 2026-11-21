@@ -231,7 +231,7 @@ function decorate(){
 function bindFrame(){
  let doc;try{doc=frame.contentDocument;}catch{return}
  if(!doc?.body)return;
- observer?.disconnect();activeDoc=doc;selected=null;editing.value="";editing.disabled=true;chosen.textContent="Selecciona un texto de la página";
+ observer?.disconnect();activeDoc=doc;selected=null;editing.value="";editing.disabled=true;delete editing.dataset.bfStudioKey;chosen.textContent="Selecciona un texto de la página";
  const style=doc.createElement("style");
  style.textContent="[data-bf-studio-key]:hover{outline:2px dashed #f4c985!important;outline-offset:3px!important}";
  doc.head.append(style);
@@ -241,7 +241,7 @@ function bindFrame(){
   const target=event.target?.nodeType===1?event.target.closest("[data-bf-studio-key]"):null;
   if(!target||event.target?.closest?.("[data-studio-image],[data-studio-icon]"))return;
   event.preventDefault();event.stopImmediatePropagation();
-  selected=target;editing.disabled=false;editing.value=target.textContent.trim();
+  selected=target;editing.disabled=false;editing.dataset.bfStudioKey=target.dataset.bfStudioKey;editing.value=target.textContent.trim();
   chosen.textContent="Editando texto de "+(currentPage()==="/"?"Portada":currentPage().slice(1));
   window.bfLabOpen?.("text");
   editing.focus({preventScroll:true});
@@ -256,7 +256,7 @@ document.getElementById("pages").addEventListener("click",event=>{
  const b=event.target.closest("button[data-page]");if(!b)return;
  const p=b.dataset.page;if(!navigation.includes(p))return;
  if(p!==previousPage){previousPage=p;frame.src="/espejo/?admin_embed=1#"+p;}
- document.body.classList.remove("menu-open");selected=null;
+ document.body.classList.remove("menu-open");selected=null;delete editing.dataset.bfStudioKey;editing.disabled=true;
 });
 document.getElementById("themes").addEventListener("click",event=>{
  const b=event.target.closest("button[data-theme]");if(!b)return;
@@ -278,11 +278,11 @@ document.querySelectorAll("[data-lang]").forEach(b=>b.addEventListener("click",(
 editing.addEventListener("input",()=>{
  // La web original puede regenerar nodos tras navegar o cambiar de idioma:
  // conservar el borrador por clave incluso si el elemento fue sustituido.
- const key=selected?.dataset.bfStudioKey;
+ const key=editing.dataset.bfStudioKey||selected?.dataset.bfStudioKey;
  if(!key||key.length>130)return;
  const value=editing.value.slice(0,600);
  draft[key]=value;
- if(selected.isConnected)selected.textContent=value;
+ if(selected?.isConnected)selected.textContent=value;
  else {
   const latest=frame.contentDocument?.querySelector('[data-bf-studio-key="'+key.replace(/[^A-Za-z0-9|/_-]/g,"")+'"]');
   if(latest){selected=latest;selected.textContent=value;}
@@ -291,6 +291,10 @@ editing.addEventListener("input",()=>{
 });
 document.getElementById("save").addEventListener("click",()=>{
  try{
+ // Preserve an active text edit even if the preview re-rendered between
+ // the input event and the Save click; never touch Cloudflare storage.
+ const pendingKey=editing.dataset.bfStudioKey;
+ if(!editing.disabled&&pendingKey&&pendingKey.length<=130)draft[pendingKey]=editing.value.slice(0,600);
  const json=JSON.stringify(draft);
  if(json.length>40000)throw Error("Borrador demasiado grande");
  localStorage.setItem(KEY,json);inform("Borrador local guardado en este navegador. No se ha publicado nada.");
