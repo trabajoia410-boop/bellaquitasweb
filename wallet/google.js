@@ -1,3 +1,4 @@
+import {buildBellaquitasGoogleLoyaltyClass} from "./google-provisional-class.js";
 import {googleWalletCredentials} from "./google-credentials.js";
 /**
  * Google Wallet API LoyaltyObject adapter (explicit credential-gated).
@@ -58,12 +59,7 @@ const classId=cfg=>cfg.issuer+".bellaquitas_fest";
 async function ensureLoyaltyClass(program,env){
  const c=cfg(env),key=classId(c);
  if((classCache.get(key)||0)>Date.now())return;
- const logo=program.logo_url&&/^\/assets\/[a-zA-Z0-9/_-]+\.png$/.test(program.logo_url)?
-  "https://bellaquitas.fr"+program.logo_url:null;
- const item={id:key,issuerName:program.name,programName:program.name,
-  reviewStatus:"UNDER_REVIEW",
-  ...(logo?{programLogo:{sourceUri:{uri:logo},contentDescription:{
-   defaultValue:{language:"es-ES",value:program.name}}}}:{})};
+ const item=buildBellaquitasGoogleLoyaltyClass(c.issuer,program);
  await api(env,"POST","/loyaltyClass",item);
  classCache.set(key,Date.now()+5*60*1000);
 }
