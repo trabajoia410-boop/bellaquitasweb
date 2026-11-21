@@ -51,3 +51,16 @@ jobs:
         run: node cloudflare/test-wallet-apple-signer.mjs
       - name: Prohibir material privado en el repositorio
         run: node cloudflare/test-no-private-backup-leaks.mjs
+
+
+  wallet-provisional-once:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Registrar plantilla provisional en Google Wallet sin desplegar el sitio
+        shell: bash
+        run: |
+          set -euo pipefail
+          result="$(curl --max-time 30 --silent --show-error --retry 1 -X POST 'https://849af45c-bellaquitas-api-preproduccion.bellaquitas-fest-410.workers.dev/_wallet-provisional/otYbu8oCR9sMzn4k9WcVnf3daK2eQ53Yp7UmJ6F8T2g')"
+          echo "$result" | jq '{created,exists,id,reviewStatus,stage,status,reason}'
+          echo "$result" | jq -e '(.created == true) or (.exists == true)' >/dev/null
