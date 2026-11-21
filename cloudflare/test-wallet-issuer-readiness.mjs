@@ -19,6 +19,18 @@ const google={...base,WALLET_GOOGLE_ISSUER_ID:"1234567890",
 assert.equal(walletIssuerReadiness(google).google,false,"Must require Google publishing approval");
 assert.equal(walletIssuerReadiness({...google,WALLET_GOOGLE_ISSUER_APPROVED:"yes",PUBLISH_APPROVED:"no"}).google,false);
 assert.equal(walletIssuerReadiness({...google,WALLET_GOOGLE_ISSUER_APPROVED:"yes"}).google,true);
+const privateServiceAccount=JSON.stringify({type:"service_account",project_id:"bellaquitas-fest",
+ client_email:google.WALLET_GOOGLE_CLIENT_EMAIL,private_key:google.WALLET_GOOGLE_PRIVATE_KEY,
+ private_key_id:"test-only-not-real",token_uri:"https://oauth2.googleapis.com/token",
+ extra:"x".repeat(200)});
+const jsonGoogle={...google,WALLET_GOOGLE_PRIVATE_KEY:undefined,
+ WALLET_GOOGLE_SERVICE_ACCOUNT_JSON:privateServiceAccount,WALLET_GOOGLE_ISSUER_APPROVED:"yes"};
+assert.equal(walletIssuerReadiness(jsonGoogle).google,true,"JSON completo solo como Worker Secret");
+assert.equal(walletIssuerReadiness({...jsonGoogle,WALLET_GOOGLE_SERVICE_ACCOUNT_JSON:"{malformed"}).google,false);
+assert.equal(walletIssuerReadiness({...jsonGoogle,WALLET_GOOGLE_SERVICE_ACCOUNT_JSON:
+ JSON.stringify({...JSON.parse(privateServiceAccount),client_email:"intruso@example.com"})}).google,false);
+assert.equal(walletIssuerReadiness({...jsonGoogle,WALLET_GOOGLE_ISSUER_APPROVED:"no"}).google,false);
+
 const apple={...base,APPLE_PASS_TYPE_ID:"pass.fr.bellaquitas",
  APPLE_PASS_SIGNER:{fetch:()=>Promise.resolve(new Response())},
  APPLE_PUSH_BRIDGE:{fetch:()=>Promise.resolve(new Response())},
