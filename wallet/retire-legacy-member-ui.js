@@ -22,5 +22,16 @@ export function stampsOnlyMemberUI(source){
   if(j<0)throw Error('Legacy function end marker missing: '+end);
   updated=updated.slice(0,i)+view+'\n'+updated.slice(j);
  }
+ // Public loyalty calls-to-action now open the passwordless stamp card.
+ // Keep account registration and normal profile access unchanged.
+ const links=[
+  ["href=\"${current?'#/tarjeta':'#/registro'}\" class=\"btn btn-primary\">","href=\"/tarjeta/bellaquitas-fest\" class=\"btn btn-primary\">"],
+  ["href=\"#/tarjeta\" aria-label=\"Ver tarjeta de fidelidad\"","href=\"/tarjeta/bellaquitas-fest\" aria-label=\"Ver tarjeta de fidelidad\""],
+  ["href=\"#/acceso\" class=\"btn btn-primary\">${txt('cta_button')}","href=\"/tarjeta/bellaquitas-fest\" class=\"btn btn-primary\">${txt('cta_button')}"]
+ ];
+ for(const [before,after] of links){
+  if(!updated.includes(before))throw Error("Legacy card CTA missing");
+  updated=updated.replace(before,after);
+ }
  return updated;
 }
