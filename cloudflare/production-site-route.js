@@ -133,6 +133,7 @@ export async function productionSiteRoute(request,env) {
     html=stampsOnlyMarketingCopy(html);
     // The original website remains visually intact; only loyalty entry links
     // and the short copy are updated. Old card and reward hashes redirect.
+    html=html.replaceAll('href="#/registro">Únete al club','href="/tarjeta/bellaquitas-fest">Únete al club');
     html=html.replaceAll('href="#/acceso" class="btn btn-primary">Acceder a mi tarjeta',
       'href="/tarjeta/bellaquitas-fest" class="btn btn-primary">Acceder a mi tarjeta');
     html=html.replace("</body>",'<script src="/wallet/legacy-redirect.js" defer></script></body>');
