@@ -3,6 +3,7 @@
  * D1 triggers enforce redemption debits, staff-only validation and admin audit.
  */
 import {authenticatedProfile,authenticatedAdminAccess,checkOrigin} from "./auth-routes.js";
+import {stampsReplacePoints,immutableLegacyBalances} from "../wallet/cutover-policy.js";
 const HEAD={"Content-Type":"application/json; charset=utf-8",
   "Cache-Control":"no-store","X-Content-Type-Options":"nosniff",
   "X-Robots-Tag":"noindex, nofollow"};
@@ -51,7 +52,9 @@ export async function protectedRoute(request,env){
     if(request.method!=="GET")return error("Método no permitido",405);
     if(!admin(privilegedActor))return error("Acceso reservado a administradores",403);
     const q=await env.DB.prepare("SELECT id,name,role,member_code,points,lifetime_points,visits,created_at FROM profiles ORDER BY created_at DESC LIMIT 500").all();
-    return out({items:q.results||[]});
+    const members=q.results||[];
+    // Once stamps replace points, hide historical balances from admin member API.
+    return out({items:stampsReplacePoints(env)?members.map(({points,lifetime_points,...safe})=>safe):members});
   }
   if(path==="/v1/door/members"){
     if(request.method!=="GET")return error("Método no permitido",405);
@@ -79,6 +82,17 @@ export async function protectedRoute(request,env){
       const member=await env.DB.prepare("SELECT id FROM profiles WHERE upper(member_code)=? LIMIT 1").bind(code).first();
       if(!member)return error("Tarjeta no encontrada",404);
       if(member.id===actor.id)return error("No puedes validar tu propia tarjeta",403);
+      if(stampsReplacePoints(env)){
+        // Keep visits and door access; new loyalty stamps require the Wallet scanner.
+        await env.DB.batch([
+          env.DB.prepare(
+            "INSERT INTO activity(id,user_id,type,delta,detail,staff_id,created_at) "+
+            "VALUES (?,?,'visita',0,'Visita validada (sellos independientes)',?,datetime('now'))"
+          ).bind(crypto.randomUUID(),member.id,actor.id),
+          env.DB.prepare("UPDATE profiles SET visits=visits+1 WHERE id=?").bind(member.id)
+        ]);
+        return out({ok:true,points_awarded:0,loyalty:"stamps"});
+      }
       await env.DB.batch([
         env.DB.prepare(
           "INSERT INTO activity(id,user_id,type,delta,detail,staff_id,created_at) "+
@@ -89,6 +103,8 @@ export async function protectedRoute(request,env){
       return out({ok:true,points_awarded:10});
     }
     if(path==="/v1/rewards/request"){
+      if(stampsReplacePoints(env))
+        return error("Los canjes antiguos por puntos están desactivados; usa tu tarjeta de sellos",410);
       const rewardId=body.reward_id;
       if(!uuid(rewardId))return error("Recompensa inválida");
       const reward=await env.DB.prepare("SELECT id,cost,name FROM rewards WHERE id=? AND active=1").bind(rewardId).first();
@@ -122,7 +138,9 @@ export async function protectedRoute(request,env){
         reason=String(body.reason||"").trim();
       if(name.length<2||name.length>80||!["socio","puerta","admin"].includes(role)||reason.length<5||reason.length>250)
         return error("Nombre, rol o motivo no válidos");
-      const points=Number(body.points),lifetime=Number(body.lifetime_points),visits=Number(body.visits);
+      // Admin can still edit roles and visits without mutating historical point balances.
+      const balances=immutableLegacyBalances(target,{points:Number(body.points),lifetime_points:Number(body.lifetime_points)},env);
+      const points=Number(balances.points),lifetime=Number(balances.lifetime_points),visits=Number(body.visits);
       if(![points,lifetime,visits].every(Number.isSafeInteger)||points<0||points>100000000||
          lifetime<0||lifetime>100000000||visits<0||visits>1000000)
         return error("Puntos o visitas no válidos");
