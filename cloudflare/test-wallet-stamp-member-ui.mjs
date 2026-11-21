@@ -13,6 +13,8 @@ const translated=readFileSync("locale-fr.js","utf8");
 const newApp=stampsOnlyMemberUI(stampsOnlyMarketingCopy(original));
 const newFrench=stampsOnlyMarketingCopy(translated);
 new Script(newApp,{filename:"bellaquitas-stamps-only.js"});
+assert.match(newApp,/function legacySiteText\(field,fallback/);
+assert.match(newApp,/STAMP_PUBLIC_COPY_FIELDS/);
 new Script(newFrench,{filename:"bellaquitas-wallet-fr.js"});
 const between=(start,end)=>{
  const i=newApp.indexOf(start),j=newApp.indexOf(end,i+start.length);
