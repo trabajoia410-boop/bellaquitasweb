@@ -22,6 +22,11 @@ assert.equal(actual.cpu10msVerified,false,
   'No fingir que rutas KDF y vídeo ya están por debajo de 10ms sin perfil real');
 assert.equal(actual.clerkProductionReady,false,
   'Clerk con DNS/Google correcto pero 0 de 7 identidades vinculadas NO autoriza producción');
+assert.equal(actual.walletDbReady,false,
+  'D1 QA con 13 tablas no autoriza lanzar Wallet sin instalacion y backup en preparada');
+assert.equal(data.phase6WalletD1.qaSchemaInstalled,true);
+assert.equal(data.phase6WalletD1.qaTableCount,13);
+assert.equal(data.phase6WalletD1.qaTriggerCount,4);
 assert.equal(actual.clerkDnsSafe,true,
   'DMARC Hostinger validado y replicado en zona pending sin alterar los registros originales');
 assert.equal(data.phase6ClerkProduction.productionDomainVerified,true);
@@ -75,6 +80,14 @@ fake.phase6ClerkProduction.googleOauthProductionConfigured=true;
 fake.phase6ClerkProduction.verifiedGoogleLinks=6;
 fake.phase6ClerkProduction.verifiedEmailLinks=1;
 fake.phase6ClerkProduction.verifiedD1Links=7;
+fake.phase6ClerkProduction.verifiedAdminLinks=2;
+fake.phase6ClerkProduction.currentProductionUsers=7;
+// Son pruebas FICTICIAS; la base de preproduccion sigue sin migrar Wallet.
+fake.phase6WalletD1.preparedSchemaInstalled=true;
+fake.phase6WalletD1.tableCount=13;
+fake.phase6WalletD1.triggerCount=4;
+fake.phase6WalletD1.oldPointBalancesPreserved=true;
+fake.phase6WalletD1.backupAfterSchemaVerified=true;
 fake.phase6ClerkProduction.emailRecoveryProvenOnFinalDomain=true;
 fake.phase6ClerkProduction.authenticatedAccountsQaPassed=true;
 fake.phase6ClerkProduction.adminStepUpQaPassed=true;
@@ -237,6 +250,23 @@ for(const field of ['clerkDmarcAddedToPendingZone','clerkDmarcOriginalPolicyRevi
   'No delegar DNS sin DMARC comprobado: '+field);
 }
 
+for(const [key,bad] of [
+ ['preparedSchemaInstalled',false],['tableCount',12],['triggerCount',3],
+ ['oldPointBalancesPreserved',false],['backupAfterSchemaVerified',false]
+]){
+ const blocked=structuredClone(fake);
+ blocked.phase6WalletD1[key]=bad;
+ assert.equal(evaluateRelease(blocked).readyForControlledPublication,false,
+  'No publicar sin D1 Wallet certificada: '+key);
+}
+for(const [key,bad] of [
+ ['currentProductionUsers',0],['verifiedAdminLinks',1]
+]){
+ const blocked=structuredClone(fake);
+ blocked.phase6ClerkProduction[key]=bad;
+ assert.equal(evaluateRelease(blocked).readyForControlledPublication,false,
+  'No publicar con identidades sin conciliar: '+key);
+}
 const noCpu = structuredClone(fake);
 noCpu.phase6CpuSafety.realStagingCpuMaxBelow10ms = false;
 assert.equal(evaluateRelease(noCpu).readyForControlledPublication,false,
