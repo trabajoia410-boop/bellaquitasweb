@@ -8,6 +8,7 @@
 import {mirrorRoute} from "./web-mirror.js";
 import {stampsReplacePoints} from "../wallet/cutover-policy.js";
 import {stampsOnlyMarketingCopy} from "../wallet/retire-legacy-copy.js";
+import {stampsOnlyMemberUI} from "../wallet/retire-legacy-member-ui.js";
 
 const ASSET_SOURCE = /^\/(?:styles\.css|app\.js|config\.js|locale-fr\.js)$/;
 const SINGLE_ASSET = /^\/assets\/[^/]+$/;
@@ -103,7 +104,7 @@ export async function productionSiteRoute(request,env) {
     if(request.method==="HEAD")
       return response(null,200,"application/javascript; charset=utf-8");
     if(cachedStampAppJS===null)
-      cachedStampAppJS=stampsOnlyMarketingCopy(await served.text());
+      cachedStampAppJS=stampsOnlyMemberUI(stampsOnlyMarketingCopy(await served.text()));
     return response(request.method==="HEAD"?null:cachedStampAppJS,200,
       "application/javascript; charset=utf-8");
   }
