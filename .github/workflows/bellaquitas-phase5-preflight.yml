@@ -1,0 +1,137 @@
+name: Bellaquitas Fase 5 - prepublicacion y seguridad
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'cloudflare/**'
+      - '!cloudflare/**/*.md'
+      - 'assets/**'
+      - 'index.html'
+      - 'styles.css'
+      - 'app.js'
+      - 'locale-fr.js'
+      - 'robots.txt'
+      - 'sitemap.xml'
+      - 'manifest.webmanifest'
+      - '.github/workflows/bellaquitas-phase5-preflight.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bellaquitas-phase5-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  offline-security:
+    name: Seguridad y fidelidad (sin acceso a datos reales)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Comprobar que no se han subido backups o secretos
+        run: node cloudflare/test-no-private-backup-leaks.mjs
+      - name: Certificar herramienta de ROTACIÓN auténtica de respaldo antiguo con datos inventados
+        run: node cloudflare/test-rotate-legacy-offline.mjs
+      - name: Verificar código del panel y todas sus traducciones ES/FR
+        run: node cloudflare/test-admin-console.mjs
+      - name: Probar logo Inicio, único acceso Administrador y editor visual embebido sin datos reales
+        run: node cloudflare/test-admin-visual-wordpress.mjs
+      - name: Probar laboratorio visual público SOLO de staging y borradores locales seguros
+        run: node cloudflare/test-studio-sandbox.mjs
+      - name: Probar administradores de dos cuentas con datos sintéticos
+        run: node --experimental-sqlite cloudflare/test-admin-email-link.mjs
+      - name: Validar conexión privada a Google y Resend sin copiar credenciales
+        run: node cloudflare/test-provider-broker.mjs
+      - name: Probar Clerk JWT real criptografía con identidades ficticias sin tocar D1
+        run: node cloudflare/test-clerk-auth-bridge.mjs
+      - name: Probar esquema Clerk y evitar suplantacion sin tocar D1 real
+        run: python3 -m unittest discover -s cloudflare -p 'test_clerk_links_guard.py' -v
+      - name: Probar migración nueva de fidelidad Wallet solo en SQLite en memoria
+        run: node --experimental-sqlite cloudflare/test-wallet-schema.mjs
+      - name: Verificar interfaz de inicio Clerk y segundo paso admin sin produccion
+        run: node cloudflare/test-clerk-login-page.mjs
+      - name: Verificar interfaz Clerk en QA aislado sin alterar portada
+        run: node cloudflare/test-clerk-qa-preview.mjs
+      - name: Conciliar seis cuentas Google-Clerk sintéticas sin emails ni puntos reales
+        run: node cloudflare/test-clerk-verified-links.mjs
+      - name: Verificar OAuth Google contra login CSRF de otro navegador
+        run: node cloudflare/test-oauth-browser-bound-state.mjs
+      - name: Probar editor completo con 2 administradores ficticios y D1 en memoria
+        run: node --experimental-sqlite cloudflare/test-editor-admin-offline.mjs
+      - name: Probar fusión de cuentas y puntos sin escritura real
+        run: node cloudflare/test-account-cutover-policy.mjs
+      - name: Probar auditor de exportaciones originales
+        run: node cloudflare/test-audit-production-export.mjs
+      - name: Comprobar que Clerk nunca permite rutas OAuth/PBKDF2 legado ni correos admin
+        run: node cloudflare/test-clerk-legacy-closed.mjs
+      - name: Bloquear OAuth y correos de producción sin configuración y comprobar retornos correctos
+        run: node cloudflare/test-production-auth-cutover.mjs
+      - name: Bloquear tambien OPTIONS CORS del Worker real sin aprobacion
+        run: node cloudflare/test-production-worker-options-gate.mjs
+      - name: Auditar fondo lateral y todos los assets del diseño original
+        run: node cloudflare/audit-visual-assets.mjs
+      - name: Verificar portada final original, PWA, vídeos y ES/FR sin desplegar
+        run: node cloudflare/test-production-site-route.mjs
+      - name: Verificar que D1 preproducción está aislada, sin DNS ni escrituras
+        run: node cloudflare/test-preproduction-config.mjs
+      - name: Verificar huellas de 10 registros DNS sin revelar TXT ni delegar
+        run: node cloudflare/test-phase6-dns-fingerprints.mjs
+      - name: Comprobar optimizaciones CPU 10 ms sin reducir seguridad ni mediatización 206
+        run: node cloudflare/test-free-cpu-policy.mjs
+      - name: Medir KDF con valores sintéticos; solo aviso Node, no certificado Workers
+        run: node cloudflare/test-password-kdf-node-advisory.mjs
+      - name: Verificar bloqueo de publicación antes de las pruebas pendientes
+        run: node cloudflare/test-release-gates.mjs
+
+  staging-http-security:
+    name: HTTP real de staging - sin sesiones ni mutaciones
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: offline-security
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Seguridad de panel, API pública y vídeos MP4
+        run: node cloudflare/test-stage-http-phase5.mjs
+      - name: Comprobar 10 rangos HTTP 206 y bytes originales desde la web espejo
+        run: node cloudflare/test-staging-mirror-media-online.mjs
+      - name: Comprobar 206 directos de QA multimedia con bytes originales y final del MP4
+        run: node cloudflare/test-media-qa-online.mjs --require-assets
+
+  browser-esfr-parity:
+    name: ES/FR y diseño responsive (WebKit iPhone, Chrome Android y PC)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: offline-security
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar navegador de pruebas sin añadir dependencias al proyecto
+        run: npm install --no-save --no-package-lock --no-audit --no-fund playwright
+      - name: Instalar Chrome y WebKit para emulación
+        run: npx playwright install --with-deps chromium webkit
+      - name: Auditar 66 combinaciones idioma/ruta/dispositivo y prohibir antiguo proveedor
+        run: node cloudflare/test-public-routes-browser.mjs
+      - name: Simular administrador en navegador y probar editor visual WordPress y menú móvil sin sesiones reales
+        run: node cloudflare/test-admin-wordpress-browser.mjs
+      - name: Probar laboratorio visual anónimo con borrador local en Chrome PC/móvil
+        run: node cloudflare/test-studio-sandbox-browser.mjs
+      - name: Revisar panel independiente y ES/FR en WebKit
+        run: node cloudflare/test-admin-live-browser.mjs

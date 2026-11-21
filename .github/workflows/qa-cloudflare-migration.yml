@@ -1,0 +1,103 @@
+name: QA migracion Bellaquitas (sin despliegue)
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'cloudflare/**'
+      - '!cloudflare/**/*.md'
+      - 'assets/**'
+      - 'index.html'
+      - 'styles.css'
+      - 'app.js'
+      - 'locale-fr.js'
+      - '.github/workflows/qa-cloudflare-migration.yml'
+jobs:
+  static-migration-audit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Revisar sintaxis de los modulos Cloudflare
+        run: |
+          for f in cloudflare/{bellaquitas-api-staging,admin-console,auth-routes,email-auth-routes,protected-routes,web-mirror,mirror-write-routes,mirror-data-routes}.js; do
+            node --check "$f"
+          done
+      - name: Validar sintaxis y seguridad de pantalla Clerk aislada
+        run: |
+          node --check cloudflare/clerk-login-page.js
+          node cloudflare/test-clerk-login-page.mjs
+      - name: Validar configuración para redeploy staging sin tocar DNS ni secretos
+        run: node cloudflare/test-staging-redeploy-config.mjs
+      - name: Auditar que el SQL original tenga identidades, usuarios y puntos sin datos personales
+        run: node cloudflare/test-audit-production-export.mjs
+      - name: Prohibir claves privadas y respaldos personales en Git
+        run: node cloudflare/test-no-private-backup-leaks.mjs
+      - name: Verificar bytes, SHA Git y ausencia de R2
+        run: node cloudflare/verify-migration.mjs
+      - name: Construir exclusivamente los recursos estáticos originales
+        run: node cloudflare/build-static-assets.mjs
+      - name: Comprobar bloqueo del lanzamiento sin logos originales certificados
+        run: node cloudflare/test-original-logos-guard.mjs
+      - name: Comprobar configuración segura de Wrangler para media QA enlazado a GitHub
+        run: node cloudflare/test-media-build-config.mjs
+      - name: Validar media Worker QA y dry-run de 17 assets sin token ni red
+        run: node cloudflare/test-media-qa-deploy.mjs
+      - name: Verificar proxy multimedia temporal QA sin red ni R2
+        run: node cloudflare/test-media-proxy-qa.mjs
+      - name: Probar vídeo del espejo solo en staging, sin cookies y con Range 206
+        run: node cloudflare/test-mirror-temporary-media.mjs
+      - name: Verificar fragmentos 206 y 416 cuando Static Assets devuelve 200
+        run: node cloudflare/test-media-range-static-assets.mjs
+      - name: Comprobar media Worker online y HTTP Range real cuando haya assets
+        run: node cloudflare/test-media-qa-online.mjs --require-assets
+      - name: Comprobar cifrado externo AES-256-GCM con clave nueva, sin red ni datos reales
+        run: node cloudflare/offsite-d1-backup.mjs --self-test
+      - name: Garantizar que la migración pública permanece bloqueada
+        run: node cloudflare/check-release-gates.mjs --assert-blocked
+      - name: Examinar formato MP4 original sin recodificar para iPhone y Android
+        run: node cloudflare/audit-original-videos.mjs
+      - name: Verificar elección de MP4 móvil/escritorio en Safari sin cambios de diseño
+        run: node cloudflare/test-ios-video-selection.mjs
+      - name: Verificar solicitudes Range 206 para los cinco MP4 originales
+        run: node cloudflare/test-mp4-range-proxy.mjs
+      - name: Probar migraciones administrativas 0007/0008 sin alterar cuentas
+        run: node cloudflare/test-admin-migration-preflight.mjs
+      - name: Comprobar acceso admin reforzado sin usuarios reales
+        run: |
+          node cloudflare/test-admin-stepup.mjs
+          node cloudflare/test-two-admin-session-lifecycle.mjs
+          node cloudflare/test-admin-session-sql.mjs
+          node cloudflare/test-admin-email-link.mjs
+          node cloudflare/test-admin-console.mjs
+      - name: Garantizar un acceso Administrador, logo Inicio y editor original seguro con panel móvil
+        run: node cloudflare/test-admin-visual-wordpress.mjs
+      - name: Verificar que el preview online NO permite autenticar ni guarda sesiones
+        run: node cloudflare/test-admin-visual-preview.mjs
+      - name: Comprobar página QA de cámara y QR real por HTTPS sin credenciales
+        run: node cloudflare/test-device-qa-live.mjs
+      - name: Decodificar el QR ficticio con jsQR original sin datos de socios
+        run: node cloudflare/test-device-qr-challenge.mjs
+      - name: Verificar página QA para cámara física, sin sesiones, R2 ni DB
+        run: node cloudflare/test-device-qa.mjs
+      - name: Comprobar tarjeta QR y lectura jsQR con imágenes ficticias
+        run: node cloudflare/test-qr-roundtrip.mjs
+      - name: Verificar fidelidad, visitas, puntos, canjes y auditoría solo en SQLite RAM
+        run: node cloudflare/test-loyalty-door-integration.mjs
+      - name: Probar Worker QA independiente con DB vacía y roles cerrados
+        run: node cloudflare/test-qa-worker-http.mjs
+      - name: Verificar que registro email requiere dos permisos explícitos sin D1
+        run: node cloudflare/test-email-registration-gate.mjs
+      - name: Conciliar usuarios de dos orígenes sin perder socio email ni visitas (solo ficticios)
+        run: node cloudflare/test-account-cutover-policy.mjs
+      - name: Comprobar que ninguna restauración puede perder socios locales ni puntos
+        run: node cloudflare/test-staging-restore-readonly.mjs
+      - name: Verificar espejo staging real con vídeo 206, CSS y traducción francesa
+        run: node cloudflare/test-staging-mirror-media-online.mjs
+      - name: Verificar staging real con registro email desactivado y panel protegido
+        run: node cloudflare/test-staging-auth-closure.mjs
+      - name: Exigir panel staging publicado con CSP y administración cerrada a anónimos
+        run: node cloudflare/test-staging-admin-deployed.mjs

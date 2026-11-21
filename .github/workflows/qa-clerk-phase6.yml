@@ -1,0 +1,68 @@
+name: Bellaquitas Fase 6 - identidades Clerk sin produccion
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'cloudflare/migrations/0008-clerk-verified-links.sql'
+      - 'cloudflare/clerk-auth-bridge.js'
+      - 'cloudflare/clerk-session-exchange.js'
+      - 'cloudflare/clerk-login-page.js'
+      - 'cloudflare/test-clerk-login-page.mjs'
+      - 'cloudflare/admin-console.js'
+      - 'cloudflare/production-auth-readiness.js'
+      - 'cloudflare/plan-clerk-verified-links.mjs'
+      - 'cloudflare/test-clerk-verified-links.mjs'
+      - 'cloudflare/test-clerk-auth-bridge.mjs'
+      - 'cloudflare/phase6-blocks23-preflight.mjs'
+      - 'cloudflare/test-phase6-blocks23-preflight.mjs'
+      - 'cloudflare/test_clerk_links_guard.py'
+      - '.github/workflows/qa-clerk-phase6.yml'
+  push:
+    branches:
+      - migracion/fase5-segura-20261114
+    paths:
+      - 'cloudflare/migrations/0008-clerk-verified-links.sql'
+      - 'cloudflare/clerk-auth-bridge.js'
+      - 'cloudflare/clerk-session-exchange.js'
+      - 'cloudflare/clerk-login-page.js'
+      - 'cloudflare/test-clerk-login-page.mjs'
+      - 'cloudflare/admin-console.js'
+      - 'cloudflare/production-auth-readiness.js'
+      - 'cloudflare/plan-clerk-verified-links.mjs'
+      - 'cloudflare/test-clerk-verified-links.mjs'
+      - 'cloudflare/test-clerk-auth-bridge.mjs'
+      - 'cloudflare/phase6-blocks23-preflight.mjs'
+      - 'cloudflare/test-phase6-blocks23-preflight.mjs'
+      - 'cloudflare/test_clerk_links_guard.py'
+      - '.github/workflows/qa-clerk-phase6.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: qa-clerk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qa-auth:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: RSA, JWT, permisos y sesion reforzada
+        run: node cloudflare/test-clerk-auth-bridge.mjs
+      - name: Pantalla Clerk y panel administracion sin usuarios ni red
+        run: node cloudflare/test-clerk-login-page.mjs
+      - name: Plan de enlace con evidencia original Google exacta
+        run: node cloudflare/test-clerk-verified-links.mjs
+      - name: Verificar candados cruzados entre las 13 tablas y las 7 identidades
+        run: node cloudflare/test-phase6-blocks23-preflight.mjs
+      - name: 6 pruebas de integridad SQL contra suplantacion
+        run: python3 -m unittest discover -s cloudflare -p 'test_clerk_links_guard.py' -v

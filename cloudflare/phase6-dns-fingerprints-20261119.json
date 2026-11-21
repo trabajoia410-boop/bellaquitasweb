@@ -1,0 +1,101 @@
+{
+  "schema": "bellaquitas-phase6-dns-fingerprint-v1",
+  "capturedUTCDate": "2026-11-19",
+  "domain": "bellaquitas.fr",
+  "source": "Cloudflare GET zone+DNS records; contents hashed, not stored",
+  "zoneId": "2db206b4c20dd4a8a76692f7ddf0a70a",
+  "zoneStatusAtCapture": "pending",
+  "oldNameservers": [
+    "cosmos.dns-parking.com",
+    "nova.dns-parking.com"
+  ],
+  "futureCloudflareNameservers": [
+    "donald.ns.cloudflare.com",
+    "tricia.ns.cloudflare.com"
+  ],
+  "fingerprintDefinition": "SHA256 UTF-8 of [type,name,content,priority_or_empty,proxied_boolean].join('|')",
+  "counts": {
+    "A": 4,
+    "CNAME": 2,
+    "MX": 1,
+    "TXT": 3
+  },
+  "records": [
+    {
+      "type": "A",
+      "name": "bellaquitas.fr",
+      "priority": null,
+      "proxied": false,
+      "sha256": "0ebef7a8d5b68284cc9352ef71198e0770dce0b980a114a414bde424c92bf1e3"
+    },
+    {
+      "type": "A",
+      "name": "bellaquitas.fr",
+      "priority": null,
+      "proxied": false,
+      "sha256": "5890416a74179431a00f096b694defa19145f1574d8d1f47eab96d25ba21559f"
+    },
+    {
+      "type": "A",
+      "name": "bellaquitas.fr",
+      "priority": null,
+      "proxied": false,
+      "sha256": "9eb777898a336f954c39e6122f1ecb7e41384ab47a9f0bc670a4f1c840d77938"
+    },
+    {
+      "type": "A",
+      "name": "bellaquitas.fr",
+      "priority": null,
+      "proxied": false,
+      "sha256": "ff144083e40e65f6f0f423cc87ba652f135cbfbb60e155912a76118ef72a2b14"
+    },
+    {
+      "type": "CNAME",
+      "name": "rsend.bellaquitas.fr",
+      "priority": null,
+      "proxied": false,
+      "sha256": "e301992f0d381f5fdffaf6027e560d9bbe3a5ca1d2b895d5bddcb630d2caf056"
+    },
+    {
+      "type": "CNAME",
+      "name": "www.bellaquitas.fr",
+      "priority": null,
+      "proxied": false,
+      "sha256": "27c0b3dff35df2c7828c3a7cce15a466a25763b93bea50564bf59748cc7f2446"
+    },
+    {
+      "type": "MX",
+      "name": "send.bellaquitas.fr",
+      "priority": 10,
+      "proxied": false,
+      "sha256": "39f549428f1f53eccc26b241e4fa5b5216a1796b8514bb5e75fbeae95c4c55db"
+    },
+    {
+      "type": "TXT",
+      "name": "bellaquitas.fr",
+      "priority": null,
+      "proxied": false,
+      "sha256": "472885c52cc47cde14951bd251de40c19f7bbb2788a8ae4a7feaad9662d40328"
+    },
+    {
+      "type": "TXT",
+      "name": "resend._domainkey.bellaquitas.fr",
+      "priority": null,
+      "proxied": false,
+      "sha256": "96c669039c4991eb6344214672c33db81cdf963d09e79bf8a2338faa6d656a74"
+    },
+    {
+      "type": "TXT",
+      "name": "send.bellaquitas.fr",
+      "priority": null,
+      "proxied": false,
+      "sha256": "ab158b212b46b7bb3658b0142b31faa6f40c565bb0bd5560b79c4ef03dba4dc5"
+    }
+  ],
+  "warnings": [
+    "NO sustituye comparación de registros del DNS autoritativo de Hostinger",
+    "No delegar nameservers hasta alcanzar todos los gates",
+    "No eliminar MX, SPF, DKIM, CNAME de Resend ni verificación Search Console",
+    "Repetir comparación de hashes justo antes del corte"
+  ]
+}

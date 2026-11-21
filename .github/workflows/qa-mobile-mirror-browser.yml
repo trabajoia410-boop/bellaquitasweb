@@ -1,0 +1,53 @@
+name: Bellaquitas espejo — auditoría visual ES/FR y móvil
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - migracion/fase5-segura-20261114
+    paths:
+      - .github/workflows/qa-mobile-mirror-browser.yml
+      - cloudflare/test-mobile-mirror-browser.mjs
+      - cloudflare/test-admin-i18n-browser.mjs
+      - cloudflare/test-admin-live-browser.mjs
+      - cloudflare/test-public-routes-browser.mjs
+      - cloudflare/test-device-qa-browser.mjs
+      - cloudflare/device-qa-worker.js
+      - cloudflare/admin-console.js
+permissions:
+  contents: read
+jobs:
+  visual-anonimo:
+    if: github.repository == 'trabajoia410-boop/bellaquitasweb' && github.ref == 'refs/heads/migracion/fase5-segura-20261114'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar Playwright sin añadir dependencias a la web pública
+        run: npm install --no-save --no-package-lock --no-audit --no-fund playwright
+      - name: Instalar navegadores Chromium y WebKit
+        run: npx playwright install --with-deps chromium webkit
+      - name: Comprobar seguridad OAuth local antes de navegar
+        run: node cloudflare/test-oauth-browser-bound-state.mjs
+      - name: Auditar ES/FR, menú, anchura y vídeo inline en Safari y Chrome simulados
+        run: node cloudflare/test-mobile-mirror-browser.mjs
+      - name: Comprobar panel administrador bilingüe en navegador aislado y sin credenciales
+        run: node cloudflare/test-admin-i18n-browser.mjs
+      - name: Recorrer once rutas públicas ES y FR sin datos de usuarios
+        run: node cloudflare/test-public-routes-browser.mjs
+      - name: Probar el panel real publicado ES/FR en Safari y Chrome simulados sin sesiones
+        run: node cloudflare/test-admin-live-browser.mjs
+      - name: Probar en WebKit iPhone y Chrome Pixel el diagnóstico QR ficticio bilingüe sin escrituras
+        run: node cloudflare/test-device-qa-browser.mjs
+      - name: Guardar capturas anónimas de preparación
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bellaquitas-espejo-movil-qa
+          path: qa-browser/*.png
+          if-no-files-found: ignore
+          retention-days: 7

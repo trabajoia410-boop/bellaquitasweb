@@ -1,0 +1,47 @@
+name: Bellaquitas QA — verificar streaming original desde GitHub
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - migracion/fase5-segura-20261114
+    paths:
+      - .github/workflows/test-github-video-range.yml
+permissions:
+  contents: read
+jobs:
+  source-range:
+    if: github.repository == 'trabajoia410-boop/bellaquitasweb' && github.ref == 'refs/heads/migracion/fase5-segura-20261114'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verificar cabecera y Range en GitHub sin claves ni datos personales
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os, urllib.parse, urllib.request, hashlib
+          prefix='https://raw.githubusercontent.com/trabajoia410-boop/bellaquitasweb/'+os.environ['GITHUB_SHA']+'/assets/'
+          filenames=[
+             'Bellaquitas Fest para móvil.mp4',
+             'bellaquitas fiesta portada.mp4',
+             'bellaquitas-fiesta-fondo.mp4',
+             'logo-navbar.png',
+             'migrated-logos/705cc152-5de2-407a-a880-1e78ca4b30ea.png'
+          ]
+          for filename in filenames:
+              local=open('assets/'+filename,'rb').read()
+              uri=prefix+urllib.parse.quote(filename,safe='/')
+              req=urllib.request.Request(uri,headers={'Range':'bytes=0-255','User-Agent':'Bellaquitas-QA-Test/1.0'})
+              with urllib.request.urlopen(req,timeout=25) as resp:
+                  status=resp.status
+                  content_range=resp.headers.get('Content-Range','')
+                  content_type=resp.headers.get('Content-Type','')
+                  data=resp.read(256)
+              print(f'origin={filename} status={status} range={content_range!r} type={content_type} size={len(local)} matched={data==local[:len(data)]}')
+              assert data==local[:len(data)],f'Archivo original distinto de Git'
+              assert status==206, f'El origen no admite HTTP 206: {filename}'
+              assert content_range==f'bytes 0-255/{len(local)}', f'Content-Range incorrecto: {filename}'
+              assert len(data)==256
+          print('OK: los 5 medios de muestra permiten 206 remoto y sus bytes coinciden exactamente con Git.')
+          PY

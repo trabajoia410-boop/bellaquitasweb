@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json.schemastore.org/wrangler.json",
+  "name": "bellaquitas-api-preproduccion",
+  "main": "./bellaquitas-api-staging.js",
+  "compatibility_date": "2026-11-10",
+  "workers_dev": false,
+  "keep_vars": true,
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "bellaquitas-produccion-preparada-20261116",
+      "database_id": "3d65c23d-4d03-4988-9d7f-23d4f95cbc3c"
+    }
+  ],
+  "vars": {
+    "STAGING_MUTATIONS": "disabled",
+    "ALLOW_NEW_ACCOUNTS": "no",
+    "EMAIL_REGISTRATION_ENABLED": "no",
+    "EMAIL_AUTH_ENABLED": "no",
+    "ADMIN_EMAIL_LINK_ENABLED": "no",
+    "SUGGESTIONS_ENABLED": "no",
+    "SITE_MODE": "preproduction",
+    "PUBLISH_APPROVED": "no",
+    "PUBLIC_ORIGIN": "https://bellaquitas.fr",
+    "RESEND_FROM": "no-reply@bellaquitas.fr",
+    "FINAL_ORIGIN_RECONCILED": "no",
+    "BACKUP_KEY_CUSTODIED": "no",
+    "CLERK_IDENTITIES_RECONCILED": "no",
+    "WALLET_SCHEMA_VERIFIED": "no",
+    "FREE_TIER_BILLING_VERIFIED": "no",
+    "FREE_TIER_CPU_VERIFIED": "no",
+    "CLERK_JWT_ENABLED": "no",
+    "CLERK_EXCHANGE_ENABLED": "no",
+    "CLERK_ADMIN_STEPUP_ENABLED": "no",
+    "CLERK_UI_ENABLED": "no",
+    "WALLET_ENABLED": "no",
+    "WALLET_SIGNUP_ENABLED": "no",
+    "WALLET_ADMIN_WRITES": "no",
+    "WALLET_STAFF_ENABLED": "no",
+    "WALLET_MOCK_PREVIEW": "no",
+    "WALLET_REAL_APPROVED": "no",
+    "WALLET_GOOGLE_ISSUER_APPROVED": "no",
+    "WALLET_GOOGLE_ISSUER_ID": "3388000000023244592",
+    "WALLET_GOOGLE_CLIENT_EMAIL": "bellaquitas-wallet@bellaquitas-fest.iam.gserviceaccount.com",
+    "WALLET_APPLE_ISSUER_APPROVED": "no",
+    "WALLET_MODE": "mock",
+    "WALLET_SYNC_ENABLED": "no",
+    "WALLET_REPLACE_LEGACY": "no",
+    "CLERK_QA_PREVIEW": "no",
+    "PROVIDER_BROKER_ENABLED": "yes",
+    "CLERK_ISSUER": "https://clerk.bellaquitas.fr",
+    "CLERK_ALLOWED_ORIGIN": "https://bellaquitas.fr"
+  },
+  "assets": {
+    "directory": "./dist-static",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
+  "services": [
+    {
+      "binding": "PROVIDER_BROKER",
+      "service": "bellaquitas-api-staging",
+      "environment": "production"
+    }
+  ]
+}

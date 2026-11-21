@@ -2,7 +2,8 @@
  * All mutations are disabled unless STAGING_MUTATIONS='enabled'.
  * D1 triggers enforce redemption debits, staff-only validation and admin audit.
  */
-import {authenticatedProfile,checkOrigin} from "./auth-routes.js";
+import {authenticatedProfile,authenticatedAdminAccess,checkOrigin} from "./auth-routes.js";
+import {stampsReplacePoints,immutableLegacyBalances} from "../wallet/cutover-policy.js";
 const HEAD={"Content-Type":"application/json; charset=utf-8",
   "Cache-Control":"no-store","X-Content-Type-Options":"nosniff",
   "X-Robots-Tag":"noindex, nofollow"};
@@ -10,7 +11,7 @@ const out=(body,status=200)=>new Response(JSON.stringify(body),{status,headers:H
 const error=(message,status=400)=>out({error:message},status);
 const uuid=v=>typeof v==="string"&&/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(v);
 function staff(actor){return actor && (actor.role==="puerta"||actor.role==="admin");}
-function admin(actor){return actor&&actor.role==="admin";}
+function admin(privilegedActor){return !!privilegedActor&&privilegedActor.role==="admin";}
 async function readJson(req){
   if(!/^application\/json(?:;|$)/i.test(req.headers.get("Content-Type")||""))throw new Error("Se requiere JSON");
   const size=Number(req.headers.get("Content-Length")||0);
@@ -41,6 +42,7 @@ export async function protectedRoute(request,env){
   if(!known.includes(path)&&!photoMatch)return null;
   const actor=await authenticatedProfile(request,env);
   if(!actor)return error("Inicia sesión para acceder a esta función",401);
+  const privilegedActor=actor.role==="admin"?await authenticatedAdminAccess(request,env):null;
   if(path==="/v1/me/activity"){
     if(request.method!=="GET")return error("Método no permitido",405);
     const q=await env.DB.prepare("SELECT id,type,delta,detail,created_at FROM activity WHERE user_id=? ORDER BY created_at DESC LIMIT 100").bind(actor.id).all();
@@ -48,9 +50,11 @@ export async function protectedRoute(request,env){
   }
   if(path==="/v1/admin/members"){
     if(request.method!=="GET")return error("Método no permitido",405);
-    if(!admin(actor))return error("Acceso reservado a administradores",403);
+    if(!admin(privilegedActor))return error("Acceso reservado a administradores",403);
     const q=await env.DB.prepare("SELECT id,name,role,member_code,points,lifetime_points,visits,created_at FROM profiles ORDER BY created_at DESC LIMIT 500").all();
-    return out({items:q.results||[]});
+    const members=q.results||[];
+    // Once stamps replace points, hide historical balances from admin member API.
+    return out({items:stampsReplacePoints(env)?members.map(({points,lifetime_points,...safe})=>safe):members});
   }
   if(path==="/v1/door/members"){
     if(request.method!=="GET")return error("Método no permitido",405);
@@ -78,6 +82,17 @@ export async function protectedRoute(request,env){
       const member=await env.DB.prepare("SELECT id FROM profiles WHERE upper(member_code)=? LIMIT 1").bind(code).first();
       if(!member)return error("Tarjeta no encontrada",404);
       if(member.id===actor.id)return error("No puedes validar tu propia tarjeta",403);
+      if(stampsReplacePoints(env)){
+        // Keep visits and door access; new loyalty stamps require the Wallet scanner.
+        await env.DB.batch([
+          env.DB.prepare(
+            "INSERT INTO activity(id,user_id,type,delta,detail,staff_id,created_at) "+
+            "VALUES (?,?,'visita',0,'Visita validada (sellos independientes)',?,datetime('now'))"
+          ).bind(crypto.randomUUID(),member.id,actor.id),
+          env.DB.prepare("UPDATE profiles SET visits=visits+1 WHERE id=?").bind(member.id)
+        ]);
+        return out({ok:true,points_awarded:0,loyalty:"stamps"});
+      }
       await env.DB.batch([
         env.DB.prepare(
           "INSERT INTO activity(id,user_id,type,delta,detail,staff_id,created_at) "+
@@ -88,6 +103,8 @@ export async function protectedRoute(request,env){
       return out({ok:true,points_awarded:10});
     }
     if(path==="/v1/rewards/request"){
+      if(stampsReplacePoints(env))
+        return error("Los canjes antiguos por puntos están desactivados; usa tu tarjeta de sellos",410);
       const rewardId=body.reward_id;
       if(!uuid(rewardId))return error("Recompensa inválida");
       const reward=await env.DB.prepare("SELECT id,cost,name FROM rewards WHERE id=? AND active=1").bind(rewardId).first();
@@ -113,7 +130,7 @@ export async function protectedRoute(request,env){
       return out({ok:true});
     }
     if(path==="/v1/admin/member"){
-      if(!admin(actor))return error("Acceso reservado a administradores",403);
+      if(!admin(privilegedActor))return error("Acceso reservado a administradores",403);
       if(!uuid(body.member_id))return error("Socio inválido");
       const target=await env.DB.prepare("SELECT id,name,role,points,lifetime_points,visits FROM profiles WHERE id=?").bind(body.member_id).first();
       if(!target)return error("La cuenta ya no existe",404);
@@ -121,7 +138,9 @@ export async function protectedRoute(request,env){
         reason=String(body.reason||"").trim();
       if(name.length<2||name.length>80||!["socio","puerta","admin"].includes(role)||reason.length<5||reason.length>250)
         return error("Nombre, rol o motivo no válidos");
-      const points=Number(body.points),lifetime=Number(body.lifetime_points),visits=Number(body.visits);
+      // Admin can still edit roles and visits without mutating historical point balances.
+      const balances=immutableLegacyBalances(target,{points:Number(body.points),lifetime_points:Number(body.lifetime_points)},env);
+      const points=Number(balances.points),lifetime=Number(balances.lifetime_points),visits=Number(body.visits);
       if(![points,lifetime,visits].every(Number.isSafeInteger)||points<0||points>100000000||
          lifetime<0||lifetime>100000000||visits<0||visits>1000000)
         return error("Puntos o visitas no válidos");
@@ -137,7 +156,7 @@ export async function protectedRoute(request,env){
       return out({ok:true,profile:{id:target.id,...after}});
     }
     if(path==="/v1/admin/moments/create"){
-      if(!admin(actor))return error("Acceso reservado a administradores",403);
+      if(!admin(privilegedActor))return error("Acceso reservado a administradores",403);
       const title=String(body.title||"").trim(),date=String(body.event_date||"");
       if(title.length<2||title.length>120||!/^\d{4}-\d{2}-\d{2}$/.test(date))return error("Datos de la galería no válidos");
       const id=crypto.randomUUID();
@@ -145,35 +164,13 @@ export async function protectedRoute(request,env){
       return out({ok:true,id});
     }
     if(path==="/v1/admin/moments/publish"){
-      if(!admin(actor))return error("Acceso reservado a administradores",403);
+      if(!admin(privilegedActor))return error("Acceso reservado a administradores",403);
       if(!uuid(body.album_id)||typeof body.published!=="boolean")return error("Galería inválida");
       const record=await env.DB.prepare("UPDATE moments_albums SET published=? WHERE id=? RETURNING id,published")
         .bind(body.published?1:0,body.album_id).first();
       return record?out({ok:true,published:!!record.published}):error("Galería no encontrada",404);
     }
-    if(photoMatch){
-      if(!admin(actor))return error("Acceso reservado a administradores",403);
-      const album=await env.DB.prepare("SELECT id FROM moments_albums WHERE id=?").bind(photoMatch[1]).first();
-      if(!album)return error("Galería no encontrada",404);
-      const mime=(request.headers.get("Content-Type")||"").toLowerCase();
-      if(!["image/jpeg","image/png","image/webp"].includes(mime))return error("El archivo debe ser JPG, PNG o WebP",415);
-      const size=Number(request.headers.get("Content-Length")||0);
-      if(size>8*1024*1024)return error("El tamaño máximo de una foto es 8 MB",413);
-      const bytes=await request.arrayBuffer();
-      if(bytes.byteLength===0||bytes.byteLength>8*1024*1024)return error("Tamaño de archivo no válido",413);
-      const start=new Uint8Array(bytes.slice(0,12));
-      const jpeg=mime==="image/jpeg"&&start[0]===0xff&&start[1]===0xd8;
-      const png=mime==="image/png"&&start[0]===0x89&&start[1]===0x50&&start[2]===0x4e&&start[3]===0x47;
-      const webp=mime==="image/webp"&&String.fromCharCode(...start.slice(0,4))==="RIFF"&&String.fromCharCode(...start.slice(8,12))==="WEBP";
-      if(!jpeg&&!png&&!webp)return error("Formato de imagen incorrecto",415);
-      const id=crypto.randomUUID(),ext=mime==="image/png"?"png":mime==="image/webp"?"webp":"jpg";
-      const key="moments/"+album.id+"/"+id+"."+ext;
-      await env.MEDIA.put(key,bytes,{httpMetadata:{contentType:mime}});
-      try{
-        await env.DB.prepare("INSERT INTO moments_photos(id,album_id,storage_path) VALUES (?,?,?)").bind(id,album.id,key).run();
-      }catch(e){await env.MEDIA.delete(key);throw e;}
-      return out({ok:true,id});
-    }
+    if(photoMatch)return error("Las fotografías quedan bloqueadas hasta completar la migración estática",423);
   }catch(err){
     console.error("Staging operation:",String(err?.message||"error").slice(0,200));
     return error(errorMessage(err),409);

@@ -1,0 +1,59 @@
+name: Bellaquitas Wallet — mock y seguridad sin desplegar
+on:
+  push:
+    branches: [migracion/fase5-segura-20261114]
+    paths:
+      - 'wallet/**'
+      - 'cloudflare/migrations/0010-wallet-digital-loyalty.sql'
+      - 'cloudflare/test-wallet-*.mjs'
+      - 'cloudflare/phase6-blocks23-preflight.mjs'
+      - 'cloudflare/test-phase6-blocks23-preflight.mjs'
+      - '.github/workflows/qa-wallet-digital.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'wallet/**'
+      - 'cloudflare/migrations/0010-wallet-digital-loyalty.sql'
+      - 'cloudflare/test-wallet-*.mjs'
+      - 'cloudflare/phase6-blocks23-preflight.mjs'
+      - 'cloudflare/test-phase6-blocks23-preflight.mjs'
+      - '.github/workflows/qa-wallet-digital.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: wallet-qa-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  wallet-mock-offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Sintaxis de los módulos y seguridad
+        run: |
+          for f in wallet/*.js; do node --check "$f"; done
+          node --check cloudflare/test-wallet-ui.mjs
+          node --check cloudflare/test-wallet-schema.mjs
+          node --check cloudflare/test-wallet-stamp-cutover.mjs
+          node --check cloudflare/test-wallet-stamp-member-ui.mjs
+          node --check cloudflare/test-wallet-issuer-readiness.mjs
+      - name: 13 tablas e invariantes SQLite en memoria, sin D1
+        run: node --experimental-sqlite cloudflare/test-wallet-schema.mjs
+      - name: Simular cliente, QR, PIN, roles y previews sin red ni usuarios
+        run: |
+          node cloudflare/test-wallet-ui.mjs
+          node cloudflare/test-wallet-stamp-cutover.mjs
+          node cloudflare/test-wallet-stamp-member-ui.mjs
+          node cloudflare/test-wallet-issuer-readiness.mjs
+      - name: Comprobar que Wallet en QA no habilita Clerk ni producción
+        run: node cloudflare/test-phase6-blocks23-preflight.mjs
+      - name: Generar .pkpass CMS con certificado sintético en memoria temporal
+        run: node cloudflare/test-wallet-apple-signer.mjs
+      - name: Prohibir material privado en el repositorio
+        run: node cloudflare/test-no-private-backup-leaks.mjs

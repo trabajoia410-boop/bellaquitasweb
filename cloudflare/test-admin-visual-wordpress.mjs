@@ -1,0 +1,67 @@
+#!/usr/bin/env node
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+import {Script} from "node:vm";
+import {MIRROR_SNAPSHOT} from "./mirror-snapshot.js";
+import {fixMirrorNavigation} from "./mirror-navigation-guard.js";
+import {mirrorRoute} from "./web-mirror.js";
+import {adminConsoleRoute} from "./admin-console.js";
+const original=MIRROR_SNAPSHOT["app.js"];
+const adjusted=fixMirrorNavigation(original);
+new Script(adjusted,{filename:"bellaquitas-navigation-patched.js"});
+assert.ok(adjusted.includes("href=\"#/\">${headerBrand(!!editorPreviewOverride)}"),
+ "El logo de la cuenta siempre debe ir a Inicio");
+assert.match(adjusted,/function destinationForUser\(\)\{return current\?\.role==='puerta'\?'\/puerta':'\/mi-espacio';\}/);
+assert.match(adjusted,/const authActions=current&&!preview\?/);
+assert.match(adjusted,/t\('Administrador'\)/);
+assert.ok(!adjusted.includes("admin-edit-top"),"Editar web no debe ser botón público");
+assert.ok(!adjusted.includes("['/editor','editor','Editar web']"),"Editor no debe duplicarse en sidebar");
+assert.ok(!adjusted.includes("href=\"#/editor\">✎ Editar web</a>"),"Editor no debe aparecer en cabecera");
+assert.ok(adjusted.includes("const mobileLinks=current.role==='admin'?"),
+ "El menú móvil mantiene acceso admin y opciones de socio");
+const sourceRoute=new Request("https://qa.invalid/espejo/?admin_embed=1");
+const embedded=await mirrorRoute(sourceRoute,{SITE_MODE:"staging"});
+assert.equal(embedded.status,200);
+assert.equal(embedded.headers.get("X-Frame-Options"),"SAMEORIGIN");
+assert.match(embedded.headers.get("Content-Security-Policy"),/frame-ancestors 'self'/);
+assert.equal(embedded.headers.get("Set-Cookie"),null);
+const standalone=await mirrorRoute(new Request("https://qa.invalid/espejo/"),{SITE_MODE:"staging"});
+assert.equal(standalone.headers.get("X-Frame-Options"),"DENY");
+const site=adminConsoleRoute(new Request("https://qa.invalid/administracion/"),{SITE_MODE:"staging"});
+const html=await site.text();
+assert.match(html,/id="siteVisualEditor"/);
+assert.match(html,/id="adminDesignTools"/);
+assert.match(html,/id="adminDesignToggle"/);
+assert.match(html,/id="adminDesignReview"/);
+assert.match(html,/id="adminDesignStudio"/);
+const realStaging=adminConsoleRoute(new Request("https://bellaquitas-api-staging.bellaquitas-fest-410.workers.dev/administracion/"),{
+ STAGING_MUTATIONS:"disabled",ALLOW_NEW_ACCOUNTS:"no"
+});
+assert.match(await realStaging.text(),/id="adminDesignStudio"/,
+ "The live stage has no SITE_MODE and must show the studio when explicitly read-only");
+const unsafeStage=adminConsoleRoute(new Request("https://bellaquitas-api-staging.bellaquitas-fest-410.workers.dev/administracion/"),{
+ STAGING_MUTATIONS:"enabled",ALLOW_NEW_ACCOUNTS:"no"
+});
+assert.doesNotMatch(await unsafeStage.text(),/id="adminDesignStudio"/,
+ "The anonymous studio must disappear if staging writes become active");
+assert.match(html,/data-src="\/laboratorio\/\?admin_embed=1"/);
+assert.match(html,/bf_studio_design_v2/);
+assert.match(html,/NO publicado ni guardado en D1/);
+const prod=adminConsoleRoute(new Request("https://bellaquitas.fr/administracion/"),{SITE_MODE:"production"});
+const prodHtml=await prod.text();
+assert.ok(!prodHtml.includes('id="adminDesignStudio"'),"Production cannot expose staging-only lab iframe");
+assert.ok(!prodHtml.includes('id="adminDesignToggle"'),"No staging template toggles on production");
+assert.ok(!prodHtml.includes('<!--STAGING_LAB_DESIGN-->'),"All markup placeholders must be resolved");
+
+assert.match(html,/id="eventsVisualPreview"/);
+assert.match(html,/data-src="\/espejo\/\?admin_embed=1#\/eventos"/);
+assert.match(html,/href="\/espejo\/" class="action secondary">Volver a la web/);
+assert.match(html,/data-src="\/espejo\/\?admin_embed=1#\/editor"/);
+assert.match(html,/id="adminNavToggle"/);
+assert.match(html,/id="adminNavBackdrop"/);
+assert.match(site.headers.get("Content-Security-Policy"),/frame-src 'self'/);
+assert.match(site.headers.get("Content-Security-Policy"),/frame-ancestors 'none'/);
+assert.equal(site.headers.get("X-Frame-Options"),"DENY");
+assert.match(html,/me\.profile\?\.role!=='admin'/);
+assert.match(html,/sessionStorage\.getItem\(TAB_PROOF\)/);
+console.log("OK: logo Inicio, un solo acceso admin, sidebar móvil, editor original en iframe SAMEORIGIN y admin DENY.");

@@ -1,5 +1,29 @@
+import {stampsReplacePoints} from "../wallet/cutover-policy.js";
 import {authRoute} from "./auth-routes.js";
+import {clerkIdentityRoute} from "./clerk-auth-bridge.js";
+import {clerkQaPreview} from "./clerk-qa-preview.js";
+import {clerkLoginPage} from "./clerk-login-page.js";
+import {walletCustomerPage} from "../wallet/customer-page.js";
+import {walletApiRoute} from "../wallet/api.js";
+import {walletAdminApiRoute} from "../wallet/admin-api.js";
+import {walletStaffRoute} from "../wallet/staff.js";
+import {walletAdminPage} from "../wallet/admin-page.js";
+import {walletScannerPage} from "../wallet/scanner-page.js";
+import {walletAppleServiceRoute} from "../wallet/apple-service.js";
+import {walletLegacyRedirectRoute} from "../wallet/legacy-redirect.js";
+import {clerkSessionExchange} from "./clerk-session-exchange.js";
+import {productionSiteRoute} from "./production-site-route.js";
+import {productionAccessGate} from "./production-auth-readiness.js";
+import {adminConsoleRoute} from "./admin-console.js";
+import {studioSandboxRoute} from "./studio-sandbox.js";
+import {previewRoute} from "./preview-page.js";
+import {mirrorRoute} from "./web-mirror.js";
+import {mirrorDataRoute} from "./mirror-data-routes.js";
+import {mirrorWriteRoute} from "./mirror-write-routes.js";
+import {suggestionRoute} from "./suggestion-routes.js";
 import {protectedRoute} from "./protected-routes.js";
+import {emailAuthRoute} from "./email-auth-routes.js";
+import {providerBrokerRoute} from "./provider-broker.js";
 /**
  * Bellaquitas Fest — API de lectura para entorno de pruebas en Cloudflare.
  * No usar para gestionar usuarios, puntos, visitas ni permisos.
@@ -21,7 +45,11 @@ const COMMON_HEADERS = {
 function responseHeaders(request, extra = {}) {
   const origin = request.headers.get("Origin");
   const headers = new Headers(COMMON_HEADERS);
-  if (origin && ALLOWED_ORIGINS.has(origin)) {
+  // Las excepciones CORS antiguas solo son válidas para el dominio de
+  // staging. En producción las cookies y API operan en un único origen.
+  const onCanonicalSite = new URL(request.url).origin === "https://bellaquitas.fr";
+  if (origin && ALLOWED_ORIGINS.has(origin) &&
+      (!onCanonicalSite || origin === "https://bellaquitas.fr")) {
     headers.set("Access-Control-Allow-Origin", origin);
     headers.set("Access-Control-Allow-Methods", "GET, OPTIONS");
     headers.set("Access-Control-Allow-Headers", "Accept, Content-Type");
@@ -50,12 +78,72 @@ function withJsonFields(rows) {
 }
 export default {
   async fetch(request, env) {
+    // Evaluar el cierre global ANTES de contestar OPTIONS; tampoco abrir
+    // el preflight CORS cuando se habilite producción sin credenciales.
+    const productionGate=productionAccessGate(request,env);
+    if(productionGate)return productionGate;
+    // Los secretos OAuth/Resend siguen en este Worker. Este RPC privado
+    // exige HMAC y no devuelve sus valores; no cambia el API público.
+    const broker=await providerBrokerRoute(request,env);
+    if(broker)return broker;
     if (request.method === "OPTIONS") {
       return new Response(null, {status: 204, headers: responseHeaders(request)});
     }
     try {
+      // El diseño original vive en la raíz únicamente si el entorno está
+      // explícitamente marcado como producción (staging no cambia).
+      // Nueva fidelidad aislada. Mock solo con flag y sin mutaciones.
+      const walletAdminScreen=await walletAdminPage(request,env);
+      if(walletAdminScreen)return walletAdminScreen;
+      const walletScanScreen=walletScannerPage(request,env);
+      if(walletScanScreen)return walletScanScreen;
+      const digitalWalletPage=await walletCustomerPage(request,env);
+      if(digitalWalletPage)return digitalWalletPage;
+      // Protected specialist routes must run BEFORE the generic wallet API.
+      const legacyWalletRedirect=walletLegacyRedirectRoute(request,env);
+      if(legacyWalletRedirect)return legacyWalletRedirect;
+      const walletApple=await walletAppleServiceRoute(request,env);
+      if(walletApple)return walletApple;
+      const walletAdmin=await walletAdminApiRoute(request,env);
+      if(walletAdmin)return walletAdmin;
+      const walletStaff=await walletStaffRoute(request,env);
+      if(walletStaff)return walletStaff;
+      const digitalWalletApi=await walletApiRoute(request,env);
+      if(digitalWalletApi)return digitalWalletApi;
+      const publicSite=await productionSiteRoute(request,env);
+      if(publicSite)return publicSite;
+      // Acceso Clerk en página separada; bloqueado en preproducción.
+      const clerkPage=clerkLoginPage(request,env);
+      if(clerkPage)return clerkPage;
+      // Consola en ruta separada, sin cambiar la portada ni la API pública.
+      const adminPage = adminConsoleRoute(request,env);
+      if (adminPage) return adminPage;
+      // Anonymous visual lab is read-only, has NO API privileges and only
+      // exists on the exact staging hostname with all mutations disabled.
+      const studioPage = studioSandboxRoute(request,env);
+      if (studioPage) return studioPage;
+      const mirrorResponse = await mirrorRoute(request, env);
+      if (mirrorResponse) return mirrorResponse;
+      const previewResponse = previewRoute(request);
+      if (previewResponse) return previewResponse;
+      // Clerk opt-in: JWT firmado y vínculo sujeto->perfil verificado, solo lectura.
+      // No crea sesión BF, no permite administración ni sustituye Google legado.
+      const clerkQaPage = clerkQaPreview(request, env);
+      if (clerkQaPage) return clerkQaPage;
+      const clerkSession = await clerkSessionExchange(request, env);
+      if (clerkSession) return clerkSession;
+      const clerkResponse = await clerkIdentityRoute(request, env);
+      if (clerkResponse) return clerkResponse;
+      const emailResponse = await emailAuthRoute(request, env);
+      if (emailResponse) return emailResponse;
       const authResponse = await authRoute(request, env);
       if (authResponse) return authResponse;
+      const suggestionResponse = await suggestionRoute(request, env);
+      if (suggestionResponse) return suggestionResponse;
+      const mirrorWrite = await mirrorWriteRoute(request, env);
+      if (mirrorWrite) return mirrorWrite;
+      const mirrorData = await mirrorDataRoute(request, env);
+      if (mirrorData) return mirrorData;
       const protectedResponse = await protectedRoute(request, env);
       if (protectedResponse) return protectedResponse;
       if (request.method !== "GET") {
@@ -68,7 +156,7 @@ export default {
           service: "bellaquitas-staging",
           status: record?.ok === 1 ? "ok" : "error",
           database: record?.ok === 1 ? "connected" : "unavailable",
-          storage: env.MEDIA ? "configured" : "unavailable"
+          storage: env.ASSETS ? "static-assets" : "not-configured"
         }, record?.ok === 1 ? 200 : 503);
       }
       const publicQueries = {
@@ -78,6 +166,9 @@ export default {
         "/v1/moments": "SELECT id, title, event_date FROM moments_albums WHERE published = 1 ORDER BY event_date DESC LIMIT 100"
       };
       if (Object.prototype.hasOwnProperty.call(publicQueries, pathname)) {
+        // Historical point-based offers remain stored, but are no longer advertised.
+        if(stampsReplacePoints(env)&&["/v1/rewards","/v1/promos"].includes(pathname))
+          return jsonResponse(request,{items:[],loyalty:"stamps",archived:true});
         const results = await env.DB.prepare(publicQueries[pathname]).all();
         return jsonResponse(request, {items: withJsonFields(results.results || [])});
       }
@@ -88,8 +179,8 @@ export default {
         if (!row) return jsonResponse(request, {error: "Publicación no encontrada"}, 404);
         return jsonResponse(request, {site: withJsonFields([row])[0]});
       }
-      // These three logo objects were public at the source and have been
-      // copied and checksum-verified in private R2. No other R2 keys are public.
+      // Los logos originales deben subirse a Static Assets con los mismos bytes
+      // ANTES del corte. No servir sustituciones visuales ni recurrir a R2.
       const logo = pathname.match(/^\/v1\/assets\/logos\/([0-9a-f-]{36}\.(?:png|jpg))$/i);
       if (logo) {
         const permitted = new Set([
@@ -97,45 +188,23 @@ export default {
           "af5b256c-877b-4c9c-8d36-d00854885c4b.jpg",
           "f4978ae8-1058-43a7-b5cd-ef9b17c11843.png"
         ]);
-        const name = logo[1].toLowerCase();
-        if (!permitted.has(name)) return jsonResponse(request,{error:"Imagen no encontrada"},404);
-        const object = await env.MEDIA.get("logos/" + name);
-        if (!object) return jsonResponse(request,{error:"Imagen no encontrada"},404);
-        const mime = name.endsWith(".png")?"image/png":"image/jpeg";
-        if (object.httpMetadata?.contentType !== mime)
-          return jsonResponse(request,{error:"Formato inválido"},415);
-        return new Response(object.body,{
-          status:200,headers:responseHeaders(request,{
-            "Content-Type":mime,
-            "Content-Disposition":"inline",
-            "Cache-Control":"public, max-age=86400, immutable",
-            "X-Content-Type-Options":"nosniff"
-          })
-        });
+        const filename=logo[1].toLowerCase();
+        if (!permitted.has(filename)) return jsonResponse(request,{error:"No encontrado"},404);
+        if (!env.ASSETS) return jsonResponse(request,{error:"Medios pendientes de despliegue"},503);
+        const target=new URL(request.url);
+        target.pathname="/assets/migrated-logos/"+filename;
+        const response=await env.ASSETS.fetch(new Request(target,{method:"GET"}));
+        if(response.status!==200)return jsonResponse(request,{error:"Logo original aún no migrado"},503);
+        const mime=filename.endsWith(".png")?"image/png":"image/jpeg";
+        return new Response(response.body,{status:200,headers:responseHeaders(request,{
+          "Content-Type":mime,"Content-Disposition":"inline",
+          "Cache-Control":"public,max-age=86400","X-Content-Type-Options":"nosniff"
+        })});
       }
-      const photo = pathname.match(/^\/v1\/moments\/photos\/([0-9a-f-]{36})$/i);
-      if (photo) {
-        const record = await env.DB.prepare(
-          "SELECT p.storage_path, p.caption FROM moments_photos p " +
-          "INNER JOIN moments_albums a ON a.id = p.album_id " +
-          "WHERE p.id = ? AND a.published = 1 LIMIT 1"
-        ).bind(photo[1]).first();
-        if (!record || !env.MEDIA) return jsonResponse(request, {error: "Foto no encontrada"}, 404);
-        const object = await env.MEDIA.get(record.storage_path);
-        if (!object) return jsonResponse(request, {error: "Foto no encontrada"}, 404);
-        const mime = object.httpMetadata?.contentType || "";
-        if (!["image/jpeg", "image/png", "image/webp"].includes(mime)) {
-          return jsonResponse(request, {error: "Tipo de archivo no admitido"}, 415);
-        }
-        return new Response(object.body, {
-          status: 200,
-          headers: responseHeaders(request, {
-            "Content-Type": mime,
-            "Content-Disposition": "inline",
-            "X-Content-Type-Options": "nosniff"
-          })
-        });
-      }
+      // Hasta disponer del archivo de imagen original, el registro no se borra
+      // ni se sustituye por una imagen de menor calidad.
+      if (/^\/v1\/moments\/photos\/[0-9a-f-]{36}$/i.test(pathname))
+        return jsonResponse(request,{error:"Galería todavía no migrada a medios estáticos"},503);
       return jsonResponse(request, {error: "Ruta no encontrada"}, 404);
     } catch (error) {
       console.error("Bellaquitas staging API:", error?.message || "unknown");

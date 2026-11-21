@@ -1,3 +1,5 @@
+import {googleLanding} from "./production-auth-redirects.js";
+import {providerBrokerAvailable,providerBrokerCall} from "./provider-broker.js";
 /* Bellaquitas Fest staging: verified Google OAuth with PKCE, nonce and opaque sessions.
  * Secrets GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET must be stored on Cloudflare,
  * never in the repo. Google authentication fails CLOSED until configured.
@@ -5,6 +7,12 @@
  */
 const COOKIE = "__Host-bf_session";
 const SESSION_SECONDS = 30 * 24 * 60 * 60;
+const ADMIN_SESSION_SECONDS = 12 * 60 * 60;
+const ADMIN_STEPUP_SECONDS = 2 * 60 * 60;
+const ADMIN_COOKIE = "__Host-bf_admin";
+// OAuth login CSRF: bind each Google state to the browser that initiated it.
+// SameSite=Lax allows the top-level GET return from Google after login.
+const OAUTH_COOKIE = "__Host-bf_oauth";
 const BASE = "https://bellaquitas-api-staging.bellaquitas-fest-410.workers.dev";
 const HEADER = {
   "Cache-Control": "no-store",
@@ -79,8 +87,44 @@ function readCookie(request,name) {
 function clearCookie() {
   return COOKIE+"=; Path=/; Max-Age=0; Secure; HttpOnly; SameSite=Lax";
 }
-function sessionCookie(value) {
-  return COOKIE+"="+value+"; Path=/; Max-Age="+SESSION_SECONDS+"; Secure; HttpOnly; SameSite=Lax";
+function oauthCookie(state,maxAge=600) {
+  return OAUTH_COOKIE+"="+state+"; Path=/; Max-Age="+maxAge+"; Secure; HttpOnly; SameSite=Lax";
+}
+function sessionCookie(value,maxAge=SESSION_SECONDS) {
+  return COOKIE+"="+value+"; Path=/; Max-Age="+maxAge+"; Secure; HttpOnly; SameSite=Lax";
+}
+function adminCookie(value,maxAge=ADMIN_STEPUP_SECONDS) {
+  return ADMIN_COOKIE+"="+value+"; Path=/; Max-Age="+maxAge+"; Secure; HttpOnly; SameSite=Lax";
+}
+export async function createVerifiedAdminSession(profileId,env) {
+  const actor=await env.DB.prepare("SELECT role FROM profiles WHERE id=?").bind(profileId).first();
+  if(!actor||actor.role!=="admin")throw Error("Administrator reauthentication forbidden");
+  const primary=token(),additional=token();
+  const primaryHash=await digest(primary),adminHash=await digest(additional);
+  await env.DB.batch([
+    env.DB.prepare("INSERT INTO auth_sessions(token_hash,profile_id,expires_at) VALUES (?,?,unixepoch()+?)").bind(primaryHash,profileId,ADMIN_SESSION_SECONDS),
+    env.DB.prepare("INSERT INTO auth_admin_sessions(token_hash,profile_id,regular_session_hash,expires_at) VALUES (?,?,?,unixepoch()+?)").bind(adminHash,profileId,primaryHash,ADMIN_STEPUP_SECONDS)
+  ]);
+  return [sessionCookie(primary,ADMIN_SESSION_SECONDS),adminCookie(additional)];
+}
+// Solo lo utiliza el Worker tras verificar una credencial de identidad.
+export async function createAuthSession(profileId,env,options={}) {
+  if(typeof profileId!=="string"||!/^[a-f0-9-]{36}$/i.test(profileId))throw Error("Invalid profile identifier");
+  const profile=await env.DB.prepare("SELECT role FROM profiles WHERE id=?").bind(profileId).first();
+  if(!profile)throw Error("Profile not found");
+  // The legacy login keeps its existing lifetime. Sessions exchanged from
+  // Clerk explicitly request a shorter cap so they never outlive Clerk's
+  // configured seven-day maximum or inherit the 30-day BF legacy default.
+  const defaultAge=profile.role==="admin"?ADMIN_SESSION_SECONDS:SESSION_SECONDS;
+  const requestedAge=options?.maxAgeSeconds;
+  if (requestedAge!==undefined &&
+      (!Number.isSafeInteger(requestedAge)||requestedAge<60||requestedAge>SESSION_SECONDS))
+    throw Error("Invalid BF session lifetime");
+  const age=requestedAge===undefined?defaultAge:Math.min(defaultAge,requestedAge);
+  const raw=token(),hash=await digest(raw);
+  await env.DB.prepare("INSERT INTO auth_sessions(token_hash,profile_id,expires_at) VALUES (?,?,unixepoch()+?)")
+    .bind(hash,profileId,age).run();
+  return sessionCookie(raw,age);
 }
 export async function authenticatedProfile(request,env) {
   const secret=readCookie(request,COOKIE);
@@ -89,19 +133,42 @@ export async function authenticatedProfile(request,env) {
   return env.DB.prepare(
     "SELECT p.id,p.name,p.role,p.member_code,p.points,p.lifetime_points,p.visits,p.created_at "+
     "FROM auth_sessions s JOIN profiles p ON p.id=s.profile_id "+
-    "WHERE s.token_hash=? AND s.expires_at>unixepoch() LIMIT 1"
-  ).bind(hash).first();
+    "WHERE s.token_hash=? AND s.expires_at>unixepoch() "+
+    "AND (p.role<>\'admin\' OR s.created_at>=unixepoch()-?) LIMIT 1"
+  ).bind(hash,ADMIN_SESSION_SECONDS).first();
+}
+export async function authenticatedAdminAccess(request,env) {
+  const actor=await authenticatedProfile(request,env);
+  if(!actor||actor.role!=="admin")return null;
+  const regular=readCookie(request,COOKIE),extra=readCookie(request,ADMIN_COOKIE);
+  if(!/^[A-Za-z0-9_-]{43}$/.test(regular)||!/^[A-Za-z0-9_-]{43}$/.test(extra))return null;
+  const primaryHash=await digest(regular),adminHash=await digest(extra);
+  const stepup=await env.DB.prepare(
+    "SELECT 1 AS ok FROM auth_admin_sessions WHERE token_hash=? AND profile_id=? AND regular_session_hash=? AND expires_at>unixepoch() LIMIT 1"
+  ).bind(adminHash,actor.id,primaryHash).first();
+  return stepup?.ok===1?actor:null;
 }
 function strictOrigin(request,env) {
   const origin=request.headers.get("Origin");
   const site=request.headers.get("Sec-Fetch-Site");
   return origin===base(env) && (!site||site==="same-origin");
 }
+const directGoogleReady=env=>!!(env.GOOGLE_CLIENT_ID&&env.GOOGLE_CLIENT_SECRET);
+async function publicGoogleClientId(env){
+ if(directGoogleReady(env))return env.GOOGLE_CLIENT_ID;
+ if(env.PROVIDER_BROKER_ENABLED!=="yes"||!providerBrokerAvailable(env))return null;
+ const result=await providerBrokerCall(env,"google_client_id");
+ return typeof result.clientId==="string"&&result.clientId.length>=10?result.clientId:null;
+}
 async function beginGoogle(request,env) {
-  if(!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET)return fail(
+  if(!directGoogleReady(env)&&
+     (env.PROVIDER_BROKER_ENABLED!=="yes"||!providerBrokerAvailable(env)))return fail(
     "Google OAuth no está configurado en Cloudflare",503);
   if(request.method!=="GET")return fail("Método no permitido",405);
-  const state=token(),verifier=token(),nonce=token();
+  // Estado de 43 caracteres: ruta de retorno autenticada y ligada al state.
+  // Los 42 caracteres aleatorios restantes conservan entropía suficiente.
+  const returnDestination=new URL(request.url).searchParams.get("return");
+  const state=(returnDestination==="admin"?"A":returnDestination==="mirror"?"M":"P")+token().slice(1),verifier=token(),nonce=token();
   const stateHash=await digest(state);
   const challenge=await digest(verifier);
   // Expired PKCE states contain no user information.
@@ -110,8 +177,10 @@ async function beginGoogle(request,env) {
     "INSERT INTO auth_oauth_states(state_hash,pkce_verifier,nonce,expires_at) "+
     "VALUES (?,?,?,unixepoch()+600)"
   ).bind(stateHash,verifier,nonce).run();
+  const clientId=await publicGoogleClientId(env);
+  if(!clientId)return fail("Google no está disponible",503);
   const auth=new URL("https://accounts.google.com/o/oauth2/v2/auth");
-  auth.searchParams.set("client_id",env.GOOGLE_CLIENT_ID);
+  auth.searchParams.set("client_id",clientId);
   auth.searchParams.set("redirect_uri",base(env)+"/v1/auth/google/callback");
   auth.searchParams.set("response_type","code");
   auth.searchParams.set("scope","openid email profile");
@@ -121,7 +190,8 @@ async function beginGoogle(request,env) {
   auth.searchParams.set("code_challenge_method","S256");
   auth.searchParams.set("access_type","online");
   return new Response(null,{status:302,headers:{
-    Location:auth.toString(),"Cache-Control":"no-store","Referrer-Policy":"no-referrer"
+    Location:auth.toString(),"Cache-Control":"no-store","Referrer-Policy":"no-referrer",
+    "Set-Cookie":oauthCookie(state)
   }});
 }
 async function callbackGoogle(request,env) {
@@ -131,7 +201,12 @@ async function callbackGoogle(request,env) {
   if(!code || code.length>2500 || !state || !/^[A-Za-z0-9_-]{43}$/.test(state)){
     return fail("Respuesta de Google inválida",400);
   }
-  if(!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET)return fail("Servicio no configurado",503);
+  if(!directGoogleReady(env)&&
+     (env.PROVIDER_BROKER_ENABLED!=="yes"||!providerBrokerAvailable(env)))
+    return fail("Servicio no configurado",503);
+  // Never accept a state obtained by a different browser. This is independent
+  // of Google PKCE/nonce and prevents OAuth login CSRF and account swapping.
+  if(readCookie(request,OAUTH_COOKIE)!==state)return fail("El acceso debe iniciarse en este navegador",403);
   const stateHash=await digest(state);
   // Single-use state, even on invalid authorization codes.
   const saved=await env.DB.prepare(
@@ -139,20 +214,36 @@ async function callbackGoogle(request,env) {
     "RETURNING pkce_verifier,nonce"
   ).bind(stateHash).first();
   if(!saved)return fail("La sesión OAuth ha caducado",401);
-  const form=new URLSearchParams({
-    client_id:env.GOOGLE_CLIENT_ID,client_secret:env.GOOGLE_CLIENT_SECRET,
-    grant_type:"authorization_code",code,
-    code_verifier:saved.pkce_verifier,
-    redirect_uri:base(env)+"/v1/auth/google/callback"
-  });
-  const result=await fetch("https://oauth2.googleapis.com/token",{
-    method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},
-    body:form.toString()
-  });
-  if(!result.ok)return fail("No se pudo completar el acceso con Google",401);
-  const payload=await result.json();
+  let clientId,payload;
+  try{
+    clientId=await publicGoogleClientId(env);
+    if(!clientId)throw Error("Google client unavailable");
+    if(directGoogleReady(env)){
+      const form=new URLSearchParams({
+        client_id:clientId,client_secret:env.GOOGLE_CLIENT_SECRET,
+        grant_type:"authorization_code",code,
+        code_verifier:saved.pkce_verifier,
+        redirect_uri:base(env)+"/v1/auth/google/callback"
+      });
+      const result=await fetch("https://oauth2.googleapis.com/token",{
+        method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},
+        body:form.toString()
+      });
+      if(!result.ok)return fail("No se pudo completar el acceso con Google",401);
+      payload=await result.json();
+    }else{
+      const result=await providerBrokerCall(env,"google_exchange",{
+        code,verifier:saved.pkce_verifier,
+        redirectUri:base(env)+"/v1/auth/google/callback"
+      });
+      payload={id_token:result.idToken};
+    }
+  }catch(e){
+    console.error("Google private provider unavailable");
+    return fail("No se pudo completar el acceso con Google",503);
+  }
   let google;
-  try{google=await verifyGoogleJwt(payload.id_token,env,saved.nonce);}
+  try{google=await verifyGoogleJwt(payload.id_token,{...env,GOOGLE_CLIENT_ID:clientId},saved.nonce);}
   catch(e){console.error("Google verification:",e?.message);return fail("Identidad no verificada",401);}
   let link=await env.DB.prepare(
     "SELECT profile_id FROM auth_identity_links "+
@@ -179,21 +270,35 @@ async function callbackGoogle(request,env) {
       if(!link){console.error("Account creation:",e?.message);return fail("No se pudo crear la cuenta",503);}
     }
   }
-  const actor=await env.DB.prepare("SELECT id FROM profiles WHERE id=?")
+  const actor=await env.DB.prepare("SELECT id,role FROM profiles WHERE id=?")
     .bind(link.profile_id).first();
   if(!actor)return fail("No se encontró la ficha del socio",403);
-  const session=token(),hash=await digest(session);
-  await env.DB.prepare(
-    "INSERT INTO auth_sessions(token_hash,profile_id,expires_at) VALUES (?,?,unixepoch()+?)"
-  ).bind(hash,actor.id,SESSION_SECONDS).run();
-  return new Response(null,{status:303,headers:{
-    "Location":base(env)+"/v1/auth/me",
-    "Set-Cookie":sessionCookie(session),
+  if(state.startsWith("A")&&actor.role!=="admin")return fail("Acceso reservado a administradores",403);
+  let cookies;
+  if(state.startsWith("A"))cookies=await createVerifiedAdminSession(actor.id,env);
+  else{
+    const session=token(),hash=await digest(session);
+    const ttl=actor.role==="admin"?ADMIN_SESSION_SECONDS:SESSION_SECONDS;
+    await env.DB.prepare(
+      "INSERT INTO auth_sessions(token_hash,profile_id,expires_at) VALUES (?,?,unixepoch()+?)"
+    ).bind(hash,actor.id,ttl).run();
+    cookies=[sessionCookie(session,ttl)];
+  }
+  const headers=new Headers({
+    "Location":base(env)+googleLanding(state,env),
     "Cache-Control":"no-store","Referrer-Policy":"no-referrer"
-  }});
+  });
+  for(const cookie of cookies)headers.append("Set-Cookie",cookie);
+  headers.append("Set-Cookie",oauthCookie("",0));
+  return new Response(null,{status:303,headers});
 }
 export async function authRoute(request,env) {
   const path=new URL(request.url).pathname;
+  // Clerk is the sole Google sign-in authority in production. The legacy
+  // Google handler otherwise creates sessions without matching Clerk links.
+  if(env?.SITE_MODE==="production" &&
+     (path==="/v1/auth/google/start"||path==="/v1/auth/google/callback"))
+    return fail("Utiliza el inicio de sesión de Clerk",410);
   if(path==="/v1/auth/google/start")return beginGoogle(request,env);
   if(path==="/v1/auth/google/callback"){
     if(request.method!=="GET")return fail("Método no permitido",405);
@@ -204,15 +309,24 @@ export async function authRoute(request,env) {
     const profile=await authenticatedProfile(request,env);
     return api({authenticated:!!profile,profile:profile||null});
   }
+  if(path==="/v1/admin/session") {
+    if(request.method!=="GET")return fail("Método no permitido",405);
+    const admin=await authenticatedAdminAccess(request,env);
+    return api({authorized:!!admin,profile:admin?{id:admin.id,name:admin.name,role:admin.role}:null},admin?200:401);
+  }
   if(path==="/v1/auth/logout") {
     if(request.method!=="POST")return fail("Método no permitido",405);
     if(!strictOrigin(request,env))return fail("Origen no autorizado",403);
     const cookie=readCookie(request,COOKIE);
     if(/^[A-Za-z0-9_-]{43}$/.test(cookie)){
       const hash=await digest(cookie);
+      await env.DB.prepare("DELETE FROM auth_admin_sessions WHERE regular_session_hash=?").bind(hash).run();
       await env.DB.prepare("DELETE FROM auth_sessions WHERE token_hash=?").bind(hash).run();
     }
-    return api({ok:true},200,{"Set-Cookie":clearCookie()});
+    const headers=new Headers(HEADER);
+    headers.append("Set-Cookie",clearCookie());
+    headers.append("Set-Cookie",adminCookie("",0));
+    return new Response(JSON.stringify({ok:true}),{status:200,headers});
   }
   return null;
 }

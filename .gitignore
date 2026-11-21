@@ -9,3 +9,22 @@ node_modules/
 __pycache__/
 playwright-report/
 test-results/
+# Salida compilada de vídeos y logos (se regeneran y no deben subirse al repo)
+cloudflare/dist-static/
+
+# Bellaquitas: respaldos de producción y llaves de recuperación fuera de Git
+*.pem
+*.p12
+*.pfx
+*.key
+*.kdbx
+*.sqlite
+*.sqlite3
+*.db
+*.db-wal
+*.db-journal
+*clave-privada*.zip
+*private-key*.zip
+*respaldo-cifrado*.zip
+*encrypted-backup*.zip
+cloudflare/backups-private/

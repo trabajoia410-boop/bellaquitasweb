@@ -1,0 +1,91 @@
+name: Bellaquitas multimedia — desplegar únicamente QA
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - migracion/fase5-segura-20261114
+    paths:
+      - .github/workflows/deploy-bellaquitas-media-qa.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bellaquitas-media-qa-safe-deploy
+  cancel-in-progress: false
+
+jobs:
+  media-qa:
+    if: github.repository == 'trabajoia410-boop/bellaquitasweb' && github.ref == 'refs/heads/migracion/fase5-segura-20261114'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Clonar solo la rama segura
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Asegurar binarios originales y 3 logos, sin recompresión
+        run: |
+          set -euo pipefail
+          node cloudflare/verify-migration.mjs
+          node cloudflare/build-static-assets.mjs --require-logos
+          node cloudflare/test-original-logos-guard.mjs
+          node cloudflare/test-media-qa-deploy.mjs
+
+      - name: Verificar que el destino NO es producción
+        run: |
+          set -euo pipefail
+          node cloudflare/check-release-gates.mjs --assert-blocked
+          test "${GITHUB_REF}" = "refs/heads/migracion/fase5-segura-20261114"
+          test -f cloudflare/media-qa-worker.js
+          echo "Destino único: bellaquitas-media-qa.bellaquitas-fest-410.workers.dev"
+          echo "Ninguna modificación a DNS, Workers staging, bases D1, puntos ni usuarios"
+
+      - name: Subir solo si ya hay credencial Cloudflare privada en GitHub
+        env:
+          CLOUDFLARE_ACCOUNT_ID: 7698bb24db010350ba4b02c36c0fbeb5
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.CF_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${CLOUDFLARE_API_TOKEN:-}" ]]; then
+            echo "::warning::Despliegue QA pendiente: no hay API token Cloudflare configurado como GitHub Actions Secret"
+            echo "::warning::Nunca incluir tokens en el repositorio ni comentarios. La conexión Cloudflare de ChatGPT no se transfiere automáticamente a Actions."
+            echo "MEDIA_QA_DEPLOYED=false" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          node cloudflare/deploy-media-qa.mjs --deploy
+          echo "MEDIA_QA_DEPLOYED=true" >> "$GITHUB_ENV"
+
+      - name: Probar HTTP Range 206 real de los cinco MP4 y sus bytes originales
+        if: env.MEDIA_QA_DEPLOYED == 'true'
+        run: |
+          set -euo pipefail
+          node cloudflare/test-media-qa-online.mjs --require-assets
+
+      - name: Comprobar de nuevo que el Worker QA no tenga vínculos sensibles
+        if: env.MEDIA_QA_DEPLOYED == 'true'
+        run: |
+          set -euo pipefail
+          echo "Comprobación postdespliegue: pruebas Range/bytes del paso anterior aprobadas"
+          node cloudflare/check-release-gates.mjs --assert-blocked
+
+      - name: Registrar estado verificable sin publicar datos privados
+        if: always()
+        env:
+          MEDIA_QA_DEPLOYED: ${{ env.MEDIA_QA_DEPLOYED }}
+        run: |
+          echo "## Bellaquitas multimedia QA" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          if [[ "${MEDIA_QA_DEPLOYED:-false}" == "true" ]]; then
+            echo "El script intentó publicar los 20 recursos originales. Revisar el paso HTTP Range 206: solo se considera completo si está verde." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No se ha publicado nada: falta una credencial Cloudflare privada para GitHub Actions." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Dominio público bellaquitas.fr: no modificado. Sin R2." >> "$GITHUB_STEP_SUMMARY"

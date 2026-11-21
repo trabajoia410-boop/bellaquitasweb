@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json.schemastore.org/wrangler.json",
+  "name": "bellaquitas-kdf-local-only",
+  "main": "./kdf-workerd-local-only.js",
+  "compatibility_date": "2026-11-10",
+  "workers_dev": false,
+  "vars": {
+    "KDF_QA_LOCAL_ONLY": "yes"
+  }
+}
