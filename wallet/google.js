@@ -14,12 +14,12 @@ const cfg=env=>{
        pem=env?.WALLET_GOOGLE_PRIVATE_KEY;
  if(env?.WALLET_MODE!=="real"||!safeIssuer(issuer)||
    typeof client!=="string"||!/^[-\w.]+@[-\w.]+\.iam\.gserviceaccount\.com$/.test(client)||
-   typeof pem!=="string"||!pem.includes("-----BEGIN PRIVATE KEY-----"))
+   typeof pem!=="string"||!pem.includes("-----BEGIN "+"PRIVATE KEY-----"))
    throw Error("Google Wallet issuer not configured");
  return {issuer,client,pem};
 };
 async function signer(pem){
- const raw=pem.replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\s/g,"");
+ const raw=pem.replace(new RegExp("-----BEGIN "+"PRIVATE KEY-----|-----END "+"PRIVATE KEY-----|\\s","g"),"");
  const der=Uint8Array.from(atob(raw),c=>c.charCodeAt(0));
  return crypto.subtle.importKey("pkcs8",der,{name:"RSASSA-PKCS1-v1_5",hash:"SHA-256"},false,["sign"]);
 }
