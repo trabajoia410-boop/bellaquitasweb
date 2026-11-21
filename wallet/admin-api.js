@@ -6,6 +6,7 @@
 import {authenticatedAdminAccess,checkOrigin} from "../cloudflare/auth-routes.js";
 import {hmac,randomToken,validSlug,validColor,safeAsset,validUuid} from "./core.js";
 import {walletMode} from "./index.js";
+import {walletIssuerReadiness} from "./issuer-readiness.js";
 const HEAD={"Content-Type":"application/json; charset=utf-8",
  "Cache-Control":"no-store","X-Content-Type-Options":"nosniff","X-Robots-Tag":"noindex,nofollow"};
 const json=(v,status=200)=>new Response(JSON.stringify(v),{status,headers:HEAD});
@@ -183,6 +184,7 @@ export async function walletAdminApiRoute(req,env){
  try{
   if(path==="/v1/wallet/admin/program"&&req.method==="GET")
    return json({program:await program(env),mock:walletMode(env)!=="real"});
+  if(path==="/v1/wallet/admin/issuer-status"&&req.method==="GET")return json({providers:walletIssuerReadiness(env)});
   if(path==="/v1/wallet/admin/customers"&&req.method==="GET")return listCustomers(url,env);
   if(path==="/v1/wallet/admin/stats"&&req.method==="GET")return statistics(env);
   if(path==="/v1/wallet/admin/campaigns"&&req.method==="GET")return campaigns(env);
