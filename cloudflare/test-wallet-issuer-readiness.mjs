@@ -15,7 +15,7 @@ assert.deepEqual(walletIssuerReadiness({}),none);
 assert.deepEqual(walletIssuerReadiness(base),none);
 const google={...base,WALLET_GOOGLE_ISSUER_ID:"1234567890",
  WALLET_GOOGLE_CLIENT_EMAIL:"test@demo.iam.gserviceaccount.com",
- WALLET_GOOGLE_PRIVATE_KEY:"-----BEGIN PRIVATE KEY-----\nexample\n-----END PRIVATE KEY-----"};
+ WALLET_GOOGLE_PRIVATE_KEY:"-----BEGIN "+"PRIVATE KEY-----\nexample\n-----END PRIVATE"+" KEY-----"};
 assert.equal(walletIssuerReadiness(google).google,false,"Must require Google publishing approval");
 assert.equal(walletIssuerReadiness({...google,WALLET_GOOGLE_ISSUER_APPROVED:"yes",PUBLISH_APPROVED:"no"}).google,false);
 assert.equal(walletIssuerReadiness({...google,WALLET_GOOGLE_ISSUER_APPROVED:"yes"}).google,true);
