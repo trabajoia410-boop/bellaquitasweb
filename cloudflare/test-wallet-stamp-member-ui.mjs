@@ -42,7 +42,7 @@ assert.ok(newApp.includes('href="/tarjeta/bellaquitas-fest" aria-label="Ver tarj
 assert.match(newApp,/Tus sellos se gestionan desde la tarjeta digital/);
 // The CMS adapter intentionally retains historic phrases as lookup keys.
 // Inspect the visible check-in handler rather than rejecting its dictionary.
-const visitStart=newApp.indexOf("async function checkin(");
+const visitStart=newApp.indexOf("async function visit(");
 const visitEnd=newApp.indexOf("async function redeem(",visitStart);
 assert.ok(visitStart>=0&&visitEnd>visitStart);
 const visibleVisit=newApp.slice(visitStart,visitEnd);
