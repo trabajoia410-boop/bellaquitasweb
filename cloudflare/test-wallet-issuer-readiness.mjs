@@ -1,3 +1,4 @@
+import {buildBellaquitasGoogleLoyaltyClass} from "../wallet/google-provisional-class.js";
 #!/usr/bin/env node
 /** Native issuer gate QA: fake keys only; no HTTP requests or Cloudflare data. */
 import assert from "node:assert/strict";
@@ -8,6 +9,15 @@ import {walletAdminApiRoute} from "../wallet/admin-api.js";
 import {createPass,updatePass,sendNotification} from "../wallet/index.js";
 import {syncQueuedWalletPasses} from "../wallet/sync.js";
 import {walletAppleServiceRoute} from "../wallet/apple-service.js";
+const classDraft=buildBellaquitasGoogleLoyaltyClass("3388000000023244592",{name:"Bellaquitas Fest"});
+assert.equal(classDraft.id,"3388000000023244592.bellaquitas_fest");
+assert.equal(classDraft.reviewStatus,"UNDER_REVIEW");
+assert.equal(classDraft.issuerName,"Bellaquitas Fest");
+assert.ok(classDraft.programLogo.sourceUri.uri.startsWith("https://"));
+assert.equal(classDraft.accountNameLabel,"Nombre");
+assert.equal(classDraft.hexBackgroundColor,"#1E1424");
+assert.ok(!JSON.stringify(classDraft).includes('"loyaltyPoints"'));
+assert.throws(()=>buildBellaquitasGoogleLoyaltyClass("invalid"),/Invalid Google Wallet issuer/);
 const none={apple:false,google:false};
 const base={SITE_MODE:"production",WALLET_ENABLED:"yes",PUBLISH_APPROVED:"yes",
  WALLET_MODE:"real",WALLET_REAL_APPROVED:"yes"};
