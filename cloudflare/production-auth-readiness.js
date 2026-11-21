@@ -18,6 +18,12 @@ export function productionConfigurationReady(env) {
       env.PUBLISH_APPROVED !== "yes" ||
       env.FINAL_ORIGIN_RECONCILED !== "yes" ||
       env.BACKUP_KEY_CUSTODIED !== "yes" ||
+      // Independientes del flag de publicación: sin enlaces reales Clerk
+      // o tablas Wallet instaladas no se puede iniciar sesión ni sellar.
+      env.CLERK_IDENTITIES_RECONCILED !== "yes" ||
+      env.WALLET_SCHEMA_VERIFIED !== "yes" ||
+      env.WALLET_ENABLED !== "yes" ||
+      env.WALLET_REPLACE_LEGACY !== "yes" ||
       // Exigir verificación real de la facturación: zona Free no demuestra Workers Free.
       env.FREE_TIER_BILLING_VERIFIED !== "yes" ||
       // Workers Free: no abrir registro/login de contraseña sin ensayo real de CPU.
