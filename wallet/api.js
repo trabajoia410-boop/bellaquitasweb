@@ -6,6 +6,7 @@
 import {checkOrigin} from "../cloudflare/auth-routes.js";
 import {providerBrokerAvailable,providerBrokerCall} from "../cloudflare/provider-broker.js";
 import {createPass,walletMode} from "./index.js";
+import {walletIssuerReadiness} from "./issuer-readiness.js";
 import {hmac,sha256,otp6,randomToken,scanCode,normalizeEmail,normalizePhone,
  validSlug,validUuid,publicCard} from "./core.js";
 const HEAD={"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store",
@@ -192,6 +193,7 @@ async function pass(req,env,type){
   .bind(customer.program_id).first();
  if(!program)return fail();
  if(walletMode(env)!=="real")return answer({mock:true,preview:true,signed:false});
+ if(!walletIssuerReadiness(env)[type])return fail("Este proveedor Wallet aún no está habilitado",503);
  if(type==="apple")return answer({url:"/v1/wallet/pass/apple/download"});
  const c={...customer,scan_code:await scanCode(customer,env.WALLET_HMAC_KEY)};
  try{
@@ -201,7 +203,7 @@ async function pass(req,env,type){
 }
 async function downloadApple(req,env){
  const customer=await customerSession(req,env);if(!customer)return fail("Tarjeta no recuperada",401);
- if(walletMode(env)!=="real")return fail("Apple Wallet no activado",503);
+ if(!walletIssuerReadiness(env).apple)return fail("Apple Wallet no activado",503);
  const program=await env.DB.prepare("SELECT * FROM wallet_programs WHERE id=? AND active=1")
   .bind(customer.program_id).first();
  try{
