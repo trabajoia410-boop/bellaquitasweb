@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS wallet_customers (
  phone TEXT NOT NULL DEFAULT '' CHECK(length(phone)<=24),
  contact_hash TEXT NOT NULL,
  scan_token_hash TEXT NOT NULL UNIQUE,
+ scan_nonce TEXT NOT NULL DEFAULT '' CHECK(length(scan_nonce)<=64),
  consent_at INTEGER NOT NULL CHECK(consent_at>0),
  marketing_opt_in INTEGER NOT NULL DEFAULT 0 CHECK(marketing_opt_in IN(0,1)),
  stamps INTEGER NOT NULL DEFAULT 0 CHECK(stamps>=0),
