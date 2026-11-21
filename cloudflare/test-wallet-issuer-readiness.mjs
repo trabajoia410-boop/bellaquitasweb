@@ -6,6 +6,8 @@ import {walletIssuerReadiness} from "../wallet/issuer-readiness.js";
 import {walletCustomerPage} from "../wallet/customer-page.js";
 import {walletAdminApiRoute} from "../wallet/admin-api.js";
 import {createPass,updatePass,sendNotification} from "../wallet/index.js";
+import {syncQueuedWalletPasses} from "../wallet/sync.js";
+import {walletAppleServiceRoute} from "../wallet/apple-service.js";
 const none={apple:false,google:false};
 const base={SITE_MODE:"production",WALLET_ENABLED:"yes",PUBLISH_APPROVED:"yes",
  WALLET_MODE:"real",WALLET_REAL_APPROVED:"yes"};
@@ -43,4 +45,23 @@ assert.equal((await walletCustomerPage(new Request("https://bellaquitas.fr/tarje
  SITE_MODE:"production",WALLET_ENABLED:"yes",PUBLISH_APPROVED:"no"})).status,404);
 const userRequest=new Request("https://bellaquitas.fr/v1/wallet/admin/issuer-status");
 assert.equal((await walletAdminApiRoute(userRequest,base)).status,503,"Unauthorized startup not exposed");
+// No scheduled updates or APNs endpoints may run on an unapproved issuer.
+const syncDB={prepare(){throw Error("Outbox must not query an unapproved issuer")}};
+assert.deepEqual(await syncQueuedWalletPasses({...base,WALLET_SYNC_ENABLED:"yes",DB:syncDB}),
+ {enabled:false,processed:0,failed:0});
+const passRoute=await walletAppleServiceRoute(new Request(
+ "https://bellaquitas.fr/v1/apple-wallet/v1/passes/pass.fr.bellaquitas/11111111-1111-4111-8111-111111111111"),
+ {...apple,DB:syncDB});
+assert.equal(passRoute.status,503);
+let lookup=false;
+const readyDB={prepare(sql){
+ assert.match(sql,/wallet_sync_jobs/);lookup=true;
+ return {bind(...values){
+  assert.deepEqual(values,["google",2]);
+  return {all:async()=>({results:[]})};
+ }};
+}};
+assert.deepEqual(await syncQueuedWalletPasses({...google,WALLET_GOOGLE_ISSUER_APPROVED:"yes",
+ WALLET_SYNC_ENABLED:"yes",DB:readyDB}),{enabled:true,processed:0,failed:0});
+assert.equal(lookup,true);
 console.log("PASS: explicit independent Apple/Google approval, no fake pass issuance, demo QR web card, secrets never returned.");
