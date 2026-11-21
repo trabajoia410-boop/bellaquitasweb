@@ -72,7 +72,7 @@ async function stamp(req,env){
  const parsed=await verifyScan(data.code,env.WALLET_HMAC_KEY);
  if(!parsed)return json({error:"QR inválido"},400);
  const customer=await env.DB.prepare(
-  "SELECT c.id,c.name,c.program_id,c.scan_nonce,p.stamp_goal FROM wallet_customers c "+
+  "SELECT c.id,c.name,c.program_id,c.profile_id,c.scan_nonce,p.stamp_goal FROM wallet_customers c "+
   "JOIN wallet_programs p ON p.id=c.program_id "+
   "WHERE c.id=? AND c.deleted_at IS NULL AND p.active=1")
   .bind(parsed.id).first();
