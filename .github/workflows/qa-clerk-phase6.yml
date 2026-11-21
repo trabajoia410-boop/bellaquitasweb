@@ -14,6 +14,8 @@ on:
       - 'cloudflare/plan-clerk-verified-links.mjs'
       - 'cloudflare/test-clerk-verified-links.mjs'
       - 'cloudflare/test-clerk-auth-bridge.mjs'
+      - 'cloudflare/phase6-blocks23-preflight.mjs'
+      - 'cloudflare/test-phase6-blocks23-preflight.mjs'
       - 'cloudflare/test_clerk_links_guard.py'
       - '.github/workflows/qa-clerk-phase6.yml'
   push:
@@ -30,6 +32,8 @@ on:
       - 'cloudflare/plan-clerk-verified-links.mjs'
       - 'cloudflare/test-clerk-verified-links.mjs'
       - 'cloudflare/test-clerk-auth-bridge.mjs'
+      - 'cloudflare/phase6-blocks23-preflight.mjs'
+      - 'cloudflare/test-phase6-blocks23-preflight.mjs'
       - 'cloudflare/test_clerk_links_guard.py'
       - '.github/workflows/qa-clerk-phase6.yml'
   workflow_dispatch:
@@ -58,5 +62,7 @@ jobs:
         run: node cloudflare/test-clerk-login-page.mjs
       - name: Plan de enlace con evidencia original Google exacta
         run: node cloudflare/test-clerk-verified-links.mjs
+      - name: Verificar candados cruzados entre las 13 tablas y las 7 identidades
+        run: node cloudflare/test-phase6-blocks23-preflight.mjs
       - name: 6 pruebas de integridad SQL contra suplantacion
         run: python3 -m unittest discover -s cloudflare -p 'test_clerk_links_guard.py' -v
