@@ -45,7 +45,7 @@ async function enrollRateLimit(req,env,programId){
  const address=req.headers.get("CF-Connecting-IP")||"unknown";
  const rateKeys=[
   {key:"signup-ip:"+programId+":"+address,maximum:5,seconds:3600},
-  {key:"signup-program:"+programId,maximum:50,seconds:3600}
+  {key:"signup-program:"+programId,maximum:50,seconds:86400}
  ];
  for(const item of rateKeys){
   const key=await hmac(item.key,env.WALLET_HMAC_KEY);
