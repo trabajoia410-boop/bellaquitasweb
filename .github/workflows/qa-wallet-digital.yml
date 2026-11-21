@@ -40,5 +40,7 @@ jobs:
         run: node --experimental-sqlite cloudflare/test-wallet-schema.mjs
       - name: Simular cliente, QR, PIN, roles y previews sin red ni usuarios
         run: node cloudflare/test-wallet-ui.mjs
+      - name: Generar .pkpass CMS con certificado sintético en memoria temporal
+        run: node cloudflare/test-wallet-apple-signer.mjs
       - name: Prohibir material privado en el repositorio
         run: node cloudflare/test-no-private-backup-leaks.mjs
