@@ -39,7 +39,11 @@ export async function walletAdminPage(request,env){
   // En la vista previa solo mostrar imágenes estáticas de la propia web.
   for(const field of ["logo","banner"]){
    const image=el("live-"+field);
-   const valid=/^\\/assets\\/[a-zA-Z0-9/_-]+\\.(?:png|webp|jpe?g)$/.test(d[field]||"");
+   const local=String(d[field]||"");
+   const valid=local.startsWith("/assets/")&&local.length<300&&
+    !local.includes("..")&&!local.includes("?")&&!local.includes("#")&&
+    !local.includes(":")&&
+    [".png",".jpg",".jpeg",".webp"].some(ext=>local.endsWith(ext));
    image.hidden=!valid;
    if(valid)image.src=d[field];else image.removeAttribute("src");
   }
