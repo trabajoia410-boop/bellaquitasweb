@@ -9,6 +9,7 @@ import {walletStaffRoute} from "../wallet/staff.js";
 import {walletAdminPage} from "../wallet/admin-page.js";
 import {walletScannerPage} from "../wallet/scanner-page.js";
 import {walletAppleServiceRoute} from "../wallet/apple-service.js";
+import {walletLegacyRedirectRoute} from "../wallet/legacy-redirect.js";
 import {clerkSessionExchange} from "./clerk-session-exchange.js";
 import {productionSiteRoute} from "./production-site-route.js";
 import {productionAccessGate} from "./production-auth-readiness.js";
@@ -98,6 +99,8 @@ export default {
       const digitalWalletPage=await walletCustomerPage(request,env);
       if(digitalWalletPage)return digitalWalletPage;
       // Protected specialist routes must run BEFORE the generic wallet API.
+      const legacyWalletRedirect=walletLegacyRedirectRoute(request,env);
+      if(legacyWalletRedirect)return legacyWalletRedirect;
       const walletApple=await walletAppleServiceRoute(request,env);
       if(walletApple)return walletApple;
       const walletAdmin=await walletAdminApiRoute(request,env);
