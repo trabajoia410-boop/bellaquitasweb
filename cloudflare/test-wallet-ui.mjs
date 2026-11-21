@@ -119,8 +119,10 @@ assert.equal(walletLegacyRedirectRoute(legacyURL,{SITE_MODE:"preproduction",
  WALLET_ENABLED:"yes",WALLET_REPLACE_LEGACY:"yes"}).status,404);
 assert.equal(walletLegacyRedirectRoute(legacyURL,{SITE_MODE:"production",
  WALLET_ENABLED:"yes",WALLET_REPLACE_LEGACY:"no"}).status,404);
+assert.equal(walletLegacyRedirectRoute(legacyURL,{SITE_MODE:"production",
+ WALLET_ENABLED:"yes",WALLET_REPLACE_LEGACY:"yes",PUBLISH_APPROVED:"no"}).status,404);
 const futureCutover=walletLegacyRedirectRoute(legacyURL,{SITE_MODE:"production",
- WALLET_ENABLED:"yes",WALLET_REPLACE_LEGACY:"yes"});
+ WALLET_ENABLED:"yes",WALLET_REPLACE_LEGACY:"yes",PUBLISH_APPROVED:"yes"});
 assert.equal(futureCutover.status,200);
 const redirectJS=await futureCutover.text();
 new Script(redirectJS,{filename:"wallet-legacy-redirect.js"});
