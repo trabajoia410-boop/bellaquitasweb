@@ -125,6 +125,7 @@ assert.equal(futureCutover.status,200);
 const redirectJS=await futureCutover.text();
 new Script(redirectJS,{filename:"wallet-legacy-redirect.js"});
 assert.match(redirectJS,/#\/tarjeta/);
+assert.match(redirectJS,/#\/premios/);
 assert.match(redirectJS,/\/tarjeta\/bellaquitas-fest/);
 console.log("PASS: Wallet mock, admin protegido, QR y sustitución antigua por bandera explícita.");
 
