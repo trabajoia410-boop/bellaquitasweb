@@ -4,6 +4,7 @@
  * protected internal call). Keep batches small on Workers Free: CPU budget 10ms.
  */
 import {walletMode,updatePass} from "./index.js";
+import {walletIssuerReadiness} from "./issuer-readiness.js";
 import {scanCode} from "./core.js";
 export async function syncQueuedWalletPasses(env,{limit=2}={}){
  if(env?.SITE_MODE!=="production"||env.WALLET_ENABLED!=="yes"||
@@ -11,10 +12,16 @@ export async function syncQueuedWalletPasses(env,{limit=2}={}){
     walletMode(env)!=="real"||typeof env.DB?.prepare!=="function"||
     !Number.isInteger(limit)||limit<1||limit>3)
   return {enabled:false,processed:0,failed:0};
+ // Paused issuers must not consume retries or starve an approved provider.
+ const available=walletIssuerReadiness(env);
+ const providers=Object.entries(available).filter(([,active])=>active).map(([name])=>name);
+ if(!providers.length)return {enabled:false,processed:0,failed:0};
+ const placeholders=providers.map(()=>"?").join(",");
  const jobs=await env.DB.prepare(
   "SELECT customer_id,provider,attempts FROM wallet_sync_jobs "+
-  "WHERE status IN('pending','failed') AND attempts<10 AND next_attempt_at<=unixepoch() "+
-  "ORDER BY next_attempt_at,requested_at LIMIT ?").bind(limit).all();
+  "WHERE provider IN ("+placeholders+") AND status IN('pending','failed') "+
+  "AND attempts<10 AND next_attempt_at<=unixepoch() "+
+  "ORDER BY next_attempt_at,requested_at LIMIT ?").bind(...providers,limit).all();
  let processed=0,failed=0;
  for(const job of jobs.results||[]){
   const acquired=await env.DB.prepare(
