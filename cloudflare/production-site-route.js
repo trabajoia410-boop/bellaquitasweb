@@ -102,9 +102,13 @@ export async function productionSiteRoute(request,env) {
   }
   const original=await served.text();
   if(!BADGE.test(original))return response("Página no verificada",503,"text/plain; charset=utf-8");
-  const html=original
+  let html=original
     .replace(BADGE,"")
     .replace(/content="noindex,nofollow"/g,'content="index,follow"');
+  // Only after explicit cutover: replace old loyalty-card hash route, not
+  // users, points, design, QR door controls or any other navigation.
+  if(env.WALLET_ENABLED==="yes"&&env.WALLET_REPLACE_LEGACY==="yes")
+    html=html.replace("</body>",'<script src="/wallet/legacy-redirect.js" defer></script></body>');
   if(!html.includes('id="app"')||html.includes('PRUEBAS · SOLO LECTURA')||
     html.includes("vlsipvngvxcgnwrhpjgg.supabase.co"))
     return response("Página no verificada",503,"text/plain; charset=utf-8");
