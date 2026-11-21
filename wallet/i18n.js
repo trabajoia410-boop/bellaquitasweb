@@ -1,0 +1,52 @@
+/** Bellaquitas — single editable ES/FR wallet copy source. */
+export const WALLET_I18N=Object.freeze({
+ es:{
+  title:"Tu tarjeta digital",join:"Crear mi tarjeta",name:"Nombre",email:"Correo electrónico",
+  phone:"Teléfono (opcional)",consent:"Acepto el tratamiento de mis datos para gestionar mi tarjeta de fidelidad.",
+  marketing:"Quiero recibir avisos y novedades (opcional)",
+  verify:"Verificar mi correo",code:"Código de 6 dígitos",continue:"Continuar",
+  stamped:"Sellos",reward:"Recompensa",ready:"¡Recompensa disponible!",
+  apple:"Añadir a Apple Wallet",google:"Añadir a Google Wallet",
+  preview:"Vista previa — aún no es un pase oficial de Wallet",
+  retrieve:"¿Ya tienes tarjeta? Entra con el mismo correo para recuperarla.",
+  loading:"Procesando…",error:"No se ha podido completar la operación.",
+  cooldown:"Espera unos minutos antes de volver a sellar.",
+  noSms:"Para recuperar la tarjeta sin contraseña debes verificar tu correo. El alta solo con teléfono llegará cuando exista SMS verificado.",
+  delete:"Solicitar eliminación de mis datos",deleteConfirm:"Eliminar mi tarjeta y mis datos de fidelidad",
+  admin:"Tarjetas digitales",scanner:"Escanear tarjeta",employees:"Empleados",customers:"Clientes",
+  campaigns:"Mensajes",statistics:"Estadísticas",design:"Diseño de tarjeta",
+  inactive:"No vuelve desde",days:"días",newCustomers:"Clientes nuevos",
+  redemptions:"Recompensas canjeadas",walletMock:"Wallet de prueba",save:"Guardar",
+  scan:"Abrir cámara",cancel:"Cancelar",search:"Buscar clientes",
+  notes:"La antigua tarjeta y sus puntos no se modifican durante esta prueba.",
+  verifySent:"Si el correo es válido, recibirás un código. Revisa tu bandeja de entrada.",
+  invalidCode:"Código inválido o caducado",notLinked:"Tu tarjeta todavía no está vinculada.",
+  reset:"Enviar otro código",download:"Descargar QR",login:"Entrar con código de empleado",
+  coupon:"Premio disponible",status:"Estado",recent:"Última visita"
+ },
+ fr:{
+  title:"Votre carte numérique",join:"Créer ma carte",name:"Nom",email:"Adresse e-mail",
+  phone:"Téléphone (facultatif)",consent:"J’accepte le traitement de mes données pour gérer ma carte de fidélité.",
+  marketing:"Je souhaite recevoir les actualités (facultatif)",
+  verify:"Vérifier mon adresse e-mail",code:"Code à 6 chiffres",continue:"Continuer",
+  stamped:"Tampons",reward:"Récompense",ready:"Récompense disponible !",
+  apple:"Ajouter à Apple Wallet",google:"Ajouter à Google Wallet",
+  preview:"Aperçu — il ne s’agit pas encore d’une carte Wallet officielle",
+  retrieve:"Déjà inscrit ? Utilisez la même adresse e-mail pour retrouver votre carte.",
+  loading:"Chargement…",error:"L’opération n’a pas pu aboutir.",
+  cooldown:"Veuillez patienter avant d’ajouter un nouveau tampon.",
+  noSms:"La récupération sans mot de passe exige une adresse e-mail vérifiée. Le téléphone seul sera disponible avec la vérification SMS.",
+  delete:"Demander la suppression de mes données",deleteConfirm:"Supprimer ma carte et mes données de fidélité",
+  admin:"Cartes numériques",scanner:"Scanner une carte",employees:"Employés",customers:"Clients",
+  campaigns:"Messages",statistics:"Statistiques",design:"Design de la carte",
+  inactive:"Absent depuis",days:"jours",newCustomers:"Nouveaux clients",
+  redemptions:"Récompenses échangées",walletMock:"Wallet de démonstration",save:"Enregistrer",
+  scan:"Ouvrir la caméra",cancel:"Annuler",search:"Rechercher des clients",
+  notes:"L’ancienne carte et ses points ne sont pas modifiés pendant ce test.",
+  verifySent:"Si l’adresse est valide, vous recevrez un code. Vérifiez vos e-mails.",
+  invalidCode:"Code invalide ou expiré",notLinked:"Votre carte n’est pas encore associée.",
+  reset:"Renvoyer un code",download:"Télécharger le QR",login:"Connexion avec le code employé",
+  coupon:"Récompense disponible",status:"Statut",recent:"Dernière visite"
+ }
+});
+export const locale=lang=>WALLET_I18N[lang==="fr"?"fr":"es"];
