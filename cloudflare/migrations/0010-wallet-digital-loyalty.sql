@@ -87,6 +87,19 @@ CREATE TABLE IF NOT EXISTS wallet_employee_sessions (
  expires_at INTEGER NOT NULL,
  created_at INTEGER NOT NULL DEFAULT (unixepoch())
 );
+-- Outbox durable para actualizaciones Wallet: sin peticiones externas en la
+-- transacción que sella o canjea. El procesador se activa solo con credenciales.
+CREATE TABLE IF NOT EXISTS wallet_sync_jobs (
+ customer_id TEXT NOT NULL REFERENCES wallet_customers(id) ON DELETE CASCADE,
+ provider TEXT NOT NULL CHECK(provider IN('apple','google')),
+ status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN('pending','running','done','failed')),
+ attempts INTEGER NOT NULL DEFAULT 0 CHECK(attempts BETWEEN 0 AND 10),
+ requested_at INTEGER NOT NULL DEFAULT (unixepoch()),
+ next_attempt_at INTEGER NOT NULL DEFAULT (unixepoch()),
+ processed_at INTEGER,
+ PRIMARY KEY(customer_id,provider)
+);
+CREATE INDEX IF NOT EXISTS idx_wallet_sync_pending ON wallet_sync_jobs(status,next_attempt_at);
 CREATE TABLE IF NOT EXISTS wallet_stamp_events (
  id TEXT PRIMARY KEY CHECK(length(id)=36),
  customer_id TEXT NOT NULL REFERENCES wallet_customers(id) ON DELETE RESTRICT,
@@ -131,6 +144,12 @@ BEGIN
    last_stamp_at=CASE WHEN NEW.delta=1 THEN unixepoch() ELSE last_stamp_at END,
    updated_at=unixepoch()
  WHERE id=NEW.customer_id;
+ INSERT INTO wallet_sync_jobs(customer_id,provider) VALUES(NEW.customer_id,'google')
+ ON CONFLICT(customer_id,provider) DO UPDATE SET status='pending',
+  requested_at=unixepoch(),next_attempt_at=unixepoch(),attempts=0;
+ INSERT INTO wallet_sync_jobs(customer_id,provider) VALUES(NEW.customer_id,'apple')
+ ON CONFLICT(customer_id,provider) DO UPDATE SET status='pending',
+  requested_at=unixepoch(),next_attempt_at=unixepoch(),attempts=0;
 END;
 CREATE TABLE IF NOT EXISTS wallet_reward_claims (
  id TEXT PRIMARY KEY CHECK(length(id)=36),
@@ -150,6 +169,12 @@ CREATE TRIGGER IF NOT EXISTS wallet_reward_apply AFTER INSERT ON wallet_reward_c
 BEGIN
  UPDATE wallet_customers SET redeemed_rewards=redeemed_rewards+1,updated_at=unixepoch()
  WHERE id=NEW.customer_id;
+ INSERT INTO wallet_sync_jobs(customer_id,provider) VALUES(NEW.customer_id,'google')
+ ON CONFLICT(customer_id,provider) DO UPDATE SET status='pending',
+  requested_at=unixepoch(),next_attempt_at=unixepoch(),attempts=0;
+ INSERT INTO wallet_sync_jobs(customer_id,provider) VALUES(NEW.customer_id,'apple')
+ ON CONFLICT(customer_id,provider) DO UPDATE SET status='pending',
+  requested_at=unixepoch(),next_attempt_at=unixepoch(),attempts=0;
 END;
 CREATE TABLE IF NOT EXISTS wallet_campaigns (
  id TEXT PRIMARY KEY CHECK(length(id)=36),
