@@ -61,7 +61,9 @@ assert.equal(servedJS.status,200,"Production JS must be served under stamp relea
 const servedBody=await servedJS.text();
 new Script(servedBody,{filename:"worker-stamp-only-app.js"});
 assert.match(servedBody,/Abrir mi tarjeta digital/);
-assert.doesNotMatch(between.call(null,"function summary(){","function loyaltyCardView(){"),/current\\.points/);
+const workerMember=servedBody.slice(servedBody.indexOf("function summary(){"),
+ servedBody.indexOf("function loyaltyCardView(){"));
+assert.doesNotMatch(workerMember,/current\.points|lifetime_points|points-banner/);
 const servedFR=await productionSiteRoute(new Request("https://bellaquitas.fr/locale-fr.js"),approved);
 assert.equal(servedFR.status,200);
 const servedFRBody=await servedFR.text();
