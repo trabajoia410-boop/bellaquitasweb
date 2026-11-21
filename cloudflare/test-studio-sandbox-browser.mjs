@@ -2,6 +2,7 @@
 /** Browser E2E against STAGING, synthetic-only; no credentials, accounts or writes. */
 import assert from "node:assert/strict";
 import {chromium} from "playwright";
+import {studioSandboxRoute} from "./studio-sandbox.js";
 const ROOT="https://bellaquitas-api-staging.bellaquitas-fest-410.workers.dev";
 const browser=await chromium.launch({headless:true});
 try{
@@ -11,6 +12,16 @@ try{
  page.on("request",r=>{
   if(r.url().startsWith(ROOT+"/")&&!["GET","HEAD","OPTIONS"].includes(r.method()))
    writes.push({method:r.method(),path:new URL(r.url()).pathname});
+ });
+ // Run current branch editor JS in the browser while preserving the same-origin,
+ // read-only staging iframe. This verifies the unpublished fix without changing
+ // any Cloudflare deployment, user data, points, DNS or settings.
+ await page.route(ROOT+"/laboratorio/",async route=>{
+  const served=studioSandboxRoute(new Request(route.request().url()),{
+   SITE_MODE:"staging",STAGING_MUTATIONS:"disabled",ALLOW_NEW_ACCOUNTS:"no"});
+  assert.equal(served.status,200,"Branch laboratory must remain staging-only");
+  await route.fulfill({status:served.status,headers:Object.fromEntries(served.headers),
+   body:await served.text()});
  });
  const res=await page.goto(ROOT+"/laboratorio/",{waitUntil:"domcontentloaded",timeout:45000});
  assert.equal(res.status(),200);
