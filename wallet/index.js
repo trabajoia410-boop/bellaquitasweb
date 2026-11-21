@@ -3,14 +3,19 @@
  * Never claim that a preview web card is signed/accepted by Apple/Google.
  */
 import {googleCreatePass,googleUpdatePass,googleSendNotification} from "./google.js";
+import {walletIssuerReadiness} from "./issuer-readiness.js";
 export const walletMode=env=>
  env?.WALLET_MODE==="real"&&env?.WALLET_REAL_APPROVED==="yes"?"real":"mock";
 export async function createPass(customer,program,env={},provider="mock"){
  if(walletMode(env)!=="real"||provider==="mock")
   return {mode:"mock",type:"web-preview",signed:false,
    previewUrl:"/tarjeta/"+encodeURIComponent(program.slug),walletUrl:null};
- if(provider==="google")return googleCreatePass(customer,program,env);
+ if(provider==="google"){
+  if(!walletIssuerReadiness(env).google)throw Error("Google issuer not approved");
+  return googleCreatePass(customer,program,env);
+ }
  if(provider==="apple"){
+  if(!walletIssuerReadiness(env).apple)throw Error("Apple issuer not approved");
   // The optional private signing service must generate an actual CMS-signed
   // .pkpass with all required images. Never return a fake file as pkpass.
   if(typeof env.APPLE_PASS_SIGNER?.fetch!=="function")
@@ -28,8 +33,12 @@ export async function createPass(customer,program,env={},provider="mock"){
 export async function updatePass(customer,program,env={},provider="mock"){
  if(walletMode(env)!=="real"||provider==="mock")
   return {mode:"mock",updated:true,requiresPush:false};
- if(provider==="google")return googleUpdatePass(customer,program,env);
+ if(provider==="google"){
+  if(!walletIssuerReadiness(env).google)throw Error("Google issuer not approved");
+  return googleUpdatePass(customer,program,env);
+ }
  if(provider==="apple"){
+  if(!walletIssuerReadiness(env).apple)throw Error("Apple issuer not approved");
   if(typeof env.APPLE_PUSH_BRIDGE?.fetch!=="function")
    throw Error("Apple Wallet APNs bridge not configured");
   const response=await env.APPLE_PUSH_BRIDGE.fetch("https://internal.wallet.invalid/v1/update",{
@@ -48,8 +57,12 @@ export async function sendNotification(customers,message,env={},provider="mock")
   throw Error("Invalid notification message");
  if(walletMode(env)!=="real"||provider==="mock")
   return {mode:"mock",sent:0,previewOnly:true,customerCount:customers.length};
- if(provider==="google")return googleSendNotification(customers,message,env);
+ if(provider==="google"){
+  if(!walletIssuerReadiness(env).google)throw Error("Google issuer not approved");
+  return googleSendNotification(customers,message,env);
+ }
  if(provider==="apple"){
+  if(!walletIssuerReadiness(env).apple)throw Error("Apple issuer not approved");
   if(typeof env.APPLE_PUSH_BRIDGE?.fetch!=="function")throw Error("Apple APNs bridge unavailable");
   const results=[];
   for(const customer of customers){
