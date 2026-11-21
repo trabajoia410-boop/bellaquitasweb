@@ -53,7 +53,7 @@ async function enrollRateLimit(req,env,programId){
    "INSERT INTO wallet_pin_limits(key_hash,failures,expires_at,blocked_until) "+
    "VALUES (?,1,unixepoch()+?,0) "+
    "ON CONFLICT(key_hash) DO UPDATE SET "+
-   "failures=CASE WHEN expires_at<unixepoch() THEN 1 ELSE MIN(10,failures+1) END,"+
+   "failures=CASE WHEN expires_at<unixepoch() THEN 1 ELSE MIN(100,failures+1) END,"+
    "expires_at=CASE WHEN expires_at<unixepoch() THEN unixepoch()+? ELSE expires_at END "+
    "RETURNING failures"
   ).bind(key,item.seconds,item.seconds).first();
