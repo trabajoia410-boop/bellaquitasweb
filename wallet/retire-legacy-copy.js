@@ -3,7 +3,7 @@
  * Used by the future production Worker ONLY after the stamp cutover flag.
  * Never changes images, animations, QR protocols, CSS or loyalty data.
  */
-const replacements=[
+export const STAMP_MARKETING_REPLACEMENTS=[
   ["Tu tarjeta, tus puntos, tus experiencias.","Tu tarjeta, tus sellos, tus experiencias."],
   ["Tu código de socio, tus puntos y tus ventajas reunidos en un mismo lugar.",
    "Tu tarjeta digital, tus sellos y tus ventajas en un mismo lugar."],
@@ -49,6 +49,6 @@ const replacements=[
 export function stampsOnlyMarketingCopy(source){
  if(typeof source!=="string")throw Error("Source must be a string");
  let result=source;
- for(const [oldText,newText] of replacements)result=result.replaceAll(oldText,newText);
+ for(const [oldText,newText] of STAMP_MARKETING_REPLACEMENTS)result=result.replaceAll(oldText,newText);
  return result;
 }
