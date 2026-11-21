@@ -5,12 +5,13 @@
  */
 import {hmac,validUuid} from "./core.js";
 import {createPass,walletMode} from "./index.js";
+import {walletIssuerReadiness} from "./issuer-readiness.js";
 const HEAD={"Cache-Control":"no-store","X-Robots-Tag":"noindex,nofollow",
  "X-Content-Type-Options":"nosniff"};
 const resp=(data,status=200,extra={})=>new Response(JSON.stringify(data),{
  status,headers:{"Content-Type":"application/json; charset=utf-8",...HEAD,...extra}});
 const fail=(status=404)=>resp({error:"Pass not available"},status);
-const live=e=>e?.SITE_MODE==="production"&&e.WALLET_ENABLED==="yes"&&
+const live=e=>walletIssuerReadiness(e).apple&&e?.SITE_MODE==="production"&&e.WALLET_ENABLED==="yes"&&
  e.WALLET_REAL_APPROVED==="yes"&&walletMode(e)==="real"&&
  typeof e.APPLE_PASS_TYPE_ID==="string"&&/^pass\.[\w.-]+$/.test(e.APPLE_PASS_TYPE_ID)&&
  typeof e.WALLET_HMAC_KEY==="string"&&e.WALLET_HMAC_KEY.length>=32&&
