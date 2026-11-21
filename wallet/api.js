@@ -38,6 +38,29 @@ async function customerSession(req,env){
  return env.DB.prepare("SELECT c.* FROM wallet_customer_sessions s JOIN wallet_customers c ON c.id=s.customer_id WHERE s.token_hash=? AND s.expires_at>unixepoch() AND c.deleted_at IS NULL LIMIT 1")
   .bind(tokenHash).first();
 }
+// Rate-limit SMTP volume both per network and per business. Reuses the
+// existing WALLET pin-limit table, but separate HMAC namespaces. Mail is not
+// sent when either limit is exhausted; protects Resend and Free-tier quota.
+async function enrollRateLimit(req,env,programId){
+ const address=req.headers.get("CF-Connecting-IP")||"unknown";
+ const rateKeys=[
+  {key:"signup-ip:"+programId+":"+address,maximum:5,seconds:3600},
+  {key:"signup-program:"+programId,maximum:50,seconds:3600}
+ ];
+ for(const item of rateKeys){
+  const key=await hmac(item.key,env.WALLET_HMAC_KEY);
+  const result=await env.DB.prepare(
+   "INSERT INTO wallet_pin_limits(key_hash,failures,expires_at,blocked_until) "+
+   "VALUES (?,1,unixepoch()+?,0) "+
+   "ON CONFLICT(key_hash) DO UPDATE SET "+
+   "failures=CASE WHEN expires_at<unixepoch() THEN 1 ELSE MIN(10,failures+1) END,"+
+   "expires_at=CASE WHEN expires_at<unixepoch() THEN unixepoch()+? ELSE expires_at END "+
+   "RETURNING failures"
+  ).bind(key,item.seconds,item.seconds).first();
+  if(!result||result.failures>item.maximum)return false;
+ }
+ return true;
+}
 async function sendCode(env,email,slug,code){
  const message="Verifica tu tarjeta Bellaquitas Fest. Tu código temporal de 6 cifras es "+code+
   ". Caduca en 10 minutos. Si no lo solicitaste, ignora este mensaje. Tarjeta: https://bellaquitas.fr/tarjeta/"+slug;
@@ -66,6 +89,7 @@ async function start(req,env){
  const program=await env.DB.prepare("SELECT id,slug FROM wallet_programs WHERE slug=? AND active=1 LIMIT 1")
   .bind(data.slug).first();
  if(!program)return fail("Programa no disponible",404);
+ if(!await enrollRateLimit(req,env,program.id))return fail("Demasiadas solicitudes de verificación",429);
  const secret=env.WALLET_HMAC_KEY;
  const contactHash=await hmac("email:"+program.id+":"+email,secret);
  const id=crypto.randomUUID(),code=otp6();
