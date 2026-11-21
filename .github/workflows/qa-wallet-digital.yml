@@ -38,6 +38,7 @@ jobs:
           node --check cloudflare/test-wallet-schema.mjs
           node --check cloudflare/test-wallet-stamp-cutover.mjs
           node --check cloudflare/test-wallet-stamp-member-ui.mjs
+          node --check cloudflare/test-wallet-issuer-readiness.mjs
       - name: 13 tablas e invariantes SQLite en memoria, sin D1
         run: node --experimental-sqlite cloudflare/test-wallet-schema.mjs
       - name: Simular cliente, QR, PIN, roles y previews sin red ni usuarios
@@ -45,6 +46,7 @@ jobs:
           node cloudflare/test-wallet-ui.mjs
           node cloudflare/test-wallet-stamp-cutover.mjs
           node cloudflare/test-wallet-stamp-member-ui.mjs
+          node cloudflare/test-wallet-issuer-readiness.mjs
       - name: Generar .pkpass CMS con certificado sintético en memoria temporal
         run: node cloudflare/test-wallet-apple-signer.mjs
       - name: Prohibir material privado en el repositorio
