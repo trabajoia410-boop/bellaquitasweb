@@ -180,7 +180,7 @@ export async function walletCustomerPage(request,env){
  '<p id="status" aria-live="polite" role="status"></p>',
  '<p style="font-size:.78rem" data-i18n="notes">La antigua tarjeta y sus puntos no se modifican durante esta prueba.</p></section></main>',
  '<script type="application/json" id="wallet-config">'+data+'</script>',
- '<script defer src="/wallet/qr.js"></script>',
+ '<script src="/wallet/qr.js"></script>',
  '<script nonce="'+nonce+'">'+script+'</script></body></html>'
  ].join("");
  const h=new Headers({...HEAD,"Content-Type":"text/html; charset=utf-8"});
