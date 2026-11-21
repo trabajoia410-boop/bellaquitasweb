@@ -4,6 +4,10 @@ import {clerkQaPreview} from "./clerk-qa-preview.js";
 import {clerkLoginPage} from "./clerk-login-page.js";
 import {walletCustomerPage} from "../wallet/customer-page.js";
 import {walletApiRoute} from "../wallet/api.js";
+import {walletAdminApiRoute} from "../wallet/admin-api.js";
+import {walletStaffRoute} from "../wallet/staff.js";
+import {walletAdminPage} from "../wallet/admin-page.js";
+import {walletScannerPage} from "../wallet/scanner-page.js";
 import {clerkSessionExchange} from "./clerk-session-exchange.js";
 import {productionSiteRoute} from "./production-site-route.js";
 import {productionAccessGate} from "./production-auth-readiness.js";
@@ -86,8 +90,17 @@ export default {
       // El diseño original vive en la raíz únicamente si el entorno está
       // explícitamente marcado como producción (staging no cambia).
       // Nueva fidelidad aislada. Mock solo con flag y sin mutaciones.
+      const walletAdminScreen=await walletAdminPage(request,env);
+      if(walletAdminScreen)return walletAdminScreen;
+      const walletScanScreen=walletScannerPage(request,env);
+      if(walletScanScreen)return walletScanScreen;
       const digitalWalletPage=await walletCustomerPage(request,env);
       if(digitalWalletPage)return digitalWalletPage;
+      // Protected specialist routes must run BEFORE the generic wallet API.
+      const walletAdmin=await walletAdminApiRoute(request,env);
+      if(walletAdmin)return walletAdmin;
+      const walletStaff=await walletStaffRoute(request,env);
+      if(walletStaff)return walletStaff;
       const digitalWalletApi=await walletApiRoute(request,env);
       if(digitalWalletApi)return digitalWalletApi;
       const publicSite=await productionSiteRoute(request,env);
