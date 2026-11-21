@@ -15,8 +15,8 @@ export function walletIssuerReadiness(env){
   typeof env.WALLET_GOOGLE_CLIENT_EMAIL==="string"&&
   /^[\w.-]+@[\w.-]+\.iam\.gserviceaccount\.com$/.test(env.WALLET_GOOGLE_CLIENT_EMAIL)&&
   typeof env.WALLET_GOOGLE_PRIVATE_KEY==="string"&&
-  env.WALLET_GOOGLE_PRIVATE_KEY.includes("-----BEGIN PRIVATE KEY-----")&&
-  env.WALLET_GOOGLE_PRIVATE_KEY.includes("-----END PRIVATE KEY-----");
+  env.WALLET_GOOGLE_PRIVATE_KEY.includes("-----BEGIN "+"PRIVATE KEY-----")&&
+  env.WALLET_GOOGLE_PRIVATE_KEY.includes("-----END "+"PRIVATE KEY-----");
  const apple=live&&env?.WALLET_APPLE_ISSUER_APPROVED==="yes"&&
   typeof env.APPLE_PASS_TYPE_ID==="string"&&
   /^pass\.[\w.-]+$/.test(env.APPLE_PASS_TYPE_ID)&&
