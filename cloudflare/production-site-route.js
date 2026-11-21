@@ -100,6 +100,8 @@ export async function productionSiteRoute(request,env) {
   // Do not change the original static files. Copy-only marketing replacements
   // are applied to the served JS once per isolate when stamp loyalty is live.
   if(path==="/app.js"&&stampsReplacePoints(env)&&served.status===200){
+    if(request.method==="HEAD")
+      return response(null,200,"application/javascript; charset=utf-8");
     if(cachedStampAppJS===null)
       cachedStampAppJS=stampsOnlyMarketingCopy(await served.text());
     return response(request.method==="HEAD"?null:cachedStampAppJS,200,
