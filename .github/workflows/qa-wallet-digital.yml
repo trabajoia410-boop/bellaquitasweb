@@ -6,6 +6,8 @@ on:
       - 'wallet/**'
       - 'cloudflare/migrations/0010-wallet-digital-loyalty.sql'
       - 'cloudflare/test-wallet-*.mjs'
+      - 'cloudflare/phase6-blocks23-preflight.mjs'
+      - 'cloudflare/test-phase6-blocks23-preflight.mjs'
       - '.github/workflows/qa-wallet-digital.yml'
   pull_request:
     branches: [main]
@@ -13,6 +15,8 @@ on:
       - 'wallet/**'
       - 'cloudflare/migrations/0010-wallet-digital-loyalty.sql'
       - 'cloudflare/test-wallet-*.mjs'
+      - 'cloudflare/phase6-blocks23-preflight.mjs'
+      - 'cloudflare/test-phase6-blocks23-preflight.mjs'
       - '.github/workflows/qa-wallet-digital.yml'
   workflow_dispatch:
 permissions:
@@ -47,6 +51,8 @@ jobs:
           node cloudflare/test-wallet-stamp-cutover.mjs
           node cloudflare/test-wallet-stamp-member-ui.mjs
           node cloudflare/test-wallet-issuer-readiness.mjs
+      - name: Comprobar que Wallet en QA no habilita Clerk ni producción
+        run: node cloudflare/test-phase6-blocks23-preflight.mjs
       - name: Generar .pkpass CMS con certificado sintético en memoria temporal
         run: node cloudflare/test-wallet-apple-signer.mjs
       - name: Prohibir material privado en el repositorio
