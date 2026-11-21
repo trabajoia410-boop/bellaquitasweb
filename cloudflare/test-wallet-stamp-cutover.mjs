@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {stampsReplacePoints,visitPointsAwarded,immutableLegacyBalances} from "../wallet/cutover-policy.js";
 import {adminConsoleRoute} from "./admin-console.js";
+import {stampsOnlyMarketingCopy} from "../wallet/retire-legacy-copy.js";
 
 const staging={SITE_MODE:"staging",WALLET_ENABLED:"yes",
   WALLET_REPLACE_LEGACY:"yes",PUBLISH_APPROVED:"yes"};
@@ -47,4 +48,17 @@ const worker=readFileSync("cloudflare/bellaquitas-api-staging.js","utf8");
 assert.match(worker,/Historical point-based offers remain stored/);
 const writes=readFileSync("cloudflare/mirror-write-routes.js","utf8");
 assert.match(writes,/stampsReplacePoints\(env\)&&body.kind==="catalog"/);
-console.log("PASS: stamp-only cutover, visits without points, immutable old balances, admin controls, legacy catalog hidden, staging untouched.");
+// The original videos, asset references and layout markup remain unmodified.
+const marketing='<p>Tu tarjeta, tus puntos, tus experiencias.</p><h2>Puntos y ventajas</h2>'+
+ '<span>¿Cómo se suman los puntos?</span><video src="assets/portada.mp4"></video>';
+const patched=stampsOnlyMarketingCopy(marketing);
+assert.match(patched,/Tu tarjeta, tus sellos, tus experiencias/);
+assert.match(patched,/Sellos y ventajas/);
+assert.match(patched,/¿Cómo consigo mis sellos\?/);
+assert.ok(!patched.includes("tus puntos"));
+assert.match(patched,/<video src="assets\/portada.mp4"><\/video>/);
+assert.equal(stampsOnlyMarketingCopy(patched),patched,"Copy replacement must be idempotent");
+const prodSource=readFileSync("cloudflare/production-site-route.js","utf8");
+assert.match(prodSource,/if\(path==="\/app.js"&&stampsReplacePoints\(env\)/);
+assert.match(prodSource,/stampsOnlyMarketingCopy\(html\)/);
+console.log("PASS: stamp-only cutover, no point accrual, archived balances, admin and marketing copy, staging unchanged.");
