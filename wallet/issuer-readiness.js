@@ -1,3 +1,4 @@
+import {googleWalletCredentials} from "./google-credentials.js";
 /**
  * Native Wallet issuer readiness. All checks are explicit, fail closed and
  * disclose only yes/no capabilities (never service-account keys or certificates).
@@ -10,13 +11,7 @@ export function walletIssuerReadiness(env){
   env?.WALLET_ENABLED==="yes"&&env?.WALLET_MODE==="real"&&
   env?.WALLET_REAL_APPROVED==="yes";
  const google=live&&env?.WALLET_GOOGLE_ISSUER_APPROVED==="yes"&&
-  typeof env.WALLET_GOOGLE_ISSUER_ID==="string"&&
-  /^[0-9]{6,25}$/.test(env.WALLET_GOOGLE_ISSUER_ID)&&
-  typeof env.WALLET_GOOGLE_CLIENT_EMAIL==="string"&&
-  /^[\w.-]+@[\w.-]+\.iam\.gserviceaccount\.com$/.test(env.WALLET_GOOGLE_CLIENT_EMAIL)&&
-  typeof env.WALLET_GOOGLE_PRIVATE_KEY==="string"&&
-  env.WALLET_GOOGLE_PRIVATE_KEY.includes("-----BEGIN "+"PRIVATE KEY-----")&&
-  env.WALLET_GOOGLE_PRIVATE_KEY.includes("-----END "+"PRIVATE KEY-----");
+  !!googleWalletCredentials(env);
  const apple=live&&env?.WALLET_APPLE_ISSUER_APPROVED==="yes"&&
   typeof env.APPLE_PASS_TYPE_ID==="string"&&
   /^pass\.[\w.-]+$/.test(env.APPLE_PASS_TYPE_ID)&&
