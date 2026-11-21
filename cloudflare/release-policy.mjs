@@ -187,12 +187,25 @@ export function evaluateRelease(gates) {
     clerk?.verifiedGoogleLinks === 6 &&
     clerk?.verifiedEmailLinks === 1 &&
     clerk?.verifiedD1Links === 7 &&
+    clerk?.verifiedAdminLinks === 2 &&
+    Number.isSafeInteger(clerk?.currentProductionUsers) &&
+    clerk.currentProductionUsers >= 7 &&
     clerk?.emailRecoveryProvenOnFinalDomain === true &&
     clerk?.authenticatedAccountsQaPassed === true &&
     clerk?.adminStepUpQaPassed === true &&
     clerk?.legacyPasswordKdfRemovedFromAllProductionRoutes === true &&
     clerk?.jwtVerificationFreeCpuTested === true;
 
+
+  // Sellos: una prueba SQLite/QA no equivale a un esquema disponible
+  // en la D1 preparada. Exigir respaldo posterior y paridad del historial.
+  const walletDb = gates.phase6WalletD1;
+  const walletDbReady =
+    walletDb?.preparedSchemaInstalled === true &&
+    walletDb?.tableCount === 13 &&
+    walletDb?.triggerCount === 4 &&
+    walletDb?.oldPointBalancesPreserved === true &&
+    walletDb?.backupAfterSchemaVerified === true;
 
   // Añadir cinco CNAME sin proxy no verifica Clerk. Antes de delegar DNS
   // debe preservarse DMARC de Hostinger sin bajar la política existente.
@@ -237,7 +250,7 @@ export function evaluateRelease(gates) {
   // integridad de datos y entorno final realmente preparado.
   const readyForControlledPublication =
     authorized && freeOnlyVerified && cpu10msVerified && pendingPrepublication.length === 0 &&
-    adminTechnologyReady && targetReady && clerkProductionReady;
+    adminTechnologyReady && targetReady && clerkProductionReady && walletDbReady;
   return {
     authorized,
     freeOnlyVerified,
@@ -249,6 +262,7 @@ export function evaluateRelease(gates) {
     pendingOwnerPostpublication,
     adminTechnologyReady,
     clerkProductionReady,
+    walletDbReady,
     clerkDnsSafe,
     visualReady,
     providerBindingsReady,
