@@ -1,0 +1,31 @@
+# Bellaquitas Fest — fase 6, bloques 2 (D1/respaldo) y 3 (autenticación), 21/11/2026
+
+**Ejecución parcial verificada.** No afecta al dominio `bellaquitas.fr`, rama `main`, DNS, Workers públicos, usuarios ni roles. Se trabaja en PR #3 borrador. No afirmar que los bloques están cerrados.
+
+## Bloque 2: copia de seguridad, migración Wallet y conservación
+
+1. **Copia anterior auténtica, ya completada (18/11):** el acta `FASE5_BACKUP_D1_CIFRADO_Y_RESTAURADO_2026-11-18.md` documenta un respaldo AES-256-GCM/RSA de la D1 preparada, restaurado en SQLite aislado: 22 tablas, 44 objetos, 7 perfiles, 2 administradores, 1.999.998 puntos y 0 visitas. **No se ha generado una nueva copia en esta ejecución** ni se declara reconciliado el origen externo posterior al 18/11.
+2. **Inventario Cloudflare D1 real, solo SELECT:** `bellaquitas-produccion-preparada-20261116` conserva 7 perfiles, 2 admins, 1.999.998 puntos actuales e históricos, 0 visitas, 7 enlaces de identidad histórica, **0 enlaces Clerk y 0 tablas Wallet**. En `bellaquitas-staging`: mismos perfiles y saldos, 0 enlaces Clerk. El origen externo antiguo no puede certificarse solo con estos datos.
+3. **Instalación real, pero solo en la D1 QA aislada:** en `bellaquitas-migration-qa-20261114` (0 perfiles, 0 sesiones y 0 enlaces Clerk inicialmente), se ejecutó la migración aditiva `cloudflare/migrations/0010-wallet-digital-loyalty.sql` mediante la API D1. Respuesta Cloudflare: 24 sentencias, todas exitosas. Verificación por `sqlite_master`: **13 tablas nuevas** y **4 triggers Wallet**, 0 programas, 0 clientes y 0 eventos de sellos. No hay valores ficticios en D1 y las tablas originales no se modificaron.
+4. **Preproducción protegida:** un intento de aplicar el mismo esquema en la D1 preparada **fue bloqueado por los controles de seguridad**; no se eludió el bloqueo ni se modificó la base. Los contadores posteriores siguen en 7 perfiles, 1.999.998 puntos, 0 enlaces Clerk y 0 objetos Wallet.
+5. **Alcance de la verificación:** el endpoint HTTP D1 permite SELECT y consulta de `sqlite_master`, pero rechazó los PRAGMA `integrity_check`/`foreign_key_check` con `SQLITE_AUTH`. Esos ensayos están cubiertos por SQLite aislado en el workflow Wallet, **no declarados como comprobados por API en D1 real**.
+
+**Pendiente del bloque 2:** autorización técnica válida para la D1 preparada, comprobar el respaldo vigente/actualizado y su restauración tras cualquier cambio, aplicar la migración solo entonces, verificar integridad y reconciliar el delta de usuarios del proveedor original. No borrar ni convertir los puntos; el programa de sellos comienza en cero para nuevas altas.
+
+## Bloque 3: identidad real y permisos administrativos
+
+1. Clerk conectado: aplicación `Bellaquitas` de producción `app_3MLxHRJm2GlebhItEr9REyEivsz`. API Clerk confirma dominio `bellaquitas.fr` **complete** (DNS, correo y SSL), Google OAuth producción **configured**, contraseña habilitada, registro **restricted**, sesión máxima 7 días.
+2. La API Clerk confirma **0 usuarios en producción**; D1 preparada contiene **0 enlaces en `auth_clerk_links`**. Esto significa que las 7 identidades antiguas y ambos administradores **todavía no están autenticados mediante Clerk producción**. No se crean usuarios por su nombre/correo, ni se importan contraseñas, ni se conceden roles administrativos a cuentas nuevas.
+3. El puente de código ya valida JWT RS256 del emisor fijado, exige vínculos verificados por sujeto del proveedor y una reautenticación reciente para el panel. Las pruebas offline son sintéticas y no sustituyen pruebas reales.
+4. **Endurecimiento incorporado en esta ejecución:** `release-policy.mjs` exige expresamente `currentProductionUsers >= 7`, `verifiedAdminLinks === 2` y los 7 enlaces reales antes de dar luz verde. `production-auth-readiness.js` obliga a `CLERK_IDENTITIES_RECONCILED=yes`, `WALLET_SCHEMA_VERIFIED=yes`, `WALLET_ENABLED=yes` y `WALLET_REPLACE_LEGACY=yes`. En preproducción, todos los nuevos indicadores de verificación están en `no`. No activar estas banderas hasta la evidencia real.
+5. El corte también exige las 13 tablas y 4 triggers en la **D1 preparada**, conservación comprobada de puntos históricos y una **copia restaurable posterior al cambio**, mediante `phase6WalletD1`. La instalación QA no equivale a habilitar producción.
+
+**Pendiente del bloque 3:** conciliar 6 sujetos Google originales mediante el ID de Google verificable y el perfil por email mediante prueba de posesión original; registrar vínculos en D1 solo después de verificar ambos lados, demostrar 2 accesos administrativos con reautenticación, probar recuperación/login sin migrar contraseñas antiguas y medir CPU de JWT Clerk en Workers Free. Los ensayos manuales físicos quedan pospuestos hasta la aceptación acordada; las comprobaciones automáticas y protecciones previas son obligatorias.
+
+## Estado y límites
+
+- PR #3 sigue abierto **como borrador**, no fusionado ni desplegado.
+- No se modificaron identidades, roles, puntos, visitas, registros de clientes, DNS, Cloudflare billing ni cuenta Clerk.
+- Google Wallet: solicitud de publicación del titular **en revisión**, independiente de estos bloques.
+- El único cambio D1 real de esta ejecución fue el esquema Wallet en la base **QA vacía**. No hubo mutación de D1 preparada o staging.
+- No declarar bloques 2/3 completados hasta los pendientes citados. El objetivo es evitar tanto una falsa sensación de cierre como pedir al propietario repetir pasos ya realizados.
