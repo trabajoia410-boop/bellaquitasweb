@@ -75,6 +75,14 @@ export async function walletCustomerPage(request,env){
  function renderCard(c){
   card=c;
   el("registration").hidden=true;el("verification").hidden=true;el("card").hidden=false;
+  for(const field of ["logo","banner"]){
+   const image=el("card-"+field),value=c[field]||"";
+   const valid=typeof value==="string"&&value.startsWith("/assets/")&&
+    !value.includes("..")&&!value.includes("?")&&!value.includes("#")&&
+    [".png",".jpg",".jpeg",".webp"].some(ext=>value.endsWith(ext));
+   image.hidden=!valid;
+   if(valid)image.src=value;else image.removeAttribute("src");
+  }
   el("card-brand").textContent=c.business||config.program.name;
   el("card-owner").textContent=c.name;
   el("stamps").textContent=c.stamps+" / "+c.goal;
@@ -169,7 +177,7 @@ export async function walletCustomerPage(request,env){
  '<section id="verification" hidden><form id="verify"><div class="field"><label for="code" data-i18n="code">Código de 6 dígitos</label>',
  '<input id="code" name="code" maxlength="6" minlength="6" inputmode="numeric" pattern="[0-9]{6}" autocomplete="one-time-code" required></div>',
  '<button class="wallet-btn primary" type="submit" data-i18n="verify">Verificar</button></form></section>',
- '<section id="card" hidden><div class="wallet-card" id="card-visual"><h2 id="card-brand">Bellaquitas Fest</h2>',
+ '<section id="card" hidden><div class="wallet-card" id="card-visual"><img id="card-banner" alt="Banner Bellaquitas" style="width:100%;height:90px;object-fit:cover;border-radius:10px" hidden><img id="card-logo" alt="Logo Bellaquitas" style="width:80px;height:80px;object-fit:contain" hidden><h2 id="card-brand">Bellaquitas Fest</h2>',
  '<p class="owner" id="card-owner"></p><div class="count" id="stamps"></div><div class="dots" id="stamp-dots"></div>',
  '<p><span data-i18n="reward">Recompensa</span>: <b id="reward"></b></p>',
  '<p id="available" hidden data-i18n="ready">¡Recompensa disponible!</p></div>',
