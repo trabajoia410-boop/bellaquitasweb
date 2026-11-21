@@ -1,3 +1,4 @@
+import {STAMP_MARKETING_REPLACEMENTS} from "./retire-legacy-copy.js";
 /**
  * Bellaquitas stamp-only client views for the FUTURE production cutover.
  * Keeps the original SPA shell, events, profile form, translations and theme.
@@ -33,5 +34,27 @@ export function stampsOnlyMemberUI(source){
   if(!updated.includes(before))throw Error("Legacy card CTA missing");
   updated=updated.replace(before,after);
  }
+
+ // Old published CMS strings may still mention points. Replace known, audited
+ // loyalty fields at render time without changing saved content or personal data.
+ const start="function siteText(field,fallback=''){";
+ const end="function headerImage(){";
+ const i=updated.indexOf(start),j=updated.indexOf(end,i+start.length);
+ if(i<0||j<=i||updated.indexOf(start,i+start.length)!==-1)
+  throw Error("Cannot safely adapt legacy published loyalty text");
+ const original=updated.slice(i,j).replace(start,"function legacySiteText(field,fallback=''){");
+ const fields=["hero_text","announcement","feature_2_title","feature_2_desc",
+  "benefits_card_title","benefits_card_desc","benefit_1_title","benefit_1_desc",
+  "benefit_2_title","benefit_2_desc","benefit_3_title","benefit_3_desc",
+  "faq_2_q","faq_2_a"];
+ const adapter=[
+  "const STAMP_COPY_MAP=new Map("+JSON.stringify(STAMP_MARKETING_REPLACEMENTS)+");",
+  "const STAMP_PUBLIC_COPY_FIELDS=new Set("+JSON.stringify(fields)+");",
+  "function siteText(field,fallback=''){",
+  " const value=legacySiteText(field,fallback);",
+  " return STAMP_PUBLIC_COPY_FIELDS.has(field)?STAMP_COPY_MAP.get(value)||value:value;",
+  "}"
+ ].join("\n");
+ updated=updated.slice(0,i)+original+adapter+"\n"+updated.slice(j);
  return updated;
 }
