@@ -81,4 +81,34 @@ assert.match(scannerHtml,/mediaDevices\.getUserMedia/);
 assert.match(scannerHtml,/jsqr-local\.js/);
 assert.match(scannerHtml,/v1\/wallet\/stamp/);
 assert.match(scannerHtml,/inputmode="numeric"/);
-console.log("PASS: Wallet mock, OTP UI, idiomas ES/FR, QR firmado, escáner, límites y aislamiento de producción.");
+// Reutilizar exactamente la sesión de administrador (sesión + step-up),
+// sin un panel con login distinto y sin acceso de empleado al diseño.
+const adminId="11111111-1111-4111-8111-111111111111";
+const adminEnv={SITE_MODE:"production",WALLET_ENABLED:"yes",
+ DB:{prepare(sql){
+   if(sql.includes("FROM auth_sessions s JOIN profiles p"))return {
+    bind:()=>({first:async()=>({id:adminId,role:"admin",name:"Admin simulado"})})};
+   if(sql.includes("FROM auth_admin_sessions WHERE"))return {
+    bind:()=>({first:async()=>({ok:1})})};
+   throw Error("No se permiten consultas fuera de sesión");
+ }}};
+const adminUrl=base+"/administracion/fidelidad/";
+const nonAdmin=await walletAdminPage(new Request(adminUrl),adminEnv);
+assert.equal(nonAdmin.status,403);
+const cookieRequest=new Request(adminUrl,{headers:{
+ Cookie:"__Host-bf_session="+"A".repeat(43)+"; __Host-bf_admin="+"B".repeat(43)}});
+const adminResponse=await walletAdminPage(cookieRequest,adminEnv);
+assert.equal(adminResponse.status,200);
+const adminMarkup=await adminResponse.text();
+assert.match(adminMarkup,/live-progress/);
+assert.match(adminMarkup,/\/admin\/escanear/);
+assert.match(adminMarkup,/Descargar PNG/);
+assert.match(adminMarkup,/Guardar como PDF/);
+assert.match(adminMarkup,/v1\/wallet\/admin\/customers/);
+const adminScript=adminMarkup.match(/<script nonce="[^"]+">([\s\S]*?)<\/script>/)?.[1];
+assert.ok(adminScript);
+new Script(adminScript,{filename:"wallet-admin-inline.js"});
+assert.equal(adminResponse.headers.get("Set-Cookie"),null);
+assert.equal(adminResponse.headers.get("X-Robots-Tag"),"noindex,nofollow");
+console.log("PASS: Wallet mock, admin protegido con cookie de step-up, OTP UI ES/FR, QR firmado y escáner.");
+
