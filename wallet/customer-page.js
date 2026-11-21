@@ -4,6 +4,7 @@
  */
 import {WALLET_I18N} from "./i18n.js";
 import {WALLET_QR_LIB} from "./qr-bundle.js";
+import {walletIssuerReadiness} from "./issuer-readiness.js";
 import {escapeHtml,validSlug} from "./core.js";
 const HEAD={"Cache-Control":"no-store, private","X-Robots-Tag":"noindex,nofollow",
  "X-Content-Type-Options":"nosniff","Referrer-Policy":"no-referrer",
@@ -31,7 +32,7 @@ export async function walletCustomerPage(request,env){
  if(demo){
   if(env?.SITE_MODE!=="staging"||env?.WALLET_MOCK_PREVIEW!=="yes"||
      env?.STAGING_MUTATIONS!=="disabled")return new Response("No disponible",{status:404,headers:HEAD});
- }else if(env?.SITE_MODE!=="production"||env?.WALLET_ENABLED!=="yes")
+ }else if(env?.SITE_MODE!=="production"||env?.WALLET_ENABLED!=="yes"||env?.PUBLISH_APPROVED!=="yes")
   return new Response("No disponible",{status:404,headers:HEAD});
  const slug=demo?"bellaquitas-fest":found[1];
  if(!validSlug(slug))return new Response("No disponible",{status:404,headers:HEAD});
@@ -42,7 +43,7 @@ export async function walletCustomerPage(request,env){
   if(!program)return new Response("No disponible",{status:404,headers:HEAD});
  }
  const nonce=btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(18))));
- const data=JSON.stringify({demo,slug,strings:WALLET_I18N,mock:MOCK_CARD,
+ const data=JSON.stringify({demo,slug,providers:demo?{apple:false,google:false}:walletIssuerReadiness(env),strings:WALLET_I18N,mock:MOCK_CARD,
   program:MOCK_PROGRAM}).replace(/</g,"\\u003c");
  const script=String.raw`
 (()=>{
@@ -52,6 +53,12 @@ export async function walletCustomerPage(request,env){
  const lang=()=>localStorage.getItem("bellaquitas-lang")==="fr"?"fr":"es";
  let language=lang(),challengeId=null,card=null;
  const dict=()=>config.strings[language],t=k=>dict()[k]||k;
+ const providerAvailability=config.providers||{apple:false,google:false};
+ function refreshProviderState(){
+  for(const type of ["apple","google"])el(type).hidden=!providerAvailability[type];
+  el("wallet-actions").hidden=!(providerAvailability.apple||providerAvailability.google);
+  el("wallet-provider-note").textContent=t(providerAvailability.apple||providerAvailability.google?"nativeAvailable":"nativeUnavailable");
+ }
  const status=(m)=>{el("status").textContent=m;};
  function switchLang(next){
   language=next;document.documentElement.lang=next;
@@ -60,7 +67,7 @@ export async function walletCustomerPage(request,env){
    node.textContent=t(node.dataset.i18n);
   for(const node of document.querySelectorAll("[data-i18n-placeholder]"))
    node.setAttribute("placeholder",t(node.dataset.i18nPlaceholder));
-  status("");
+  refreshProviderState();status("");
  }
  el("es").addEventListener("click",()=>switchLang("es"));
  el("fr").addEventListener("click",()=>switchLang("fr"));
@@ -96,7 +103,7 @@ export async function walletCustomerPage(request,env){
   el("card-visual").style.setProperty("--w-gold",c.accent||"#e9c477");
   const code=c.scanCode;
   if(code&&window.BellaWalletQR)window.BellaWalletQR.render(el("wallet-qr"),code,{label:"QR tarjeta cliente"});
-  el("wallet-actions").hidden=false;
+  refreshProviderState();
  }
  async function load(){
   if(config.demo){renderCard(config.mock);status(t("preview"));return;}
@@ -136,6 +143,7 @@ export async function walletCustomerPage(request,env){
  for(const type of ["apple","google"])
   el(type).addEventListener("click",async()=>{
    if(config.demo){status(t("preview"));return;}
+   if(!providerAvailability[type]){status(t("nativeUnavailable"));return;}
    status(t("loading"));
    try{
     const result=await call("/v1/wallet/pass/"+type,{slug:config.slug});
@@ -181,12 +189,12 @@ export async function walletCustomerPage(request,env){
  '<p class="owner" id="card-owner"></p><div class="count" id="stamps"></div><div class="dots" id="stamp-dots"></div>',
  '<p><span data-i18n="reward">Recompensa</span>: <b id="reward"></b></p>',
  '<p id="available" hidden data-i18n="ready">¡Recompensa disponible!</p></div>',
- '<div id="wallet-qr" aria-label="QR personal"></div>',
+ '<div id="wallet-qr" aria-label="QR personal"></div><p id="wallet-provider-note" role="status"></p>',
  '<div id="wallet-actions" hidden><button id="apple" class="wallet-btn" type="button" data-i18n="apple">Añadir a Apple Wallet</button>',
  '<button id="google" class="wallet-btn" type="button" data-i18n="google">Añadir a Google Wallet</button></div>',
  '<button class="wallet-btn" id="delete" type="button" data-i18n="delete">Solicitar eliminación de mis datos</button></section>',
  '<p id="status" aria-live="polite" role="status"></p>',
- '<p style="font-size:.78rem" data-i18n="notes">La antigua tarjeta y sus puntos no se modifican durante esta prueba.</p></section></main>',
+ '<p style="font-size:.78rem" data-i18n="notes">El programa nuevo utiliza sellos; los puntos antiguos quedan archivados.</p></section></main>'
  '<script type="application/json" id="wallet-config">'+data+'</script>',
  '<script src="/wallet/qr.js"></script>',
  '<script nonce="'+nonce+'">'+script+'</script></body></html>'
