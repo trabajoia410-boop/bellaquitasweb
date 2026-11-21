@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS wallet_employees (
 );
 CREATE TABLE IF NOT EXISTS wallet_pin_limits (
  key_hash TEXT PRIMARY KEY,
- failures INTEGER NOT NULL DEFAULT 0 CHECK(failures BETWEEN 0 AND 10),
+ failures INTEGER NOT NULL DEFAULT 0 CHECK(failures BETWEEN 0 AND 100),
  blocked_until INTEGER NOT NULL DEFAULT 0,
  expires_at INTEGER NOT NULL DEFAULT 0
 );
