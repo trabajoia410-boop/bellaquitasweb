@@ -36,6 +36,13 @@ export async function walletAdminPage(request,env){
   const d=Object.fromEntries(fields.map(k=>[k,el("design-"+k).value]));
   el("live").style.background="linear-gradient(125deg,"+d.color+",#452231)";
   el("live").style.borderColor=d.accent;
+  // En la vista previa solo mostrar imágenes estáticas de la propia web.
+  for(const field of ["logo","banner"]){
+   const image=el("live-"+field);
+   const valid=/^\\/assets\\/[a-zA-Z0-9/_-]+\\.(?:png|webp|jpe?g)$/.test(d[field]||"");
+   image.hidden=!valid;
+   if(valid)image.src=d[field];else image.removeAttribute("src");
+  }
   el("live-name").textContent=d.name||"Bellaquitas Fest";
   el("live-reward").textContent=d.reward;
   el("live-progress").textContent="4 / "+d.goal;
@@ -209,7 +216,7 @@ export async function walletAdminPage(request,env){
  ["reward","Recompensa","text","Consumición gratis"],["message","Texto","text","Vive el momento"],
  ["cooldown","Segundos entre sellos","number","600"]].map(([id,label,type,value])=>
  '<label class="field">'+label+'<input id="design-'+id+'" type="'+type+'" value="'+value+'"></label>'),
- '</div><div id="live" class="preview"><strong id="live-name">Bellaquitas Fest</strong><p id="live-message"></p><h2 id="live-progress">4 / 7</h2><b id="live-reward">Consumición gratis</b></div><button id="save-design" class="main" data-i18n="save">Guardar</button></section>',
+ '</div><div id="live" class="preview"><img id="live-banner" alt="Banner de tarjeta" style="width:100%;height:110px;object-fit:cover;border-radius:9px" hidden><img id="live-logo" alt="Logo de tarjeta" style="width:75px;height:75px;object-fit:contain" hidden><strong id="live-name">Bellaquitas Fest</strong><p id="live-message"></p><h2 id="live-progress">4 / 7</h2><b id="live-reward">Consumición gratis</b></div><button id="save-design" class="main" data-i18n="save">Guardar</button></section>',
  '<section data-panel="customers" hidden><h2 data-i18n="customers">Clientes</h2><p><span id="client-total">0</span> clientes</p>',
  '<div class="grid"><label>Buscar<input id="search" type="search" maxlength="80"></label>',
  '<label data-i18n="inactive">No vuelve desde<select id="inactive"><option value="0">Todos</option><option value="7">7 días</option><option value="30">30 días</option><option value="90">90 días</option></select></label></div>',
