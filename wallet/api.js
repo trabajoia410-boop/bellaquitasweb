@@ -125,7 +125,7 @@ async function verify(req,env){
   env.DB.prepare("INSERT INTO wallet_customer_sessions(token_hash,customer_id,expires_at) VALUES(?,?,unixepoch()+2592000)")
    .bind(hash,customerId)
  ]);
- return answer({authenticated:true},{valueOf:()=>200},{"Set-Cookie":cookie(token,2592000)});
+ return answer({authenticated:true},200,{"Set-Cookie":cookie(token,2592000)});
 }
 async function me(req,env){
  const slug=new URL(req.url).searchParams.get("slug");
