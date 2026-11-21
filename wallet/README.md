@@ -13,6 +13,10 @@
 
 ## Activar Google Wallet real (después de aprobación)
 
+**Emisor Bellaquitas Fest creado en consola por el titular (21/11/2026):** `3388000000023244592`. El número de emisor NO es una clave secreta y está registrado como `WALLET_GOOGLE_ISSUER_ID` en la configuración de preproducción de esta rama, sin despliegue. Esto NO implica que Google haya aprobado la publicación ni que los pases estén operativos.
+
+**Desbloqueo de solicitud:** Google requiere completar el perfil comercial y crear al menos una `LoyaltyClass` antes de solicitar publicación. La clase que el adaptador preparará usa el identificador `3388000000023244592.bellaquitas_fest` (plantilla de sellos). Para crearla con Google Wallet REST API, faltan una cuenta de servicio autorizada y credenciales privadas; no se ha realizado ninguna llamada de escritura a Google. Pasos del titular sin compartir secretos: en Google Cloud Console habilitar `Google Wallet API`, crear cuenta de servicio y añadir **solo su email** a los usuarios/permisos del emisor en Google Pay & Wallet Console; el material privado se deberá instalar en los secretos de Cloudflare mediante un canal seguro antes de una prueba controlada. No publicar ni activar hasta verificar credenciales, coste, límites y pruebas.
+
 1. Crear una cuenta de emisor en Google Pay & Wallet Console: https://pay.google.com/business/console/ . Solicitar la revisión de publicación de Google: https://developers.google.com/wallet/retail/loyalty-cards/getting-started/request-publishing-access .
 2. Habilitar Wallet API en Google Cloud y crear una cuenta de servicio con permiso del emisor. Google pide agregar el email de esa cuenta de servicio en su Issuer account: https://developers.google.com/wallet/retail/loyalty-cards/getting-started/auth/rest .
 3. Proporcionar mediante **secrets privados** del Worker, nunca en el repositorio o chat: WALLET_GOOGLE_ISSUER_ID, WALLET_GOOGLE_CLIENT_EMAIL y WALLET_GOOGLE_PRIVATE_KEY (PKCS8 PEM). Verificar que la LoyaltyClass y LoyaltyObject estén aprobadas y que la instalación y actualización funcionan en móvil.
