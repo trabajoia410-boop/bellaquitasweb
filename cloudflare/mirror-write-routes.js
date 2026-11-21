@@ -1,3 +1,4 @@
+import {stampsReplacePoints} from "../wallet/cutover-policy.js";
 import {authenticatedProfile,authenticatedAdminAccess,checkOrigin} from "./auth-routes.js";
 // Bellaquitas Fest: futuras escrituras del editor y catálogos.
 // MODO CERRADO en staging: STAGING_MUTATIONS=disabled -> HTTP 423.
@@ -167,6 +168,9 @@ export async function mirrorWriteRoute(request,env){
   if(!/^application\/json(?:;|$)/i.test(request.headers.get("Content-Type")||""))
    throw Error("Se requiere JSON");
   const body=await parseBody(request);
+  if(stampsReplacePoints(env)&&body.kind==="catalog"&&
+     ["rewards","promos"].includes(body.table))
+    return bad("El catálogo antiguo por puntos está archivado; usa las tarjetas de sellos",410);
   return reply(await writes(env,body));
  }catch(error){
   console.error("mirror write failed",String(error?.message||"error").slice(0,125));
