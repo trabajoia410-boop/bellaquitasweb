@@ -1,3 +1,4 @@
+import {stampsReplacePoints} from "../wallet/cutover-policy.js";
 import {authRoute} from "./auth-routes.js";
 import {clerkIdentityRoute} from "./clerk-auth-bridge.js";
 import {clerkQaPreview} from "./clerk-qa-preview.js";
@@ -165,6 +166,9 @@ export default {
         "/v1/moments": "SELECT id, title, event_date FROM moments_albums WHERE published = 1 ORDER BY event_date DESC LIMIT 100"
       };
       if (Object.prototype.hasOwnProperty.call(publicQueries, pathname)) {
+        // Historical point-based offers remain stored, but are no longer advertised.
+        if(stampsReplacePoints(env)&&["/v1/rewards","/v1/promos"].includes(pathname))
+          return jsonResponse(request,{items:[],loyalty:"stamps",archived:true});
         const results = await env.DB.prepare(publicQueries[pathname]).all();
         return jsonResponse(request, {items: withJsonFields(results.results || [])});
       }
