@@ -17,7 +17,7 @@ export async function createPass(customer,program,env={},provider="mock"){
    throw Error("Apple Wallet signer unavailable");
   const response=await env.APPLE_PASS_SIGNER.fetch("https://internal.wallet.invalid/v1/passes",{
    method:"POST",headers:{"Content-Type":"application/json"},
-   body:JSON.stringify({customer,program})
+   body:JSON.stringify({customer:{id:customer.id,name:customer.name,stamps:customer.stamps,scan_code:customer.scan_code},program:{id:program.id,name:program.name,stamp_goal:program.stamp_goal,reward_label:program.reward_label,color:program.color,accent_color:program.accent_color}})
   });
   if(!response.ok||response.headers.get("Content-Type")!=="application/vnd.apple.pkpass")
    throw Error("Apple Wallet signer rejected pass");
