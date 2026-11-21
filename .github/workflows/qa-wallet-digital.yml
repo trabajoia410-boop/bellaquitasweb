@@ -36,10 +36,13 @@ jobs:
           for f in wallet/*.js; do node --check "$f"; done
           node --check cloudflare/test-wallet-ui.mjs
           node --check cloudflare/test-wallet-schema.mjs
-      - name: 12 tablas e invariantes SQLite en memoria, sin D1
+          node --check cloudflare/test-wallet-stamp-cutover.mjs
+      - name: 13 tablas e invariantes SQLite en memoria, sin D1
         run: node --experimental-sqlite cloudflare/test-wallet-schema.mjs
       - name: Simular cliente, QR, PIN, roles y previews sin red ni usuarios
-        run: node cloudflare/test-wallet-ui.mjs
+        run: |
+          node cloudflare/test-wallet-ui.mjs
+          node cloudflare/test-wallet-stamp-cutover.mjs
       - name: Generar .pkpass CMS con certificado sintético en memoria temporal
         run: node cloudflare/test-wallet-apple-signer.mjs
       - name: Prohibir material privado en el repositorio
