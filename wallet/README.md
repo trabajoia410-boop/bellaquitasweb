@@ -44,4 +44,16 @@ Workers Free mantiene límite de CPU (10 ms por petición) y de solicitudes (100
 **No publicar aún**: nueva wallet sin configuración real de Google/Apple; pruebas físicas, conciliación D1, permisos Clerk, factura 0 € y CSS del cliente pendientes. Las banderas continúan en no. No alterar main, DNS ni D1 real hasta acabar las verificaciones.
 
 
+## Estado real de Apple/Google Wallet y coste cero (auditoría 21/11/2026)
+
+**Confirmación de la conexión Cloudflare, solo lectura:** el Worker `bellaquitas-api-preproduccion` conserva `SITE_MODE=preproduction`, `PUBLISH_APPROVED=no`, `FREE_TIER_BILLING_VERIFIED=no`, `FREE_TIER_CPU_VERIFIED=no`, `STAGING_MUTATIONS=disabled` y no contiene secretos de emisor Wallet ni Service Bindings de firmante Apple. El Worker de staging tiene las mutaciones deshabilitadas. No hay tareas cron Wallet activadas. La API de suscripciones de Cloudflare devolvió 403 por falta de permiso de facturación; **no puede afirmarse que la cuenta tenga facturación gratuita verificada**.
+
+**Preparación sin publicar:** `wallet/issuer-readiness.js` requiere aprobación independiente de cada emisor. No se presentan botones de Apple o Google al cliente hasta que esté configurado y habilitado ese proveedor. `wallet/admin-api.js` sirve el estado booleano, sin secretos, exclusivamente al administrador reautenticado. `wallet/apple-service.js` rechaza PassKit antes de cumplir las condiciones. `wallet/sync.js` deja en espera los trabajos de emisores no aprobados sin consumir reintentos. `wallet/index.js` y `wallet/api.js` también rechazan operaciones reales de emisores aún no autorizados.
+
+Las banderas **`WALLET_GOOGLE_ISSUER_APPROVED=no` y `WALLET_APPLE_ISSUER_APPROVED=no`** se añaden a la configuración de preproducción. Para Google se requieren cuenta de emisor, permiso de publicación, ID, cuenta de servicio y clave privada, configurados mediante secretos. Haber conectado Google OAuth para iniciar sesión no equivale a tener Google Wallet Issuer. Para Apple se requiere cuenta Apple Developer autorizada, Pass Type ID, firma real de PKPass y puente APNs privado. Apple publica una cuota habitual de **99 USD/año**, que no está autorizada bajo la condición de 0 €. Por ello la tarjeta web con QR será la alternativa sin ese coste.
+
+**Límites Cloudflare Free verificados en documentación:** 100.000 peticiones por día para Workers Free y 10 ms de CPU por petición. No se ha medido CPU real de esta versión con tráfico de clientes, así que `FREE_TIER_CPU_VERIFIED` permanece en no y los emisores siguen apagados. No se crea plan nuevo, suscripción, R2, cron ni despliegue. Las pruebas de navegador del laboratorio usan la implementación de esta rama en una respuesta simulada con el iframe de staging de solo lectura; no prueban que el parche ya esté desplegado en staging.
+
+**Prueba automática nueva:** `cloudflare/test-wallet-issuer-readiness.mjs` verifica que no existen pases reales ni reintentos contra emisores sin aprobación; se ejecuta en `.github/workflows/qa-wallet-digital.yml` con datos ficticios y sin llamadas a Apple, Google ni D1 real.
+
 **Resumen:** mock web con QR y fidelidad offline probada; Apple y Google Wallet reales y sus notificaciones NO se han activado ni certificado. Ningún cargo ni suscripción nueva autorizados.
