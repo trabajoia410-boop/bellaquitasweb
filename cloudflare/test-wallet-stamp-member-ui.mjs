@@ -6,6 +6,7 @@ import {Script} from "node:vm";
 import {stampsOnlyMemberUI} from "../wallet/retire-legacy-member-ui.js";
 import {stampsOnlyMarketingCopy} from "../wallet/retire-legacy-copy.js";
 import {walletLegacyRedirectRoute} from "../wallet/legacy-redirect.js";
+import {productionSiteRoute} from "./production-site-route.js";
 
 const original=readFileSync("app.js","utf8");
 const translated=readFileSync("locale-fr.js","utf8");
@@ -53,4 +54,26 @@ new Script(browser,{filename:"legacy-route-guard.js"});
 assert.match(browser,/#\/panel/);
 assert.match(browser,/\/administracion\//);
 assert.match(browser,/#\/tarjeta/);
+// Check the *actual production asset router*, not just the original source.
+const scriptUrl="https://bellaquitas.fr/app.js?v=traduccion62";
+const servedJS=await productionSiteRoute(new Request(scriptUrl),approved);
+assert.equal(servedJS.status,200,"Production JS must be served under stamp release flags");
+const servedBody=await servedJS.text();
+new Script(servedBody,{filename:"worker-stamp-only-app.js"});
+assert.match(servedBody,/Abrir mi tarjeta digital/);
+assert.doesNotMatch(between.call(null,"function summary(){","function loyaltyCardView(){"),/current\\.points/);
+const servedFR=await productionSiteRoute(new Request("https://bellaquitas.fr/locale-fr.js"),approved);
+assert.equal(servedFR.status,200);
+const servedFRBody=await servedFR.text();
+assert.match(servedFRBody,/Cumulez des tampons/);
+new Script(servedFRBody,{filename:"worker-stamp-only-fr.js"});
+const homepage=await productionSiteRoute(new Request("https://bellaquitas.fr/"),approved);
+assert.equal(homepage.status,200);
+const homepageHTML=await homepage.text();
+assert.match(homepageHTML,/href="\/tarjeta\/bellaquitas-fest">Únete al club/);
+assert.match(homepageHTML,/\/wallet\/legacy-redirect.js/);
+const oldProduction=await productionSiteRoute(new Request("https://bellaquitas.fr/"),{
+ ...approved,WALLET_REPLACE_LEGACY:"no"});
+assert.equal(oldProduction.status,200);
+assert.doesNotMatch(await oldProduction.text(),/\/wallet\/legacy-redirect.js/);
 console.log("PASS: original SPA compiles with ES/FR stamp-only views; accounts, events, profile and release gates preserved.");
