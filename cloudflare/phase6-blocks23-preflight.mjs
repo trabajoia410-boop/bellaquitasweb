@@ -27,7 +27,7 @@ const sameNames = (observed, required) =>
   [...observed].sort().every((name, i) => name === [...required].sort()[i]);
 
 function validLegacy(snapshot) {
-  return snapshot && ["profiles","admins","points","lifetimePoints","visits",
+  return !!snapshot && ["profiles","admins","points","lifetimePoints","visits",
     "identityGoogle","identityEmail","identityDistinctProfiles"].every(
       key => count(snapshot[key])
     ) &&
