@@ -1,5 +1,5 @@
-import {buildBellaquitasGoogleLoyaltyClass} from "../wallet/google-provisional-class.js";
 #!/usr/bin/env node
+import {buildBellaquitasGoogleLoyaltyClass} from "../wallet/google-provisional-class.js";
 /** Native issuer gate QA: fake keys only; no HTTP requests or Cloudflare data. */
 import assert from "node:assert/strict";
 import {Script} from "node:vm";
