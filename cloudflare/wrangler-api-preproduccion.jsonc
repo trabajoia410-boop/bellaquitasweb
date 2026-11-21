@@ -25,6 +25,8 @@
     "RESEND_FROM": "no-reply@bellaquitas.fr",
     "FINAL_ORIGIN_RECONCILED": "no",
     "BACKUP_KEY_CUSTODIED": "no",
+    "CLERK_IDENTITIES_RECONCILED": "no",
+    "WALLET_SCHEMA_VERIFIED": "no",
     "FREE_TIER_BILLING_VERIFIED": "no",
     "FREE_TIER_CPU_VERIFIED": "no",
     "CLERK_JWT_ENABLED": "no",
