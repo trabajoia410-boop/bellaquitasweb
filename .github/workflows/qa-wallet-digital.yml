@@ -61,7 +61,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          result="$(curl --max-time 25 --fail-with-body --silent --show-error --retry 1 \
+          result="$(curl --max-time 25 --silent --show-error --retry 1 \
             'https://cc85a183-bellaquitas-api-preproduccion.bellaquitas-fest-410.workers.dev/_bellaquitas_wallet_setup/ZL7K0orOfMHZHhI7GXn1Vxa3i_J2Xww33Xzw0z31D4c')"
           echo "$result" | jq '{created,exists,id,reviewStatus,stage,http_status,reason}'
           echo "$result" | jq -e '(.created == true) or (.exists == true)' >/dev/null
