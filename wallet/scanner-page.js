@@ -35,6 +35,9 @@ export function walletScannerPage(request,env){
   const v=await r.json().catch(()=>({}));
   if(!r.ok)throw Error(v.error||t("error"));return v;
  };
+ el("use-existing").addEventListener("click",()=>{
+  show("camera");status("Se comprobarán tus permisos al añadir un sello.");
+ });
  el("pin-form").addEventListener("submit",async e=>{
   e.preventDefault();
   try{await post("/v1/wallet/employee/login",{
@@ -94,7 +97,7 @@ export function walletScannerPage(request,env){
  '<button id="lang-es">ES</button> <button id="lang-fr">FR</button>',
  '<div class="panel" data-view="pin"><h2 data-i18n="login">Acceso con código de empleado</h2>',
  '<form id="pin-form"><label for="pin">PIN 4 cifras</label><input id="pin" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" autocomplete="off" required>',
- '<button type="submit" data-i18n="continue">Continuar</button></form><p>Los administradores y el personal de puerta con sesión válida también pueden sellar directamente desde el escáner.</p></div>',
+ '<button type="submit" data-i18n="continue">Continuar</button></form><button type="button" id="use-existing">Usar mi sesión de puerta o administrador</button><p>Los administradores y el personal de puerta con sesión válida también pueden sellar directamente desde el escáner.</p></div>',
  '<div class="panel" data-view="camera" hidden><button type="button" id="camera" data-i18n="scan">Abrir cámara</button>',
  '<button type="button" id="stop" data-i18n="cancel">Cancelar</button>',
  '<video id="video" playsinline muted></video><canvas id="canvas" hidden></canvas>',
