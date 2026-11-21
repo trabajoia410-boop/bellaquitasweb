@@ -6,6 +6,8 @@
  * Solo entra en vigor con SITE_MODE=production.
  */
 import {mirrorRoute} from "./web-mirror.js";
+import {stampsReplacePoints} from "../wallet/cutover-policy.js";
+import {stampsOnlyMarketingCopy} from "../wallet/retire-legacy-copy.js";
 
 const ASSET_SOURCE = /^\/(?:styles\.css|app\.js|config\.js|locale-fr\.js)$/;
 const SINGLE_ASSET = /^\/assets\/[^/]+$/;
@@ -28,6 +30,8 @@ const BADGE=/<div role="status" aria-label="Copia de pruebas Cloudflare"[^>]*>PR
 // La protección global de producción se ejecuta ANTES en el router principal.
 let cachedPublicHtml=null;
 let cachedPublicHeaders=null;
+let cachedPublicMode=null;
+let cachedStampAppJS=null;
 
 export async function productionSiteRoute(request,env) {
   if(env?.SITE_MODE!=="production")return null;
@@ -82,7 +86,7 @@ export async function productionSiteRoute(request,env) {
 
   const page=SITE_ROOT.has(path);
   if(!page&&!ASSET_SOURCE.test(path)&&!SINGLE_ASSET.test(path))return null;
-  if(page&&cachedPublicHtml!==null){
+  if(page&&cachedPublicHtml!==null&&cachedPublicMode===stampsReplacePoints(env)){
     return new Response(request.method==="HEAD"?null:cachedPublicHtml,{
       status:200,headers:new Headers(cachedPublicHeaders)
     });
@@ -93,6 +97,14 @@ export async function productionSiteRoute(request,env) {
   const mirrorRequest=new Request(mirrorUrl,request);
   const served=await mirrorRoute(mirrorRequest,env);
   if(!served)return response("Recurso no disponible",503,"text/plain; charset=utf-8");
+  // Do not change the original static files. Copy-only marketing replacements
+  // are applied to the served JS once per isolate when stamp loyalty is live.
+  if(path==="/app.js"&&stampsReplacePoints(env)&&served.status===200){
+    if(cachedStampAppJS===null)
+      cachedStampAppJS=stampsOnlyMarketingCopy(await served.text());
+    return response(request.method==="HEAD"?null:cachedStampAppJS,200,
+      "application/javascript; charset=utf-8");
+  }
   if(!page)return served;
   if(served.status!==200)return served;
   if(request.method==="HEAD"){
@@ -107,8 +119,14 @@ export async function productionSiteRoute(request,env) {
     .replace(/content="noindex,nofollow"/g,'content="index,follow"');
   // Only after explicit cutover: replace old loyalty-card hash route, not
   // users, points, design, QR door controls or any other navigation.
-  if(env.WALLET_ENABLED==="yes"&&env.WALLET_REPLACE_LEGACY==="yes")
+  if(stampsReplacePoints(env)){
+    html=stampsOnlyMarketingCopy(html);
+    // The original website remains visually intact; only loyalty entry links
+    // and the short copy are updated. Old card and reward hashes redirect.
+    html=html.replaceAll('href="#/acceso" class="btn btn-primary">Acceder a mi tarjeta',
+      'href="/tarjeta/bellaquitas-fest" class="btn btn-primary">Acceder a mi tarjeta');
     html=html.replace("</body>",'<script src="/wallet/legacy-redirect.js" defer></script></body>');
+  }
   if(!html.includes('id="app"')||html.includes('PRUEBAS · SOLO LECTURA')||
     html.includes("vlsipvngvxcgnwrhpjgg.supabase.co"))
     return response("Página no verificada",503,"text/plain; charset=utf-8");
@@ -118,5 +136,6 @@ export async function productionSiteRoute(request,env) {
   headers.delete("Content-Length");
   cachedPublicHtml=html;
   cachedPublicHeaders=[...headers.entries()];
+  cachedPublicMode=stampsReplacePoints(env);
   return new Response(html,{status:200,headers});
 }
