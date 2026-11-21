@@ -36,7 +36,15 @@ const replacements=[
   ["Visite validée : +10 points.","Visite enregistrée."],
   ["Les points et le niveau sont gérés par les personnes autorisées.","Les tampons sont validés sur votre carte numérique par le personnel autorisé."],
   ["La categoría y el saldo no se pueden editar desde el perfil. Los gestiona el sistema autorizado.","Tus sellos se gestionan desde la tarjeta digital. El personal autorizado los valida."],
-  ["Tu código de socio, tus puntos y tus ventajas reunidos en un mismo lugar.","Tu tarjeta digital, tus sellos y tus ventajas en un mismo lugar."]
+  ["Tu código de socio, tus puntos y tus ventajas reunidos en un mismo lugar.","Tu tarjeta digital, tus sellos y tus ventajas en un mismo lugar."],
+  ["Sube de categoría","Completa tu tarjeta"],
+  ["Passez au niveau supérieur","Complétez votre carte"],
+  ["Member, Gold, VIP y Black: cada etapa reconoce tu participación.","Completa tu tarjeta de sellos y disfruta las recompensas del club."],
+  ["Member, Gold, VIP et Black : progressez à votre rythme.","Complétez votre carte à tampons pour profiter des récompenses du club."],
+  ["Explora el catálogo y solicita los premios disponibles.","Descubre las recompensas que consigues al completar tus sellos."],
+  ["Explorez le catalogue et demandez les récompenses disponibles.","Découvrez les récompenses de votre carte à tampons."],
+  ["Una tarjeta, todas tus ventajas.","Una tarjeta de sellos, todas tus ventajas."],
+  ["Une carte, tous vos avantages.","Une carte à tampons, tous vos avantages."]
 ];
 export function stampsOnlyMarketingCopy(source){
  if(typeof source!=="string")throw Error("Source must be a string");
