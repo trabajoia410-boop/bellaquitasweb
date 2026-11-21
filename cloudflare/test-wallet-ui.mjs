@@ -8,6 +8,7 @@ import {walletAdminPage} from "../wallet/admin-page.js";
 import {walletApiRoute} from "../wallet/api.js";
 import {walletAdminApiRoute} from "../wallet/admin-api.js";
 import {walletStaffRoute} from "../wallet/staff.js";
+import {walletLegacyRedirectRoute} from "../wallet/legacy-redirect.js";
 import {createPass,updatePass,sendNotification} from "../wallet/index.js";
 import {normalizeEmail,normalizePhone,validSlug,scanCode,verifyScan} from "../wallet/core.js";
 import {WALLET_I18N} from "../wallet/i18n.js";
@@ -101,6 +102,8 @@ const adminResponse=await walletAdminPage(cookieRequest,adminEnv);
 assert.equal(adminResponse.status,200);
 const adminMarkup=await adminResponse.text();
 assert.match(adminMarkup,/live-progress/);
+assert.match(adminMarkup,/live-logo/);
+assert.match(adminMarkup,/live-banner/);
 assert.match(adminMarkup,/\/admin\/escanear/);
 assert.match(adminMarkup,/Descargar PNG/);
 assert.match(adminMarkup,/Guardar como PDF/);
@@ -110,5 +113,18 @@ assert.ok(adminScript);
 new Script(adminScript,{filename:"wallet-admin-inline.js"});
 assert.equal(adminResponse.headers.get("Set-Cookie"),null);
 assert.equal(adminResponse.headers.get("X-Robots-Tag"),"noindex,nofollow");
-console.log("PASS: Wallet mock, admin protegido con cookie de step-up, OTP UI ES/FR, QR firmado y escáner.");
+// La sustitución del sistema viejo no está activa en preproducción.
+const legacyURL=new Request(base+"/wallet/legacy-redirect.js");
+assert.equal(walletLegacyRedirectRoute(legacyURL,{SITE_MODE:"preproduction",
+ WALLET_ENABLED:"yes",WALLET_REPLACE_LEGACY:"yes"}).status,404);
+assert.equal(walletLegacyRedirectRoute(legacyURL,{SITE_MODE:"production",
+ WALLET_ENABLED:"yes",WALLET_REPLACE_LEGACY:"no"}).status,404);
+const futureCutover=walletLegacyRedirectRoute(legacyURL,{SITE_MODE:"production",
+ WALLET_ENABLED:"yes",WALLET_REPLACE_LEGACY:"yes"});
+assert.equal(futureCutover.status,200);
+const redirectJS=await futureCutover.text();
+new Script(redirectJS,{filename:"wallet-legacy-redirect.js"});
+assert.match(redirectJS,/#\/tarjeta/);
+assert.match(redirectJS,/\/tarjeta\/bellaquitas-fest/);
+console.log("PASS: Wallet mock, admin protegido, QR y sustitución antigua por bandera explícita.");
 
